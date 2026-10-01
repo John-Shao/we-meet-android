@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -38,6 +39,7 @@ import com.we.meet.ui.theme.Dimens
 fun AiHubScreen(
     onOpenAssistantCall: () -> Unit,
     onOpenBilingualTranslation: () -> Unit,
+    onOpenHistory: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -64,6 +66,13 @@ fun AiHubScreen(
             title = stringResource(R.string.bilingual_title),
             subtitle = stringResource(R.string.bilingual_subtitle),
             onClick = onOpenBilingualTranslation,
+        )
+        Spacer(Modifier.size(Dimens.SpaceL))
+        FeatureCard(
+            icon = Icons.Filled.History,
+            title = stringResource(com.we.meet.feature.assistant.R.string.assistant_history_title),
+            subtitle = stringResource(com.we.meet.feature.assistant.R.string.assistant_history_subtitle),
+            onClick = onOpenHistory,
         )
     }
 }

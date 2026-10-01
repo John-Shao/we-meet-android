@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="assistant_background_channel">AI 助手会话</string>
+    <string name="assistant_background_call">正在与 AI 通话</string>
+    <string name="assistant_background_translation">双语互译进行中</string>
+    <string name="assistant_background_return">点击返回对话</string>
+    <string name="assistant_background_stop">结束</string>
     <string name="assistant_step_connecting">正在连接</string>
     <string name="assistant_step_configuring">正在准备 AI 对话</string>
     <string name="assistant_error_network">网络异常，请检查网络后重试</string>
@@ -56,4 +61,27 @@
     <string name="assistant_state_unmuted">麦克风已开启</string>
     <string name="assistant_state_video">视频通话</string>
     <string name="assistant_state_voice">语音通话</string>
+    <string name="assistant_history_title">会话记录</string>
+    <string name="assistant_history_subtitle">回看对话，复制与分享文字</string>
+    <string name="assistant_history_you">我</string>
+    <string name="assistant_history_ai">AI 助手</string>
+    <string name="assistant_history_call">打电话</string>
+    <string name="assistant_history_translation">双语互译</string>
+    <string name="assistant_history_replay">重播本句</string>
+    <string name="assistant_history_copy">复制</string>
+    <string name="assistant_history_copied">已复制</string>
+    <string name="assistant_history_copy_large">无法复制全部文字，请分享完整会话或逐句复制。</string>
+    <string name="assistant_history_share">分享文字</string>
+    <string name="assistant_history_share_failed">暂时无法打开分享</string>
+    <string name="assistant_history_save">在本机保存会话文字</string>
+    <string name="assistant_history_error">部分会话记录未能保存或读取。</string>
+    <string name="assistant_history_back">返回</string>
+    <string name="assistant_history_clear">清空记录</string>
+    <string name="assistant_history_delete">删除本次会话</string>
+    <string name="assistant_history_delete_hint">删除后无法恢复所选本地记录。</string>
+    <string name="assistant_history_local_hint">仅在本机保存当前账号的文字，保留最近 200 次会话。保存设置对新会话生效。</string>
+    <string name="assistant_history_search">搜索会话文字</string>
+    <string name="assistant_history_empty">暂无匹配的会话记录</string>
+    <string name="assistant_history_replay_hint">可重播本页缓存的近期完整译音，音频不保存到会话记录。</string>
+    <string name="assistant_history_replay_error">本句重播失败，请重试。</string>
 </resources>

@@ -27,6 +27,48 @@ import org.junit.Test
 class AiCallFailureUiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun backgroundLifecycleDoesNotEndAnActiveCall() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val owner = object : ViewModelStoreOwner, androidx.lifecycle.LifecycleOwner {
+            override val viewModelStore = ViewModelStore()
+            val registry = androidx.lifecycle.LifecycleRegistry(this)
+            override val lifecycle get() = registry
+        }
+        val api = object : AiAgentApi {
+            override suspend fun fetchConfig() = AiAgentConfigResponse()
+            override suspend fun exchangeOffer(offer: AiCallOffer): AiCallAnswer = error("No provider calls")
+        }
+        lateinit var vm: AiCallViewModel
+        compose.runOnIdle {
+            owner.registry.currentState = androidx.lifecycle.Lifecycle.State.RESUMED
+            vm = ViewModelProvider(owner, object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                    AiCallViewModel(context, AiAgentRepository(api), AiCallPreferences(context)) as T
+            })[AiCallViewModel::class.java]
+            val field = AiCallViewModel::class.java.getDeclaredField("_state").apply { isAccessible = true }
+            @Suppress("UNCHECKED_CAST")
+            val state = field.get(vm) as MutableStateFlow<AiCallUiState>
+            state.value = state.value.copy(status = AiCallStatus.Active(AiCallMode.Voice))
+        }
+        val deps = object : AssistantDeps {
+            override val baseUrl = "https://unused.invalid/"
+            override val authedOkHttp = OkHttpClient()
+        }
+        try {
+            compose.setContent {
+                CompositionLocalProvider(LocalViewModelStoreOwner provides owner,
+                    androidx.lifecycle.compose.LocalLifecycleOwner provides owner) {
+                    WeMeetTheme { AssistantCallScreen(deps, {}) }
+                }
+            }
+            compose.runOnIdle { owner.registry.currentState = androidx.lifecycle.Lifecycle.State.CREATED }
+            compose.runOnIdle { assertEquals(AiCallStatus.Active(AiCallMode.Voice), vm.state.value.status) }
+            compose.runOnIdle { owner.registry.currentState = androidx.lifecycle.Lifecycle.State.RESUMED }
+            compose.runOnIdle { assertEquals(AiCallStatus.Active(AiCallMode.Voice), vm.state.value.status) }
+        } finally { compose.runOnIdle { owner.viewModelStore.clear() } }
+    }
+
     @Test fun failedCallRemainsVisibleUntilUserEndsIt() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val owner = object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }

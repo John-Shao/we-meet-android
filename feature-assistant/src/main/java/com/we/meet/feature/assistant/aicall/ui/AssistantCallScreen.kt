@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -54,7 +55,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.feature.assistant.AssistantDeps
@@ -90,6 +90,7 @@ fun AssistantCallScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val vm: AiCallViewModel = viewModel(
         factory = AiCallViewModel.Factory(context.applicationContext, deps),
     )
@@ -133,6 +134,7 @@ fun AssistantCallScreen(
             PendingPermAction.Start -> {
                 pendingAction = null
                 val needCamera = state.mode == AiCallMode.Video
+                if (!lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return@rememberLauncherForActivityResult
                 if (micGranted && (!needCamera || cameraGranted)) {
                     vm.startCall()
                 } else {
@@ -141,6 +143,7 @@ fun AssistantCallScreen(
             }
             PendingPermAction.ToggleVideo -> {
                 pendingAction = null
+                if (!lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return@rememberLauncherForActivityResult
                 // Only hits this branch when going Voice → Video.
                 if (cameraGranted) vm.toggleMode()
                 else scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.assistant_need_camera)) }
@@ -158,6 +161,7 @@ fun AssistantCallScreen(
                 ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) !=
                 PackageManager.PERMISSION_GRANTED
             ) add(Manifest.permission.CAMERA)
+            if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) add(Manifest.permission.POST_NOTIFICATIONS)
         }
         if (needed.isEmpty()) {
             vm.startCall()
@@ -179,20 +183,7 @@ fun AssistantCallScreen(
         }
     }
 
-    // End call on backgrounding (v1 behaviour).
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner, vm) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
-                val st = vm.state.value.status
-                if (st is AiCallStatus.Active || st is AiCallStatus.Connecting) {
-                    vm.endCall()
-                }
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
+    // Home and screen lock keep the foreground-service-backed call alive.
 
     // Surface transient toast as a snackbar.
     LaunchedEffect(state.errorToastRes) {
@@ -260,6 +251,8 @@ fun AssistantCallScreen(
                     mode = state.mode,
                     onDark = isVideoActive,
                 )
+
+                if (!isVideoActive) com.we.meet.feature.assistant.history.AssistantHistoryPreference(vm.history, enabled = !callInProgress)
 
                 BottomControls(
                     status = state.status,

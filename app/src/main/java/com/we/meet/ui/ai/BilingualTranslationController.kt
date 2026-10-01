@@ -10,6 +10,9 @@ import com.we.meet.data.capture.AndroidTranslationOutput
 import com.we.meet.data.capture.CaptureTranslationWire
 import com.we.meet.data.capture.CapturePcmSource
 import com.we.meet.data.capture.OkHttpCaptureTranslationWire
+import com.we.meet.feature.assistant.background.AssistantForegroundSession
+import com.we.meet.feature.assistant.background.AssistantSessionKind
+import com.we.meet.feature.assistant.background.AssistantSessionLease
 import java.io.Closeable
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -34,6 +37,9 @@ internal data class BilingualState(
     val sound: Boolean = true,
     val audioOmitted: Boolean = false,
     val pair: AssistantTranslationPair = AssistantTranslationPair(),
+    val replayable: Set<String> = emptySet(),
+    val replaying: Boolean = false,
+    val replayError: Boolean = false,
 ) {
     val active get() = phase in setOf(BilingualPhase.CONNECTING, BilingualPhase.LISTENING, BilingualPhase.SPEAKING, BilingualPhase.FINISHING)
     override fun toString() = "BilingualState(<private>)"
@@ -46,7 +52,7 @@ internal interface BilingualAudioOutput : Closeable {
     val pendingSamples: Long
 }
 
-/** Foreground-only audio; a new explicit start is required after any interruption. */
+/** User-started audio backed by a foreground service across Home and screen lock. */
 internal class BilingualTranslationController(
     context: Context,
     private val api: AssistantTranslationApi,
@@ -65,14 +71,68 @@ internal class BilingualTranslationController(
         }
     },
     private val openWire: (String, CaptureTranslationWire.Listener) -> CaptureTranslationWire = OkHttpCaptureTranslationWire::open,
+    private val openForeground: suspend (() -> Unit) -> AssistantSessionLease = { stopped ->
+        AssistantForegroundSession.start(context, AssistantSessionKind.TRANSLATION, camera = false, stopped = stopped)
+    },
+    val history: com.we.meet.feature.assistant.history.AssistantHistoryStore? = null,
 ) : Closeable {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutable = MutableStateFlow(BilingualState())
     val state = mutable.asStateFlow()
     private var active: Session? = null
+    private val replayCache = BilingualReplayCache()
+    private var replayJob: Job? = null
+    private var replayOutput: BilingualAudioOutput? = null
+
+    fun replay(id: String) {
+        if (!authorized() || mutable.value.replaying) return
+        val chunks = replayCache.get(id) ?: return
+        val session = active
+        if (session != null) { session.replay(chunks); return }
+        mutable.update { it.copy(replaying = true, replayError = false) }
+        replayJob = scope.launch {
+            var player: BilingualAudioOutput? = null
+            try {
+                player = openOutput { scope.launch { stopReplay() } }
+                replayOutput = player
+                player.open()
+                val output = player
+                withContext(Dispatchers.IO) {
+                    for (bytes in chunks) {
+                        ensureActive()
+                        check(authorized())
+                        val samples = ShortArray(bytes.size / 2)
+                        ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(samples)
+                        for (start in samples.indices step 2400) {
+                            ensureActive()
+                            output.play(samples.copyOfRange(start, minOf(start + 2400, samples.size)))
+                        }
+                    }
+                    output.finishTurn()
+                    withTimeout(5000) { while (output.pendingSamples > 0) delay(20) }
+                }
+            } catch (error: Exception) {
+                if (error is CancellationException && error !is TimeoutCancellationException) throw error
+                mutable.update { it.copy(replayError = true) }
+            } finally {
+                runCatching { player?.close() }
+                if (replayOutput === player) {
+                    replayOutput = null
+                    mutable.update { it.copy(replaying = false) }
+                }
+            }
+        }
+    }
+
+    private fun stopReplay() {
+        replayJob?.cancel(); replayJob = null
+        replayOutput?.close(); replayOutput = null
+        mutable.update { it.copy(replaying = false) }
+    }
 
     fun start() {
         if (active != null || !authorized()) return
+        stopReplay()
         val session = Session(mutable.value.pair)
         active = session
         mutable.update { it.copy(phase = BilingualPhase.CONNECTING, unknownLanguage = false, audioOmitted = false) }
@@ -92,6 +152,7 @@ internal class BilingualTranslationController(
     }
 
     fun stop(phase: BilingualPhase = BilingualPhase.IDLE) {
+        stopReplay()
         val session = active
         active = null
         session?.release()
@@ -110,9 +171,12 @@ internal class BilingualTranslationController(
         if (mutable.value.phase == BilingualPhase.CONNECTING) stop()
         else active?.finish()
     }
-    override fun close() { stop(); scope.cancel(); mutable.value = BilingualState() }
+    override fun close() { stop(); scope.cancel(); replayCache.clear(); mutable.value = BilingualState() }
 
     private inner class Session(private val pair: AssistantTranslationPair) {
+        private val sessionId = java.util.UUID.randomUUID().toString()
+        private val recording = history?.begin("translation")
+        private val rowOrder = linkedMapOf<String, Int>()
         var job: Job? = null
         private val closed = AtomicBoolean()
         private val speaking = AtomicBoolean()
@@ -127,11 +191,22 @@ internal class BilingualTranslationController(
         private var microphone: CapturePcmSource? = null
         private var output: BilingualAudioOutput? = null
         private var wire: CaptureTranslationWire? = null
+        private var foreground: AssistantSessionLease? = null
 
         private fun failure() { scope.launch { if (active === this@Session) stop(BilingualPhase.ERROR) } }
 
+        fun replay(chunks: List<ByteArray>) {
+            if (mutable.value.phase != BilingualPhase.LISTENING || finishing.get() || speaking.get()) return
+            if (!audio.replay(chunks)) return
+            // Mark before waking the writer so the microphone cannot capture the replay onset.
+            speaking.set(true)
+            mutable.update { it.copy(replaying = true, replayError = false, phase = BilingualPhase.SPEAKING) }
+            audioReady.trySend(Unit)
+        }
+
         suspend fun run(): Unit = coroutineScope {
             check(BilingualLanguages.valid(pair))
+            foreground = openForeground { if (active === this@Session) stop() }
             val ticket = api.ticket(pair)
             check(!closed.get() && authorized() && ticket.url.startsWith("wss://"))
             // Resource installation occurs on Main, serialized with stop/disposal.
@@ -169,18 +244,24 @@ internal class BilingualTranslationController(
                             val sourceLanguage = event.getString("source_language")
                             val targetLanguage = BilingualLanguages.opposite(pair, sourceLanguage)
                             check(event.optString("target_language", targetLanguage) == targetLanguage)
-                            val row = BilingualRow(event.getString("id"), event.getString("source"), event.getString("text"), sourceLanguage, targetLanguage)
+                            val row = BilingualRow("$sessionId:${event.getString("id")}", event.getString("source"), event.getString("text"), sourceLanguage, targetLanguage)
                             check(row.source.length <= 20000 && row.text.length <= 20000)
                             mutable.update { value -> value.copy(rows = (value.rows.filterNot { it.id == row.id } + row).takeLast(100), unknownLanguage = false, audioOmitted = event.optBoolean("audio_omitted")) }
+                            recording?.put(com.we.meet.feature.assistant.history.AssistantHistoryRow(row.id,
+                                rowOrder.getOrPut(row.id) { rowOrder.size }, "translation", row.text, row.source, sourceLanguage, targetLanguage))
                         }
                         "audio" -> {
                             val bytes = Base64.decode(event.getString("audio"), Base64.NO_WRAP)
+                            replayCache.append("$sessionId:${event.getString("id")}", bytes)
+                            mutable.update { it.copy(replayable = replayCache.ids()) }
                             if (mutable.value.sound) {
                                 audio.offer(event.getString("id"), bytes)
                                 audioReady.trySend(Unit)
                             }
                         }
                         "audio_end" -> {
+                            replayCache.finish("$sessionId:${event.getString("id")}")
+                            mutable.update { it.copy(replayable = replayCache.ids()) }
                             audio.finish(event.getString("id"))
                             audioReady.trySend(Unit)
                         }
@@ -214,15 +295,16 @@ internal class BilingualTranslationController(
                             // Release echo protection only after the complete response and its tail.
                             if (speaking.get()) delay(350)
                             speaking.set(false)
+                            if (packet.replay) mutable.update { it.copy(replaying = false) }
                             phase(BilingualPhase.LISTENING)
                             continue
                         }
-                        if (!mutable.value.sound) continue
+                        if (!mutable.value.sound && !packet.replay) continue
                         if (speaking.compareAndSet(false, true)) phase(BilingualPhase.SPEAKING)
                         val samples = ShortArray(bytes.size / 2)
                         ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(samples)
                         var offset = 0
-                        while (offset < samples.size && mutable.value.sound) {
+                        while (offset < samples.size && (mutable.value.sound || packet.replay)) {
                             ensureActive()
                             // AudioTrack's bounded write handles pacing. Sleeping for
                             // the duration just written adds scheduling overhead and
@@ -286,10 +368,14 @@ internal class BilingualTranslationController(
 
         fun release() {
             if (!closed.compareAndSet(false, true)) return
+            recording?.close()
+            replayCache.discardIncomplete()
             job?.cancel()
             runCatching { wire?.close() }
             runCatching { microphone?.stop() }
             runCatching { output?.close() }
+            runCatching { foreground?.close() }
+            foreground = null
             job?.invokeOnCompletion { runCatching { microphone?.close() } }
             events.cancel(); audio.clear(); audioReady.cancel(); ready.cancel()
         }

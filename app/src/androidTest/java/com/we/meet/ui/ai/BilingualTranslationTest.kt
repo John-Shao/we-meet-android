@@ -18,6 +18,47 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationTest {
+    @Test fun replayWorksWhenAutomaticSoundIsOffAndKeepsMicrophoneEchoProtection() {
+        val f = Fixture()
+        try {
+            main { f.controller.sound(false); f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.wire!!.pcm.isNotEmpty() }
+            f.wire!!.listener.message(JSONObject().put("type", "translation").put("id", "short")
+                .put("source_language", "zh").put("source", "你好").put("text", "Hello").toString())
+            f.wire!!.listener.message(JSONObject().put("type", "audio").put("id", "short")
+                .put("audio", android.util.Base64.encodeToString(ByteArray(4800) { 1 }, android.util.Base64.NO_WRAP)).toString())
+            f.wire!!.listener.message("{\"type\":\"audio_end\",\"id\":\"short\"}")
+            waitFor { f.controller.state.value.replayable.size == 1 }
+            assertTrue(f.output.played.isEmpty())
+            val id = f.controller.state.value.rows.single().id
+            main { f.controller.replay(id) }
+            waitFor { f.output.played.isNotEmpty() }
+            waitFor { f.wire!!.pcm.any { bytes -> bytes.all { it == 0.toByte() } } }
+            waitFor { !f.controller.state.value.replaying }
+            assertEquals(BilingualPhase.LISTENING, f.controller.state.value.phase)
+            assertEquals(2400, f.output.played.sumOf { it.size })
+            val before = f.output.played.size
+            main { f.controller.stop(); f.controller.replay(id) }
+            waitFor { f.output.played.size > before && !f.controller.state.value.replaying }
+            assertFalse(f.controller.state.value.active)
+        } finally { main { f.controller.close() } }
+    }
+
+    @Test fun reconnectingDoesNotOverwritePreviousRowsWithReusedProviderIds() {
+        val f = Fixture()
+        try {
+            repeat(2) {
+                main { f.controller.start() }
+                waitFor { f.wire != null && !f.wire!!.closed.get() }; f.wire!!.ready()
+                f.wire!!.listener.message(JSONObject().put("type", "translation").put("id", "same")
+                    .put("source_language", "zh").put("source", "你好 $it").put("text", "Hello $it").toString())
+                waitFor { f.controller.state.value.rows.size == it + 1 }
+                main { f.controller.stop() }
+            }
+            assertEquals(2, f.controller.state.value.rows.map { it.id }.distinct().size)
+        } finally { main { f.controller.close() } }
+    }
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private fun main(block: () -> Unit) = instrumentation.runOnMainSync(block)
     private fun waitFor(test: () -> Boolean) = runBlocking {
@@ -94,7 +135,7 @@ class BilingualTranslationTest {
             assertEquals(listOf("fr", "ja"), f.controller.state.value.rows.map { it.targetLanguage })
         } finally { main { f.controller.close() } }
     }
-    private class Fixture(val api: Api = Api(), realPlayback: Boolean = false, writeDelayMs: Long = 0) {
+    private class Fixture(val api: Api = Api(), realPlayback: Boolean = false, writeDelayMs: Long = 0, realBackground: Boolean = false) {
         val microphone = Microphone()
         val output = Output()
         @Volatile var wire: Wire? = null
@@ -102,7 +143,11 @@ class BilingualTranslationTest {
         @Volatile var playbackUnderruns = 0
         val controller = BilingualTranslationController(
             InstrumentationRegistry.getInstrumentation().targetContext, api, { true },
-            { opened = true; microphone }, { interrupted ->
+            { interrupted ->
+                opened = true
+                if (realBackground) com.we.meet.data.capture.AndroidCapturePcmSource.open(InstrumentationRegistry.getInstrumentation().targetContext).also { it.onInterrupted = interrupted }
+                else microphone
+            }, { interrupted ->
                 if (!realPlayback) output else {
                     val delegate = AndroidTranslationOutput(InstrumentationRegistry.getInstrumentation().targetContext, interrupted, startupBufferMs = 200)
                     object : BilingualAudioOutput {
@@ -119,7 +164,69 @@ class BilingualTranslationTest {
                     }
                 }
             }, { _, listener -> Wire(listener).also { wire = it } },
+            openForeground = { stopped ->
+                if (realBackground) com.we.meet.feature.assistant.background.AssistantForegroundSession.start(
+                    InstrumentationRegistry.getInstrumentation().targetContext,
+                    com.we.meet.feature.assistant.background.AssistantSessionKind.TRANSLATION, false, stopped)
+                else object : com.we.meet.feature.assistant.background.AssistantSessionLease {
+                    override suspend fun camera(enabled: Boolean) = Unit
+                    override fun close() = Unit
+                }
+            },
         )
+    }
+
+    @Test fun realMicrophoneAndTranslationContinueWhileBackgroundedAndScreenOff() {
+        val context = instrumentation.targetContext
+        instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.RECORD_AUDIO)
+        if (android.os.Build.VERSION.SDK_INT >= 33) instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
+        val f = Fixture(realPlayback = true, realBackground = true)
+        androidx.test.core.app.ActivityScenario.launch(androidx.activity.ComponentActivity::class.java).use { activity ->
+            try {
+                main { f.controller.start() }
+                waitFor { f.wire != null }; f.wire!!.ready()
+                waitFor { f.wire!!.pcm.size >= 3 }
+                activity.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
+                val backgroundFrames = f.wire!!.pcm.size
+                waitFor { f.wire!!.pcm.size >= backgroundFrames + 10 }
+                instrumentation.uiAutomation.executeShellCommand("input keyevent KEYCODE_SLEEP").use { android.os.ParcelFileDescriptor.AutoCloseInputStream(it).readBytes() }
+                val asleepFrames = f.wire!!.pcm.size
+                waitFor { f.wire!!.pcm.size >= asleepFrames + 10 }
+                f.wire!!.listener.message(JSONObject().put("type", "audio").put("id", "locked")
+                    .put("audio", android.util.Base64.encodeToString(ByteArray(14400), android.util.Base64.NO_WRAP)).toString())
+                f.wire!!.listener.message("{\"type\":\"audio_end\",\"id\":\"locked\"}")
+                waitFor { f.controller.state.value.phase == BilingualPhase.SPEAKING }
+                waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+                assertFalse(f.wire!!.closed.get())
+            } finally {
+                main { f.controller.close() }
+                instrumentation.uiAutomation.executeShellCommand("input keyevent KEYCODE_WAKEUP").use { android.os.ParcelFileDescriptor.AutoCloseInputStream(it).readBytes() }
+                instrumentation.uiAutomation.executeShellCommand("wm dismiss-keyguard").close()
+                activity.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+            }
+        }
+    }
+
+    @Test fun activityRecreationRetainsTranslationButNavigationOwnerDestructionClosesIt() {
+        val f = Fixture()
+        try {
+            androidx.test.core.app.ActivityScenario.launch(androidx.activity.ComponentActivity::class.java).use { activity ->
+                val factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                    @Suppress("UNCHECKED_CAST")
+                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
+                        BilingualTranslationViewModel(f.controller) as T
+                }
+                activity.onActivity { androidx.lifecycle.ViewModelProvider(it, factory)[BilingualTranslationViewModel::class.java] }
+                main { f.controller.start() }
+                waitFor { f.wire != null }; f.wire!!.ready()
+                waitFor { f.wire!!.pcm.isNotEmpty() }
+                activity.recreate()
+                activity.onActivity { assertSame(f.controller, androidx.lifecycle.ViewModelProvider(it, factory)[BilingualTranslationViewModel::class.java].controller) }
+                assertEquals(BilingualPhase.LISTENING, f.controller.state.value.phase)
+                assertFalse(f.wire!!.closed.get())
+            }
+            waitFor { f.wire!!.closed.get() && f.microphone.closed.get() }
+        } finally { main { f.controller.close() } }
     }
 
     @Test fun queuedSpeechDoesNotUnderrunWhenTheWriterHasSchedulingOverhead() {

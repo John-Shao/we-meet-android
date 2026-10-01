@@ -2,6 +2,7 @@ package com.we.meet.ui.ai
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,13 +22,16 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
+import com.we.meet.feature.assistant.history.AssistantHistoryPreference
+import com.we.meet.feature.assistant.history.HistoryTextActions
+import com.we.meet.feature.assistant.R as AssistantR
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,23 +39,15 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val user = app.captureAccount
-    val controller = remember(app, user) {
-        BilingualTranslationController(context.applicationContext, app.apiClient.assistantTranslationApi, authorized = {
-            user != null && app.captureAccount == user
-        })
-    }
+    val vm: BilingualTranslationViewModel = viewModel(key = "bilingual:$user",
+        factory = BilingualTranslationViewModel.Factory(app, user))
+    val controller = vm.controller
     val state by controller.state.collectAsStateWithLifecycle()
     var permissionDenied by remember { mutableStateOf(false) }
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         permissionDenied = !granted
-        if (granted && owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) controller.start()
-    }
-    DisposableEffect(controller, owner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_PAUSE) controller.stop()
-        }
-        owner.lifecycle.addObserver(observer)
-        onDispose { owner.lifecycle.removeObserver(observer); controller.close() }
+        if (granted && owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) controller.start()
     }
     val back = { controller.stop(); onBack() }
     BackHandler(onBack = back)
@@ -62,6 +58,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
     Scaffold(topBar = { WeMeetTopBar(title = stringResource(R.string.bilingual_title), onBack = back) }) { insets ->
         Column(Modifier.fillMaxSize().padding(insets).padding(horizontal = Dimens.ScreenPadding)) {
             BilingualLanguageSelectors(state, controller::selectLanguage)
+            if (!state.active) AssistantHistoryPreference(controller.history)
             Text(stringResource(R.string.bilingual_hint), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS), verticalAlignment = Alignment.CenterVertically) {
@@ -89,6 +86,10 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                 color = if (state.phase == BilingualPhase.ERROR || permissionDenied) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
             if (state.audioOmitted) Text(stringResource(R.string.bilingual_audio_omitted),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (state.replayError) Text(stringResource(AssistantR.string.assistant_history_replay_error),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            if (state.rows.isNotEmpty()) Text(stringResource(AssistantR.string.assistant_history_replay_hint),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (state.rows.isEmpty()) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Text(stringResource(R.string.bilingual_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -104,6 +105,12 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                                 Text(row.source, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(row.text, style = MaterialTheme.typography.bodyLarge)
+                                HistoryTextActions(
+                                    text = stringResource(R.string.bilingual_direction,
+                                        stringResource(BilingualLanguages.label(row.sourceLanguage)), stringResource(BilingualLanguages.label(row.targetLanguage))) + "\n${row.source}\n${row.text}",
+                                    replay = if (row.id in state.replayable) ({ controller.replay(row.id) }) else null,
+                                    replayEnabled = !state.replaying && (!state.active || state.phase == BilingualPhase.LISTENING),
+                                )
                             }
                         }
                     }
@@ -113,8 +120,13 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                 onClick = {
                     permissionDenied = false
                     if (state.active) controller.finish()
-                    else if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) controller.start()
-                    else permission.launch(Manifest.permission.RECORD_AUDIO)
+                    else {
+                        val needed = buildList {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) add(Manifest.permission.RECORD_AUDIO)
+                            if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) add(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                        if (needed.isEmpty()) controller.start() else permission.launch(needed.toTypedArray())
+                    }
                 },
                 enabled = state.phase != BilingualPhase.FINISHING,
                 modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceL).height(Dimens.ButtonHeight),

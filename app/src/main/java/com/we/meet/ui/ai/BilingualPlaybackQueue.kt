@@ -2,8 +2,8 @@ package com.we.meet.ui.ai
 
 /** Keep concurrent model responses separate while bounding all queued PCM in bytes. */
 internal class BilingualPlaybackQueue(private val maxBytes: Int = 60 * 48000) {
-    data class Packet(val audio: ByteArray? = null)
-    private class Item {
+    data class Packet(val audio: ByteArray? = null, val replay: Boolean = false)
+    private class Item(val replay: Boolean = false) {
         val chunks = ArrayDeque<ByteArray>()
         var ended = false
     }
@@ -22,16 +22,26 @@ internal class BilingualPlaybackQueue(private val maxBytes: Int = 60 * 48000) {
 
     @Synchronized fun finish(id: String) { items[id]?.ended = true }
 
+    @Synchronized fun replay(chunks: List<ByteArray>): Boolean {
+        if (items.isNotEmpty() || chunks.isEmpty() || chunks.sumOf { it.size } > maxBytes) return false
+        val item = Item(replay = true)
+        chunks.forEach { item.chunks.addLast(it) }
+        item.ended = true
+        items["local-replay-${java.util.UUID.randomUUID()}"] = item
+        bytes = chunks.sumOf { it.size }
+        return true
+    }
+
     @Synchronized fun poll(): Packet? {
         val first = items.entries.firstOrNull() ?: return null
         val chunk = first.value.chunks.removeFirstOrNull()
         if (chunk != null) {
             bytes -= chunk.size
-            return Packet(chunk)
+            return Packet(chunk, first.value.replay)
         }
         if (!first.value.ended) return null
         items.remove(first.key)
-        return Packet()
+        return Packet(replay = first.value.replay)
     }
 
     @Synchronized fun clear() { items.clear(); bytes = 0 }

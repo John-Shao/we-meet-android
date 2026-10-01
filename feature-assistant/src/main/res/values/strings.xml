@@ -6,6 +6,11 @@
   下也只显示中文。本次一并归位,与 app / core-directory 的做法对齐。
 -->
 <resources>
+    <string name="assistant_background_channel">AI assistant sessions</string>
+    <string name="assistant_background_call">AI call in progress</string>
+    <string name="assistant_background_translation">Bilingual translation in progress</string>
+    <string name="assistant_background_return">Tap to return to the conversation</string>
+    <string name="assistant_background_stop">End</string>
     <string name="assistant_step_connecting">Connecting</string>
     <string name="assistant_step_configuring">Preparing AI conversation</string>
     <string name="assistant_error_network">Network error. Check your connection and try again.</string>
@@ -62,4 +67,27 @@
     <string name="assistant_state_unmuted">Microphone on</string>
     <string name="assistant_state_video">Video call</string>
     <string name="assistant_state_voice">Voice call</string>
+    <string name="assistant_history_title">Conversation history</string>
+    <string name="assistant_history_subtitle">Review, copy and share your conversations</string>
+    <string name="assistant_history_you">You</string>
+    <string name="assistant_history_ai">AI assistant</string>
+    <string name="assistant_history_call">AI call</string>
+    <string name="assistant_history_translation">Bilingual translation</string>
+    <string name="assistant_history_replay">Replay sentence</string>
+    <string name="assistant_history_copy">Copy</string>
+    <string name="assistant_history_copied">Copied</string>
+    <string name="assistant_history_copy_large">Unable to copy all text. Share the full conversation or copy individual sentences.</string>
+    <string name="assistant_history_share">Share text</string>
+    <string name="assistant_history_share_failed">Unable to open sharing</string>
+    <string name="assistant_history_save">Save conversation text on this device</string>
+    <string name="assistant_history_error">Some conversation history could not be saved or loaded.</string>
+    <string name="assistant_history_back">Back</string>
+    <string name="assistant_history_clear">Clear history</string>
+    <string name="assistant_history_delete">Delete conversation</string>
+    <string name="assistant_history_delete_hint">This permanently removes the selected local history.</string>
+    <string name="assistant_history_local_hint">Text only, for this account on this device. Keeps the latest 200 conversations. Saving settings apply to new sessions.</string>
+    <string name="assistant_history_search">Search conversation text</string>
+    <string name="assistant_history_empty">No matching conversations</string>
+    <string name="assistant_history_replay_hint">Replay uses recent completed audio cached on this page. Audio is not saved to history.</string>
+    <string name="assistant_history_replay_error">Unable to replay this sentence. Please try again.</string>
 </resources>

@@ -68,6 +68,7 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         private set
     override val captureAccount: String?
         get() = if (tokenStore.isLoggedIn()) tokenStore.userId else null
+    override val assistantAccount: String? get() = captureAccount
     lateinit var captureTranscriptionRepository: com.we.meet.data.repository.CaptureTranscriptionRepository
         private set
     lateinit var meetingSummaryRepository: com.we.meet.data.repository.MeetingSummaryRepository

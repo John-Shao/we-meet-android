@@ -31,7 +31,9 @@ class OmniWebRtcClient(
     private val context: Context,
     private val onAudioLevel: (Float) -> Unit,
     private val onFailure: () -> Unit,
+    private val onTranscript: (com.we.meet.feature.assistant.history.AssistantHistoryRow) -> Unit = {},
 ) {
+    private val transcript = OmniTranscript(onTranscript)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val handshake = OmniHandshake()
     private val recovery = OmniConnectionRecovery(scope, ::fail)
@@ -190,6 +192,7 @@ class OmniWebRtcClient(
     }
 
     private fun handleEvent(channel: DataChannel, event: JSONObject) {
+        transcript.accept(event)
         when (event.optString("type")) {
             "session.created" -> {
                 // Server-created 'txt' is supported as well as the local channel.
@@ -224,6 +227,7 @@ class OmniWebRtcClient(
             .put("output_audio_format", "pcm")
             .put("voice", config.voice)
             .put("instructions", config.instructions)
+            .put("input_audio_transcription", JSONObject().put("model", "qwen3-asr-flash-realtime"))
             .put("turn_detection", JSONObject().put("type", "server_vad")
                 .put("threshold", 0.5).put("silence_duration_ms", 800))))
     }

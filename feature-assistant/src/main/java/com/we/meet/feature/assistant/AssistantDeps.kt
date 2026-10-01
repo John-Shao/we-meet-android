@@ -11,6 +11,8 @@ import okhttp3.OkHttpClient
  * on top of [authedOkHttp] so it stays decoupled from the host's API layer.
  */
 interface AssistantDeps {
+    /** Stable signed-in account identifier; null disables local conversation storage. */
+    val assistantAccount: String? get() = null
     /** Host's authenticated OkHttp client (AuthInterceptor + token refresh). */
     val authedOkHttp: OkHttpClient
 

@@ -144,6 +144,7 @@ object Routes {
     const val QR_SCAN = "qr_scan"
     const val ASSISTANT_CALL = "assistant_call"
     const val BILINGUAL_TRANSLATION = "bilingual_translation"
+    const val ASSISTANT_HISTORY = "assistant_history"
     const val AI_HUB = "ai_hub"
     const val APPROVAL = "approval"
     const val APPROVAL_SUBMIT = "approval_submit?templateId={templateId}"
@@ -751,10 +752,18 @@ fun AppNav() {
                 onBack = rememberOnceOnly(safePop),
                 onOpenAssistantCall = { navController.navigate(Routes.ASSISTANT_CALL) },
                 onOpenBilingualTranslation = { navController.navigate(Routes.BILINGUAL_TRANSLATION) },
+                onOpenHistory = { navController.navigate(Routes.ASSISTANT_HISTORY) },
             )
         }
         composable(Routes.BILINGUAL_TRANSLATION) {
             com.we.meet.ui.ai.BilingualTranslationScreen(app, rememberOnceOnly(safePop))
+        }
+        composable(Routes.ASSISTANT_HISTORY) {
+            val account = app.assistantAccount
+            if (account != null) {
+                val store = remember(account) { com.we.meet.feature.assistant.history.AssistantHistoryStore.get(app, account) { app.assistantAccount } }
+                com.we.meet.feature.assistant.history.AssistantHistoryScreen(store, rememberOnceOnly(safePop))
+            }
         }
 
         composable(Routes.APPROVAL) {
@@ -1905,7 +1914,7 @@ fun AppNav() {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AiHubRoute(onBack: () -> Unit, onOpenAssistantCall: () -> Unit, onOpenBilingualTranslation: () -> Unit) {
+private fun AiHubRoute(onBack: () -> Unit, onOpenAssistantCall: () -> Unit, onOpenBilingualTranslation: () -> Unit, onOpenHistory: () -> Unit) {
     androidx.compose.material3.Scaffold(
         topBar = {
             WeMeetTopBar(
@@ -1915,7 +1924,7 @@ private fun AiHubRoute(onBack: () -> Unit, onOpenAssistantCall: () -> Unit, onOp
         },
     ) { padding ->
         androidx.compose.foundation.layout.Box(modifier = Modifier.padding(padding)) {
-            com.we.meet.ui.ai.AiHubScreen(onOpenAssistantCall = onOpenAssistantCall, onOpenBilingualTranslation = onOpenBilingualTranslation)
+            com.we.meet.ui.ai.AiHubScreen(onOpenAssistantCall = onOpenAssistantCall, onOpenBilingualTranslation = onOpenBilingualTranslation, onOpenHistory = onOpenHistory)
         }
     }
 }
