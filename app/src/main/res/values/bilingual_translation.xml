@@ -4,7 +4,7 @@
     <string name="bilingual_settings_title">Translation settings</string>
     <string name="bilingual_languages">Translation languages</string>
     <string name="bilingual_display_mode">Display mode</string>
-    <string name="bilingual_title_with_pair">Bilingual translation (%1$s ⇄ %2$s)</string>
+    <string name="bilingual_language_pair">%1$s ⇄ %2$s</string>
     <string name="bilingual_settings_locked">End translation to change languages or text saving.</string>
     <string name="bilingual_subtitle">Choose two languages for automatic spoken translation</string>
     <string name="bilingual_pair">Chinese ⇄ English</string>

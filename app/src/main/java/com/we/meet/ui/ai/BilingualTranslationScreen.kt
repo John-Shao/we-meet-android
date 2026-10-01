@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -74,8 +75,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
         return
     }
     Scaffold(topBar = { WeMeetTopBar(
-        title = stringResource(R.string.bilingual_title_with_pair,
-            stringResource(BilingualLanguages.label(state.pair.source)), stringResource(BilingualLanguages.label(state.pair.target))),
+        title = stringResource(R.string.bilingual_title),
         onBack = back,
         actions = {
         IconButton(onClick = { showSettings = true }, modifier = Modifier.testTag("bilingual-settings")) {
@@ -111,8 +111,16 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
             if (facing) {
                 BilingualFaceToFace(state, Modifier.weight(1f).fillMaxWidth())
             } else if (state.rows.isEmpty()) {
-                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.bilingual_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(Modifier.weight(1f).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS, Alignment.CenterVertically)) {
+                    Text(stringResource(R.string.bilingual_language_pair,
+                        stringResource(BilingualLanguages.label(state.pair.source)),
+                        stringResource(BilingualLanguages.label(state.pair.target))),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.bilingual_empty), color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center)
                 }
             } else {
                 LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState,
