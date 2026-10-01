@@ -72,9 +72,10 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
         )
         return
     }
-    Scaffold(topBar = { WeMeetTopBar(title = stringResource(R.string.bilingual_title), onBack = back,
-        subtitle = stringResource(R.string.bilingual_selected_pair,
+    Scaffold(topBar = { WeMeetTopBar(
+        title = stringResource(R.string.bilingual_title_with_pair,
             stringResource(BilingualLanguages.label(state.pair.source)), stringResource(BilingualLanguages.label(state.pair.target))),
+        onBack = back,
         actions = {
         IconButton(onClick = { showSettings = true }, modifier = Modifier.testTag("bilingual-settings")) {
             Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.bilingual_settings_title))
