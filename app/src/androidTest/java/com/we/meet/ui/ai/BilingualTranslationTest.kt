@@ -94,19 +94,25 @@ class BilingualTranslationTest {
             assertEquals(listOf("fr", "ja"), f.controller.state.value.rows.map { it.targetLanguage })
         } finally { main { f.controller.close() } }
     }
-    private class Fixture(val api: Api = Api(), realPlayback: Boolean = false) {
+    private class Fixture(val api: Api = Api(), realPlayback: Boolean = false, writeDelayMs: Long = 0) {
         val microphone = Microphone()
         val output = Output()
         @Volatile var wire: Wire? = null
         var opened = false
+        @Volatile var playbackUnderruns = 0
         val controller = BilingualTranslationController(
             InstrumentationRegistry.getInstrumentation().targetContext, api, { true },
             { opened = true; microphone }, { interrupted ->
                 if (!realPlayback) output else {
-                    val delegate = AndroidTranslationOutput(InstrumentationRegistry.getInstrumentation().targetContext, interrupted)
+                    val delegate = AndroidTranslationOutput(InstrumentationRegistry.getInstrumentation().targetContext, interrupted, startupBufferMs = 200)
                     object : BilingualAudioOutput {
                         override fun open() = delegate.open()
-                        override fun play(samples: ShortArray) = delegate.play(samples)
+                        override fun play(samples: ShortArray) {
+                            // Model ordinary writer scheduling/processing overhead.
+                            if (writeDelayMs > 0) Thread.sleep(writeDelayMs)
+                            delegate.play(samples)
+                            playbackUnderruns = delegate.underrunCount
+                        }
                         override fun finishTurn() = delegate.finishTurn()
                         override val pendingSamples get() = delegate.pendingSamples
                         override fun close() = delegate.close()
@@ -114,6 +120,28 @@ class BilingualTranslationTest {
                 }
             }, { _, listener -> Wire(listener).also { wire = it } },
         )
+    }
+
+    @Test fun queuedSpeechDoesNotUnderrunWhenTheWriterHasSchedulingOverhead() {
+        val f = Fixture(realPlayback = true, writeDelayMs = 8)
+        try {
+            main { f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.wire!!.pcm.isNotEmpty() }
+            // Three seconds of continuous 500 Hz PCM, already received from the server.
+            // Only application scheduling can starve this stream, not the network.
+            repeat(6) {
+                val pcm = java.nio.ByteBuffer.allocate(24000).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                repeat(12000) { sample -> pcm.putShort((kotlin.math.sin(sample * 2.0 * Math.PI / 48) * 1000).toInt().toShort()) }
+                f.wire!!.listener.message(JSONObject().put("type", "audio").put("id", "continuous")
+                    .put("audio", android.util.Base64.encodeToString(pcm.array(), android.util.Base64.NO_WRAP)).toString())
+            }
+            f.wire!!.listener.message("{\"type\":\"audio_end\",\"id\":\"continuous\"}")
+            waitFor { f.controller.state.value.phase == BilingualPhase.SPEAKING }
+            waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+            assertTrue("Queued speech must not repeatedly starve AudioTrack; underruns=${f.playbackUnderruns}", f.playbackUnderruns <= 1)
+            assertFalse(f.wire!!.closed.get())
+        } finally { main { f.controller.close() } }
     }
 
     @Test fun repeatedShortRepliesWithRealAudioTrackReturnToListeningWithoutDisconnect() {

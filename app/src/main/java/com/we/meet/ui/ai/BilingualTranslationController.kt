@@ -55,7 +55,7 @@ internal class BilingualTranslationController(
         AndroidCapturePcmSource.open(context).also { it.onInterrupted = interrupted }
     },
     private val openOutput: (() -> Unit) -> BilingualAudioOutput = { interrupted ->
-        val delegate = AndroidTranslationOutput(context, interrupted)
+        val delegate = AndroidTranslationOutput(context, interrupted, startupBufferMs = 200)
         object : BilingualAudioOutput {
             override fun open() = delegate.open()
             override fun play(samples: ShortArray) = delegate.play(samples)
@@ -218,17 +218,18 @@ internal class BilingualTranslationController(
                             continue
                         }
                         if (!mutable.value.sound) continue
-                        speaking.set(true)
-                        phase(BilingualPhase.SPEAKING)
+                        if (speaking.compareAndSet(false, true)) phase(BilingualPhase.SPEAKING)
                         val samples = ShortArray(bytes.size / 2)
                         ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(samples)
                         var offset = 0
                         while (offset < samples.size && mutable.value.sound) {
                             ensureActive()
-                            val end = minOf(offset + 480, samples.size)
+                            // AudioTrack's bounded write handles pacing. Sleeping for
+                            // the duration just written adds scheduling overhead and
+                            // starves playback at every PCM boundary (audible clicks).
+                            val end = minOf(offset + 2400, samples.size)
                             checkNotNull(output).play(samples.copyOfRange(offset, end))
                             offset = end
-                            delay(20)
                         }
                     }
                 } catch (timeout: TimeoutCancellationException) {

@@ -24,7 +24,11 @@ interface CaptureTranslationOutput : Closeable {
 }
 
 /** Bounded output-only stream. Focus loss and noisy routing terminate it without auto-resume. */
-class AndroidTranslationOutput(context: Context, private val interrupted: () -> Unit) : CaptureTranslationOutput {
+class AndroidTranslationOutput(
+    context: Context,
+    private val interrupted: () -> Unit,
+    private val startupBufferMs: Int = 0,
+) : CaptureTranslationOutput {
     private val context = context.applicationContext
     private val manager = this.context.getSystemService(AudioManager::class.java)
     private val attributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()
@@ -37,6 +41,8 @@ class AndroidTranslationOutput(context: Context, private val interrupted: () -> 
     private var focused = false
     @get:Synchronized
     val pendingSamples: Long get() = (written - ((track?.playbackHeadPosition?.toLong() ?: 0L) and 0xffffffffL)).coerceAtLeast(0)
+    @get:Synchronized
+    internal val underrunCount: Int get() = track?.underrunCount ?: 0
     private val focus = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT).setAudioAttributes(attributes)
         .setWillPauseWhenDucked(true).setAcceptsDelayedFocusGain(false)
         .setOnAudioFocusChangeListener({ if (it != AudioManager.AUDIOFOCUS_GAIN) interrupt() }, Handler(Looper.getMainLooper())).build()
@@ -49,6 +55,7 @@ class AndroidTranslationOutput(context: Context, private val interrupted: () -> 
     }
     @Synchronized override fun open() {
         check(!closed && track == null)
+        require(startupBufferMs in 0..500)
         try {
             if (!registered) {
                 ContextCompat.registerReceiver(context, noisy, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY), ContextCompat.RECEIVER_NOT_EXPORTED)
@@ -68,10 +75,10 @@ class AndroidTranslationOutput(context: Context, private val interrupted: () -> 
                 .setTransferMode(AudioTrack.MODE_STREAM).setBufferSizeInBytes(bufferBytes).build()
             track = value
             check(value.state == AudioTrack.STATE_INITIALIZED)
-            // Capacity is not the desired start threshold: waiting for three seconds
-            // of PCM silenced short replies, then the caller's drain timed out.
+            // Bilingual playback primes 200 ms to absorb scheduler/network jitter.
+            // Capacity remains separate; finishTurn releases sub-threshold replies.
             startThresholdFrames = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                value.setStartThresholdInFrames(1)
+                value.setStartThresholdInFrames(maxOf(1, startupBufferMs * 24))
             } else value.bufferSizeInFrames
             value.play()
             written = 0
@@ -105,8 +112,8 @@ class AndroidTranslationOutput(context: Context, private val interrupted: () -> 
     @Synchronized fun finishTurn() {
         check(!closed)
         if (muted) return
-        // Android 10/11 cannot set a start threshold. Pad only an underfilled
-        // final buffer so even a sub-buffer reply starts, without another utterance.
+        // Flush replies shorter than the jitter prebuffer (or the device's legacy
+        // threshold), without depending on another utterance to start playback.
         val pending = pendingSamples
         if (pending in 1 until startThresholdFrames.toLong()) {
             try { writeAll(ShortArray(startThresholdFrames - pending.toInt())) }
