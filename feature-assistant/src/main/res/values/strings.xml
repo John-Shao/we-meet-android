@@ -76,7 +76,7 @@
     <string name="assistant_history_replay">Replay sentence</string>
     <string name="assistant_history_copy">Copy</string>
     <string name="assistant_history_copied">Copied</string>
-    <string name="assistant_history_copy_large">Unable to copy all text. Share the full conversation or copy individual sentences.</string>
+    <string name="assistant_history_copy_large">Unable to copy all text. Share the full conversation instead.</string>
     <string name="assistant_history_share">Share text</string>
     <string name="assistant_history_share_failed">Unable to open sharing</string>
     <string name="assistant_history_save">Save conversation text on this device</string>
@@ -85,7 +85,7 @@
     <string name="assistant_history_clear">Clear history</string>
     <string name="assistant_history_delete">Delete conversation</string>
     <string name="assistant_history_delete_hint">This permanently removes the selected local history.</string>
-    <string name="assistant_history_local_hint">Text only, for this account on this device. Keeps the latest 200 conversations. Saving settings apply to new sessions.</string>
+    <string name="assistant_history_local_hint">Text only, for this account on this device. Keeps the latest 200 conversations. Control saving separately in call and translation settings. Changes apply to new sessions.</string>
     <string name="assistant_history_search">Search conversation text</string>
     <string name="assistant_history_empty">No matching conversations</string>
     <string name="assistant_history_replay_hint">Replay uses recent completed audio cached on this page. Audio is not saved to history.</string>

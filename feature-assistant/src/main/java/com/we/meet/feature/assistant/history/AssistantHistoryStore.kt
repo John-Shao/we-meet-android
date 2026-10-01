@@ -34,9 +34,19 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
     private val key = MessageDigest.getInstance("SHA-256").digest(account.toByteArray())
         .joinToString("") { "%02x".format(it) }
     private val path = File(context.noBackupFilesDir, "assistant-$key.sqlite")
-    private val prefs = context.getSharedPreferences("assistant-history-$key", Context.MODE_PRIVATE)
-    private val mutableEnabled = MutableStateFlow(prefs.getBoolean("enabled", true))
-    val enabled = mutableEnabled.asStateFlow()
+    private val prefs = context.getSharedPreferences("assistant-history-$key", Context.MODE_PRIVATE).also { prefs ->
+        // Preserve the old choice for both kinds, without overwriting a migrated preference.
+        val legacy = prefs.getBoolean("enabled", true)
+        val editor = prefs.edit()
+        for (kind in listOf("call", "translation")) {
+            if (!prefs.contains("enabled_$kind")) editor.putBoolean("enabled_$kind", legacy)
+        }
+        editor.apply()
+    }
+    private val savingByKind = listOf("call", "translation").associateWith { kind ->
+        MutableStateFlow(prefs.getBoolean("enabled_$kind", true))
+    }
+    fun enabled(kind: String) = savingByKind.getValue(kind).asStateFlow()
     private val mutableEntries = MutableStateFlow<List<AssistantHistoryEntry>>(emptyList())
     val entries = mutableEntries.asStateFlow()
     private val mutableError = MutableStateFlow(false)
@@ -68,15 +78,15 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
         }
     }
 
-    fun setEnabled(value: Boolean) {
+    fun setEnabled(kind: String, value: Boolean) {
         if (!allowed()) return
-        mutableEnabled.value = value
-        prefs.edit().putBoolean("enabled", value).apply()
+        savingByKind.getValue(kind).value = value
+        prefs.edit().putBoolean("enabled_$kind", value).apply()
     }
 
     fun begin(kind: String): Recording? {
-        if (!allowed() || !enabled.value) return null
         require(kind == "call" || kind == "translation")
+        if (!allowed() || !enabled(kind).value) return null
         val id = UUID.randomUUID().toString()
         val started = System.currentTimeMillis()
         enqueue { db ->

@@ -67,7 +67,7 @@ internal fun BilingualTranslationSettingsScreen(
                 if (history != null) {
                     SettingsDivider()
                     Box(Modifier.padding(vertical = Dimens.SpaceS)) {
-                        AssistantHistoryPreference(history, enabled = !state.active)
+                        AssistantHistoryPreference(history, kind = "translation", enabled = !state.active)
                     }
                 }
             }

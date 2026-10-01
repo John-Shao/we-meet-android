@@ -70,7 +70,7 @@
     <string name="assistant_history_replay">重播本句</string>
     <string name="assistant_history_copy">复制</string>
     <string name="assistant_history_copied">已复制</string>
-    <string name="assistant_history_copy_large">无法复制全部文字，请分享完整会话或逐句复制。</string>
+    <string name="assistant_history_copy_large">无法复制全部文字，请分享完整会话。</string>
     <string name="assistant_history_share">分享文字</string>
     <string name="assistant_history_share_failed">暂时无法打开分享</string>
     <string name="assistant_history_save">在本机保存会话文字</string>
@@ -79,7 +79,7 @@
     <string name="assistant_history_clear">清空记录</string>
     <string name="assistant_history_delete">删除本次会话</string>
     <string name="assistant_history_delete_hint">删除后无法恢复所选本地记录。</string>
-    <string name="assistant_history_local_hint">仅在本机保存当前账号的文字，保留最近 200 次会话。保存设置对新会话生效。</string>
+    <string name="assistant_history_local_hint">仅在本机保存当前账号的文字，保留最近 200 次会话。可在打电话和双语互译的设置中分别控制保存，仅对新会话生效。</string>
     <string name="assistant_history_search">搜索会话文字</string>
     <string name="assistant_history_empty">暂无匹配的会话记录</string>
     <string name="assistant_history_replay_hint">可重播本页缓存的近期完整译音，音频不保存到会话记录。</string>

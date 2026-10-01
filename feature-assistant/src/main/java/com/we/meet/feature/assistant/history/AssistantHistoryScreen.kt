@@ -70,14 +70,14 @@ fun HistoryTextActions(text: String, replay: (() -> Unit)? = null, replayEnabled
 }
 
 @Composable
-fun AssistantHistoryPreference(store: AssistantHistoryStore?, enabled: Boolean = true) {
+fun AssistantHistoryPreference(store: AssistantHistoryStore?, kind: String, enabled: Boolean = true) {
     if (store == null) return
-    val save by store.enabled.collectAsStateWithLifecycle()
+    val save by store.enabled(kind).collectAsStateWithLifecycle()
     val failed by store.error.collectAsStateWithLifecycle()
     Column(Modifier.padding(horizontal = Dimens.ScreenPadding)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.assistant_history_save), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-            Switch(checked = save, onCheckedChange = store::setEnabled, enabled = enabled)
+            Switch(checked = save, onCheckedChange = { store.setEnabled(kind, it) }, enabled = enabled)
         }
         if (failed) Text(stringResource(R.string.assistant_history_error), color = MaterialTheme.colorScheme.error,
             style = MaterialTheme.typography.bodySmall)
@@ -89,6 +89,7 @@ fun AssistantHistoryPreference(store: AssistantHistoryStore?, enabled: Boolean =
 fun AssistantHistoryScreen(store: AssistantHistoryStore, onBack: () -> Unit, deps: com.we.meet.feature.assistant.AssistantDeps? = null) {
     val context = LocalContext.current
     val entries by store.entries.collectAsStateWithLifecycle()
+    val failed by store.error.collectAsStateWithLifecycle()
     val summaryVm: AssistantSummaryViewModel? = if (deps != null) androidx.lifecycle.viewmodel.compose.viewModel(
         key = "assistant-summary:${deps.assistantAccount}", factory = AssistantSummaryViewModel.Factory(store, deps)) else null
     val requests = summaryVm?.requests?.collectAsStateWithLifecycle()?.value.orEmpty()
@@ -102,14 +103,16 @@ fun AssistantHistoryScreen(store: AssistantHistoryStore, onBack: () -> Unit, dep
     Scaffold(topBar = {
         WeMeetTopBar(title = stringResource(R.string.assistant_history_title), onBack = back,
             actions = {
+                if (entry != null) HistoryTextActions(entry.rows.joinToString("\n\n") { it.displayText(context) })
                 if (entries.isNotEmpty()) IconButton(onClick = { deleting = entry?.id ?: "all" }) {
                     Icon(Icons.Default.Delete, stringResource(if (entry == null) R.string.assistant_history_clear else R.string.assistant_history_delete))
                 }
             })
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = Dimens.ScreenPadding)) {
+            if (failed) Text(stringResource(R.string.assistant_history_error), color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall)
             if (entry == null) {
-                AssistantHistoryPreference(store)
                 Text(stringResource(R.string.assistant_history_local_hint), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(value = query, onValueChange = { query = it }, singleLine = true,
@@ -131,7 +134,6 @@ fun AssistantHistoryScreen(store: AssistantHistoryStore, onBack: () -> Unit, dep
                 }
             } else {
                 Text(formatter.format(Date(entry.startedAt)), style = MaterialTheme.typography.labelMedium)
-                HistoryTextActions(entry.rows.joinToString("\n\n") { it.displayText(context) })
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM), contentPadding = PaddingValues(vertical = Dimens.SpaceL)) {
                     if (summaryVm != null || entry.summary != null) item(key = "summary") {
                         AssistantSummaryPanel(entry, requests[entry.id], summaryVm?.let { { it.generate(entry.id) } }) { index, done -> store.setTodo(entry.id, index, done) }
@@ -140,7 +142,6 @@ fun AssistantHistoryScreen(store: AssistantHistoryStore, onBack: () -> Unit, dep
                         Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(Dimens.SpaceL)) {
                                 SelectionContainer { Text(row.displayText(context)) }
-                                HistoryTextActions(row.displayText(context))
                             }
                         }
                     }

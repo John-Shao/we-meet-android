@@ -18,6 +18,67 @@ class AssistantHistoryTest {
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private fun waitFor(condition: () -> Boolean) = runBlocking { withTimeout(5000) { while (!condition()) delay(10) } }
 
+    private fun preferences(account: String): android.content.SharedPreferences {
+        val hash = java.security.MessageDigest.getInstance("SHA-256").digest(account.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        return context.getSharedPreferences("assistant-history-$hash", android.content.Context.MODE_PRIVATE)
+    }
+
+    @Test fun savingPreferencesMigrateLegacyChoiceWithoutOverwritingSeparateChoices() {
+        for (legacy in listOf(null, false, true)) {
+            val account = "history-migration-${UUID.randomUUID()}"
+            val prefs = preferences(account)
+            if (legacy != null) assertTrue(prefs.edit().putBoolean("enabled", legacy).commit())
+            val store = AssistantHistoryStore.get(context, account) { account }
+            val expected = legacy ?: true
+            for (kind in listOf("call", "translation")) {
+                assertEquals(expected, store.enabled(kind).value)
+                assertTrue(prefs.contains("enabled_$kind"))
+                assertEquals(expected, prefs.getBoolean("enabled_$kind", !expected))
+            }
+        }
+        val account = "history-partial-migration-${UUID.randomUUID()}"
+        val prefs = preferences(account)
+        assertTrue(prefs.edit().putBoolean("enabled", false).putBoolean("enabled_call", true).commit())
+        val store = AssistantHistoryStore.get(context, account) { account }
+        assertTrue(store.enabled("call").value)
+        assertFalse(store.enabled("translation").value)
+        assertTrue(prefs.getBoolean("enabled_call", false))
+        assertFalse(prefs.getBoolean("enabled_translation", true))
+    }
+
+    @Test fun savingChoicesAreIndependentAndOnlyAffectNewSessions() {
+        val account = "history-independent-${UUID.randomUUID()}"
+        val store = AssistantHistoryStore.get(context, account) { account }
+        val call = store.begin("call")!!
+        call.put(AssistantHistoryRow("call", 0, "user", "existing call")); call.close()
+        waitFor { store.entries.value.singleOrNull()?.endedAt != null }
+
+        store.setEnabled("call", false)
+        assertNull(store.begin("call"))
+        assertTrue(store.enabled("translation").value)
+        val translation = store.begin("translation")!!
+        store.setEnabled("translation", false)
+        assertNull(store.begin("translation"))
+        // A setting change neither deletes history nor cuts off an existing recording.
+        translation.put(AssistantHistoryRow("translation", 0, "translation", "Hello", "你好"))
+        translation.close()
+        waitFor { store.entries.value.size == 2 && store.entries.value.all { it.endedAt != null } }
+        assertTrue(store.entries.value.any { it.id == call.id })
+
+        store.setEnabled("call", true)
+        store.begin("call")!!.close()
+        assertNull(store.begin("translation"))
+        assertTrue(preferences(account).getBoolean("enabled_call", false))
+        assertFalse(preferences(account).getBoolean("enabled_translation", true))
+        val otherAccount = "history-independent-other-${UUID.randomUUID()}"
+        val other = AssistantHistoryStore.get(context, otherAccount) { otherAccount }
+        assertTrue(other.enabled("call").value)
+        assertTrue(other.enabled("translation").value)
+        store.clear()
+        waitFor { store.entries.value.isEmpty() }
+    }
+
     @Test fun retentionKeepsTwoHundredRealConversationsAndEmptyAttemptsDoNotEvictThem() {
         val account = "history-retention-${UUID.randomUUID()}"
         val store = AssistantHistoryStore.get(context, account) { account }
@@ -72,7 +133,7 @@ class AssistantHistoryTest {
         signedIn = null
         assertNull(store.begin("call"))
         signedIn = account
-        store.setEnabled(false)
+        store.setEnabled("translation", false)
         assertNull(store.begin("translation"))
         store.clear()
         waitFor { store.entries.value.isEmpty() }

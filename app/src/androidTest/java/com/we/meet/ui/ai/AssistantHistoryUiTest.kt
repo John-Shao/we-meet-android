@@ -41,17 +41,23 @@ class AssistantHistoryUiTest {
         val store = AssistantHistoryStore.get(context, account) { account }
         val recording = store.begin("translation")!!
         recording.put(AssistantHistoryRow("one", 0, "translation", "Good morning!", "早上好！", "zh", "en"))
+        recording.put(AssistantHistoryRow("two", 1, "translation", "谢谢！", "Thank you!", "en", "zh"))
         recording.close()
         compose.waitUntil(5000) { store.entries.value.size == 1 }
         compose.setContent { WeMeetTheme(darkTheme = false) { AssistantHistoryScreen(store, onBack = {}) } }
+        compose.onNodeWithText(context.getString(R.string.assistant_history_save)).assertDoesNotExist()
         compose.onNodeWithText(context.getString(R.string.assistant_history_search)).performTextInput("不存在")
         compose.onNodeWithText(context.getString(R.string.assistant_history_empty)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.assistant_history_search)).performTextReplacement("morning")
         compose.onNodeWithText("Good morning!").performClick()
         compose.onNodeWithText("Good morning!", substring = true).assertIsDisplayed()
-        compose.onAllNodesWithContentDescription(context.getString(R.string.assistant_history_copy))[1].performClick()
+        compose.onAllNodesWithContentDescription(context.getString(R.string.assistant_history_copy)).assertCountEquals(1)
+        compose.onAllNodesWithContentDescription(context.getString(R.string.assistant_history_share)).assertCountEquals(1)
+        compose.onNodeWithContentDescription(context.getString(R.string.assistant_history_copy)).assertIsDisplayed().performClick()
         compose.runOnIdle {
-            assertTrue(context.getSystemService(ClipboardManager::class.java).primaryClip!!.getItemAt(0).text.contains("早上好"))
+            val copied = context.getSystemService(ClipboardManager::class.java).primaryClip!!.getItemAt(0).text
+            assertTrue(copied.contains("早上好"))
+            assertTrue(copied.contains("Thank you!"))
         }
         val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
         java.io.File(context.getExternalFilesDir(null), "assistant-history-detail.png").outputStream().use {
