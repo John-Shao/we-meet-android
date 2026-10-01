@@ -2,6 +2,7 @@ package com.we.meet.ui.ai
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -11,6 +12,8 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -51,24 +54,35 @@ class BilingualTranslationUiTest {
     }
 
     @Test fun translationStartsIdleWithAutomaticDirectionAndOneStartButton() {
+        var exits = 0
         compose.setContent {
             WeMeetTheme(darkTheme = false) {
-                BilingualTranslationScreen(context.applicationContext as WeMeetApp) {}
+                BilingualTranslationScreen(context.applicationContext as WeMeetApp) { exits++ }
             }
         }
-        compose.onNodeWithTag("bilingual-first-language").assertIsDisplayed()
-        compose.onNodeWithTag("bilingual-second-language").assertIsDisplayed()
+        compose.onNodeWithTag("bilingual-first-language").assertDoesNotExist()
+        compose.onNodeWithTag("bilingual-second-language").assertDoesNotExist()
+        compose.onNodeWithTag("bilingual-sound").assertDoesNotExist()
         compose.onNodeWithTag("bilingual-facing-partner").assertIsDisplayed()
         compose.onNodeWithTag("bilingual-facing-self").assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.bilingual_start)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.bilingual_idle)).assertIsDisplayed()
         screenshot("bilingual-screen.png")
-        compose.onNodeWithTag("bilingual-mode").performClick()
-        compose.onNodeWithTag("bilingual-mode-side-by-side").performClick()
+        compose.onNodeWithTag("bilingual-settings").performClick()
+        compose.onNodeWithTag("bilingual-first-language").assertIsDisplayed()
+        compose.onNodeWithTag("bilingual-second-language").assertIsDisplayed()
+        compose.onNodeWithTag("bilingual-mode-side-by-side").performScrollTo().performClick()
+        compose.onNodeWithTag("bilingual-sound").performScrollTo().performClick()
+        screenshot("bilingual-settings.png")
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
+        compose.runOnIdle { assertEquals(0, exits) }
         compose.onNodeWithTag("bilingual-facing-self").assertDoesNotExist()
         compose.onNodeWithText(context.getString(R.string.bilingual_empty)).assertIsDisplayed()
-        compose.onNodeWithTag("bilingual-mode").performClick()
-        compose.onNodeWithTag("bilingual-mode-facing").performClick()
+        compose.onNodeWithTag("bilingual-settings").performClick()
+        compose.onNodeWithTag("bilingual-sound").performScrollTo().assertIsOff()
+        compose.onNodeWithTag("bilingual-mode-facing").performScrollTo().performClick()
+        compose.onNodeWithContentDescription(context.getString(com.we.meet.design.R.string.cd_back)).performClick()
+        compose.runOnIdle { assertEquals(0, exits) }
         compose.onNodeWithTag("bilingual-facing-self").assertIsDisplayed()
     }
 

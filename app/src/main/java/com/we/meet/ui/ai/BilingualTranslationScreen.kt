@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -18,8 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -30,7 +30,6 @@ import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
-import com.we.meet.feature.assistant.history.AssistantHistoryPreference
 import com.we.meet.feature.assistant.history.HistoryTextActions
 import com.we.meet.feature.assistant.R as AssistantR
 
@@ -46,46 +45,43 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
     val state by controller.state.collectAsStateWithLifecycle()
     var permissionDenied by remember { mutableStateOf(false) }
     var facing by rememberSaveable { mutableStateOf(true) }
-    var choosingMode by remember { mutableStateOf(false) }
+    var showSettings by rememberSaveable { mutableStateOf(false) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         permissionDenied = !granted
         if (granted && owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) controller.start()
     }
-    val back = { controller.stop(); onBack() }
+    val back = {
+        if (showSettings) showSettings = false
+        else { controller.stop(); onBack() }
+    }
     BackHandler(onBack = back)
     val listState = rememberLazyListState()
-    LaunchedEffect(state.rows.lastOrNull()?.id) {
-        if (state.rows.isNotEmpty()) listState.animateScrollToItem(state.rows.lastIndex)
+    LaunchedEffect(state.rows.lastOrNull()?.id, facing, showSettings) {
+        if (!showSettings && !facing && state.rows.isNotEmpty()) listState.animateScrollToItem(state.rows.lastIndex)
     }
-    Scaffold(topBar = { WeMeetTopBar(title = stringResource(R.string.bilingual_title), onBack = back, actions = {
-        Box {
-            TextButton(onClick = { choosingMode = true }, modifier = Modifier.testTag("bilingual-mode")) {
-                Text(stringResource(if (facing) AssistantR.string.assistant_facing_mode else AssistantR.string.assistant_side_by_side_mode))
-            }
-            DropdownMenu(expanded = choosingMode, onDismissRequest = { choosingMode = false }) {
-                listOf(true, false).forEach { faceToFace ->
-                    DropdownMenuItem(
-                        text = { Text(stringResource(if (faceToFace) AssistantR.string.assistant_facing_mode else AssistantR.string.assistant_side_by_side_mode)) },
-                        trailingIcon = { if (facing == faceToFace) Text("✓") },
-                        modifier = Modifier.testTag(if (faceToFace) "bilingual-mode-facing" else "bilingual-mode-side-by-side"),
-                        onClick = { facing = faceToFace; choosingMode = false },
-                    )
-                }
-            }
+    if (showSettings) {
+        BilingualTranslationSettingsScreen(
+            state = state,
+            facing = facing,
+            history = controller.history,
+            onSelectLanguage = controller::selectLanguage,
+            onFacingChange = { facing = it },
+            onSoundChange = controller::sound,
+            onBack = { showSettings = false },
+        )
+        return
+    }
+    Scaffold(topBar = { WeMeetTopBar(title = stringResource(R.string.bilingual_title), onBack = back,
+        subtitle = stringResource(R.string.bilingual_selected_pair,
+            stringResource(BilingualLanguages.label(state.pair.source)), stringResource(BilingualLanguages.label(state.pair.target))),
+        actions = {
+        IconButton(onClick = { showSettings = true }, modifier = Modifier.testTag("bilingual-settings")) {
+            Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.bilingual_settings_title))
         }
     }) }) { insets ->
         Column(Modifier.fillMaxSize().padding(insets).padding(horizontal = Dimens.ScreenPadding)) {
-            BilingualLanguageSelectors(state, controller::selectLanguage)
-            if (!state.active) AssistantHistoryPreference(controller.history)
-            if (!facing) Text(stringResource(R.string.bilingual_hint), style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS), verticalAlignment = Alignment.CenterVertically) {
-                val soundLabel = stringResource(R.string.bilingual_sound)
-                Text(soundLabel, Modifier.weight(1f))
-                Switch(checked = state.sound, onCheckedChange = controller::sound,
-                    modifier = Modifier.semantics { contentDescription = soundLabel })
-            }
+            Spacer(Modifier.height(Dimens.SpaceM))
             val status = when {
                 permissionDenied -> R.string.bilingual_permission
                 state.inputPaused && state.active -> AssistantR.string.assistant_background_paused

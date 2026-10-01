@@ -1,6 +1,11 @@
 <resources>
     <string name="bilingual_audio_omitted">该段译音缓冲已达上限，仅显示译文，对话可继续。</string>
     <string name="bilingual_title">双语互译</string>
+    <string name="bilingual_settings_title">双语互译设置</string>
+    <string name="bilingual_languages">翻译语言</string>
+    <string name="bilingual_display_mode">显示模式</string>
+    <string name="bilingual_selected_pair">%1$s ⇄ %2$s</string>
+    <string name="bilingual_settings_locked">结束翻译后可更改语言和文字保存设置。</string>
     <string name="bilingual_subtitle">任选两种语言，自动识别并实时互译</string>
     <string name="bilingual_pair">中文 ⇄ 英文</string>
     <string name="bilingual_hint">点击开始后，双方轮流说话，自动识别翻译方向。播报时暂停语音输入；关闭播报可持续收音。</string>
