@@ -6,6 +6,7 @@ import com.we.meet.data.api.AssistantTranslationApi
 import com.we.meet.data.api.AssistantTranslationPair
 import com.we.meet.data.api.AssistantTranslationTicket
 import com.we.meet.data.capture.CapturePcmSource
+import com.we.meet.data.capture.AndroidTranslationOutput
 import com.we.meet.data.capture.CaptureTranslationWire
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
@@ -93,15 +94,48 @@ class BilingualTranslationTest {
             assertEquals(listOf("fr", "ja"), f.controller.state.value.rows.map { it.targetLanguage })
         } finally { main { f.controller.close() } }
     }
-    private class Fixture(val api: Api = Api()) {
+    private class Fixture(val api: Api = Api(), realPlayback: Boolean = false) {
         val microphone = Microphone()
         val output = Output()
         @Volatile var wire: Wire? = null
         var opened = false
         val controller = BilingualTranslationController(
             InstrumentationRegistry.getInstrumentation().targetContext, api, { true },
-            { opened = true; microphone }, { output }, { _, listener -> Wire(listener).also { wire = it } },
+            { opened = true; microphone }, { interrupted ->
+                if (!realPlayback) output else {
+                    val delegate = AndroidTranslationOutput(InstrumentationRegistry.getInstrumentation().targetContext, interrupted)
+                    object : BilingualAudioOutput {
+                        override fun open() = delegate.open()
+                        override fun play(samples: ShortArray) = delegate.play(samples)
+                        override fun finishTurn() = delegate.finishTurn()
+                        override val pendingSamples get() = delegate.pendingSamples
+                        override fun close() = delegate.close()
+                    }
+                }
+            }, { _, listener -> Wire(listener).also { wire = it } },
         )
+    }
+
+    @Test fun repeatedShortRepliesWithRealAudioTrackReturnToListeningWithoutDisconnect() {
+        val f = Fixture(realPlayback = true)
+        try {
+            main { f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.wire!!.pcm.isNotEmpty() }
+            repeat(3) { turn ->
+                val id = "short-$turn"
+                f.wire!!.listener.message(JSONObject().put("type", "audio").put("id", id)
+                    .put("audio", android.util.Base64.encodeToString(ByteArray(14400), android.util.Base64.NO_WRAP)).toString())
+                f.wire!!.listener.message(JSONObject().put("type", "audio_end").put("id", id).toString())
+                waitFor { f.controller.state.value.phase == BilingualPhase.SPEAKING }
+                waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+                assertFalse(f.wire!!.closed.get())
+            }
+            // Let the old five-second drain timeout elapse to detect a late failure.
+            Thread.sleep(5500)
+            assertEquals(BilingualPhase.LISTENING, f.controller.state.value.phase)
+            assertFalse(f.wire!!.closed.get())
+        } finally { main { f.controller.close() } }
     }
 
     @Test fun microphoneWaitsForReadyAndCloseReleasesEveryResource() {

@@ -42,6 +42,7 @@ internal data class BilingualState(
 internal interface BilingualAudioOutput : Closeable {
     fun open()
     fun play(samples: ShortArray)
+    fun finishTurn() = Unit
     val pendingSamples: Long
 }
 
@@ -58,6 +59,7 @@ internal class BilingualTranslationController(
         object : BilingualAudioOutput {
             override fun open() = delegate.open()
             override fun play(samples: ShortArray) = delegate.play(samples)
+            override fun finishTurn() = delegate.finishTurn()
             override val pendingSamples get() = delegate.pendingSamples
             override fun close() = delegate.close()
         }
@@ -207,6 +209,7 @@ internal class BilingualTranslationController(
                         if (packet == null) { audioReady.receive(); continue }
                         val bytes = packet.audio
                         if (bytes == null) {
+                            checkNotNull(output).finishTurn()
                             withTimeout(5000) { while (checkNotNull(output).pendingSamples > 0) delay(20) }
                             // Release echo protection only after the complete response and its tail.
                             if (speaking.get()) delay(350)
