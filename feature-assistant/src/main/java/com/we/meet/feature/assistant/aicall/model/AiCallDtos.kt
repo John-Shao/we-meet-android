@@ -46,11 +46,12 @@ data class AiAgentConfigResponse(
     fun resolveSelection(selection: AiCallSelection): AiCallSelection {
         val profile = callProfile()
         val voices = profile?.voices.orEmpty()
-        return AiCallSelection(
+        return selection.copy(
             voiceId = selection.voiceId?.takeIf { id -> voices.any { it.id == id } }
                 ?: profile?.default_voice_id?.takeIf { id -> voices.any { it.id == id } }
                 ?: voices.firstOrNull()?.id,
             promptId = selection.promptId?.takeIf { id -> prompts.any { it.id == id } },
+            sceneId = com.we.meet.feature.assistant.scenes.AssistantScene.find(selection.sceneId)?.id,
         )
     }
 }
@@ -69,4 +70,7 @@ data class AiCallAnswer(
     val sdp: String,
     val voice: String,
     val instructions: String,
-)
+) {
+    fun forScene(id: String?): AiCallAnswer =
+        com.we.meet.feature.assistant.scenes.AssistantScene.find(id)?.let { copy(instructions = it.instructions) } ?: this
+}

@@ -300,6 +300,7 @@ fun AssistantCallScreen(
                     historyEnabled = !callInProgress,
                     onSelectVoice = vm::selectVoice,
                     onSelectPrompt = vm::selectPrompt,
+                    onSelectScene = vm::selectScene,
                     onDismiss = { vm.showPicker(false) },
                 )
             }

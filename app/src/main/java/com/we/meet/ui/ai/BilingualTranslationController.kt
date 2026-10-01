@@ -41,6 +41,7 @@ internal data class BilingualState(
     val replaying: Boolean = false,
     val replayError: Boolean = false,
     val inputPaused: Boolean = false,
+    val sceneId: String? = null,
 ) {
     val active get() = phase in setOf(BilingualPhase.CONNECTING, BilingualPhase.LISTENING, BilingualPhase.SPEAKING, BilingualPhase.FINISHING)
     override fun toString() = "BilingualState(<private>)"
@@ -78,9 +79,10 @@ internal class BilingualTranslationController(
         AssistantForegroundSession.start(context, AssistantSessionKind.TRANSLATION, camera = false, stopped = stopped)
     },
     val history: com.we.meet.feature.assistant.history.AssistantHistoryStore? = null,
+    private val preferences: BilingualPreferences? = null,
 ) : Closeable {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val mutable = MutableStateFlow(BilingualState())
+    private val mutable = MutableStateFlow(preferences?.load() ?: BilingualState())
     val state = mutable.asStateFlow()
     private var active: Session? = null
     private val replayCache = BilingualReplayCache()
@@ -163,7 +165,8 @@ internal class BilingualTranslationController(
     }
 
     fun sound(enabled: Boolean) {
-        mutable.update { it.copy(sound = enabled) }
+        mutable.update { if (it.sound == enabled) it else it.copy(sound = enabled, sceneId = null) }
+        preferences?.save(mutable.value)
         active?.setSound(enabled)
     }
     fun pauseInput(paused: Boolean) {
@@ -175,7 +178,19 @@ internal class BilingualTranslationController(
         mutable.update { it.copy(
             pair = BilingualLanguages.select(it.pair, first, language),
             unknownLanguage = false,
+            sceneId = null,
         ) }
+        preferences?.save(mutable.value)
+    }
+    fun selectScene(id: String?) {
+        if (active != null) return
+        val scene = com.we.meet.feature.assistant.scenes.AssistantScene.find(id)
+        if (id != null && scene?.translation != true) return
+        mutable.update { if (scene == null) it.copy(sceneId = null) else it.copy(
+            sceneId = scene.id, pair = AssistantTranslationPair(scene.sourceLanguage, scene.targetLanguage),
+            sound = true, unknownLanguage = false,
+        ) }
+        preferences?.save(mutable.value)
     }
     fun finish() {
         if (mutable.value.phase == BilingualPhase.CONNECTING) stop()

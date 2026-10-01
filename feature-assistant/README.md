@@ -1,6 +1,6 @@
 # AI 电话
 
-「AI 助手 → 打电话」使用 Qwen 3.8 Omni WebRTC 直连。普通会议的 LiveKit 通话不受影响。
+「AI 工具 → 打电话」使用 Qwen 3.8 Omni WebRTC 直连。普通会议的 LiveKit 通话不受影响。
 
 - 客户端从目录读取 `model_code=aliyun/qwen3.8-omni-flash-realtime` 的 profile。
 - 音色和提示词共用一套选择；旧版视频设置优先迁入，失效音色按新目录默认值回退。
@@ -84,3 +84,11 @@ AI 电话与双语互译共用 `AssistantForegroundService`，在用户可见页
 原文引用与勾选；`AssistantForegroundSessionTest` 覆盖后台控制与旧通知隔离；
 `BilingualTranslationTest` 覆盖暂停静音帧及恢复；`BilingualTranslationUiTest` 覆盖双向分屏。
 后端：`core/tests/test_assistant_summary.py`，模型响应使用桩，不依赖付费外部服务。
+
+### P2：场景预设
+
+- 打电话设置提供英语旅行、日语旅行、商务沟通、英语口语陪练。选中场景后使用内置提示词和对应交流语言，保留音色；切回「自定义 / 默认」可选择目录提示词。连接中或通话中不能修改预设。
+- 预设提示词沿用现有 `session.update` 的 instructions，应用于下一次通话；无需更改后端 SDP 接口或供应商协议。旅行强调实用表达，商务强调准确的数字与承诺，陪练每轮一个问题并温和纠错。
+- 双语互译设置提供英语旅行、日语旅行、商务沟通，一键设为中文与英语/日语并开启播报。互译保持原意，不使用陪练提示词。手动调整语言或播报会切回自定义；设置按当前账号保存在本机，重新进入页面会恢复。会话进行中不能更换预设或语言。
+- 两类预设均不改动文字保存开关、摄像头开关或已有会话记录。只需更新 Android App；无需发布后端或 agents。
+- 验证：`AssistantSceneTest` 覆盖语言/播报一并应用、配置恢复及账号隔离；`AiCallConfigTest` 覆盖目录解析保留场景；`BilingualTranslationUiTest` 覆盖预设选择与语言显示。

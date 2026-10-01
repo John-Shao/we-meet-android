@@ -5,6 +5,18 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class AiCallConfigTest {
+    @Test fun sceneUsesItsPromptAndPreservesTransportAndVoice() {
+        val answer = AiCallAnswer("sdp-answer", "Tina", "catalog-prompt")
+        val preset = com.we.meet.feature.assistant.scenes.AssistantScene.PRACTICE
+        assertEquals(answer.copy(instructions = preset.instructions), answer.forScene(preset.id))
+        assertEquals(answer, answer.forScene(null))
+        assertEquals(answer, answer.forScene("removed"))
+    }
+    @Test fun sceneSurvivesCatalogResolutionAndUnknownSceneFallsBack() {
+        val selection = AiCallSelection(voiceId = "ryan-id", sceneId = "practice")
+        assertEquals(selection, config.resolveSelection(selection))
+        assertNull(config.resolveSelection(selection.copy(sceneId = "removed")).sceneId)
+    }
     private val qwen = AiProfileDto(
         code = "custom-qwen-profile",
         agent_type = "video",

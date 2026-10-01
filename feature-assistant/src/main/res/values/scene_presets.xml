@@ -1,0 +1,15 @@
+<resources>
+    <string name="assistant_scene_title">Scenario preset</string>
+    <string name="assistant_scene_custom">Custom / default</string>
+    <string name="assistant_scene_travel">Travel (English)</string>
+    <string name="assistant_scene_travel_ja">Travel (Japanese)</string>
+    <string name="assistant_scene_business">Business communication</string>
+    <string name="assistant_scene_practice">English conversation practice</string>
+    <string name="assistant_scene_travel_hint">Chinese explanations and useful English phrases for directions, hotels and dining.</string>
+    <string name="assistant_scene_travel_ja_hint">Chinese explanations and polite Japanese phrases for travel in Japan.</string>
+    <string name="assistant_scene_business_hint">Professional Chinese–English communication with accurate numbers, dates and commitments.</string>
+    <string name="assistant_scene_practice_hint">English conversation with Chinese support, one question at a time and gentle grammar corrections.</string>
+    <string name="assistant_scene_translation_hint">Applies the preset languages and enables speech playback. Translation stays faithful to the original. Changing languages or playback switches to custom.</string>
+    <string name="assistant_scene_pair_en">Chinese ⇄ English · Speech playback on</string>
+    <string name="assistant_scene_pair_ja">Chinese ⇄ Japanese · Speech playback on</string>
+</resources>

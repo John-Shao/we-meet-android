@@ -27,6 +27,7 @@ class AiCallPreferences(context: Context) {
         return AiCallSelection(
             voiceId = prefs.getString("call_voice_id", null),
             promptId = prefs.getString("call_prompt_id", null),
+            sceneId = com.we.meet.feature.assistant.scenes.AssistantScene.find(prefs.getString("call_scene_id", null))?.id,
         )
     }
 
@@ -35,6 +36,7 @@ class AiCallPreferences(context: Context) {
             putBoolean("unified_selection", true)
             putString("call_voice_id", selection.voiceId)
             putString("call_prompt_id", selection.promptId)
+            putString("call_scene_id", selection.sceneId)
             for (prefix in listOf("voice", "video")) {
                 for (suffix in listOf("profile_code", "voice_id", "prompt_id")) {
                     remove("${prefix}_${suffix}")

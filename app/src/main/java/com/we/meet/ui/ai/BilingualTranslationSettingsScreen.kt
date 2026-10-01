@@ -33,11 +33,18 @@ internal fun BilingualTranslationSettingsScreen(
     onFacingChange: (Boolean) -> Unit,
     onSoundChange: (Boolean) -> Unit,
     onBack: () -> Unit,
+    onSelectScene: (String?) -> Unit,
 ) {
     Scaffold(topBar = {
         WeMeetTopBar(title = stringResource(R.string.bilingual_settings_title), onBack = onBack)
     }) { insets ->
         Column(Modifier.fillMaxSize().padding(insets).verticalScroll(rememberScrollState())) {
+            Spacer(Modifier.height(Dimens.SpaceL))
+            SettingsGroup {
+                com.we.meet.feature.assistant.scenes.AssistantScenePicker(state.sceneId, onSelectScene,
+                    translationOnly = true, enabled = !state.active,
+                    modifier = Modifier.padding(Dimens.ScreenPadding))
+            }
             SettingsGroupHeader(stringResource(R.string.bilingual_languages))
             SettingsGroup {
                 Box(Modifier.padding(horizontal = Dimens.ScreenPadding)) {

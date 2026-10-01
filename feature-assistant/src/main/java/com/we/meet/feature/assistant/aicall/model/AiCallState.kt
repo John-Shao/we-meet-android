@@ -22,6 +22,7 @@ sealed interface AiCallStatus {
 data class AiCallSelection(
     val voiceId: String? = null,
     val promptId: String? = null,
+    val sceneId: String? = null,
 )
 
 data class AiCallUiState(

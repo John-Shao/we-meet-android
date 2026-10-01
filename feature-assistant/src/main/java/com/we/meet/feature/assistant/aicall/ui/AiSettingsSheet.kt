@@ -44,6 +44,7 @@ fun AiSettingsSheet(
     historyEnabled: Boolean,
     onSelectVoice: (String?) -> Unit,
     onSelectPrompt: (String?) -> Unit,
+    onSelectScene: (String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -53,6 +54,9 @@ fun AiSettingsSheet(
         sheetState = sheetState,
     ) {
         Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = Dimens.SpaceXl)) {
+            Spacer(modifier = Modifier.height(Dimens.SpaceM))
+            com.we.meet.feature.assistant.scenes.AssistantScenePicker(selection.sceneId, onSelectScene,
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl), enabled = historyEnabled)
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
             CallConfigSection(config, selection, onSelectVoice, onSelectPrompt)
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
@@ -93,14 +97,16 @@ private fun CallConfigSection(
         enabled = voices.isNotEmpty(),
     )
     Spacer(modifier = Modifier.height(Dimens.SpaceS))
-    SectionLabel(stringResource(R.string.assistant_section_prompt))
-    val defaultLabel = stringResource(R.string.assistant_prompt_default)
-    Dropdown(
-        value = prompts.firstOrNull { it.id == resolved?.promptId }?.label ?: defaultLabel,
-        options = listOf(defaultLabel) + prompts.map { it.label },
-        onSelect = { onSelectPrompt(if (it == 0) null else prompts[it - 1].id) },
-        enabled = true,
-    )
+    if (selection.sceneId == null) {
+        SectionLabel(stringResource(R.string.assistant_section_prompt))
+        val defaultLabel = stringResource(R.string.assistant_prompt_default)
+        Dropdown(
+            value = prompts.firstOrNull { it.id == resolved?.promptId }?.label ?: defaultLabel,
+            options = listOf(defaultLabel) + prompts.map { it.label },
+            onSelect = { onSelectPrompt(if (it == 0) null else prompts[it - 1].id) },
+            enabled = true,
+        )
+    }
 }
 
 @Composable

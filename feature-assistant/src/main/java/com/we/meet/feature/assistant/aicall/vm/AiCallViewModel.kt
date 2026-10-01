@@ -82,7 +82,8 @@ class AiCallViewModel(
                     stopped = { endCall(R.string.assistant_disconnected_ended) })
                 client.connect { sdp ->
                     _state.update { it.copy(status = AiCallStatus.Connecting(ConnectingStep.Configuring)) }
-                    agentRepo.exchangeOffer(AiCallOffer(sdp, config.callProfile()!!.code, selection.voiceId, selection.promptId))
+                    val answer = agentRepo.exchangeOffer(AiCallOffer(sdp, config.callProfile()!!.code, selection.voiceId, selection.promptId))
+                    answer.forScene(selection.sceneId)
                 }
                 if (_state.value.mode == AiCallMode.Video) client.setCameraEnabled(true)
                 _state.update { it.copy(status = AiCallStatus.Active(it.mode), isCameraEnabled = it.mode == AiCallMode.Video, cameraFront = client.cameraFront) }
@@ -191,8 +192,13 @@ class AiCallViewModel(
     }
 
     fun selectVoice(id: String?) = updateSelection(_state.value.selection.copy(voiceId = id))
-    fun selectPrompt(id: String?) = updateSelection(_state.value.selection.copy(promptId = id))
+    fun selectPrompt(id: String?) = updateSelection(_state.value.selection.copy(promptId = id, sceneId = null))
+    fun selectScene(id: String?) {
+        if (id != null && com.we.meet.feature.assistant.scenes.AssistantScene.find(id) == null) return
+        updateSelection(_state.value.selection.copy(sceneId = id, promptId = null))
+    }
     private fun updateSelection(selection: AiCallSelection) {
+        if (_state.value.status is AiCallStatus.Active || _state.value.status is AiCallStatus.Connecting) return
         prefs.save(selection)
         _state.update { it.copy(selection = selection) }
     }

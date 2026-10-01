@@ -14,6 +14,7 @@ internal class BilingualTranslationViewModel(val controller: BilingualTranslatio
             require(modelClass.isAssignableFrom(BilingualTranslationViewModel::class.java))
             return BilingualTranslationViewModel(BilingualTranslationController(app, app.apiClient.assistantTranslationApi,
                 authorized = { user != null && app.captureAccount == user },
+                preferences = user?.let { BilingualPreferences(app, it) },
                 history = user?.let { com.we.meet.feature.assistant.history.AssistantHistoryStore.get(app, it) { app.captureAccount } })) as T
         }
     }
