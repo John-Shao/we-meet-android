@@ -14,7 +14,9 @@
     <string name="assistant_scene_travel_ja_hint">中文解释与礼貌日语表达，适合在日本旅行交流。</string>
     <string name="assistant_scene_business_hint">中英商务沟通，准确保留数字、日期和承诺，表达专业简洁。</string>
     <string name="assistant_scene_practice_hint">英语对话、中文辅助，每轮一个问题，温和纠正语法和用词。</string>
-    <string name="assistant_scene_translation_hint">已应用预设语言并开启播报，仍按原意忠实互译。手动调整语言或播报将切换为自定义。</string>
+    <string name="assistant_scene_translation_hint">场景、语言和语音播报独立保存。当前场景仅记录使用偏好，尚不影响翻译结果。</string>
+    <string name="assistant_translation_scene_general">通用交流</string>
+    <string name="assistant_translation_scene_travel">旅行交流</string>
     <string name="assistant_scene_pair_en">中文 ⇄ 英语 · 开启语音播报</string>
     <string name="assistant_scene_pair_ja">中文 ⇄ 日语 · 开启语音播报</string>
 </resources>

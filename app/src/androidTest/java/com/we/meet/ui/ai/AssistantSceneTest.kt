@@ -16,11 +16,12 @@ class AssistantSceneTest {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             try {
                 controller.selectScene("travel_ja")
+                controller.selectLanguage(false, "ja")
                 controller.start()
                 assertEquals(BilingualPhase.CONNECTING, controller.state.value.phase)
                 controller.selectScene("business")
                 controller.selectLanguage(false, "en")
-                assertEquals("travel_ja", controller.state.value.sceneId)
+                assertEquals("travel", controller.state.value.sceneId)
                 assertEquals("ja", controller.state.value.pair.target)
             } finally { controller.close() }
         }
@@ -30,27 +31,47 @@ class AssistantSceneTest {
         override suspend fun ticket(pair: AssistantTranslationPair): AssistantTranslationTicket = error("No provider calls")
     }
 
-    @Test fun translationPresetAppliesAtomicallyPersistsAndAllowsCustomLanguages() {
+    @Test fun translationSceneLanguagesAndSoundPersistIndependently() {
         val account = "scene-${UUID.randomUUID()}"
         val prefs = BilingualPreferences(context, account)
         val controller = BilingualTranslationController(context, api, { true }, preferences = prefs)
         try {
             controller.sound(false)
-            controller.selectScene("travel_ja")
+            controller.selectLanguage(false, "ja")
+            controller.selectScene("travel")
             assertEquals(AssistantTranslationPair("zh", "ja"), controller.state.value.pair)
-            assertTrue(controller.state.value.sound)
-            assertEquals("travel_ja", BilingualPreferences(context, account).load().sceneId)
+            assertFalse(controller.state.value.sound)
+            assertEquals("travel", BilingualPreferences(context, account).load().sceneId)
             controller.selectScene("practice") // A tutor must not be offered as a translator.
-            assertEquals("travel_ja", controller.state.value.sceneId)
+            assertEquals("travel", controller.state.value.sceneId)
             controller.selectLanguage(false, "fr")
-            assertNull(controller.state.value.sceneId)
+            assertEquals("travel", controller.state.value.sceneId)
             assertEquals("fr", BilingualPreferences(context, account).load().pair.target)
             controller.selectScene("business")
+            assertEquals("fr", controller.state.value.pair.target)
+            assertFalse(controller.state.value.sound)
+            controller.sound(true)
+            assertEquals("business", controller.state.value.sceneId)
             controller.sound(false)
+            val restored = BilingualPreferences(context, account).load()
+            assertEquals("business", restored.sceneId)
+            assertEquals("fr", restored.pair.target)
+            assertFalse(restored.sound)
+            controller.selectScene(null)
             assertNull(controller.state.value.sceneId)
+            assertEquals("fr", controller.state.value.pair.target)
             assertFalse(BilingualPreferences(context, account).load().sound)
             assertEquals(BilingualState(), BilingualPreferences(context, "other-${UUID.randomUUID()}").load())
         } finally { controller.close() }
+    }
+
+    @Test fun legacyTravelPreferencesKeepLanguagesAndPlayback() {
+        for (legacyId in listOf("travel", "travel_ja")) {
+            val prefs = BilingualPreferences(context, "legacy-${UUID.randomUUID()}")
+            val pair = AssistantTranslationPair("de", "ja")
+            prefs.save(BilingualState(pair = pair, sound = false, sceneId = legacyId))
+            assertEquals(BilingualState(pair = pair, sound = false, sceneId = "travel"), prefs.load())
+        }
     }
 
     @Test fun callPresetPersistsAlongsideVoiceAndCustomPrompt() {

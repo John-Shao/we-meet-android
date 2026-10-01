@@ -2,7 +2,7 @@ package com.we.meet.ui.ai
 
 import android.content.Context
 import com.we.meet.data.api.AssistantTranslationPair
-import com.we.meet.feature.assistant.scenes.AssistantScene
+import com.we.meet.feature.assistant.scenes.TranslationScene
 import java.security.MessageDigest
 
 /** Only settings are persisted; this does not store conversation text or audio. */
@@ -15,9 +15,7 @@ internal class BilingualPreferences(context: Context, account: String) {
         val pair = AssistantTranslationPair(prefs.getString("source", "zh") ?: "zh", prefs.getString("target", "en") ?: "en")
             .takeIf(BilingualLanguages::valid) ?: AssistantTranslationPair()
         val sound = prefs.getBoolean("sound", true)
-        val scene = AssistantScene.find(prefs.getString("scene", null))?.takeIf {
-            it.translation && it.sourceLanguage == pair.source && it.targetLanguage == pair.target && sound
-        }
+        val scene = TranslationScene.find(prefs.getString("scene", null))
         return BilingualState(pair = pair, sound = sound, sceneId = scene?.id)
     }
 

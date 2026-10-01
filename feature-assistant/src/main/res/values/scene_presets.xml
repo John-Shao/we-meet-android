@@ -14,7 +14,9 @@
     <string name="assistant_scene_travel_ja_hint">Chinese explanations and polite Japanese phrases for travel in Japan.</string>
     <string name="assistant_scene_business_hint">Professional Chinese–English communication with accurate numbers, dates and commitments.</string>
     <string name="assistant_scene_practice_hint">English conversation with Chinese support, one question at a time and gentle grammar corrections.</string>
-    <string name="assistant_scene_translation_hint">Applies the preset languages and enables speech playback. Translation stays faithful to the original. Changing languages or playback switches to custom.</string>
+    <string name="assistant_scene_translation_hint">Scenario, languages and speech playback are saved independently. The scenario currently records your preference only and does not affect translation results.</string>
+    <string name="assistant_translation_scene_general">General conversation</string>
+    <string name="assistant_translation_scene_travel">Travel</string>
     <string name="assistant_scene_pair_en">Chinese ⇄ English · Speech playback on</string>
     <string name="assistant_scene_pair_ja">Chinese ⇄ Japanese · Speech playback on</string>
 </resources>

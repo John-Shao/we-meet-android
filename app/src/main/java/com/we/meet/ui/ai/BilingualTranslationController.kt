@@ -165,7 +165,7 @@ internal class BilingualTranslationController(
     }
 
     fun sound(enabled: Boolean) {
-        mutable.update { if (it.sound == enabled) it else it.copy(sound = enabled, sceneId = null) }
+        mutable.update { it.copy(sound = enabled) }
         preferences?.save(mutable.value)
         active?.setSound(enabled)
     }
@@ -178,18 +178,14 @@ internal class BilingualTranslationController(
         mutable.update { it.copy(
             pair = BilingualLanguages.select(it.pair, first, language),
             unknownLanguage = false,
-            sceneId = null,
         ) }
         preferences?.save(mutable.value)
     }
     fun selectScene(id: String?) {
         if (active != null) return
-        val scene = com.we.meet.feature.assistant.scenes.AssistantScene.find(id)
-        if (id != null && scene?.translation != true) return
-        mutable.update { if (scene == null) it.copy(sceneId = null) else it.copy(
-            sceneId = scene.id, pair = AssistantTranslationPair(scene.sourceLanguage, scene.targetLanguage),
-            sound = true, unknownLanguage = false,
-        ) }
+        val scene = com.we.meet.feature.assistant.scenes.TranslationScene.find(id)
+        if (id != null && scene == null) return
+        mutable.update { it.copy(sceneId = scene?.id) }
         preferences?.save(mutable.value)
     }
     fun finish() {

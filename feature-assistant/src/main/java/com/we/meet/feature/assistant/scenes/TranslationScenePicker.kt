@@ -13,23 +13,22 @@ import com.we.meet.ui.components.SettingsRow
 import com.we.meet.ui.theme.Dimens
 
 @Composable
-fun AssistantScenePicker(
+fun TranslationScenePicker(
     selected: String?,
     onSelect: (String?) -> Unit,
     modifier: Modifier = Modifier,
-    translationOnly: Boolean = false,
     enabled: Boolean = true,
 ) {
     var choosing by remember { mutableStateOf(false) }
-    val scene = AssistantScene.find(selected)
-    val options = AssistantScene.entries.filter { !translationOnly || it.translation }
+    val scene = TranslationScene.find(selected)
+    val options = TranslationScene.entries
     Column(modifier) {
         OutlinedButton(onClick = { choosing = true }, enabled = enabled,
             modifier = Modifier.fillMaxWidth().testTag("assistant-scene-picker")) {
             Text(stringResource(R.string.assistant_scene_title) + ": " +
-                stringResource(scene?.label ?: R.string.assistant_scene_custom))
+                stringResource(scene?.label ?: R.string.assistant_translation_scene_general))
         }
-        if (scene != null) Text(stringResource(if (translationOnly) R.string.assistant_scene_translation_hint else scene.description),
+        Text(stringResource(R.string.assistant_scene_translation_hint),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Dimens.SpaceS))
     }
@@ -39,14 +38,13 @@ fun AssistantScenePicker(
         text = {
             LazyColumn {
                 item {
-                    SettingsRow(label = stringResource(R.string.assistant_scene_custom),
+                    SettingsRow(label = stringResource(R.string.assistant_translation_scene_general),
                         modifier = Modifier.testTag("assistant-scene-custom"),
                         onClick = { onSelect(null); choosing = false },
                         trailing = { RadioButton(selected = scene == null, onClick = null) })
                 }
                 items(options, key = { it.id }) { option ->
                     SettingsRow(label = stringResource(option.label),
-                        subtitle = stringResource(if (!translationOnly) option.description else if (option.targetLanguage == "ja") R.string.assistant_scene_pair_ja else R.string.assistant_scene_pair_en),
                         modifier = Modifier.testTag("assistant-scene-${option.id}"),
                         onClick = { onSelect(option.id); choosing = false },
                         trailing = { RadioButton(selected = scene == option, onClick = null) })

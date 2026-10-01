@@ -41,8 +41,8 @@ internal fun BilingualTranslationSettingsScreen(
         Column(Modifier.fillMaxSize().padding(insets).verticalScroll(rememberScrollState())) {
             Spacer(Modifier.height(Dimens.SpaceL))
             SettingsGroup {
-                com.we.meet.feature.assistant.scenes.AssistantScenePicker(state.sceneId, onSelectScene,
-                    translationOnly = true, enabled = !state.active,
+                com.we.meet.feature.assistant.scenes.TranslationScenePicker(state.sceneId, onSelectScene,
+                    enabled = !state.active,
                     modifier = Modifier.padding(Dimens.ScreenPadding))
             }
             SettingsGroupHeader(stringResource(R.string.bilingual_languages))
