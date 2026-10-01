@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.feature.assistant.R
 import com.we.meet.ui.theme.Dimens
@@ -79,11 +80,16 @@ fun HistoryTextActions(text: String, replay: (() -> Unit)? = null, replayEnabled
 }
 
 @Composable
-fun AssistantHistoryPreference(store: AssistantHistoryStore?, kind: String, enabled: Boolean = true) {
+fun AssistantHistoryPreference(
+    store: AssistantHistoryStore?,
+    kind: String,
+    enabled: Boolean = true,
+    horizontalPadding: Dp = Dimens.ScreenPadding,
+) {
     if (store == null) return
     val save by store.enabled(kind).collectAsStateWithLifecycle()
     val failed by store.error.collectAsStateWithLifecycle()
-    Column(Modifier.padding(horizontal = Dimens.ScreenPadding)) {
+    Column(Modifier.padding(horizontal = horizontalPadding)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.assistant_history_save), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
             Switch(checked = save, onCheckedChange = { store.setEnabled(kind, it) }, enabled = enabled)

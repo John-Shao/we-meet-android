@@ -56,7 +56,8 @@ fun AiSettingsSheet(
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
             CallConfigSection(config, selection, onSelectVoice, onSelectPrompt)
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
-            AssistantHistoryPreference(historyStore, kind = "call", enabled = historyEnabled)
+            AssistantHistoryPreference(historyStore, kind = "call", enabled = historyEnabled,
+                horizontalPadding = Dimens.SpaceXl)
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
         }
     }
