@@ -27,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import com.we.meet.feature.assistant.aicall.model.AiAgentConfigResponse
 import com.we.meet.feature.assistant.aicall.model.AiCallSelection
@@ -87,7 +88,7 @@ private fun CallConfigSection(
     )
     Spacer(modifier = Modifier.height(Dimens.SpaceS))
     SectionLabel(stringResource(R.string.assistant_section_voice))
-    Dropdown(
+    CallSettingsDropdown(
         value = voices.firstOrNull { it.id == resolved?.voiceId }
             ?.let { it.label ?: it.value } ?: "",
         options = voices.map { it.label ?: it.value },
@@ -112,20 +113,20 @@ private fun SectionLabel(text: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Dropdown(
+internal fun CallSettingsDropdown(
     value: String,
     options: List<String>,
     onSelect: (Int) -> Unit,
     enabled: Boolean,
+    modifier: Modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
+    optionTag: ((Int) -> String)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { if (enabled) expanded = it },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.SpaceXl),
+        modifier = modifier.fillMaxWidth(),
     ) {
         OutlinedTextField(
             value = value,
@@ -147,6 +148,7 @@ private fun Dropdown(
             options.forEachIndexed { idx, label ->
                 DropdownMenuItem(
                     text = { Text(label) },
+                    modifier = optionTag?.let { Modifier.testTag(it(idx)) } ?: Modifier,
                     onClick = {
                         onSelect(idx)
                         expanded = false

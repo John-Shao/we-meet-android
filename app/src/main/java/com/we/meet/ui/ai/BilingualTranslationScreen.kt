@@ -126,13 +126,8 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                 LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState,
                     contentPadding = PaddingValues(vertical = Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                     items(state.rows, key = { it.id }) { row ->
-                        Card(Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                                Text(stringResource(R.string.bilingual_direction,
-                                    stringResource(BilingualLanguages.label(row.sourceLanguage)), stringResource(BilingualLanguages.label(row.targetLanguage))),
-                                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                Text(row.source, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(row.text, style = MaterialTheme.typography.bodyLarge)
+                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                 HistoryTextActions(
                                     text = stringResource(R.string.bilingual_direction,
                                         stringResource(BilingualLanguages.label(row.sourceLanguage)), stringResource(BilingualLanguages.label(row.targetLanguage))) + "\n${row.source}\n${row.text}",
@@ -140,30 +135,44 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                                     replayEnabled = !state.replaying && (!state.active || state.phase == BilingualPhase.LISTENING),
                                 )
                             }
+                            Card(Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                                    Text(stringResource(R.string.bilingual_direction,
+                                        stringResource(BilingualLanguages.label(row.sourceLanguage)), stringResource(BilingualLanguages.label(row.targetLanguage))),
+                                        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                    Text(row.source, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(row.text, style = MaterialTheme.typography.bodyLarge)
+                                }
+                            }
                         }
                     }
                 }
             }
-            if (state.active && state.phase != BilingualPhase.CONNECTING && state.phase != BilingualPhase.FINISHING) {
-                TextButton(onClick = { controller.pauseInput(!state.inputPaused) }, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(if (state.inputPaused) AssistantR.string.assistant_background_resume else AssistantR.string.assistant_background_pause))
-                }
-            }
-            Button(
-                onClick = {
-                    permissionDenied = false
-                    if (state.active) controller.finish()
-                    else {
-                        val needed = buildList {
-                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) add(Manifest.permission.RECORD_AUDIO)
-                            if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) add(Manifest.permission.POST_NOTIFICATIONS)
-                        }
-                        if (needed.isEmpty()) controller.start() else permission.launch(needed.toTypedArray())
+            Row(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceL),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
+                verticalAlignment = Alignment.CenterVertically) {
+                if (state.active && state.phase != BilingualPhase.CONNECTING && state.phase != BilingualPhase.FINISHING) {
+                    OutlinedButton(onClick = { controller.pauseInput(!state.inputPaused) },
+                        modifier = Modifier.weight(1f).height(Dimens.ButtonHeight)) {
+                        Text(stringResource(if (state.inputPaused) AssistantR.string.assistant_background_resume else AssistantR.string.assistant_background_pause))
                     }
-                },
-                enabled = state.phase != BilingualPhase.FINISHING,
-                modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceL).height(Dimens.ButtonHeight),
-            ) { Text(stringResource(if (state.active) R.string.bilingual_stop else R.string.bilingual_start)) }
+                }
+                Button(
+                    onClick = {
+                        permissionDenied = false
+                        if (state.active) controller.finish()
+                        else {
+                            val needed = buildList {
+                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) add(Manifest.permission.RECORD_AUDIO)
+                                if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) add(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                            if (needed.isEmpty()) controller.start() else permission.launch(needed.toTypedArray())
+                        }
+                    },
+                    enabled = state.phase != BilingualPhase.FINISHING,
+                    modifier = Modifier.weight(1f).height(Dimens.ButtonHeight),
+                ) { Text(stringResource(if (state.active) R.string.bilingual_stop else R.string.bilingual_start)) }
+            }
         }
     }
 }
