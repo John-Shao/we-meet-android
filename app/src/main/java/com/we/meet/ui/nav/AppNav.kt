@@ -762,7 +762,7 @@ fun AppNav() {
             val account = app.assistantAccount
             if (account != null) {
                 val store = remember(account) { com.we.meet.feature.assistant.history.AssistantHistoryStore.get(app, account) { app.assistantAccount } }
-                com.we.meet.feature.assistant.history.AssistantHistoryScreen(store, rememberOnceOnly(safePop))
+                com.we.meet.feature.assistant.history.AssistantHistoryScreen(store, rememberOnceOnly(safePop), deps = app)
             }
         }
 

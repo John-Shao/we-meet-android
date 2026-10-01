@@ -24,6 +24,34 @@ import java.util.concurrent.atomic.AtomicInteger
 
 @RunWith(AndroidJUnit4::class)
 class AssistantForegroundSessionTest {
+    @Test fun notificationInputAndOutputControlsReflectChangesAndRejectStaleActions() = runBlocking {
+        ActivityScenario.launch(ComponentActivity::class.java).use { activity ->
+            val lease = AssistantForegroundSession.start(context, AssistantSessionKind.TRANSLATION, false) {}
+            var paused = false
+            var muted = false
+            var clicks = 0
+            fun publish() {
+                lease.controls(com.we.meet.feature.assistant.background.AssistantControlState(true, paused, muted),
+                    { paused = !paused; clicks++; publish() }, { muted = !muted; clicks++; publish() })
+            }
+            withContext(Dispatchers.Main) { publish() }
+            until { currentNotification()?.notification?.actions?.size == 3 }
+            val pause = currentNotification()!!.notification.actions[0].actionIntent
+            activity.moveToState(Lifecycle.State.CREATED)
+            pause.send()
+            until { paused && currentNotification()?.notification?.actions?.firstOrNull()?.title == context.getString(com.we.meet.feature.assistant.R.string.assistant_background_resume) }
+            currentNotification()!!.notification.actions[1].actionIntent.send()
+            until { muted && currentNotification()?.notification?.actions?.get(1)?.title == context.getString(com.we.meet.feature.assistant.R.string.assistant_background_unmute) }
+            withContext(Dispatchers.Main) { lease.close() }
+            until { currentNotification() == null }
+            activity.moveToState(Lifecycle.State.RESUMED)
+            val next = AssistantForegroundSession.start(context, AssistantSessionKind.CALL, false) {}
+            try {
+                pause.send(); delay(150)
+                assertEquals(2, clicks)
+            } finally { withContext(Dispatchers.Main) { next.close() } }
+        }
+    }
     private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
     private val context get() = instrumentation.targetContext
     private val notifications get() = context.getSystemService(NotificationManager::class.java)

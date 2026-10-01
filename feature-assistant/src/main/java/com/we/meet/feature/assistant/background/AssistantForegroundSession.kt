@@ -13,7 +13,10 @@ import kotlinx.coroutines.withTimeout
 /** A foreground-service lease acquired before opening microphone/camera resources. */
 interface AssistantSessionLease : Closeable {
     suspend fun camera(enabled: Boolean)
+    fun controls(state: AssistantControlState, input: () -> Unit, output: () -> Unit) = Unit
 }
+
+data class AssistantControlState(val ready: Boolean = false, val inputPaused: Boolean = false, val outputMuted: Boolean = false)
 
 enum class AssistantSessionKind { CALL, TRANSLATION }
 
@@ -28,6 +31,24 @@ class AssistantForegroundSession private constructor(
     internal var confirmation = CompletableDeferred<Unit>()
     internal var attached = false
     private var closed = false
+    internal var controlState = AssistantControlState()
+        private set
+    private var inputAction: (() -> Unit)? = null
+    private var outputAction: (() -> Unit)? = null
+
+    override fun controls(state: AssistantControlState, input: () -> Unit, output: () -> Unit) {
+        if (closed || current !== this) return
+        controlState = state
+        inputAction = input
+        outputAction = output
+        AssistantForegroundService.refresh(this)
+    }
+
+    internal fun control(input: Boolean) {
+        if (!closed && current === this && controlState.ready) {
+            if (input) inputAction?.invoke() else outputAction?.invoke()
+        }
+    }
 
     override suspend fun camera(enabled: Boolean) = withContext(Dispatchers.Main.immediate) {
         check(!closed && current === this@AssistantForegroundSession)

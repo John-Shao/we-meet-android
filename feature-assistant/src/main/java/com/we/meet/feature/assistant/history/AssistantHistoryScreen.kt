@@ -86,9 +86,12 @@ fun AssistantHistoryPreference(store: AssistantHistoryStore?, enabled: Boolean =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AssistantHistoryScreen(store: AssistantHistoryStore, onBack: () -> Unit) {
+fun AssistantHistoryScreen(store: AssistantHistoryStore, onBack: () -> Unit, deps: com.we.meet.feature.assistant.AssistantDeps? = null) {
     val context = LocalContext.current
     val entries by store.entries.collectAsStateWithLifecycle()
+    val summaryVm: AssistantSummaryViewModel? = if (deps != null) androidx.lifecycle.viewmodel.compose.viewModel(
+        key = "assistant-summary:${deps.assistantAccount}", factory = AssistantSummaryViewModel.Factory(store, deps)) else null
+    val requests = summaryVm?.requests?.collectAsStateWithLifecycle()?.value.orEmpty()
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var query by rememberSaveable { mutableStateOf("") }
     var deleting by remember { mutableStateOf<String?>(null) }
@@ -130,6 +133,9 @@ fun AssistantHistoryScreen(store: AssistantHistoryStore, onBack: () -> Unit) {
                 Text(formatter.format(Date(entry.startedAt)), style = MaterialTheme.typography.labelMedium)
                 HistoryTextActions(entry.rows.joinToString("\n\n") { it.displayText(context) })
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM), contentPadding = PaddingValues(vertical = Dimens.SpaceL)) {
+                    if (summaryVm != null || entry.summary != null) item(key = "summary") {
+                        AssistantSummaryPanel(entry, requests[entry.id], summaryVm?.let { { it.generate(entry.id) } }) { index, done -> store.setTodo(entry.id, index, done) }
+                    }
                     items(entry.rows, key = { it.id }) { row ->
                         Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(Dimens.SpaceL)) {

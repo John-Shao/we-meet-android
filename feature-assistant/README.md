@@ -57,3 +57,29 @@ AI 电话与双语互译共用 `AssistantForegroundService`，在用户可见页
   账号隔离、删除回调竞争、搜索复制分享、关闭自动播报后的重播与回声隔离。
 
 转写事件依据：[Omni Realtime](https://help.aliyun.com/zh/model-studio/realtime)。
+
+### P1：面对面、后台控制与摘要待办
+
+- 双语互译右上角切换「面对面 / 会话列表」。面对面上半屏旋转 180°，显示第二语言；
+  下半屏显示第一语言。每个面板根据逐句真实方向选择原文或译文，双方都读自己的语言，
+  不会因为临时调整显示方式重连模型或改变自动识别方向。
+- 前台服务就绪后，通知栏增加暂停/恢复语音输入、静音/恢复播报。按钮状态与页面同步，
+  连线中不提供可误操作的控制。暂停保留连接，电话禁用麦克风轨道，互译持续发送静音帧，
+  不缓存或补发暂停期间的话音。静音播报与暂停输入独立。通知操作按会话 UUID 隔离，
+  旧通知不能操作新会话；后台更新通知不重新申请 microphone/camera 前台服务类型。
+- 已结束的会话记录可按需生成摘要、决定与待办。点按前说明本次文字会发送到 AI 服务，
+  不自动上传历史。复用后端 `LLMClient` 的会议模型配置，结果存入当前账号的本机 SQLite；
+  待办仅为本机清单，可勾选、查阅对应原文、复制或分享，不自动创建协作任务或发通知。
+  请求由 ViewModel 持有，重复点按不会重复生成；删除记录、退出账号不会被迟到结果恢复。
+- 新接口 `POST /api/v1.0/assistant-summary/` 要求登录，每用户 3 次/分钟；输入不超过
+  2000 行 / 60000 UTF-8 字节，超限返回错误，不截断记录。输出检查完整性和待办引用，
+  provider 超时 25 秒且不自动重试，错误不暴露会话文字。后端不保存原文或摘要，只计用量。
+
+部署：更新 Android App 与 `we-meet` 后端（`release-meet.sh backend`）。复用已有
+`DASHSCOPE_API_KEY`、`MEETING_SUMMARY_MODEL`、`MEETING_SUMMARY_BASE_URL`；无新增环境变量，
+无需后端数据库迁移或 agents 发布。本机 `summaries` 表随 App 首次读取历史自动创建。
+
+验证：`AssistantSummaryTest` / `AssistantHistoryUiTest` 覆盖重复请求、错误重试、删除竞争、
+原文引用与勾选；`AssistantForegroundSessionTest` 覆盖后台控制与旧通知隔离；
+`BilingualTranslationTest` 覆盖暂停静音帧及恢复；`BilingualTranslationUiTest` 覆盖双向分屏。
+后端：`core/tests/test_assistant_summary.py`，模型响应使用桩，不依赖付费外部服务。

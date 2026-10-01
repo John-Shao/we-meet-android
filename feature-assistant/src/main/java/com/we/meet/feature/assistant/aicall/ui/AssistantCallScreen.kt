@@ -253,6 +253,10 @@ fun AssistantCallScreen(
                 )
 
                 if (!isVideoActive) com.we.meet.feature.assistant.history.AssistantHistoryPreference(vm.history, enabled = !callInProgress)
+                if (state.status is AiCallStatus.Active) androidx.compose.material3.TextButton(
+                    onClick = vm::toggleOutput, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                    Text(stringResource(if (state.isOutputMuted) R.string.assistant_background_unmute else R.string.assistant_background_mute))
+                }
 
                 BottomControls(
                     status = state.status,

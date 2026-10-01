@@ -17,6 +17,22 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AssistantHistoryUiTest {
+    @Test fun summaryAndTodoSourcesAreReadableAndCheckable() {
+        val summary = AssistantSummary("讨论了报告发送计划。", listOf("明天发送报告"),
+            listOf(AssistantTodo("发送报告", "我", "明天", listOf("u"))))
+        val entry = androidx.compose.runtime.mutableStateOf(AssistantHistoryEntry("test", "call", 1, 2,
+            listOf(AssistantHistoryRow("u", 0, "user", "我明天发送报告。")), summary))
+        compose.setContent { WeMeetTheme(darkTheme = false) {
+            AssistantSummaryPanel(entry.value, null, null) { index, done ->
+                entry.value = entry.value.copy(summary = entry.value.summary!!.copy(tasks = entry.value.summary!!.tasks.mapIndexed { i, task -> if (i == index) task.copy(done = done) else task }))
+            }
+        } }
+        compose.onNodeWithText("讨论了报告发送计划。").assertIsDisplayed()
+        compose.onNode(isToggleable()).performClick()
+        compose.runOnIdle { assertTrue(entry.value.summary!!.tasks.single().done) }
+        compose.onNodeWithText(context.getString(R.string.assistant_summary_sources)).performClick()
+        compose.onNodeWithText("我明天发送报告。", substring = true).assertIsDisplayed()
+    }
     @get:Rule val compose = createComposeRule()
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
 
@@ -27,7 +43,7 @@ class AssistantHistoryUiTest {
         recording.put(AssistantHistoryRow("one", 0, "translation", "Good morning!", "早上好！", "zh", "en"))
         recording.close()
         compose.waitUntil(5000) { store.entries.value.size == 1 }
-        compose.setContent { WeMeetTheme(darkTheme = false) { AssistantHistoryScreen(store) {} } }
+        compose.setContent { WeMeetTheme(darkTheme = false) { AssistantHistoryScreen(store, onBack = {}) } }
         compose.onNodeWithText(context.getString(R.string.assistant_history_search)).performTextInput("不存在")
         compose.onNodeWithText(context.getString(R.string.assistant_history_empty)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.assistant_history_search)).performTextReplacement("morning")

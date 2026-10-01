@@ -63,6 +63,13 @@ class OmniWebRtcClient(
         private set
     private var answer: AiCallAnswer? = null
     private var responding = false
+    private var outputMuted = false
+    private var outputSuppressed = false
+
+    fun setOutputMuted(muted: Boolean) {
+        outputMuted = muted
+        remoteAudio?.setEnabled(!muted && !outputSuppressed)
+    }
     private var closed = false
 
     suspend fun connect(exchange: suspend (String) -> AiCallAnswer) {
@@ -159,7 +166,7 @@ class OmniWebRtcClient(
         override fun onDataChannel(channel: DataChannel) = dispatch { bindChannel(channel) }
         override fun onTrack(transceiver: RtpTransceiver) = dispatch {
             remoteAudio = transceiver.receiver.track() as? AudioTrack
-            remoteAudio?.setEnabled(true)
+            remoteAudio?.setEnabled(!outputMuted && !outputSuppressed)
         }
         override fun onSignalingChange(state: PeerConnection.SignalingState) = Unit
         override fun onIceConnectionChange(state: PeerConnection.IceConnectionState) = Unit
@@ -204,10 +211,11 @@ class OmniWebRtcClient(
             "session.updated" -> if (handshake.acknowledge()) ready.complete(Unit)
             "response.created" -> {
                 responding = true
-                remoteAudio?.setEnabled(true)
+                outputSuppressed = false
+                remoteAudio?.setEnabled(!outputMuted)
             }
             "response.done" -> responding = false
-            "input_audio_buffer.speech_started" -> remoteAudio?.setEnabled(false)
+            "input_audio_buffer.speech_started" -> { outputSuppressed = true; remoteAudio?.setEnabled(false) }
             "error" -> {
                 val error = event.optJSONObject("error")
                 if (error == null || !handshake.ready || !cancellation.recoverable(
@@ -238,6 +246,7 @@ class OmniWebRtcClient(
 
     fun interrupt() {
         check(!closed && handshake.ready)
+        outputSuppressed = true
         remoteAudio?.setEnabled(false)
         if (responding) {
             val eventId = UUID.randomUUID().toString()

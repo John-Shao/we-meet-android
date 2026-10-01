@@ -40,6 +40,7 @@ internal data class BilingualState(
     val replayable: Set<String> = emptySet(),
     val replaying: Boolean = false,
     val replayError: Boolean = false,
+    val inputPaused: Boolean = false,
 ) {
     val active get() = phase in setOf(BilingualPhase.CONNECTING, BilingualPhase.LISTENING, BilingualPhase.SPEAKING, BilingualPhase.FINISHING)
     override fun toString() = "BilingualState(<private>)"
@@ -49,6 +50,7 @@ internal interface BilingualAudioOutput : Closeable {
     fun open()
     fun play(samples: ShortArray)
     fun finishTurn() = Unit
+    fun mute(muted: Boolean) = Unit
     val pendingSamples: Long
 }
 
@@ -66,6 +68,7 @@ internal class BilingualTranslationController(
             override fun open() = delegate.open()
             override fun play(samples: ShortArray) = delegate.play(samples)
             override fun finishTurn() = delegate.finishTurn()
+            override fun mute(muted: Boolean) = delegate.mute(muted)
             override val pendingSamples get() = delegate.pendingSamples
             override fun close() = delegate.close()
         }
@@ -135,7 +138,7 @@ internal class BilingualTranslationController(
         stopReplay()
         val session = Session(mutable.value.pair)
         active = session
-        mutable.update { it.copy(phase = BilingualPhase.CONNECTING, unknownLanguage = false, audioOmitted = false) }
+        mutable.update { it.copy(phase = BilingualPhase.CONNECTING, unknownLanguage = false, audioOmitted = false, inputPaused = false) }
         session.job = scope.launch(start = CoroutineStart.LAZY) {
             try {
                 session.run()
@@ -159,7 +162,14 @@ internal class BilingualTranslationController(
         mutable.update { it.copy(phase = phase, unknownLanguage = false) }
     }
 
-    fun sound(enabled: Boolean) { mutable.update { it.copy(sound = enabled) } }
+    fun sound(enabled: Boolean) {
+        mutable.update { it.copy(sound = enabled) }
+        active?.setSound(enabled)
+    }
+    fun pauseInput(paused: Boolean) {
+        mutable.update { it.copy(inputPaused = paused) }
+        active?.updateControls()
+    }
     fun selectLanguage(first: Boolean, language: String) {
         if (active != null || language !in BilingualLanguages.labels) return
         mutable.update { it.copy(
@@ -198,10 +208,23 @@ internal class BilingualTranslationController(
         fun replay(chunks: List<ByteArray>) {
             if (mutable.value.phase != BilingualPhase.LISTENING || finishing.get() || speaking.get()) return
             if (!audio.replay(chunks)) return
+            runCatching { output?.mute(false) }.onFailure { failure(); return }
             // Mark before waking the writer so the microphone cannot capture the replay onset.
             speaking.set(true)
             mutable.update { it.copy(replaying = true, replayError = false, phase = BilingualPhase.SPEAKING) }
             audioReady.trySend(Unit)
+        }
+
+        fun updateControls() {
+            foreground?.controls(com.we.meet.feature.assistant.background.AssistantControlState(
+                ready = microphone != null && !finishing.get() && !closed.get(),
+                inputPaused = mutable.value.inputPaused, outputMuted = !mutable.value.sound),
+                input = { pauseInput(!mutable.value.inputPaused) }, output = { sound(!mutable.value.sound) })
+        }
+
+        fun setSound(enabled: Boolean) {
+            runCatching { output?.mute(!enabled) }.onFailure { failure() }
+            updateControls()
         }
 
         suspend fun run(): Unit = coroutineScope {
@@ -212,6 +235,7 @@ internal class BilingualTranslationController(
             // Resource installation occurs on Main, serialized with stop/disposal.
             output = openOutput(::failure)
             output!!.open()
+            output!!.mute(!mutable.value.sound)
             wire = openWire(ticket.url, object : CaptureTranslationWire.Listener {
                 override fun opened() {
                     scope.launch {
@@ -276,6 +300,7 @@ internal class BilingualTranslationController(
             microphone = openMicrophone(::failure)
             microphone!!.start()
             mutable.update { it.copy(phase = BilingualPhase.LISTENING) }
+            updateControls()
             launch {
                 while (isActive) {
                     // A missing ACK must fail even when another coroutine is idle.
@@ -295,7 +320,10 @@ internal class BilingualTranslationController(
                             // Release echo protection only after the complete response and its tail.
                             if (speaking.get()) delay(350)
                             speaking.set(false)
-                            if (packet.replay) mutable.update { it.copy(replaying = false) }
+                            if (packet.replay) {
+                                checkNotNull(output).mute(!mutable.value.sound)
+                                mutable.update { it.copy(replaying = false) }
+                            }
                             phase(BilingualPhase.LISTENING)
                             continue
                         }
@@ -334,7 +362,7 @@ internal class BilingualTranslationController(
                         check(count in 1..buffer.size)
                         val bytes = ByteBuffer.allocate(count * 2).order(ByteOrder.LITTLE_ENDIAN)
                         // Continuous capture, but never feed the assistant its own loudspeaker output.
-                        val silence = speaking.get()
+                        val silence = speaking.get() || mutable.value.inputPaused
                         repeat(count) { bytes.putShort(if (silence) 0 else buffer[it]) }
                         check(pcm.trySend(bytes.array()).isSuccess)
                     }
@@ -359,6 +387,7 @@ internal class BilingualTranslationController(
         fun finish() {
             if (closed.get() || !finishing.compareAndSet(false, true)) return
             mutable.update { it.copy(phase = BilingualPhase.FINISHING) }
+            updateControls()
             microphone?.stop()
             scope.launch {
                 delay(30_000)

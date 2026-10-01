@@ -28,6 +28,7 @@ data class AiCallUiState(
     val status: AiCallStatus = AiCallStatus.Idle,
     val mode: AiCallMode = AiCallMode.Voice,
     val isMicMuted: Boolean = false,
+    val isOutputMuted: Boolean = false,
     val micPending: Boolean = false,
     val isCameraEnabled: Boolean = false,
     val cameraPending: Boolean = false,

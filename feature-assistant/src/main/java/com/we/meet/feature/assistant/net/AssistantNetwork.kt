@@ -12,7 +12,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
  * Bearer token + 401 refresh instead of owning auth.
  */
 internal object AssistantNetwork {
-    fun retrofit(deps: AssistantDeps): Retrofit {
+    fun retrofit(deps: AssistantDeps, readTimeoutSeconds: Long = 30): Retrofit {
         val moshi = Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
             .build()
@@ -20,7 +20,7 @@ internal object AssistantNetwork {
         return Retrofit.Builder()
             .baseUrl(base)
             .client(deps.authedOkHttp.newBuilder()
-                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(readTimeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)
                 .build())
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()

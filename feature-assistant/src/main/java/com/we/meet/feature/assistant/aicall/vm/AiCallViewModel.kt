@@ -65,7 +65,7 @@ class AiCallViewModel(
         val selection = config.resolveSelection(_state.value.selection)
         recording = history?.begin("call")
         val currentRecording = recording
-        _state.update { it.copy(status = AiCallStatus.Connecting(ConnectingStep.Connecting), isMicMuted = false) }
+        _state.update { it.copy(status = AiCallStatus.Connecting(ConnectingStep.Connecting), isMicMuted = false, isOutputMuted = false) }
         val client = OmniWebRtcClient(
             appContext,
             onAudioLevel = { level ->
@@ -86,6 +86,7 @@ class AiCallViewModel(
                 }
                 if (_state.value.mode == AiCallMode.Video) client.setCameraEnabled(true)
                 _state.update { it.copy(status = AiCallStatus.Active(it.mode), isCameraEnabled = it.mode == AiCallMode.Video, cameraFront = client.cameraFront) }
+                updateControls()
             } catch (error: Exception) {
                 if (error is CancellationException && error !is TimeoutCancellationException) return@launch
                 if (rtcClient === client) {
@@ -144,7 +145,7 @@ class AiCallViewModel(
         val client = rtcClient ?: return
         val muted = !_state.value.isMicMuted
         runCatching { client.setMicrophoneEnabled(!muted) }
-            .onSuccess { _state.update { it.copy(isMicMuted = muted) } }
+            .onSuccess { _state.update { it.copy(isMicMuted = muted) }; updateControls() }
             .onFailure { _state.update { it.copy(errorToastRes = R.string.assistant_mic_action_failed) } }
     }
 
@@ -163,6 +164,21 @@ class AiCallViewModel(
                 _state.update { it.copy(cameraPending = false) }
             }
         }
+    }
+
+    fun toggleOutput() {
+        if (_state.value.status !is AiCallStatus.Active) return
+        val muted = !_state.value.isOutputMuted
+        rtcClient?.setOutputMuted(muted)
+        _state.update { it.copy(isOutputMuted = muted) }
+        updateControls()
+    }
+
+    private fun updateControls() {
+        val state = _state.value
+        foreground?.controls(com.we.meet.feature.assistant.background.AssistantControlState(
+            ready = state.status is AiCallStatus.Active, inputPaused = state.isMicMuted, outputMuted = state.isOutputMuted),
+            ::toggleMic, ::toggleOutput)
     }
 
     fun onTapToInterrupt() {

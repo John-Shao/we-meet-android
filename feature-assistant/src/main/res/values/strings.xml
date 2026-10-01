@@ -90,4 +90,26 @@
     <string name="assistant_history_empty">No matching conversations</string>
     <string name="assistant_history_replay_hint">Replay uses recent completed audio cached on this page. Audio is not saved to history.</string>
     <string name="assistant_history_replay_error">Unable to replay this sentence. Please try again.</string>
+    <string name="assistant_facing_mode">Face to face</string>
+    <string name="assistant_facing_list">Conversation list</string>
+    <string name="assistant_background_connecting">Connecting</string>
+    <string name="assistant_background_paused">Voice input paused</string>
+    <string name="assistant_background_listening">Voice input enabled</string>
+    <string name="assistant_background_muted">Playback muted</string>
+    <string name="assistant_background_sound">Playback enabled</string>
+    <string name="assistant_background_pause">Pause input</string>
+    <string name="assistant_background_resume">Resume input</string>
+    <string name="assistant_background_mute">Mute playback</string>
+    <string name="assistant_background_unmute">Unmute playback</string>
+    <string name="assistant_summary_title">Summary and to-dos</string>
+    <string name="assistant_summary_decisions">Decisions</string>
+    <string name="assistant_summary_todos">To-dos on this device</string>
+    <string name="assistant_summary_no_tasks">No explicit to-dos were found.</string>
+    <string name="assistant_summary_sources">View source text</string>
+    <string name="assistant_summary_end_first">Available after the conversation ends.</string>
+    <string name="assistant_summary_hint">Generate sends this conversation text to the AI service. Results and to-do checkmarks are saved on this device. Check them against the source text.</string>
+    <string name="assistant_summary_error">Summary could not be generated or saved. Please retry.</string>
+    <string name="assistant_summary_too_long">This conversation is too long to summarize in full.</string>
+    <string name="assistant_summary_working">Generating…</string>
+    <string name="assistant_summary_generate">Generate summary and to-dos</string>
 </resources>

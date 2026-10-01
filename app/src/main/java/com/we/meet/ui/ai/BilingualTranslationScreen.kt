@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +45,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
     val controller = vm.controller
     val state by controller.state.collectAsStateWithLifecycle()
     var permissionDenied by remember { mutableStateOf(false) }
+    var facing by rememberSaveable { mutableStateOf(false) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         permissionDenied = !granted
@@ -55,11 +57,13 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
     LaunchedEffect(state.rows.lastOrNull()?.id) {
         if (state.rows.isNotEmpty()) listState.animateScrollToItem(state.rows.lastIndex)
     }
-    Scaffold(topBar = { WeMeetTopBar(title = stringResource(R.string.bilingual_title), onBack = back) }) { insets ->
+    Scaffold(topBar = { WeMeetTopBar(title = stringResource(R.string.bilingual_title), onBack = back, actions = {
+        TextButton(onClick = { facing = !facing }) { Text(stringResource(if (facing) AssistantR.string.assistant_facing_list else AssistantR.string.assistant_facing_mode)) }
+    }) }) { insets ->
         Column(Modifier.fillMaxSize().padding(insets).padding(horizontal = Dimens.ScreenPadding)) {
             BilingualLanguageSelectors(state, controller::selectLanguage)
             if (!state.active) AssistantHistoryPreference(controller.history)
-            Text(stringResource(R.string.bilingual_hint), style = MaterialTheme.typography.bodyMedium,
+            if (!facing) Text(stringResource(R.string.bilingual_hint), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS), verticalAlignment = Alignment.CenterVertically) {
                 val soundLabel = stringResource(R.string.bilingual_sound)
@@ -69,6 +73,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
             }
             val status = when {
                 permissionDenied -> R.string.bilingual_permission
+                state.inputPaused && state.active -> AssistantR.string.assistant_background_paused
                 state.unknownLanguage -> R.string.bilingual_unknown
                 else -> when (state.phase) {
                     BilingualPhase.IDLE -> R.string.bilingual_idle
@@ -88,9 +93,11 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (state.replayError) Text(stringResource(AssistantR.string.assistant_history_replay_error),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-            if (state.rows.isNotEmpty()) Text(stringResource(AssistantR.string.assistant_history_replay_hint),
+            if (state.rows.isNotEmpty() && !facing) Text(stringResource(AssistantR.string.assistant_history_replay_hint),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (state.rows.isEmpty()) {
+            if (facing) {
+                BilingualFaceToFace(state, Modifier.weight(1f).fillMaxWidth())
+            } else if (state.rows.isEmpty()) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Text(stringResource(R.string.bilingual_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -114,6 +121,11 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                             }
                         }
                     }
+                }
+            }
+            if (state.active && state.phase != BilingualPhase.CONNECTING && state.phase != BilingualPhase.FINISHING) {
+                TextButton(onClick = { controller.pauseInput(!state.inputPaused) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(if (state.inputPaused) AssistantR.string.assistant_background_resume else AssistantR.string.assistant_background_pause))
                 }
             }
             Button(

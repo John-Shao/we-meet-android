@@ -21,6 +21,7 @@ data class AssistantHistoryRow(
 data class AssistantHistoryEntry(
     val id: String, val kind: String, val startedAt: Long, val endedAt: Long?,
     val rows: List<AssistantHistoryRow>,
+    val summary: AssistantSummary? = null,
 ) {
     override fun toString() = "AssistantHistoryEntry(<private>)"
 }
@@ -51,6 +52,7 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
                     setForeignKeyConstraintsEnabled(true)
                     execSQL("CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, kind TEXT NOT NULL, started INTEGER NOT NULL, ended INTEGER)")
                     execSQL("CREATE TABLE IF NOT EXISTS rows (session TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, id TEXT NOT NULL, position INTEGER NOT NULL, role TEXT NOT NULL, text TEXT NOT NULL, source TEXT NOT NULL, source_lang TEXT NOT NULL, target_lang TEXT NOT NULL, PRIMARY KEY(session,id))")
+                    execSQL("CREATE TABLE IF NOT EXISTS summaries (session TEXT PRIMARY KEY REFERENCES sessions(id) ON DELETE CASCADE, content TEXT NOT NULL)")
                     // A previous process may have died before marking its session ended.
                     execSQL("UPDATE sessions SET ended = started WHERE ended IS NULL")
                 }
@@ -106,12 +108,39 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
     }
 
     fun delete(id: String) = enqueue { it.execSQL("DELETE FROM sessions WHERE id=?", arrayOf(id)) }
+    suspend fun saveSummary(id: String, summary: AssistantSummary) = withTimeout(5000) {
+        check(allowed())
+        val saved = CompletableDeferred<Unit>()
+        check(operations.trySend { db ->
+            try {
+                db.execSQL("INSERT OR IGNORE INTO summaries(session,content) SELECT ?,? WHERE EXISTS (SELECT 1 FROM sessions WHERE id=? AND ended IS NOT NULL)",
+                    arrayOf(id, AssistantSummary.adapter.toJson(summary), id))
+                saved.complete(Unit)
+            } catch (error: Exception) { saved.completeExceptionally(error); throw error }
+        }.isSuccess)
+        saved.await()
+    }
+    fun setTodo(id: String, index: Int, done: Boolean) = enqueue { db ->
+        db.rawQuery("SELECT content FROM summaries WHERE session=?", arrayOf(id)).use { cursor ->
+            if (cursor.moveToFirst()) {
+                val summary = AssistantSummary.adapter.fromJson(cursor.getString(0)) ?: return@use
+                if (index in summary.tasks.indices) {
+                    val next = summary.copy(tasks = summary.tasks.mapIndexed { i, task -> if (i == index) task.copy(done = done) else task })
+                    db.execSQL("UPDATE summaries SET content=? WHERE session=?", arrayOf(AssistantSummary.adapter.toJson(next), id))
+                }
+            }
+        }
+    }
     fun clear() = enqueue { it.execSQL("DELETE FROM sessions") }
     private fun enqueue(operation: (SQLiteDatabase) -> Unit) {
         if (allowed() && !operations.trySend(operation).isSuccess) mutableError.value = true
     }
 
     private fun refresh(db: SQLiteDatabase) {
+        val summaries = mutableMapOf<String, AssistantSummary>()
+        db.rawQuery("SELECT session,content FROM summaries", null).use { c ->
+            while (c.moveToNext()) AssistantSummary.adapter.fromJson(c.getString(1))?.let { summaries[c.getString(0)] = it }
+        }
         val rows = linkedMapOf<String, MutableList<AssistantHistoryRow>>()
         db.rawQuery("SELECT session,id,position,role,text,source,source_lang,target_lang FROM rows ORDER BY position", null).use { c ->
             while (c.moveToNext()) rows.getOrPut(c.getString(0)) { mutableListOf() }.add(
@@ -121,7 +150,7 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
         db.rawQuery("SELECT id,kind,started,ended FROM sessions ORDER BY started DESC, rowid DESC", null).use { c ->
             while (c.moveToNext()) {
                 val content = rows[c.getString(0)] ?: continue
-                result += AssistantHistoryEntry(c.getString(0), c.getString(1), c.getLong(2), if (c.isNull(3)) null else c.getLong(3), content)
+                result += AssistantHistoryEntry(c.getString(0), c.getString(1), c.getLong(2), if (c.isNull(3)) null else c.getLong(3), content, summaries[c.getString(0)])
             }
         }
         mutableEntries.value = result

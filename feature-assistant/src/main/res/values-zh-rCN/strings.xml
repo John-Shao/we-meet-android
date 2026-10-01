@@ -84,4 +84,26 @@
     <string name="assistant_history_empty">暂无匹配的会话记录</string>
     <string name="assistant_history_replay_hint">可重播本页缓存的近期完整译音，音频不保存到会话记录。</string>
     <string name="assistant_history_replay_error">本句重播失败，请重试。</string>
+    <string name="assistant_facing_mode">面对面</string>
+    <string name="assistant_facing_list">会话列表</string>
+    <string name="assistant_background_connecting">连接中</string>
+    <string name="assistant_background_paused">语音输入已暂停</string>
+    <string name="assistant_background_listening">语音输入已开启</string>
+    <string name="assistant_background_muted">播报已静音</string>
+    <string name="assistant_background_sound">播报已开启</string>
+    <string name="assistant_background_pause">暂停输入</string>
+    <string name="assistant_background_resume">恢复输入</string>
+    <string name="assistant_background_mute">静音播报</string>
+    <string name="assistant_background_unmute">恢复播报</string>
+    <string name="assistant_summary_title">摘要与待办</string>
+    <string name="assistant_summary_decisions">决定与结论</string>
+    <string name="assistant_summary_todos">本机待办</string>
+    <string name="assistant_summary_no_tasks">未发现明确的待办事项。</string>
+    <string name="assistant_summary_sources">查看原文</string>
+    <string name="assistant_summary_end_first">会话结束后可生成摘要。</string>
+    <string name="assistant_summary_hint">生成时会将本次会话文字发送至 AI 服务。结果和待办勾选保存在本机，请结合原文核对。</string>
+    <string name="assistant_summary_error">摘要未能生成或保存，请重试。</string>
+    <string name="assistant_summary_too_long">本次会话过长，暂时无法生成完整摘要。</string>
+    <string name="assistant_summary_working">生成中…</string>
+    <string name="assistant_summary_generate">生成摘要与待办</string>
 </resources>

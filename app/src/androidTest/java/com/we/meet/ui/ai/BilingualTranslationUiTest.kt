@@ -24,6 +24,20 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationUiTest {
+    @Test fun faceToFaceShowsBothDirectionsInEachParticipantsLanguage() {
+        val state = BilingualState(rows = listOf(
+            BilingualRow("one", "早上好", "Good morning", "zh", "en"),
+            BilingualRow("two", "Thank you", "谢谢", "en", "zh"),
+        ))
+        compose.setContent { WeMeetTheme(darkTheme = false) { BilingualFaceToFace(state) } }
+        compose.onNodeWithTag("bilingual-facing-partner").assertIsDisplayed()
+        compose.onNodeWithTag("bilingual-facing-self").assertIsDisplayed()
+        compose.onNodeWithText("Good morning").assertIsDisplayed()
+        compose.onNodeWithText("Thank you").assertIsDisplayed()
+        compose.onNodeWithText("早上好").assertIsDisplayed()
+        compose.onNodeWithText("谢谢").assertIsDisplayed()
+        screenshot("bilingual-face-to-face.png")
+    }
     @get:Rule val compose = createComposeRule()
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
 

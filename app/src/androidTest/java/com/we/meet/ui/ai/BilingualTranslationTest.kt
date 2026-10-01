@@ -18,6 +18,44 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationTest {
+    @Test fun realMutedOutputCanReplayAndReturnToListening() {
+        androidx.test.core.app.ActivityScenario.launch(androidx.activity.ComponentActivity::class.java).use {
+            val f = Fixture(realPlayback = true)
+            try {
+                main { f.controller.sound(false); f.controller.start() }
+                waitFor { f.wire != null }; f.wire!!.ready()
+                waitFor { f.wire!!.pcm.isNotEmpty() }
+                f.wire!!.listener.message(JSONObject().put("type", "audio").put("id", "muted-replay")
+                    .put("audio", android.util.Base64.encodeToString(ByteArray(14400), android.util.Base64.NO_WRAP)).toString())
+                f.wire!!.listener.message("{\"type\":\"audio_end\",\"id\":\"muted-replay\"}")
+                waitFor { f.controller.state.value.replayable.size == 1 }
+                val id = f.controller.state.value.replayable.single()
+                main { f.controller.replay(id) }
+                waitFor { f.controller.state.value.replaying }
+                waitFor { !f.controller.state.value.replaying }
+                assertEquals(BilingualPhase.LISTENING, f.controller.state.value.phase)
+                assertFalse(f.controller.state.value.sound)
+                main { f.controller.sound(true); f.controller.pauseInput(true) }
+                assertTrue(f.controller.state.value.sound)
+                assertFalse(f.wire!!.closed.get())
+            } finally { main { f.controller.close() } }
+        }
+    }
+    @Test fun pausingInputKeepsConnectionAliveButSendsOnlySilenceUntilResumed() {
+        val f = Fixture()
+        try {
+            main { f.controller.start() }; waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.wire!!.pcm.size >= 2 }
+            main { f.controller.pauseInput(true) }
+            waitFor { f.wire!!.pcm.last().all { it == 0.toByte() } }
+            val count = f.wire!!.pcm.size
+            waitFor { f.wire!!.pcm.size >= count + 3 }
+            assertTrue(f.wire!!.pcm.takeLast(3).all { chunk -> chunk.all { it == 0.toByte() } })
+            assertFalse(f.wire!!.closed.get())
+            main { f.controller.pauseInput(false) }
+            waitFor { f.wire!!.pcm.last().any { it != 0.toByte() } }
+        } finally { main { f.controller.close() } }
+    }
     @Test fun replayWorksWhenAutomaticSoundIsOffAndKeepsMicrophoneEchoProtection() {
         val f = Fixture()
         try {
@@ -159,6 +197,7 @@ class BilingualTranslationTest {
                             playbackUnderruns = delegate.underrunCount
                         }
                         override fun finishTurn() = delegate.finishTurn()
+                        override fun mute(muted: Boolean) = delegate.mute(muted)
                         override val pendingSamples get() = delegate.pendingSamples
                         override fun close() = delegate.close()
                     }
