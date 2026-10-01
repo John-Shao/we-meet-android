@@ -126,23 +126,24 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                 LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState,
                     contentPadding = PaddingValues(vertical = Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                     items(state.rows, key = { it.id }) { row ->
-                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                HistoryTextActions(
-                                    text = stringResource(R.string.bilingual_direction,
-                                        stringResource(BilingualLanguages.label(row.sourceLanguage)), stringResource(BilingualLanguages.label(row.targetLanguage))) + "\n${row.source}\n${row.text}",
-                                    replay = if (row.id in state.replayable) ({ controller.replay(row.id) }) else null,
-                                    replayEnabled = !state.replaying && (!state.active || state.phase == BilingualPhase.LISTENING),
-                                )
-                            }
-                            Card(Modifier.fillMaxWidth()) {
-                                Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                        Card(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                                     Text(stringResource(R.string.bilingual_direction,
                                         stringResource(BilingualLanguages.label(row.sourceLanguage)), stringResource(BilingualLanguages.label(row.targetLanguage))),
-                                        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                    Text(row.source, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text(row.text, style = MaterialTheme.typography.bodyLarge)
+                                        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.weight(1f))
+                                    HistoryTextActions(
+                                        text = stringResource(R.string.bilingual_direction,
+                                            stringResource(BilingualLanguages.label(row.sourceLanguage)), stringResource(BilingualLanguages.label(row.targetLanguage))) + "\n${row.source}\n${row.text}",
+                                        replay = if (row.id in state.replayable) ({ controller.replay(row.id) }) else null,
+                                        replayEnabled = !state.replaying && (!state.active || state.phase == BilingualPhase.LISTENING),
+                                        showShare = false,
+                                    )
                                 }
+                                Text(row.source, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(row.text, style = MaterialTheme.typography.bodyLarge)
                             }
                         }
                     }

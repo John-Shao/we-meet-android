@@ -48,7 +48,7 @@ fun AssistantHistoryRow.displayText(context: Context): String = if (role == "tra
 } else "${context.getString(if (role == "user") R.string.assistant_history_you else R.string.assistant_history_ai)}: $text"
 
 @Composable
-fun HistoryTextActions(text: String, replay: (() -> Unit)? = null, replayEnabled: Boolean = true) {
+fun HistoryTextActions(text: String, replay: (() -> Unit)? = null, replayEnabled: Boolean = true, showShare: Boolean = true) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var sharing by remember { mutableStateOf(false) }
@@ -65,7 +65,7 @@ fun HistoryTextActions(text: String, replay: (() -> Unit)? = null, replayEnabled
             }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }) { Icon(Icons.Default.ContentCopy, stringResource(R.string.assistant_history_copy)) }
-        IconButton(enabled = !sharing, onClick = {
+        if (showShare) IconButton(enabled = !sharing, onClick = {
             sharing = true
             scope.launch {
                 try {

@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import com.we.meet.ui.theme.Dimens
 
 /** Each participant reads all turns in their own language; direction remains automatic. */
@@ -38,7 +39,8 @@ private fun LanguagePanel(rows: List<BilingualRow>, language: String, modifier: 
             Text(stringResource(BilingualLanguages.label(language)), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             LazyColumn(state = list, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                 items(visible, key = { it.id }) { row ->
-                    Text(row.forLanguage(language).orEmpty(), style = MaterialTheme.typography.headlineSmall)
+                    Text(row.forLanguage(language).orEmpty(), style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Normal)
                 }
             }
         }
