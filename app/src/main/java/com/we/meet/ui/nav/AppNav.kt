@@ -3,6 +3,7 @@ package com.we.meet.ui.nav
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -1918,13 +1919,19 @@ private fun AiHubRoute(onBack: () -> Unit, onOpenAssistantCall: () -> Unit, onOp
     androidx.compose.material3.Scaffold(
         topBar = {
             WeMeetTopBar(
-                title = stringResource(R.string.tab_ai),
+                title = stringResource(R.string.ai_hub_title),
                 onBack = onBack,
+                actions = {
+                    androidx.compose.material3.IconButton(onClick = onOpenHistory) {
+                        androidx.compose.material3.Icon(Icons.Default.History,
+                            contentDescription = stringResource(com.we.meet.feature.assistant.R.string.assistant_history_title))
+                    }
+                },
             )
         },
     ) { padding ->
         androidx.compose.foundation.layout.Box(modifier = Modifier.padding(padding)) {
-            com.we.meet.ui.ai.AiHubScreen(onOpenAssistantCall = onOpenAssistantCall, onOpenBilingualTranslation = onOpenBilingualTranslation, onOpenHistory = onOpenHistory)
+            com.we.meet.ui.ai.AiHubScreen(onOpenAssistantCall = onOpenAssistantCall, onOpenBilingualTranslation = onOpenBilingualTranslation)
         }
     }
 }

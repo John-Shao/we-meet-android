@@ -456,7 +456,7 @@
     <!-- WebView Keycloak login -->
     <string name="web_login_error">Sign-in failed</string>
     <string name="web_login_retry">Retry</string>
-    <string name="profile_ai_entry">AI Assistant</string>
+    <string name="profile_ai_entry">AI Tools</string>
 
     <!-- Contacts (通讯录) -->
     <string name="contacts_title">Contacts</string>
@@ -624,7 +624,7 @@
     <string name="event_load_error">Failed to load the event</string>
 
     <!-- AI hub -->
-    <string name="ai_hub_title">AI Assistant</string>
+    <string name="ai_hub_title">AI Tools</string>
     <string name="ai_hub_call_title">Call</string>
     <string name="ai_hub_call_subtitle">Realtime voice / video chat with AI</string>
 

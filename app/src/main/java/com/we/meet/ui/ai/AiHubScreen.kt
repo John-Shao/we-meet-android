@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Translate
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -31,29 +30,19 @@ import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 
 /**
- * Landing for the "AI" tab — an aggregation hub for AI features. v1 surfaces
- * the realtime assistant ("打电话"); future AI capabilities add more cards here
- * without disturbing the existing entries.
+ * AI tools shown beneath the route's title bar and conversation history action.
  */
 @Composable
 fun AiHubScreen(
     onOpenAssistantCall: () -> Unit,
     onOpenBilingualTranslation: () -> Unit,
-    onOpenHistory: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = Dimens.ScreenPadding),
     ) {
-        Text(
-            text = stringResource(R.string.ai_hub_title),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = Dimens.SpaceXl, bottom = Dimens.SpaceL),
-        )
-
+        Spacer(Modifier.size(Dimens.SpaceL))
         FeatureCard(
             icon = Icons.Filled.Call,
             title = stringResource(R.string.ai_hub_call_title),
@@ -66,13 +55,6 @@ fun AiHubScreen(
             title = stringResource(R.string.bilingual_title),
             subtitle = stringResource(R.string.bilingual_subtitle),
             onClick = onOpenBilingualTranslation,
-        )
-        Spacer(Modifier.size(Dimens.SpaceL))
-        FeatureCard(
-            icon = Icons.Filled.History,
-            title = stringResource(com.we.meet.feature.assistant.R.string.assistant_history_title),
-            subtitle = stringResource(com.we.meet.feature.assistant.R.string.assistant_history_subtitle),
-            onClick = onOpenHistory,
         )
     }
 }

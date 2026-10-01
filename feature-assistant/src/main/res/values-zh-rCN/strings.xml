@@ -81,6 +81,7 @@
     <string name="assistant_history_delete_hint">删除后无法恢复所选本地记录。</string>
     <string name="assistant_history_local_hint">仅在本机保存当前账号的文字，保留最近 200 次会话。可在打电话和双语互译的设置中分别控制保存，仅对新会话生效。</string>
     <string name="assistant_history_search">搜索会话文字</string>
+    <string name="assistant_history_close_search">关闭搜索</string>
     <string name="assistant_history_empty">暂无匹配的会话记录</string>
     <string name="assistant_history_replay_hint">可重播本页缓存的近期完整译音，音频不保存到会话记录。</string>
     <string name="assistant_history_replay_error">本句重播失败，请重试。</string>

@@ -46,8 +46,15 @@ class AssistantHistoryUiTest {
         compose.waitUntil(5000) { store.entries.value.size == 1 }
         compose.setContent { WeMeetTheme(darkTheme = false) { AssistantHistoryScreen(store, onBack = {}) } }
         compose.onNodeWithText(context.getString(R.string.assistant_history_save)).assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.assistant_history_search)).assertDoesNotExist()
+        compose.onNodeWithContentDescription(context.getString(R.string.assistant_history_search)).performClick()
+        compose.onNodeWithText(context.getString(R.string.assistant_history_search)).assertIsFocused()
         compose.onNodeWithText(context.getString(R.string.assistant_history_search)).performTextInput("不存在")
         compose.onNodeWithText(context.getString(R.string.assistant_history_empty)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(context.getString(R.string.assistant_history_close_search)).performClick()
+        compose.onNodeWithText(context.getString(R.string.assistant_history_search)).assertDoesNotExist()
+        compose.onNodeWithText("Good morning!").assertIsDisplayed()
+        compose.onNodeWithContentDescription(context.getString(R.string.assistant_history_search)).performClick()
         compose.onNodeWithText(context.getString(R.string.assistant_history_search)).performTextReplacement("morning")
         compose.onNodeWithText("Good morning!").performClick()
         compose.onNodeWithText("Good morning!", substring = true).assertIsDisplayed()

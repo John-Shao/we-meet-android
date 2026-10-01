@@ -450,7 +450,7 @@
     <!-- WebView Keycloak login -->
     <string name="web_login_error">Échec de la connexion</string>
     <string name="web_login_retry">Réessayer</string>
-    <string name="profile_ai_entry">Assistant IA</string>
+    <string name="profile_ai_entry">Outils IA</string>
 
     <!-- Contacts -->
     <string name="contacts_title">Contacts</string>
@@ -599,7 +599,7 @@
     <string name="event_load_error">Échec du chargement de l\'événement</string>
 
     <!-- AI hub -->
-    <string name="ai_hub_title">Assistant IA</string>
+    <string name="ai_hub_title">Outils IA</string>
     <string name="ai_hub_call_title">Appel</string>
     <string name="ai_hub_call_subtitle">Chat vocal / vidéo en temps réel avec l\'IA</string>
 

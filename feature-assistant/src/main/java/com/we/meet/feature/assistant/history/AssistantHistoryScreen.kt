@@ -9,19 +9,28 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.feature.assistant.R
 import com.we.meet.ui.theme.Dimens
@@ -95,14 +104,34 @@ fun AssistantHistoryScreen(store: AssistantHistoryStore, onBack: () -> Unit, dep
     val requests = summaryVm?.requests?.collectAsStateWithLifecycle()?.value.orEmpty()
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var query by rememberSaveable { mutableStateOf("") }
+    var searching by rememberSaveable { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<String?>(null) }
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    val closeSearch: () -> Unit = {
+        searching = false
+        query = ""
+        focusManager.clearFocus()
+        keyboard?.hide()
+    }
     val entry = entries.firstOrNull { it.id == selected }
-    val back = { if (selected != null) selected = null else onBack() }
+    val back: () -> Unit = {
+        when {
+            selected != null -> selected = null
+            searching -> closeSearch()
+            else -> onBack()
+        }
+    }
     BackHandler(onBack = back)
     val formatter = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
     Scaffold(topBar = {
         WeMeetTopBar(title = stringResource(R.string.assistant_history_title), onBack = back,
             actions = {
+                if (entry == null) IconButton(onClick = { if (searching) closeSearch() else searching = true }) {
+                    Icon(if (searching) Icons.Default.Close else Icons.Default.Search,
+                        stringResource(if (searching) R.string.assistant_history_close_search else R.string.assistant_history_search))
+                }
                 if (entry != null) HistoryTextActions(entry.rows.joinToString("\n\n") { it.displayText(context) })
                 if (entries.isNotEmpty()) IconButton(onClick = { deleting = entry?.id ?: "all" }) {
                     Icon(Icons.Default.Delete, stringResource(if (entry == null) R.string.assistant_history_clear else R.string.assistant_history_delete))
@@ -115,15 +144,21 @@ fun AssistantHistoryScreen(store: AssistantHistoryStore, onBack: () -> Unit, dep
             if (entry == null) {
                 Text(stringResource(R.string.assistant_history_local_hint), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                OutlinedTextField(value = query, onValueChange = { query = it }, singleLine = true,
-                    label = { Text(stringResource(R.string.assistant_history_search)) }, modifier = Modifier.fillMaxWidth())
+                if (searching) {
+                    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+                    OutlinedTextField(value = query, onValueChange = { query = it }, singleLine = true,
+                        label = { Text(stringResource(R.string.assistant_history_search)) },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus(); keyboard?.hide() }),
+                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester))
+                }
                 val filtered = entries.filter { item -> query.isBlank() || item.rows.any {
                     it.text.contains(query, ignoreCase = true) || it.source.contains(query, ignoreCase = true)
                 } }
                 if (filtered.isEmpty()) Text(stringResource(R.string.assistant_history_empty), Modifier.padding(vertical = Dimens.SpaceL))
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM), contentPadding = PaddingValues(vertical = Dimens.SpaceL)) {
                     items(filtered, key = { it.id }) { item ->
-                        Card(onClick = { selected = item.id }, modifier = Modifier.fillMaxWidth()) {
+                        Card(onClick = { focusManager.clearFocus(); keyboard?.hide(); selected = item.id }, modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(Dimens.SpaceL)) {
                                 Text(stringResource(if (item.kind == "call") R.string.assistant_history_call else R.string.assistant_history_translation), style = MaterialTheme.typography.titleMedium)
                                 Text(formatter.format(Date(item.startedAt)), style = MaterialTheme.typography.labelMedium)

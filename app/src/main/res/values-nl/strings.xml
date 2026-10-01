@@ -447,7 +447,7 @@
     <!-- WebView Keycloak login -->
     <string name="web_login_error">Inloggen mislukt</string>
     <string name="web_login_retry">Opnieuw proberen</string>
-    <string name="profile_ai_entry">AI-assistent</string>
+    <string name="profile_ai_entry">AI-tools</string>
 
     <!-- Contacts -->
     <string name="contacts_title">Contacten</string>
@@ -590,7 +590,7 @@
     <string name="event_load_error">Afspraak laden mislukt</string>
 
     <!-- AI hub -->
-    <string name="ai_hub_title">AI-assistent</string>
+    <string name="ai_hub_title">AI-tools</string>
     <string name="ai_hub_call_title">Bellen</string>
     <string name="ai_hub_call_subtitle">Realtime spraak- of videogesprek met AI</string>
 

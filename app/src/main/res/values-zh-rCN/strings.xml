@@ -449,7 +449,7 @@
     <string name="task_search_no_due">无截止时间</string>
     <string name="task_search_all_priorities">全部优先级</string>
     <string name="task_clear_filters">清除筛选</string>
-    <string name="profile_ai_entry">AI 助手</string>
+    <string name="profile_ai_entry">AI 工具</string>
 
     <!-- WebView Keycloak 登录 -->
     <string name="web_login_error">登录失败</string>
@@ -615,7 +615,7 @@
     <string name="event_load_error">日程加载失败</string>
 
     <!-- AI hub -->
-    <string name="ai_hub_title">AI 助手</string>
+    <string name="ai_hub_title">AI 工具</string>
     <string name="ai_hub_call_title">打电话</string>
     <string name="ai_hub_call_subtitle">与 AI 实时语音 / 视频对话</string>
 

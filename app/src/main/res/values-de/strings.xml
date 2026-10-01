@@ -447,7 +447,7 @@
     <!-- WebView Keycloak login -->
     <string name="web_login_error">Anmeldung fehlgeschlagen</string>
     <string name="web_login_retry">Erneut versuchen</string>
-    <string name="profile_ai_entry">KI-Assistent</string>
+    <string name="profile_ai_entry">KI-Tools</string>
 
     <!-- Contacts -->
     <string name="contacts_title">Kontakte</string>
@@ -590,7 +590,7 @@
     <string name="event_load_error">Termin konnte nicht geladen werden</string>
 
     <!-- AI hub -->
-    <string name="ai_hub_title">KI-Assistent</string>
+    <string name="ai_hub_title">KI-Tools</string>
     <string name="ai_hub_call_title">Anruf</string>
     <string name="ai_hub_call_subtitle">Sprach-/Video-Chat in Echtzeit mit der KI</string>
 
