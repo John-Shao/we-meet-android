@@ -84,8 +84,8 @@
     <string name="assistant_history_empty">暂无匹配的会话记录</string>
     <string name="assistant_history_replay_hint">可重播本页缓存的近期完整译音，音频不保存到会话记录。</string>
     <string name="assistant_history_replay_error">本句重播失败，请重试。</string>
-    <string name="assistant_facing_mode">面对面</string>
-    <string name="assistant_facing_list">会话列表</string>
+    <string name="assistant_facing_mode">面对面模式</string>
+    <string name="assistant_side_by_side_mode">肩并肩模式</string>
     <string name="assistant_background_connecting">连接中</string>
     <string name="assistant_background_paused">语音输入已暂停</string>
     <string name="assistant_background_listening">语音输入已开启</string>

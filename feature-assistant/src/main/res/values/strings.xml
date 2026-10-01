@@ -91,7 +91,7 @@
     <string name="assistant_history_replay_hint">Replay uses recent completed audio cached on this page. Audio is not saved to history.</string>
     <string name="assistant_history_replay_error">Unable to replay this sentence. Please try again.</string>
     <string name="assistant_facing_mode">Face to face</string>
-    <string name="assistant_facing_list">Conversation list</string>
+    <string name="assistant_side_by_side_mode">Side by side</string>
     <string name="assistant_background_connecting">Connecting</string>
     <string name="assistant_background_paused">Voice input paused</string>
     <string name="assistant_background_listening">Voice input enabled</string>

@@ -45,7 +45,8 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
     val controller = vm.controller
     val state by controller.state.collectAsStateWithLifecycle()
     var permissionDenied by remember { mutableStateOf(false) }
-    var facing by rememberSaveable { mutableStateOf(false) }
+    var facing by rememberSaveable { mutableStateOf(true) }
+    var choosingMode by remember { mutableStateOf(false) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         permissionDenied = !granted
@@ -58,7 +59,21 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
         if (state.rows.isNotEmpty()) listState.animateScrollToItem(state.rows.lastIndex)
     }
     Scaffold(topBar = { WeMeetTopBar(title = stringResource(R.string.bilingual_title), onBack = back, actions = {
-        TextButton(onClick = { facing = !facing }) { Text(stringResource(if (facing) AssistantR.string.assistant_facing_list else AssistantR.string.assistant_facing_mode)) }
+        Box {
+            TextButton(onClick = { choosingMode = true }, modifier = Modifier.testTag("bilingual-mode")) {
+                Text(stringResource(if (facing) AssistantR.string.assistant_facing_mode else AssistantR.string.assistant_side_by_side_mode))
+            }
+            DropdownMenu(expanded = choosingMode, onDismissRequest = { choosingMode = false }) {
+                listOf(true, false).forEach { faceToFace ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(if (faceToFace) AssistantR.string.assistant_facing_mode else AssistantR.string.assistant_side_by_side_mode)) },
+                        trailingIcon = { if (facing == faceToFace) Text("✓") },
+                        modifier = Modifier.testTag(if (faceToFace) "bilingual-mode-facing" else "bilingual-mode-side-by-side"),
+                        onClick = { facing = faceToFace; choosingMode = false },
+                    )
+                }
+            }
+        }
     }) }) { insets ->
         Column(Modifier.fillMaxSize().padding(insets).padding(horizontal = Dimens.ScreenPadding)) {
             BilingualLanguageSelectors(state, controller::selectLanguage)

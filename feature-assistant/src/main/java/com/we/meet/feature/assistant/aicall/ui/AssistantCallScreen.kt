@@ -252,7 +252,6 @@ fun AssistantCallScreen(
                     onDark = isVideoActive,
                 )
 
-                if (!isVideoActive) com.we.meet.feature.assistant.history.AssistantHistoryPreference(vm.history, enabled = !callInProgress)
                 if (state.status is AiCallStatus.Active) androidx.compose.material3.TextButton(
                     onClick = vm::toggleOutput, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                     Text(stringResource(if (state.isOutputMuted) R.string.assistant_background_unmute else R.string.assistant_background_mute))
@@ -294,6 +293,8 @@ fun AssistantCallScreen(
                 AiSettingsSheet(
                     config = state.agentConfig,
                     selection = state.selection,
+                    historyStore = vm.history,
+                    historyEnabled = !callInProgress,
                     onSelectVoice = vm::selectVoice,
                     onSelectPrompt = vm::selectPrompt,
                     onDismiss = { vm.showPicker(false) },

@@ -56,11 +56,20 @@ class BilingualTranslationUiTest {
                 BilingualTranslationScreen(context.applicationContext as WeMeetApp) {}
             }
         }
-        compose.onNodeWithText(context.getString(R.string.bilingual_language_zh)).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.bilingual_language_en)).assertIsDisplayed()
+        compose.onNodeWithTag("bilingual-first-language").assertIsDisplayed()
+        compose.onNodeWithTag("bilingual-second-language").assertIsDisplayed()
+        compose.onNodeWithTag("bilingual-facing-partner").assertIsDisplayed()
+        compose.onNodeWithTag("bilingual-facing-self").assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.bilingual_start)).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.bilingual_idle)).assertIsDisplayed()
         screenshot("bilingual-screen.png")
+        compose.onNodeWithTag("bilingual-mode").performClick()
+        compose.onNodeWithTag("bilingual-mode-side-by-side").performClick()
+        compose.onNodeWithTag("bilingual-facing-self").assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.bilingual_empty)).assertIsDisplayed()
+        compose.onNodeWithTag("bilingual-mode").performClick()
+        compose.onNodeWithTag("bilingual-mode-facing").performClick()
+        compose.onNodeWithTag("bilingual-facing-self").assertIsDisplayed()
     }
 
     @Test fun languageSelectionIncludesLastLanguageAndIsLockedDuringSession() {

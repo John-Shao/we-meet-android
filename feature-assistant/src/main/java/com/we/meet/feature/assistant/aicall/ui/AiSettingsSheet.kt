@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -29,6 +31,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.we.meet.feature.assistant.aicall.model.AiAgentConfigResponse
 import com.we.meet.feature.assistant.aicall.model.AiCallSelection
+import com.we.meet.feature.assistant.history.AssistantHistoryPreference
+import com.we.meet.feature.assistant.history.AssistantHistoryStore
 
 /** Shared call settings; camera state only controls the published media. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,6 +40,8 @@ import com.we.meet.feature.assistant.aicall.model.AiCallSelection
 fun AiSettingsSheet(
     config: AiAgentConfigResponse?,
     selection: AiCallSelection,
+    historyStore: AssistantHistoryStore?,
+    historyEnabled: Boolean,
     onSelectVoice: (String?) -> Unit,
     onSelectPrompt: (String?) -> Unit,
     onDismiss: () -> Unit,
@@ -46,9 +52,11 @@ fun AiSettingsSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
-        Column(modifier = Modifier.padding(bottom = Dimens.SpaceXl)) {
+        Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = Dimens.SpaceXl)) {
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
             CallConfigSection(config, selection, onSelectVoice, onSelectPrompt)
+            Spacer(modifier = Modifier.height(Dimens.SpaceM))
+            AssistantHistoryPreference(historyStore, enabled = historyEnabled)
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
         }
     }
