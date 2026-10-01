@@ -28,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.we.meet.feature.assistant.aicall.model.AiAgentConfigResponse
 import com.we.meet.feature.assistant.aicall.model.AiCallSelection
 import com.we.meet.feature.assistant.history.AssistantHistoryPreference
@@ -55,10 +54,10 @@ fun AiSettingsSheet(
     ) {
         Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = Dimens.SpaceXl)) {
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
-            com.we.meet.feature.assistant.scenes.AssistantScenePicker(selection.sceneId, onSelectScene,
+            AiCallScenePicker(config, selection, onSelectScene, onSelectPrompt,
                 modifier = Modifier.padding(horizontal = Dimens.SpaceXl), enabled = historyEnabled)
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
-            CallConfigSection(config, selection, onSelectVoice, onSelectPrompt)
+            CallConfigSection(config, selection, onSelectVoice, enabled = historyEnabled)
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
             AssistantHistoryPreference(historyStore, kind = "call", enabled = historyEnabled,
                 horizontalPadding = Dimens.SpaceXl)
@@ -72,12 +71,11 @@ private fun CallConfigSection(
     config: AiAgentConfigResponse?,
     selection: AiCallSelection,
     onSelectVoice: (String?) -> Unit,
-    onSelectPrompt: (String?) -> Unit,
+    enabled: Boolean,
 ) {
     val profile = config?.callProfile()
     val resolved = config?.resolveSelection(selection)
     val voices = profile?.voices.orEmpty()
-    val prompts = config?.prompts.orEmpty()
 
     SectionLabel(stringResource(R.string.assistant_section_model))
     OutlinedTextField(
@@ -94,19 +92,9 @@ private fun CallConfigSection(
             ?.let { it.label ?: it.value } ?: "",
         options = voices.map { it.label ?: it.value },
         onSelect = { onSelectVoice(voices[it].id) },
-        enabled = voices.isNotEmpty(),
+        enabled = enabled && voices.isNotEmpty(),
     )
     Spacer(modifier = Modifier.height(Dimens.SpaceS))
-    if (selection.sceneId == null) {
-        SectionLabel(stringResource(R.string.assistant_section_prompt))
-        val defaultLabel = stringResource(R.string.assistant_prompt_default)
-        Dropdown(
-            value = prompts.firstOrNull { it.id == resolved?.promptId }?.label ?: defaultLabel,
-            options = listOf(defaultLabel) + prompts.map { it.label },
-            onSelect = { onSelectPrompt(if (it == 0) null else prompts[it - 1].id) },
-            enabled = true,
-        )
-    }
 }
 
 @Composable

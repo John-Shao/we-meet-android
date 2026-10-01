@@ -1,4 +1,9 @@
 <resources>
+    <string name="assistant_call_scene_title">对话场景</string>
+    <string name="assistant_call_scene_selection">对话场景：%1$s</string>
+    <string name="assistant_call_scene_general">通用助手</string>
+    <string name="assistant_call_scene_general_hint">通过语音或视频，进行日常问答与交流。</string>
+    <string name="assistant_call_scene_catalog_hint">按“%1$s”的设定进行语音或视频交流。</string>
     <string name="assistant_scene_title">场景预设</string>
     <string name="assistant_scene_custom">自定义 / 默认</string>
     <string name="assistant_scene_travel">旅行交流（英语）</string>

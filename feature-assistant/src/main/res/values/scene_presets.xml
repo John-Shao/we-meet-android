@@ -1,4 +1,9 @@
 <resources>
+    <string name="assistant_call_scene_title">Conversation scenario</string>
+    <string name="assistant_call_scene_selection">Conversation scenario: %1$s</string>
+    <string name="assistant_call_scene_general">General assistant</string>
+    <string name="assistant_call_scene_general_hint">Everyday questions and conversation by voice or video.</string>
+    <string name="assistant_call_scene_catalog_hint">Voice or video conversation using the %1$s configuration.</string>
     <string name="assistant_scene_title">Scenario preset</string>
     <string name="assistant_scene_custom">Custom / default</string>
     <string name="assistant_scene_travel">Travel (English)</string>
