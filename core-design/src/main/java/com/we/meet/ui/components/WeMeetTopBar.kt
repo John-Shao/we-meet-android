@@ -12,6 +12,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
@@ -45,6 +46,7 @@ import com.we.meet.design.R
  *   对方正在输入)。放不下时同样省略号截断。注意它只该放状态,不该放本属于
  *   正文的信息 —— 顶栏两行已经是高度上限。
  * @param actions 右侧操作区,直接放 [IconButton]。超过 3 个请收进溢出菜单。
+ * @param colors 可选的顶栏配色，用于摄像头画面等需要指定文字与图标颜色的背景。
  * @param scrollBehavior 需要「滚动时顶栏收起」时传入,配合 `Scaffold` 的
  *   `Modifier.nestedScroll`。不传就是固定顶栏。
  */
@@ -61,6 +63,7 @@ fun WeMeetTopBar(
     containerColor: Color = MaterialTheme.colorScheme.surface,
     onMenu: (() -> Unit)? = null,
     menuDescription: String? = null,
+    colors: TopAppBarColors? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     require(onBack == null || onClose == null) {
@@ -107,7 +110,7 @@ fun WeMeetTopBar(
             }
         },
         actions = actions,
-        colors = if (transparent) {
+        colors = colors ?: if (transparent) {
             TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
         } else {
             TopAppBarDefaults.topAppBarColors(containerColor = containerColor)

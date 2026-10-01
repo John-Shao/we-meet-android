@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FlipCameraIos
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,6 +36,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -50,8 +51,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -65,6 +66,7 @@ import com.we.meet.feature.assistant.aicall.ui.components.AnimatedSphere
 import com.we.meet.feature.assistant.aicall.ui.components.BottomControls
 import com.we.meet.feature.assistant.aicall.ui.components.VideoPreview
 import com.we.meet.feature.assistant.aicall.vm.AiCallViewModel
+import com.we.meet.ui.components.WeMeetTopBar
 import kotlinx.coroutines.launch
 
 private enum class PendingPermAction { Start, ToggleVideo }
@@ -208,6 +210,18 @@ fun AssistantCallScreen(
         // in dark mode (black title text on a forced-white rectangle).
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        topBar = {
+            TopBar(
+                onBack = { endAndBack() },
+                onOpenSettings = { vm.showPicker(true) },
+                canOpenSettings = state.status is AiCallStatus.Idle ||
+                    state.status is AiCallStatus.Failed ||
+                    state.status is AiCallStatus.Ended,
+                tintOnDark = isVideoActive,
+                showFlipCamera = isVideoActive,
+                onFlipCamera = vm::flipCamera,
+            )
+        },
     ) { inner ->
         Box(modifier = Modifier.fillMaxSize()) {
             // Background — video fill in video-active mode, otherwise white.
@@ -220,17 +234,6 @@ fun AssistantCallScreen(
             }
 
             Column(modifier = Modifier.fillMaxSize().padding(inner)) {
-                TopBar(
-                    onBack = { endAndBack() },
-                    onOpenSettings = { vm.showPicker(true) },
-                    canOpenSettings = state.status is AiCallStatus.Idle ||
-                        state.status is AiCallStatus.Failed ||
-                        state.status is AiCallStatus.Ended,
-                    tintOnDark = isVideoActive,
-                    showFlipCamera = isVideoActive,
-                    onFlipCamera = vm::flipCamera,
-                )
-
                 Box(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     contentAlignment = Alignment.Center,
@@ -304,6 +307,7 @@ fun AssistantCallScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TopBar(
     onBack: () -> Unit,
@@ -313,29 +317,18 @@ private fun TopBar(
     showFlipCamera: Boolean,
     onFlipCamera: () -> Unit,
 ) {
-    // tintOnDark = true only when video fills the background (so the bar
-    // sits on the camera feed). Otherwise the bar sits on the theme
-    // background and should follow it (dark surface → light text).
     val tint = if (tintOnDark) WeMeetTheme.extras.aiCall.onVideo
-        else MaterialTheme.colorScheme.onBackground
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceS),
-    ) {
-        // Leading back + trailing (flip?, settings) on the same row.
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.assistant_cd_back),
-                    tint = tint,
-                )
-            }
-            Spacer(modifier = Modifier.weight(1f))
+        else MaterialTheme.colorScheme.onSurfaceVariant
+    WeMeetTopBar(
+        title = stringResource(R.string.assistant_history_call),
+        onBack = onBack,
+        colors = if (tintOnDark) TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+            titleContentColor = tint,
+            navigationIconContentColor = tint,
+            actionIconContentColor = tint,
+        ) else null,
+        actions = {
             if (showFlipCamera) {
                 IconButton(onClick = onFlipCamera) {
                     Icon(
@@ -352,17 +345,8 @@ private fun TopBar(
                     tint = if (canOpenSettings) tint else tint.copy(alpha = 0.4f),
                 )
             }
-        }
-        // Centred title, overlaid so it stays centred regardless of the
-        // asymmetric leading/trailing icon counts.
-        Text(
-            text = stringResource(R.string.assistant_title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = tint,
-            modifier = Modifier.align(Alignment.Center),
-        )
-    }
+        },
+    )
 }
 
 @Composable

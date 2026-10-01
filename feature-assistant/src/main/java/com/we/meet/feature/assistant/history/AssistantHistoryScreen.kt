@@ -132,7 +132,11 @@ fun AssistantHistoryScreen(store: AssistantHistoryStore, onBack: () -> Unit, dep
     BackHandler(onBack = back)
     val formatter = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
     Scaffold(topBar = {
-        WeMeetTopBar(title = stringResource(R.string.assistant_history_title), onBack = back,
+        WeMeetTopBar(title = stringResource(when (entry?.kind) {
+            "call" -> R.string.assistant_history_call
+            "translation" -> R.string.assistant_history_translation
+            else -> R.string.assistant_history_title
+        }), onBack = back,
             actions = {
                 if (entry == null) IconButton(onClick = { if (searching) closeSearch() else searching = true }) {
                     Icon(if (searching) Icons.Default.Close else Icons.Default.Search,
