@@ -75,7 +75,8 @@ class AndroidTranslationOutput(
                 .setTransferMode(AudioTrack.MODE_STREAM).setBufferSizeInBytes(bufferBytes).build()
             track = value
             check(value.state == AudioTrack.STATE_INITIALIZED)
-            // Bilingual playback primes 200 ms to absorb scheduler/network jitter.
+            // The caller sets a priming threshold that absorbs scheduler and
+            // network jitter; the reply's first audible frame waits for it.
             // Capacity remains separate; finishTurn releases sub-threshold replies.
             startThresholdFrames = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 value.setStartThresholdInFrames(maxOf(1, startupBufferMs * 24))

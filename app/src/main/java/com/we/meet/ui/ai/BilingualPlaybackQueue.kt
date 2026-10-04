@@ -2,7 +2,11 @@ package com.we.meet.ui.ai
 
 /** Keep concurrent model responses separate while bounding all queued PCM in bytes. */
 internal class BilingualPlaybackQueue(private val maxBytes: Int = 60 * 48000) {
-    data class Packet(val audio: ByteArray? = null, val replay: Boolean = false)
+    data class Packet(
+        val audio: ByteArray? = null,
+        val replay: Boolean = false,
+        val id: String? = null,
+    )
     private class Item(val replay: Boolean = false) {
         val chunks = ArrayDeque<ByteArray>()
         var ended = false
@@ -37,11 +41,11 @@ internal class BilingualPlaybackQueue(private val maxBytes: Int = 60 * 48000) {
         val chunk = first.value.chunks.removeFirstOrNull()
         if (chunk != null) {
             bytes -= chunk.size
-            return Packet(chunk, first.value.replay)
+            return Packet(chunk, first.value.replay, first.key)
         }
         if (!first.value.ended) return null
         items.remove(first.key)
-        return Packet(replay = first.value.replay)
+        return Packet(replay = first.value.replay, id = first.key)
     }
 
     @Synchronized fun clear() { items.clear(); bytes = 0 }

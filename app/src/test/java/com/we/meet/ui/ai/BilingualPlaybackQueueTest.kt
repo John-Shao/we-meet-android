@@ -42,4 +42,12 @@ class BilingualPlaybackQueueTest {
         assertEquals(4, queue.poll()!!.audio!!.size)
         assertNull(queue.poll()!!.audio)
     }
+
+    @Test fun packetsCarryTheReplyIdUsedForLatencyReporting() {
+        val queue = BilingualPlaybackQueue()
+        queue.offer("reply", byteArrayOf(1, 1))
+        queue.finish("reply")
+        assertEquals("reply", queue.poll()!!.id)
+        assertEquals("reply", queue.poll()!!.id)
+    }
 }

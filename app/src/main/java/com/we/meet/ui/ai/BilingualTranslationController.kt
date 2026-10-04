@@ -3,6 +3,7 @@ package com.we.meet.ui.ai
 import android.content.Context
 import android.os.SystemClock
 import android.util.Base64
+import android.util.Log
 import com.we.meet.data.api.AssistantTranslationApi
 import com.we.meet.data.api.AssistantTranslationPair
 import com.we.meet.data.capture.AndroidCapturePcmSource
@@ -28,6 +29,17 @@ import org.json.JSONObject
 internal data class BilingualRow(val id: String, val source: String, val text: String, val sourceLanguage: String, val targetLanguage: String) {
     override fun toString() = "BilingualRow(<private>)"
 }
+
+private const val LOG_TAG = "BilingualTranslation"
+// The gateway releases a reply's audio in one burst once its direction is
+// confirmed, so a long playback prebuffer mostly delays the response onset.
+// Keep a short cushion for scheduling jitter instead of the old 200 ms.
+private const val STARTUP_BUFFER_MS = 80
+// Echo protection after the last rendered sample. The framework has already
+// consumed it, so this only covers the device's acoustic tail.
+private const val ECHO_TAIL_MS = 200L
+// One sampled acknowledgment round trip every ten seconds of microphone audio.
+private const val ACK_SAMPLE_INTERVAL = 100
 
 internal enum class BilingualPhase { IDLE, CONNECTING, LISTENING, SPEAKING, FINISHING, ERROR, EXPIRED }
 internal data class BilingualState(
@@ -64,7 +76,7 @@ internal class BilingualTranslationController(
         AndroidCapturePcmSource.open(context).also { it.onInterrupted = interrupted }
     },
     private val openOutput: (() -> Unit) -> BilingualAudioOutput = { interrupted ->
-        val delegate = AndroidTranslationOutput(context, interrupted, startupBufferMs = 200)
+        val delegate = AndroidTranslationOutput(context, interrupted, startupBufferMs = STARTUP_BUFFER_MS)
         object : BilingualAudioOutput {
             override fun open() = delegate.open()
             override fun play(samples: ShortArray) = delegate.play(samples)
@@ -209,6 +221,10 @@ internal class BilingualTranslationController(
         private val ready = CompletableDeferred<Unit>()
         private val audio = BilingualPlaybackQueue()
         private val audioReady = Channel<Unit>(Channel.CONFLATED)
+        // First time each reply's audio reached this device, for queue latency.
+        private val receivedAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
+        @Volatile private var lastVoiceAt = 0L
+        private var ackCount = 0
         private var microphone: CapturePcmSource? = null
         private var output: BilingualAudioOutput? = null
         private var wire: CaptureTranslationWire? = null
@@ -271,7 +287,12 @@ internal class BilingualTranslationController(
                     when (event.getString("type")) {
                         "ready" -> ready.complete(Unit)
                         "ack" -> {
-                            synchronized(pending) { check(pending.pollFirst() != null) }
+                            val sentAt = synchronized(pending) { pending.pollFirst() }
+                            check(sentAt != null)
+                            ackCount += 1
+                            if (ackCount % ACK_SAMPLE_INTERVAL == 0) {
+                                Log.i(LOG_TAG, "translation_ack_rtt_ms=${SystemClock.elapsedRealtime() - sentAt}")
+                            }
                             window.release()
                         }
                         "language_unknown" -> mutable.update { it.copy(unknownLanguage = true) }
@@ -286,11 +307,13 @@ internal class BilingualTranslationController(
                                 rowOrder.getOrPut(row.id) { rowOrder.size }, "translation", row.text, row.source, sourceLanguage, targetLanguage))
                         }
                         "audio" -> {
+                            val id = event.getString("id")
                             val bytes = Base64.decode(event.getString("audio"), Base64.NO_WRAP)
-                            replayCache.append("$sessionId:${event.getString("id")}", bytes)
+                            receivedAt.putIfAbsent(id, SystemClock.elapsedRealtime())
+                            replayCache.append("$sessionId:$id", bytes)
                             mutable.update { it.copy(replayable = replayCache.ids()) }
                             if (mutable.value.sound) {
-                                audio.offer(event.getString("id"), bytes)
+                                audio.offer(id, bytes)
                                 audioReady.trySend(Unit)
                             }
                         }
@@ -329,7 +352,7 @@ internal class BilingualTranslationController(
                             checkNotNull(output).finishTurn()
                             withTimeout(5000) { while (checkNotNull(output).pendingSamples > 0) delay(20) }
                             // Release echo protection only after the complete response and its tail.
-                            if (speaking.get()) delay(350)
+                            if (speaking.get()) delay(ECHO_TAIL_MS)
                             speaking.set(false)
                             if (packet.replay) {
                                 checkNotNull(output).mute(!mutable.value.sound)
@@ -343,6 +366,7 @@ internal class BilingualTranslationController(
                         val samples = ShortArray(bytes.size / 2)
                         ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(samples)
                         var offset = 0
+                        var announced = false
                         while (offset < samples.size && (mutable.value.sound || packet.replay)) {
                             ensureActive()
                             // AudioTrack's bounded write handles pacing. Sleeping for
@@ -350,6 +374,10 @@ internal class BilingualTranslationController(
                             // starves playback at every PCM boundary (audible clicks).
                             val end = minOf(offset + 2400, samples.size)
                             checkNotNull(output).play(samples.copyOfRange(offset, end))
+                            if (!announced) {
+                                announced = true
+                                if (!packet.replay) reportPlayback(packet.id)
+                            }
                             offset = end
                         }
                     }
@@ -374,6 +402,7 @@ internal class BilingualTranslationController(
                         val bytes = ByteBuffer.allocate(count * 2).order(ByteOrder.LITTLE_ENDIAN)
                         // Continuous capture, but never feed the assistant its own loudspeaker output.
                         val silence = speaking.get() || mutable.value.inputPaused
+                        if (!silence) lastVoiceAt = SystemClock.elapsedRealtime()
                         repeat(count) { bytes.putShort(if (silence) 0 else buffer[it]) }
                         check(pcm.trySend(bytes.array()).isSuccess)
                     }
@@ -389,6 +418,17 @@ internal class BilingualTranslationController(
             withTimeout(5000) { repeat(8) { window.acquire() } }
             check(finishing.get() && wire?.send("{\"type\":\"finish\"}") == true)
             awaitCancellation()
+        }
+
+        private fun reportPlayback(id: String?) {
+            // Queue wait plus the local reply latency: the last frame of the
+            // speaker's own voice to the first frame handed to playback. Both
+            // numbers are durations only; no audio, text or identity is logged.
+            val received = id?.let { receivedAt.remove(it) } ?: return
+            val now = SystemClock.elapsedRealtime()
+            val voice = lastVoiceAt
+            val reply = if (voice > 0 && now >= voice) now - voice else -1
+            Log.i(LOG_TAG, "translation_playback_started queue_ms=${now - received} reply_ms=$reply")
         }
 
         private suspend fun phase(value: BilingualPhase) = withContext(Dispatchers.Main.immediate) {

@@ -92,3 +92,20 @@ AI 电话与双语互译共用 `AssistantForegroundService`，在用户可见页
 - 双语互译设置提供通用交流、旅行交流、商务沟通，场景、语言和播报独立保存，修改任一项不改变另外两项。旧英语/日语旅行预设统一迁移为旅行交流，保留原语言与播报。场景目前仅记录本机使用偏好，尚未传入翻译模型，界面明确说明；不使用陪练提示词。设置按当前账号保存，重新进入页面会恢复。会话进行中不能更换场景或语言。
 - 两类预设均不改动文字保存开关、摄像头开关或已有会话记录。只需更新 Android App；无需发布后端或 agents。
 - 验证：`AssistantSceneTest` 覆盖场景/语言/播报独立修改、旧预设迁移、配置恢复及账号隔离；`AiCallConfigTest` 覆盖目录解析保留场景；`BilingualTranslationUiTest` 覆盖预设选择与语言显示。
+
+### P3：互译响应时间与埋点
+
+- 播放预缓冲由 200 ms 降为 80 ms（`STARTUP_BUFFER_MS`）。网关在方向确认后会一次性下发音频，
+  预缓冲主要用于吸收调度抖动，不再是 200 ms 的固定等待；短回复仍由 `finishTurn()` 补齐阈值后出声。
+- 播报结束后的回声保护尾由 350 ms 降为 200 ms（`ECHO_TAIL_MS`）。该值只覆盖设备放音尾音，
+  缩短后更早恢复真实麦克风输入；这段窗口内对方话音仍会被静音帧替代，不做半双工改动。
+- 新增两条只含时长的诊断日志，不记录音频、文字、语言或身份：
+  - `translation_playback_started queue_ms=<收到音频到首帧写入播放器> reply_ms=<本机最后一帧话音到首帧写入>`。
+    `reply_ms` 是客户端侧「说完 → 听到译音」口径；跨句重叠或本会话还没说过话时为 -1。
+  - `translation_ack_rtt_ms=<上行帧到 ACK 的往返>`，每 100 帧（约 10 秒音频）采样一次。
+- 网关侧的 `translation_first_audio`、`translation_audio_delivered gate_ms` 与 `since_speech_ms`
+  见 `we-meet/src/agents/README.md`；三段相加即为端到端首段译音延迟。
+- 验证：`BilingualPlaybackQueueTest` 覆盖队列顺序、分片与上限；真机弱网下同时观察
+  `AudioTrack.underrunCount`（`BilingualTranslationTest` 暴露的 `playbackUnderruns`），
+  确认 80 ms 预缓冲没有带来欠载或咔哒声。真实设备音频路由、蓝牙与回声仍需实机验收。
+
