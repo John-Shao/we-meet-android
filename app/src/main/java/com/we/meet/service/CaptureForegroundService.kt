@@ -168,12 +168,12 @@ class CaptureForegroundService : Service() {
         hasMicrophonePermission() && !ConferenceForegroundService.isRunning
 
     /** Reuse the current capture device. Creating a tap never starts recording. */
-    fun observePcm(captureId: String): CapturePcmTap.Subscription {
+    fun observePcm(captureId: String, exclusive: Boolean = false): CapturePcmTap.Subscription {
         val snapshot = mutableState.value
         val local = requireNotNull(snapshot.local)
         check(authorized() && snapshot.recording && !snapshot.busy &&
             local.remote?.id == captureId && !CaptureRetention.audioExpired(local))
-        return requireNotNull(pcmTap).attach()
+        return requireNotNull(pcmTap).attach(exclusive)
     }
 
     private fun startInput(title: String, retentionMode: String) {

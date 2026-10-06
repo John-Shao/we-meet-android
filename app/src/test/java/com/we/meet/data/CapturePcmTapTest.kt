@@ -5,6 +5,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CapturePcmTapTest {
+    @Test fun directValidationCannotReplaceExistingAudioTool() {
+        val tap = CapturePcmTap()
+        val first = tap.attach()
+        assertTrue(runCatching { tap.attach(exclusive = true) }.isFailure)
+        assertEquals(CapturePcmTap.State.RUNNING, first.state)
+        first.close()
+        tap.attach(exclusive = true).close()
+    }
     @Test fun finishingOneTurnKeepsSourceReusableAndExcludesBetweenTurnAudio() {
         val tap = CapturePcmTap(); val first = tap.attach()
         tap.offer(ShortArray(533) { 7 }, 533)

@@ -162,9 +162,16 @@ fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit
         extra = {
             val app = context.applicationContext as? WeMeetApp
             val capture = state.local?.remote
+            val bound = service
             if (app != null && capture != null && state.viewer == viewer) {
                 androidx.compose.runtime.key(viewer, capture.id) {
                     if (state.local?.sealed != true) {
+                        if (BuildConfig.DEBUG && bound != null) {
+                            CaptureDirectAsrPanel(app.apiClient.assistantTranscriptionApi,
+                                authorized = { app.captureAccount == viewer && bound.state.value.local?.remote?.id == capture.id },
+                                recording = { bound.state.value.recording && !bound.state.value.busy },
+                                observe = { bound.observePcm(capture.id, exclusive = true) })
+                        }
                         if (state.local?.create?.retentionMode == "text") CaptureRetentionPanel(viewer, capture, app.captureTranscriptionRepository)
                         CaptureAsrPanel(viewer, capture, app.captureTranscriptionRepository) { app.captureAccount }
                     }

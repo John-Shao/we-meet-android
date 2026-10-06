@@ -141,6 +141,7 @@ class ApiClient(tokenStore: TokenStore) {
     val captureApi: CaptureApi = meetingPrivateRetrofit.create(CaptureApi::class.java)
     val captureTranslationApi: CaptureTranslationApi = meetingPrivateRetrofit.create(CaptureTranslationApi::class.java)
     val assistantTranslationApi: AssistantTranslationApi = meetingPrivateRetrofit.create(AssistantTranslationApi::class.java)
+    val assistantTranscriptionApi: AssistantTranscriptionApi = meetingPrivateRetrofit.create(AssistantTranscriptionApi::class.java)
     val captureTranscriptionApi: CaptureTranscriptionApi = meetingPrivateRetrofit.create(CaptureTranscriptionApi::class.java)
 
     private fun normalizedBaseUrl(raw: String): String =

@@ -64,9 +64,10 @@ class CapturePcmTap(private val authorized: () -> Boolean = { true }) : Closeabl
     private var active: Channel? = null
     private var ended = false
 
-    @Synchronized fun attach(): Subscription {
+    @Synchronized fun attach(exclusive: Boolean = false): Subscription {
         checkAuthority()
         check(!ended) { "PCM source has ended" }
+        check(!exclusive || active == null) { "PCM source is already in use" }
         active?.let { clear(it, State.CLOSED) }
         val channel = Channel()
         active = channel

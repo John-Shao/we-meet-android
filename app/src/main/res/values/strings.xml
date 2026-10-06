@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="capture_direct_asr_title">Direct live transcription (validation)</string>
+    <string name="capture_direct_asr_hint">Validation captions appear here only. They are not saved to the recording. Use one live audio tool at a time.</string>
+    <string name="capture_direct_asr_start">Start direct transcription</string>
+    <string name="capture_direct_asr_stop">Stop direct transcription</string>
+    <string name="capture_direct_asr_connecting">Connecting…</string>
+    <string name="capture_direct_asr_listening">Transcribing…</string>
+    <string name="capture_direct_asr_finishing">Receiving the final sentence…</string>
+    <string name="capture_direct_asr_finished">Transcription finished</string>
+    <string name="capture_direct_asr_failed">Direct transcription is unavailable. Try again later or use cloud transcription.</string>
     <string name="bilingual_transport_validation">Connection (validation)</string>
     <string name="bilingual_transport_aoq">AOQ direct connection</string>
     <string name="bilingual_transport_cloud">Cloud connection</string>

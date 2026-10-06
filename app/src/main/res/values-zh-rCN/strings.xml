@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="capture_direct_asr_title">实时转写直连（验证）</string>
+    <string name="capture_direct_asr_hint">验证字幕仅在此页显示，不写入实录。同时只使用一种实时音频工具。</string>
+    <string name="capture_direct_asr_start">开始直连转写</string>
+    <string name="capture_direct_asr_stop">停止直连转写</string>
+    <string name="capture_direct_asr_connecting">正在连接…</string>
+    <string name="capture_direct_asr_listening">正在转写…</string>
+    <string name="capture_direct_asr_finishing">正在接收最后一句…</string>
+    <string name="capture_direct_asr_finished">转写已结束</string>
+    <string name="capture_direct_asr_failed">直连转写暂不可用，请稍后重试或使用云端转写。</string>
     <string name="bilingual_transport_validation">连接方式（验证）</string>
     <string name="bilingual_transport_aoq">AOQ 客户端直连</string>
     <string name="bilingual_transport_cloud">云端接入</string>

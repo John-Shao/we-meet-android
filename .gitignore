@@ -58,3 +58,10 @@ Thumbs.db
 # .claude/settings.json; settings.local.json is local permission state)
 .claude/settings.local.json
 /.temp
+
+# Local AOQ validation results
+/artifacts/aoq-translation/verification.json
+/artifacts/aoq-translation/aoq-translation-connected.png
+
+# Local direct ASR validation results
+/artifacts/direct-asr/verification.json
