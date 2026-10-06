@@ -165,11 +165,14 @@ fun CaptureScreen(viewer: String, onBack: () -> Unit, onRecord: (String) -> Unit
             val bound = service
             if (app != null && capture != null && state.viewer == viewer) {
                 androidx.compose.runtime.key(viewer, capture.id) {
-                    if (bound != null) {
+                    val textMode = state.local?.create?.retentionMode == "text"
+                    if (!textMode && bound != null) {
                         CaptureDirectAsrPanel(viewer, capture, bound, app.captureTranscriptionRepository)
                     }
-                    if (state.local?.sealed != true) {
-                        if (state.local?.create?.retentionMode == "text") CaptureRetentionPanel(viewer, capture, app.captureTranscriptionRepository)
+                    if (textMode && state.local?.sealed != true) {
+                        CaptureRetentionPanel(viewer, capture, app.captureTranscriptionRepository)
+                        CaptureAsrPanel(viewer, capture, app.captureTranscriptionRepository) { app.captureAccount }
+                    } else if (!textMode && capture.status == "stopped") {
                         CaptureAsrPanel(viewer, capture, app.captureTranscriptionRepository) { app.captureAccount }
                     }
                 }

@@ -25,7 +25,7 @@
     <string name="capture_operation_error">This action could not be confirmed. Your local recovery data is kept. Retry to check its status.</string>
     <string name="capture_start">Start recording</string>
     <string name="capture_resume">Resume recording</string>
-    <string name="capture_finish">End and save recording</string>
+    <string name="capture_finish">Stop</string>
     <string name="capture_local_hint">Audio is saved privately on this device and uploaded in the background.</string>
     <string name="capture_saved_hint">Audio has been saved. This recording will not resume automatically.</string>
     <string name="capture_pending_count">Waiting to upload: %1$d KB</string>
@@ -41,8 +41,9 @@
     <string name="capture_asr_operation_error">The action could not be confirmed. Check its current status before retrying.</string>
     <string name="capture_asr_allow_incomplete">Allow transcription from incomplete audio</string>
     <string name="capture_asr_reconcile">Check previous request</string>
-    <string name="capture_asr_start_live">Use cloud live transcription</string>
-    <string name="capture_asr_start_sealed">Transcribe saved audio</string>
+    <string name="capture_asr_start_live">Start transcription</string>
+    <string name="capture_asr_start_sealed">Transcribe whole recording</string>
+    <string name="capture_asr_after_recording">Whole-recording transcription is available after recording ends.</string>
     <string name="capture_asr_cancel">Cancel transcription</string>
     <string name="capture_asr_queued">Waiting for transcription</string>
     <string name="capture_asr_running">Transcribing</string>

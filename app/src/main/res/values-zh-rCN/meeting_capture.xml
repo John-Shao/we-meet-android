@@ -25,7 +25,7 @@
     <string name="capture_operation_error">未能确认操作结果，本地恢复数据仍保留。请重试核对状态。</string>
     <string name="capture_start">开始录音</string>
     <string name="capture_resume">继续录音</string>
-    <string name="capture_finish">结束并保存录音</string>
+    <string name="capture_finish">停止</string>
     <string name="capture_local_hint">音频保存在本机私有空间，并在后台上传。</string>
     <string name="capture_saved_hint">音频已保存，本次录音不会自动恢复。</string>
     <string name="capture_pending_count">待上传：%1$d KB</string>
@@ -41,8 +41,9 @@
     <string name="capture_asr_operation_error">未能确认操作结果，请核对当前状态后重试。</string>
     <string name="capture_asr_allow_incomplete">允许使用不完整音频转写</string>
     <string name="capture_asr_reconcile">核对上次请求</string>
-    <string name="capture_asr_start_live">使用云端实时转写</string>
-    <string name="capture_asr_start_sealed">转写已保存音频</string>
+    <string name="capture_asr_start_live">开始转写</string>
+    <string name="capture_asr_start_sealed">整段转写</string>
+    <string name="capture_asr_after_recording">录音结束后，可在此进行整段转写。</string>
     <string name="capture_asr_cancel">取消转写</string>
     <string name="capture_asr_queued">等待转写</string>
     <string name="capture_asr_running">正在转写</string>

@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="capture_direct_asr_title">Live transcription</string>
-    <string name="capture_direct_asr_hint">Recognize text from the moment you start. Pause and resume recording to continue transcription. Stopping and saving ends direct transcription for this recording. Use one live audio tool at a time.</string>
-    <string name="capture_direct_asr_start">Start direct transcription</string>
+    <string name="capture_direct_asr_hint">Recognize text from the moment you start. Pause and resume recording to continue transcription. Stopping and saving ends transcription for this recording. Use transcription or live translation one at a time.</string>
+    <string name="capture_direct_asr_start">Start transcription</string>
     <string name="capture_direct_asr_stop">Stop and save transcription</string>
     <string name="capture_direct_asr_connecting">Connecting…</string>
     <string name="capture_direct_asr_listening">Transcribing…</string>
     <string name="capture_direct_asr_finishing">Receiving the final sentence…</string>
     <string name="capture_direct_asr_finished">Transcription saved to the record</string>
     <string name="capture_direct_asr_empty">No speech was recognized. Your recording is retained.</string>
-    <string name="capture_direct_asr_failed">Transcription disconnected. Recording continues and confirmed text stays on this device. Resume direct transcription or save the existing text.</string>
+    <string name="capture_direct_asr_failed">Transcription disconnected. Recording continues and confirmed text stays on this device. Resume transcription or save the existing text.</string>
     <string name="capture_direct_asr_save">Save existing transcription</string>
     <string name="capture_direct_asr_paused">Transcription paused. Resume recording to continue.</string>
     <string name="capture_direct_asr_save_failed">Text is awaiting delivery. Reconnect and retry saving.</string>
-    <string name="capture_direct_asr_gap">Transcription covers audio while enabled. For complete text, use cloud transcription after recording ends.</string>
+    <string name="capture_direct_asr_gap">Transcription covers audio while enabled. For complete text, use whole-recording transcription after recording ends.</string>
     <string name="bilingual_transport_validation">Connection (validation)</string>
     <string name="bilingual_transport_aoq">AOQ direct connection</string>
     <string name="bilingual_transport_cloud">Cloud connection</string>

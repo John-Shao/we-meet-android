@@ -72,7 +72,8 @@ class CaptureAsrPanelTest {
         api.job = api.job.copy(mode = "sealed", inputClosed = true, audioStatus = "saved")
         val captures = CaptureProtocolFixture().also { it.state = capture }
         val record = RecordDto(capture.recordId, "audio_recording", "Saved interview", "2026-09-13T00:00:00Z", 1,
-            RecordCapabilitiesDto(readSummary = true, readTranscript = true), captureId = capture.id)
+            RecordCapabilitiesDto(readSummary = true, readTranscript = true, controlCapture = true), captureId = capture.id,
+            retentionMode = "media")
         var refreshed = false
         compose.setContent { WeMeetTheme { RecordCaptureTools(viewer, record,
             com.we.meet.data.repository.CaptureRepository(captures) { viewer }, repository, { viewer }, { refreshed = true }) } }

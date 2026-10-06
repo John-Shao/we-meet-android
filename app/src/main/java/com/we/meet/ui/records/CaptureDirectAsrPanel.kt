@@ -27,6 +27,8 @@ internal fun CaptureDirectAsrPanel(viewer: String, capture: CaptureDto, service:
         Text(stringResource(R.string.capture_direct_asr_title), style=MaterialTheme.typography.titleSmall)
         Text(stringResource(R.string.capture_direct_asr_hint), style=MaterialTheme.typography.bodySmall,
             color=MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.capture_asr_usage), style=MaterialTheme.typography.bodySmall,
+            color=MaterialTheme.colorScheme.onSurfaceVariant)
         if(direct.phase != "saved" && (direct.phase != "idle" || recording.recording)) {
             Button(onClick={ if(active) service.saveDirectAsr() else service.startDirectAsr() },
                 enabled=direct.phase != "saving" && (active || recording.recording && !recording.busy)) {

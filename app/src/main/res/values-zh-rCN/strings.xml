@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="capture_direct_asr_title">实时转写</string>
-    <string name="capture_direct_asr_hint">从开启时刻识别文字，暂停后续录可继续转写。结束录音时写入实录；停止并保存后，本次录音的直连转写结束。同时只使用一种实时音频工具。</string>
-    <string name="capture_direct_asr_start">开始直连转写</string>
+    <string name="capture_direct_asr_hint">从开启时刻识别文字，暂停后续录可继续转写。结束录音时写入实录；停止并保存后，本次录音的转写结束。转写与实时翻译请择一开启。</string>
+    <string name="capture_direct_asr_start">开始转写</string>
     <string name="capture_direct_asr_stop">停止并保存转写</string>
     <string name="capture_direct_asr_connecting">正在连接…</string>
     <string name="capture_direct_asr_listening">正在转写…</string>
     <string name="capture_direct_asr_finishing">正在接收最后一句…</string>
     <string name="capture_direct_asr_finished">转写已保存到实录</string>
     <string name="capture_direct_asr_empty">未识别到文字，录音已保留。</string>
-    <string name="capture_direct_asr_failed">转写连接中断，录音继续。已识别文字保留在本机，可恢复直连或保存已有转写。</string>
+    <string name="capture_direct_asr_failed">转写连接中断，录音继续。已识别文字保留在本机，可恢复转写或保存已有转写。</string>
     <string name="capture_direct_asr_save">保存已有转写</string>
     <string name="capture_direct_asr_paused">转写已暂停，恢复录音后继续识别。</string>
     <string name="capture_direct_asr_save_failed">文字尚未保存到实录，请联网后重试保存。</string>
-    <string name="capture_direct_asr_gap">转写仅覆盖开启期间的音频。需要完整文字时，可结束录音后使用云端整段转写。</string>
+    <string name="capture_direct_asr_gap">转写仅覆盖开启期间的音频。需要完整文字时，可结束录音后使用整段转写。</string>
     <string name="bilingual_transport_validation">连接方式（验证）</string>
     <string name="bilingual_transport_aoq">AOQ 客户端直连</string>
     <string name="bilingual_transport_cloud">云端接入</string>

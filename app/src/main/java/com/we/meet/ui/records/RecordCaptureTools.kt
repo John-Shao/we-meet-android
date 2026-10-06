@@ -82,7 +82,12 @@ internal fun RecordCaptureToolsSheet(
                 else -> {
                     val capture = result.getOrThrow()
                     if (record.retentionMode == "text") CaptureRetentionPanel(viewer, capture, transcriptions)
-                    CaptureAsrPanel(viewer, capture, transcriptions, currentViewer)
+                    if (record.retentionMode == "text" || capture.status == "stopped") {
+                        CaptureAsrPanel(viewer, capture, transcriptions, currentViewer)
+                    } else {
+                        Text(stringResource(R.string.capture_asr_after_recording),
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
             TextButton(onClick = onClose) { Text(stringResource(R.string.records_close)) }
