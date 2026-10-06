@@ -143,6 +143,43 @@ class CaptureForegroundServiceTest {
         }
     }
 
+    @Test fun backgroundKeepsPcmSubscriptionAndPauseResumeUsesAbsoluteTimeline() = runBlocking {
+        val service = bind()
+        until { service.state.value.ready }
+        ActivityScenario.launch(ComponentActivity::class.java).use { activity ->
+            activity.onActivity { CaptureForegroundService.start(it, "Background PCM fixture") }
+            until { service.state.value.recording && !service.state.value.busy }
+            val captureId=service.state.value.local!!.remote!!.id
+            val first=service.observePcm(captureId, exclusive=true)
+            val firstInput=requireNotNull(app.input)
+            assertTrue(instrumentation.uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME))
+            val reads=firstInput.reads
+            repeat(5) {
+                var frame: CapturePcmTap.Frame? = null
+                until { frame=first.poll(); frame != null }
+                frame!!.close()
+            }
+            assertTrue(firstInput.reads > reads)
+            assertTrue(service.state.value.recording && CaptureForegroundService.microphoneActive)
+            first.finish(); first.close()
+            instrumentation.runOnMainSync { service.pause() }
+            until { !service.state.value.recording && !service.state.value.busy }
+            val offset=service.state.value.local!!.durationMs
+            assertTrue(offset > first.startMs)
+            ActivityScenario.launch(ComponentActivity::class.java).use { resumed ->
+                resumed.onActivity { CaptureForegroundService.start(it, "Background PCM fixture") }
+                until { service.state.value.recording && !service.state.value.busy }
+                val next=service.observePcm(captureId, exclusive=true)
+                assertTrue(next.startMs >= offset)
+                next.finish(); next.close()
+                instrumentation.runOnMainSync { service.finish() }
+                until { !service.state.value.busy && !service.state.value.recording }
+                assertTrue(service.state.value.local!!.sealed)
+                assertFalse(service.state.value.error)
+            }
+        }
+    }
+
     @Test fun bindRecoversLocalOpenMarkerWithoutStartingHardwareOrNetwork() = runBlocking {
         val viewer = requireNotNull(app.captureAccount)
         CaptureJournal.open(context, viewer, { app.captureAccount }).use { journal ->

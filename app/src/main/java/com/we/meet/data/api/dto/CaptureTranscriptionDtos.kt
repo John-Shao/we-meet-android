@@ -13,11 +13,13 @@ data class CaptureAsrJobDto(
     val mode: String,
     @Json(name = "input_closed") val inputClosed: Boolean,
     @Json(name = "error_code") val errorCode: String = "",
+    val transport: String = "cloud",
 )
 
 data class CaptureAsrStateDto(
     val available: Boolean = false,
     @Json(name = "live_available") val liveAvailable: Boolean = false,
+    @Json(name = "direct_available") val directAvailable: Boolean = false,
     @Json(name = "summary_available") val summaryAvailable: Boolean = false,
     @Json(name = "staged_summary_available") val stagedSummaryAvailable: Boolean = false,
     @Json(name = "active_job_id") val activeJobId: String? = null,

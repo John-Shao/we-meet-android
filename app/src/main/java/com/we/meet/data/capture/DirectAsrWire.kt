@@ -16,7 +16,7 @@ data class DirectAsrRow(val id: Int, val text: String, val startMs: Long, val en
 }
 
 /** One task, bounded audio queue, explicit finish ACK; no retries or audio replay. */
-class DirectAsrWire(private val onRows: (List<DirectAsrRow>) -> Unit) : Closeable {
+class DirectAsrWire(private val onRows: (List<DirectAsrRow>) -> Unit) : DirectAsrConnection {
     private val ready = CompletableDeferred<Unit>()
     private val finished = CompletableDeferred<Unit>()
     private val task = UUID.randomUUID().toString()
@@ -25,8 +25,9 @@ class DirectAsrWire(private val onRows: (List<DirectAsrRow>) -> Unit) : Closeabl
     private var ending = false
     private var closed = false
     private var inputMs = 0L
+    private var textBytes = 0
 
-    suspend fun start(credentials: DirectAsrCredentials) {
+    override suspend fun start(credentials: DirectAsrCredentials) {
         check(credentials.model == MODEL && credentials.token.startsWith("st-") &&
             credentials.expiresAt > System.currentTimeMillis() / 1000)
         val url = URI(credentials.url)
@@ -77,7 +78,8 @@ class DirectAsrWire(private val onRows: (List<DirectAsrRow>) -> Unit) : Closeabl
                 check(id >= 0 && row.text.length <= 10000 && row.startMs >= 0 && row.endMs >= row.startMs && row.endMs <= inputMs + 250)
                 if (row.text.isBlank()) return
                 rows[id]?.let { check(it == row); return }
-                check(rows.size < 1000)
+                textBytes += row.text.toByteArray(Charsets.UTF_8).size
+                check(rows.size < 20000 && textBytes <= 4000000)
                 rows[id] = row; onRows(rows.values.toList())
             }
             "task-finished" -> { check(ending); finished.complete(Unit) }
@@ -85,13 +87,13 @@ class DirectAsrWire(private val onRows: (List<DirectAsrRow>) -> Unit) : Closeabl
         }
     }
 
-    @Synchronized fun send(pcm: ByteArray): Boolean {
-        if (closed || ending || !ready.isCompleted || pcm.isEmpty() || pcm.size % 32 != 0 || socket!!.queueSize() > 64000) return false
+    @Synchronized override fun send(pcm: ByteArray): Boolean {
+        if (closed || ending || !ready.isCompleted || pcm.isEmpty() || pcm.size % 32 != 0 || inputMs + pcm.size / 32 > 43200000 || socket!!.queueSize() > 64000) return false
         inputMs += pcm.size / 32
         return socket!!.send(pcm.toByteString())
     }
 
-    suspend fun finish(): List<DirectAsrRow> {
+    override suspend fun finish(): List<DirectAsrRow> {
         synchronized(this) {
             check(!closed)
             if (!ending) { ending = true; check(socket!!.send(command("finish-task").toString())) }

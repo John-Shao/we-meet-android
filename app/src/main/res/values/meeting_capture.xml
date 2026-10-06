@@ -41,7 +41,7 @@
     <string name="capture_asr_operation_error">The action could not be confirmed. Check its current status before retrying.</string>
     <string name="capture_asr_allow_incomplete">Allow transcription from incomplete audio</string>
     <string name="capture_asr_reconcile">Check previous request</string>
-    <string name="capture_asr_start_live">Start live transcription</string>
+    <string name="capture_asr_start_live">Use cloud live transcription</string>
     <string name="capture_asr_start_sealed">Transcribe saved audio</string>
     <string name="capture_asr_cancel">Cancel transcription</string>
     <string name="capture_asr_queued">Waiting for transcription</string>

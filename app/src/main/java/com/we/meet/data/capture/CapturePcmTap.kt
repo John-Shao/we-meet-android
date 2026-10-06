@@ -5,9 +5,10 @@ import java.util.ArrayDeque
 import java.util.UUID
 
 /** Optional 100 ms copies of the existing microphone. Never performs network or disk IO. */
-class CapturePcmTap(private val authorized: () -> Boolean = { true }) : Closeable {
+class CapturePcmTap(private val originMs: Long = 0, private val authorized: () -> Boolean = { true }) : Closeable {
     enum class State { RUNNING, FINISHED, OVERFLOW, CLOSED }
     private class Channel {
+        var startMs = 0L
         val generation = UUID.randomUUID().toString()
         var state = State.RUNNING
         val queued = ArrayDeque<ShortArray>()
@@ -23,6 +24,7 @@ class CapturePcmTap(private val authorized: () -> Boolean = { true }) : Closeabl
     }
 
     interface Subscription : Closeable {
+        val startMs: Long get() = 0
         val generation: String
         val state: State
         fun poll(): Frame?
@@ -31,6 +33,7 @@ class CapturePcmTap(private val authorized: () -> Boolean = { true }) : Closeabl
     }
 
     private inner class Reader(private val channel: Channel) : Subscription {
+        override val startMs: Long get() = channel.startMs
         override val generation: String get() = channel.generation
         override val state: State get() = synchronized(this@CapturePcmTap) { checkAuthority(); channel.state }
 
@@ -63,6 +66,7 @@ class CapturePcmTap(private val authorized: () -> Boolean = { true }) : Closeabl
 
     private var active: Channel? = null
     private var ended = false
+    private var offeredSamples = 0L
 
     @Synchronized fun attach(exclusive: Boolean = false): Subscription {
         checkAuthority()
@@ -70,12 +74,15 @@ class CapturePcmTap(private val authorized: () -> Boolean = { true }) : Closeabl
         check(!exclusive || active == null) { "PCM source is already in use" }
         active?.let { clear(it, State.CLOSED) }
         val channel = Channel()
+        channel.startMs = originMs + offeredSamples / 16
         active = channel
         return Reader(channel)
     }
 
     @Synchronized fun offer(samples: ShortArray, count: Int) {
         checkAuthority()
+        if (count !in 1..samples.size || count > FRAMES) { active?.let { clear(it, State.CLOSED) }; return }
+        offeredSamples += count
         val channel = active ?: return
         if (channel.state != State.RUNNING) return
         if (count !in 1..samples.size || count > FRAMES) { clear(channel, State.CLOSED); return }

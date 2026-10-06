@@ -29,6 +29,9 @@ import com.we.meet.data.capture.CapturePumpOutcome
 import com.we.meet.data.capture.CaptureRecovery
 import com.we.meet.data.capture.CaptureRetention
 import com.we.meet.data.capture.CaptureWave
+import com.we.meet.data.capture.CaptureDirectAsrController
+import com.we.meet.data.capture.DirectAsrJournal
+import com.we.meet.data.capture.DirectAsrViewState
 import com.we.meet.data.capture.LocalCapture
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CancellationException
@@ -77,6 +80,10 @@ class CaptureForegroundService : Service() {
     private var audio: Deferred<CapturePumpOutcome>? = null
     private var upload: Job? = null
     private var initialization: Job? = null
+    private var directJournal: DirectAsrJournal? = null
+    private var direct: CaptureDirectAsrController? = null
+    private val mutableDirect = MutableStateFlow(DirectAsrViewState())
+    val directAsrState = mutableDirect.asStateFlow()
     private var foreground = false
     @Volatile private var destroyed = false
     private var operationCount = 0
@@ -97,10 +104,23 @@ class CaptureForegroundService : Service() {
                 recovery = controller
                 val rows = controller.load()
                 mutableState.value = CaptureServiceState(account, rows.firstOrNull { !it.sealed } ?: rows.firstOrNull(), ready = true, busy = operationCount > 0)
+                val application = application as? com.we.meet.WeMeetApp
+                if(application != null) {
+                    runCatching {
+                        val textStore = withContext(Dispatchers.IO) { DirectAsrJournal.open(this@CaptureForegroundService, account) { currentViewer() } }
+                        directJournal = textStore
+                        val client = application.apiClient
+                        direct = CaptureDirectAsrController(textStore, client.captureDirectAsrApi, client.assistantTranscriptionApi,
+                            client.captureTranscriptionApi, audioScope, { !destroyed && currentViewer() == account }, { observePcm(it, exclusive=true) })
+                        mutableState.value.local?.let { direct?.recover(it.id) }
+                        scope.launch { requireNotNull(direct).state.collect { mutableDirect.value = it } }
+                    }.onFailure { if(it is CancellationException) throw it; mutableDirect.value = DirectAsrViewState(phase="save_error") }
+                }
                 ready.complete(Unit)
                 while (true) {
                     delay(250)
                     if (currentViewer() != account) {
+                        direct?.close()
                         stopEpoch.incrementAndGet()
                         pump?.requestStop(true)
                         mutableState.value = CaptureServiceState(error = true)
@@ -176,6 +196,12 @@ class CaptureForegroundService : Service() {
         return requireNotNull(pcmTap).attach(exclusive)
     }
 
+    fun startDirectAsr() {
+        val snapshot = mutableState.value
+        if(snapshot.recording && !snapshot.busy && authorized()) snapshot.local?.let { direct?.start(it) }
+    }
+    fun saveDirectAsr() { audioScope.launch { direct?.save() } }
+
     private fun startInput(title: String, retentionMode: String) {
         if (mutableState.value.recording || mutableState.value.busy) return
         val epoch = stopEpoch.get()
@@ -184,6 +210,7 @@ class CaptureForegroundService : Service() {
             val controller = requireNotNull(recovery)
             val existing = mutableState.value.local
             val local = if (existing == null || existing.sealed) controller.prepare(title, retentionMode) else existing
+            if(existing?.id != local.id) direct?.recover(local.id)
             mutableState.value = mutableState.value.copy(local = local, retentionExpired = CaptureRetention.audioExpired(local))
             controller.start(local.id)
             var opening: CapturePcmSource? = null
@@ -197,7 +224,8 @@ class CaptureForegroundService : Service() {
                     setReferenceCounted(false)
                     acquire(CaptureWave.MAX_DURATION_MS + 5000)
                 }
-                val tap = CapturePcmTap {
+                val origin = withContext(Dispatchers.IO) { requireNotNull(journal).get(local.id).durationMs }
+                val tap = CapturePcmTap(origin) {
                     val current = mutableState.value.local
                     authorized() && current?.id == local.id && !CaptureRetention.audioExpired(current)
                 }
@@ -213,6 +241,7 @@ class CaptureForegroundService : Service() {
                 val running = audioScope.async { input.run() }
                 audio = running
                 mutableState.value = mutableState.value.copy(recording = true)
+                direct?.resume(requireNotNull(mutableState.value.local))
                 getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(true))
                 scope.launch {
                     val outcome = running.await()
@@ -252,6 +281,7 @@ class CaptureForegroundService : Service() {
             stopSelf()
             upload?.join()
             requireNotNull(recovery).finish(local.id, allowMissing)
+            direct?.save()
             refresh()
         }
     }
@@ -266,6 +296,7 @@ class CaptureForegroundService : Service() {
     private suspend fun drain(unexpected: Boolean): Boolean {
         pump?.requestStop(unexpected)
         val result = audio?.await()
+        direct?.pause()
         pump = null
         pcmTap = null
         audio = null
@@ -343,6 +374,7 @@ class CaptureForegroundService : Service() {
 
     override fun onDestroy() {
         destroyed = true
+        direct?.close()
         pcmTap?.close()
         stopEpoch.incrementAndGet()
         pump?.requestStop(true)
@@ -358,7 +390,7 @@ class CaptureForegroundService : Service() {
                 opening?.join()
                 running?.await()
                 if (id != null) runCatching { controller?.closeLocally(id, true) }
-            } finally { journal?.close(); audioScope.cancel() }
+            } finally { journal?.close(); directJournal?.close(); audioScope.cancel() }
         }
         removeForeground()
         super.onDestroy()
