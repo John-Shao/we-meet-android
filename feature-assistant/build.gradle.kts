@@ -13,9 +13,16 @@ android {
         // that the assistant app shipped at minSdk 29; the host app is bumped
         // to match.
         minSdk = 29
+        // SDK default media playback avoids quiet VoIP output on validated Honor devices.
+        buildConfigField("boolean", "AOQ_MEDIA_PLAYBACK", "true")
     }
 
     buildTypes {
+        debug {
+            buildConfigField("boolean", "AOQ_MEDIA_PLAYBACK",
+                // Debug builds can still compare the former VoIP path with -PAOQ_MEDIA_PLAYBACK=false.
+                providers.gradleProperty("AOQ_MEDIA_PLAYBACK").orElse("true").get().toBooleanStrict().toString())
+        }
         release {
             isMinifyEnabled = false
         }
@@ -75,4 +82,5 @@ dependencies {
 
     // LiveKit realtime (raw SDK; no compose-components here)
     implementation(libs.livekit.android)
+    implementation(files("libs/AoqClientSdk-release.aar"))
 }

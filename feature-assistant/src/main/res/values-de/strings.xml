@@ -60,4 +60,7 @@
     <string name="assistant_state_unmuted">Mikrofon eingeschaltet</string>
     <string name="assistant_state_video">Videoanruf</string>
     <string name="assistant_state_voice">Sprachanruf</string>
+    <string name="assistant_call_transport">Anrufverbindung (Test)</string>
+    <string name="assistant_error_aoq_backend">Der Server unterstützt AOQ noch nicht. Aktualisieren Sie das Backend oder wechseln Sie zu WebRTC.</string>
+    <string name="assistant_error_aoq_native">AOQ benötigt einen ARM-Android-Prozess. Verwenden Sie ein ARM-Gerät oder installieren Sie den ARM-Build im Emulator.</string>
 </resources>

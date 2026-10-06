@@ -5,6 +5,7 @@
          routing / Bluetooth headset support. Declared here so the feature is
          self-contained; these merge into the host manifest. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
@@ -15,6 +16,12 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <application>
+        <service android:name="com.we.meet.feature.assistant.aicall.rtc.AoqDataService"
+            android:exported="false" android:process=":aoq_translation" />
+        <service android:name="com.we.meet.feature.assistant.aicall.rtc.AoqLanguageService"
+            android:exported="false" android:process=":aoq_language" />
+        <service android:name="com.we.meet.feature.assistant.aicall.rtc.AoqReverseTranslationService"
+            android:exported="false" android:process=":aoq_translation_reverse" />
         <provider android:name="com.we.meet.feature.assistant.history.AssistantHistoryFileProvider"
             android:authorities="${applicationId}.assistant.history.files"
             android:exported="false" android:grantUriPermissions="true">

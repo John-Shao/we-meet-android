@@ -59,6 +59,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.feature.assistant.AssistantDeps
+import com.we.meet.feature.assistant.aicall.rtc.AoqPlaybackMode
+import com.we.meet.feature.assistant.aicall.model.AiCallTransport
 import com.we.meet.feature.assistant.aicall.model.AiCallMode
 import com.we.meet.feature.assistant.aicall.model.AiCallStatus
 import com.we.meet.feature.assistant.aicall.model.ConnectingStep
@@ -100,13 +102,14 @@ fun AssistantCallScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // WebRTC plays on the call stream. Keep hardware volume keys on that
-    // stream even while the AI is silent, then restore the host's setting.
+    // Keep volume keys on the actual playback stream, including during silence.
     val activity = remember(context) { context.callActivity() }
     val callInProgress = state.status is AiCallStatus.Connecting || state.status is AiCallStatus.Active
-    DisposableEffect(activity, callInProgress) {
+    val playbackStream = if (state.selection.transport == AiCallTransport.AOQ)
+        AoqPlaybackMode.volumeStream else AudioManager.STREAM_VOICE_CALL
+    DisposableEffect(activity, callInProgress, playbackStream) {
         val previousStream = activity?.volumeControlStream
-        if (callInProgress) activity?.volumeControlStream = AudioManager.STREAM_VOICE_CALL
+        if (callInProgress) activity?.volumeControlStream = playbackStream
         onDispose {
             if (callInProgress && previousStream != null) {
                 activity?.volumeControlStream = previousStream
@@ -298,6 +301,7 @@ fun AssistantCallScreen(
                     selection = state.selection,
                     historyStore = vm.history,
                     historyEnabled = !callInProgress,
+                    onSelectTransport = vm::selectTransport,
                     onSelectVoice = vm::selectVoice,
                     onSelectPrompt = vm::selectPrompt,
                     onSelectScene = vm::selectScene,

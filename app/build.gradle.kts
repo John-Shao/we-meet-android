@@ -205,6 +205,7 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.okhttp.mockwebserver)
+    androidTestImplementation(files("../feature-assistant/libs/AoqClientSdk-release.aar"))
     // Build real LiveKit participant updates in SID lifecycle regression tests.
     // Matches LiveKit 2.24.1's runtime-only protobuf dependency.
     androidTestImplementation("com.google.protobuf:protobuf-javalite:3.22.0")

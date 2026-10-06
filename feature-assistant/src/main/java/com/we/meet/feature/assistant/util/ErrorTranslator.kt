@@ -24,6 +24,7 @@ private val errorBodyAdapter by lazy {
  * 4. Family fallbacks (5xx → 服务异常、其他 → 出错了).
  */
 fun Throwable.toUserMessage(context: Context): String = when (this) {
+    is com.we.meet.feature.assistant.aicall.model.AiCallSetupException -> context.getString(messageRes)
     is IOException -> context.getString(R.string.assistant_error_network)
     is HttpException -> translateHttp(this, context)
     else -> context.getString(R.string.assistant_error_unknown)

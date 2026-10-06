@@ -63,14 +63,27 @@ data class AiCallOffer(
     val profile_code: String,
     val voice_id: String? = null,
     val prompt_id: String? = null,
+    val transport: String = "webrtc",
 )
 
 @JsonClass(generateAdapter = true)
 data class AiCallAnswer(
-    val sdp: String,
+    val sdp: String = "",
     val voice: String,
     val instructions: String,
+    val aoq: AoqCredentials? = null,
 ) {
     fun forScene(id: String?): AiCallAnswer =
         com.we.meet.feature.assistant.scenes.AssistantScene.find(id)?.let { copy(instructions = it.instructions) } ?: this
+}
+
+@JsonClass(generateAdapter = true)
+data class AoqRelay(val endpoint: String, val port: Int, val route_index: Int? = null)
+@JsonClass(generateAdapter = true)
+data class AoqCredentials(
+    val sid: String, val aoqTokenForClient: String,
+    val clientRelayEndpoints: List<AoqRelay>, val clientRelayCertFingerprint: String,
+    val workspaceIdHash: String,
+) {
+    override fun toString() = "AoqCredentials(<private>)"
 }

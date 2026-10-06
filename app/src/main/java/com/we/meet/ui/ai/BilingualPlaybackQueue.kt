@@ -49,4 +49,5 @@ internal class BilingualPlaybackQueue(private val maxBytes: Int = 60 * 48000) {
     }
 
     @Synchronized fun clear() { items.clear(); bytes = 0 }
+    @Synchronized fun isEmpty() = items.isEmpty()
 }

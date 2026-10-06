@@ -18,6 +18,8 @@ import com.we.meet.feature.assistant.aicall.data.AiAgentRepository
 import com.we.meet.feature.assistant.aicall.data.AiCallPreferences
 import com.we.meet.feature.assistant.aicall.model.*
 import com.we.meet.feature.assistant.aicall.rtc.OmniWebRtcClient
+import com.we.meet.feature.assistant.aicall.rtc.OmniCallClient
+import com.we.meet.feature.assistant.aicall.rtc.OmniAoqClient
 import com.we.meet.feature.assistant.net.AssistantNetwork
 import com.we.meet.feature.assistant.util.toUserMessage
 import kotlinx.coroutines.CancellationException
@@ -39,7 +41,7 @@ class AiCallViewModel(
     private var recording: com.we.meet.feature.assistant.history.AssistantHistoryStore.Recording? = null
     private val _state = MutableStateFlow(AiCallUiState(selection = prefs.load()))
     val state = _state.asStateFlow()
-    var rtcClient: OmniWebRtcClient? by mutableStateOf(null)
+    var rtcClient: OmniCallClient? by mutableStateOf(null)
         private set
     private var connectJob: Job? = null
     private var cameraJob: Job? = null
@@ -66,13 +68,14 @@ class AiCallViewModel(
         recording = history?.begin("call")
         val currentRecording = recording
         _state.update { it.copy(status = AiCallStatus.Connecting(ConnectingStep.Connecting), isMicMuted = false, isOutputMuted = false) }
-        val client = OmniWebRtcClient(
+        val makeClient = if (selection.transport == AiCallTransport.AOQ) ::OmniAoqClient else ::OmniWebRtcClient
+        val client = makeClient(
             appContext,
-            onAudioLevel = { level ->
+            { level ->
                 _state.update { it.copy(agentAudioLevel = (level * 2.5f).coerceIn(0f, 1f), agentSpeaking = level > 0.01f) }
             },
-            onFailure = { endCall(R.string.assistant_disconnected_ended) },
-            onTranscript = { currentRecording?.put(it) },
+            { endCall(R.string.assistant_disconnected_ended) },
+            { currentRecording?.put(it) },
         )
         rtcClient = client
         connectJob = viewModelScope.launch {
@@ -82,7 +85,7 @@ class AiCallViewModel(
                     stopped = { endCall(R.string.assistant_disconnected_ended) })
                 client.connect { sdp ->
                     _state.update { it.copy(status = AiCallStatus.Connecting(ConnectingStep.Configuring)) }
-                    val answer = agentRepo.exchangeOffer(AiCallOffer(sdp, config.callProfile()!!.code, selection.voiceId, selection.promptId))
+                    val answer = agentRepo.exchangeOffer(AiCallOffer(sdp = sdp, profile_code = config.callProfile()!!.code, voice_id = selection.voiceId, prompt_id = selection.promptId, transport = selection.transport.name.lowercase()))
                     answer.forScene(selection.sceneId)
                 }
                 if (_state.value.mode == AiCallMode.Video) client.setCameraEnabled(true)
@@ -90,6 +93,12 @@ class AiCallViewModel(
                 updateControls()
             } catch (error: Exception) {
                 if (error is CancellationException && error !is TimeoutCancellationException) return@launch
+                val reason = when (error) {
+                    is AiCallSetupException -> error.stage
+                    is retrofit2.HttpException -> "http_${error.code()}"
+                    else -> error.javaClass.simpleName
+                }
+                android.util.Log.w("OmniCall", "${selection.transport} startup failed: $reason")
                 if (rtcClient === client) {
                     closeClient()
                     _state.update { it.copy(status = AiCallStatus.Failed(error.toUserMessage(appContext))) }
@@ -191,6 +200,7 @@ class AiCallViewModel(
         _state.update { it.copy(showPicker = show) }
     }
 
+    fun selectTransport(value: AiCallTransport) = updateSelection(_state.value.selection.copy(transport = value))
     fun selectVoice(id: String?) = updateSelection(_state.value.selection.copy(voiceId = id))
     fun selectPrompt(id: String?) = updateSelection(_state.value.selection.copy(promptId = id, sceneId = null))
     fun selectScene(id: String?) {

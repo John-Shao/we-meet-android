@@ -2,6 +2,8 @@ package com.we.meet.feature.assistant.aicall.model
 
 import androidx.annotation.StringRes
 
+enum class AiCallTransport { WebRTC, AOQ }
+
 enum class AiCallMode { Voice, Video }
 
 enum class ConnectingStep {
@@ -23,6 +25,7 @@ data class AiCallSelection(
     val voiceId: String? = null,
     val promptId: String? = null,
     val sceneId: String? = null,
+    val transport: AiCallTransport = AiCallTransport.WebRTC,
 )
 
 data class AiCallUiState(

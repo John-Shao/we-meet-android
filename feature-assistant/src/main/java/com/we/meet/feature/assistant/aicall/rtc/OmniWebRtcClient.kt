@@ -32,7 +32,8 @@ class OmniWebRtcClient(
     private val onAudioLevel: (Float) -> Unit,
     private val onFailure: () -> Unit,
     private val onTranscript: (com.we.meet.feature.assistant.history.AssistantHistoryRow) -> Unit = {},
-) {
+) : OmniCallClient {
+    private val playbackDiagnostics = OmniPlaybackDiagnostics(context, "WebRTC", "inbound_rtp_audio_level")
     private val transcript = OmniTranscript(onTranscript)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val handshake = OmniHandshake()
@@ -59,20 +60,22 @@ class OmniWebRtcClient(
     private var capturer: CameraVideoCapturer? = null
     private var textureHelper: SurfaceTextureHelper? = null
     private var cameraStarted = false
-    var cameraFront = false
+    override var cameraFront = false
         private set
     private var answer: AiCallAnswer? = null
     private var responding = false
     private var outputMuted = false
     private var outputSuppressed = false
 
-    fun setOutputMuted(muted: Boolean) {
+    override fun setOutputMuted(muted: Boolean) {
         outputMuted = muted
         remoteAudio?.setEnabled(!muted && !outputSuppressed)
     }
     private var closed = false
+    private var speechEndedAt: Long? = null
 
-    suspend fun connect(exchange: suspend (String) -> AiCallAnswer) {
+    override suspend fun connect(exchange: suspend (String) -> AiCallAnswer) {
+        val startedAt = SystemClock.elapsedRealtime()
         withTimeout(60_000) {
             initialize()
             val pc = checkNotNull(peer)
@@ -89,6 +92,7 @@ class OmniWebRtcClient(
             audioTrack = factory!!.createAudioTrack("omni-microphone", audioSource)
             check(audioSender!!.setTrack(audioTrack, false))
             startStats()
+            Log.i("OmniWebRtc", "Session ready in ${SystemClock.elapsedRealtime() - startedAt} ms")
         }
     }
 
@@ -209,6 +213,7 @@ class OmniWebRtcClient(
                 configureIfReady()
             }
             "session.updated" -> if (handshake.acknowledge()) ready.complete(Unit)
+            "input_audio_buffer.speech_stopped" -> { speechEndedAt = SystemClock.elapsedRealtime() }
             "response.created" -> {
                 responding = true
                 outputSuppressed = false
@@ -240,11 +245,11 @@ class OmniWebRtcClient(
                 .put("threshold", 0.5).put("silence_duration_ms", 800))))
     }
 
-    fun setMicrophoneEnabled(enabled: Boolean) {
+    override fun setMicrophoneEnabled(enabled: Boolean) {
         check(!closed && audioTrack?.setEnabled(enabled) == true)
     }
 
-    fun interrupt() {
+    override fun interrupt() {
         check(!closed && handshake.ready)
         outputSuppressed = true
         remoteAudio?.setEnabled(false)
@@ -257,7 +262,7 @@ class OmniWebRtcClient(
         onAudioLevel(0f)
     }
 
-    fun setCameraEnabled(enabled: Boolean) {
+    override fun setCameraEnabled(enabled: Boolean) {
         check(!closed && handshake.ready)
         if (enabled == cameraStarted) return
         if (!enabled) {
@@ -300,7 +305,7 @@ class OmniWebRtcClient(
         }
     }
 
-    suspend fun flipCamera(): Boolean = suspendCancellableCoroutine { continuation ->
+    override suspend fun flipCamera(): Boolean = suspendCancellableCoroutine { continuation ->
         val camera = capturer
         if (closed || !cameraStarted || camera == null) {
             continuation.resumeWithException(IllegalStateException("Camera is not active"))
@@ -339,7 +344,16 @@ class OmniWebRtcClient(
                     val level = report.statsMap.values.firstOrNull {
                         it.type == "inbound-rtp" && (it.members["kind"] == "audio" || it.members["mediaType"] == "audio")
                     }?.members?.get("audioLevel") as? Number
-                    dispatch { onAudioLevel(level?.toFloat() ?: 0f) }
+                    val now = SystemClock.elapsedRealtime()
+                    dispatch {
+                        val amplitude = level?.toFloat() ?: 0f
+                        if (!outputMuted && !outputSuppressed) playbackDiagnostics.sample(amplitude)
+                        onAudioLevel(amplitude)
+                        if (amplitude > 0.01f && !outputMuted && !outputSuppressed) {
+                            speechEndedAt?.let { Log.i("OmniWebRtc", "First playback after speech end: ${now - it} ms") }
+                            speechEndedAt = null
+                        }
+                    }
                 }
                 delay(100)
             }
@@ -361,7 +375,7 @@ class OmniWebRtcClient(
     }
 
     /** Idempotent; callbacks queued by native WebRTC are ignored after closure. */
-    fun close() {
+    override fun close() {
         if (closed) return
         closed = true
         recovery.close()

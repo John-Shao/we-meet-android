@@ -60,4 +60,7 @@
     <string name="assistant_state_unmuted">Microfoon ingeschakeld</string>
     <string name="assistant_state_video">Videogesprek</string>
     <string name="assistant_state_voice">Spraakgesprek</string>
+    <string name="assistant_call_transport">Oproepverbinding (test)</string>
+    <string name="assistant_error_aoq_backend">De server ondersteunt AOQ nog niet. Werk de backend bij of schakel over naar WebRTC.</string>
+    <string name="assistant_error_aoq_native">AOQ vereist een ARM Android-proces. Gebruik een ARM-apparaat of installeer de ARM-versie op uw emulator.</string>
 </resources>

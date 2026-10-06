@@ -34,6 +34,7 @@ internal fun BilingualTranslationSettingsScreen(
     onSoundChange: (Boolean) -> Unit,
     onBack: () -> Unit,
     onSelectScene: (String?) -> Unit,
+    onDirectAoqChange: (Boolean) -> Unit = {},
 ) {
     Scaffold(topBar = {
         WeMeetTopBar(title = stringResource(R.string.bilingual_settings_title), onBack = onBack)
@@ -44,6 +45,17 @@ internal fun BilingualTranslationSettingsScreen(
                 com.we.meet.feature.assistant.scenes.TranslationScenePicker(state.sceneId, onSelectScene,
                     enabled = !state.active,
                     modifier = Modifier.padding(Dimens.ScreenPadding))
+            }
+            if (com.we.meet.BuildConfig.DEBUG) {
+                SettingsGroupHeader(stringResource(R.string.bilingual_transport_validation))
+                SettingsGroup {
+                    listOf(false, true).forEach { direct ->
+                        SettingsRow(label = stringResource(if (direct) R.string.bilingual_transport_aoq else R.string.bilingual_transport_cloud),
+                            modifier = Modifier.testTag(if (direct) "bilingual-aoq" else "bilingual-cloud"),
+                            onClick = { if (!state.active) onDirectAoqChange(direct) },
+                            trailing = { RadioButton(selected = state.directAoq == direct, onClick = null, enabled = !state.active) })
+                    }
+                }
             }
             SettingsGroupHeader(stringResource(R.string.bilingual_languages))
             SettingsGroup {

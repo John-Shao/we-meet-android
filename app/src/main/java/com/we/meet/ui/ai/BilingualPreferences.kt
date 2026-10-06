@@ -16,11 +16,11 @@ internal class BilingualPreferences(context: Context, account: String) {
             .takeIf(BilingualLanguages::valid) ?: AssistantTranslationPair()
         val sound = prefs.getBoolean("sound", true)
         val scene = TranslationScene.find(prefs.getString("scene", null))
-        return BilingualState(pair = pair, sound = sound, sceneId = scene?.id)
+        return BilingualState(pair = pair, sound = sound, sceneId = scene?.id, directAoq = com.we.meet.BuildConfig.DEBUG && prefs.getBoolean("direct-aoq", false))
     }
 
     fun save(state: BilingualState) {
         prefs.edit().putString("source", state.pair.source).putString("target", state.pair.target)
-            .putBoolean("sound", state.sound).putString("scene", state.sceneId).apply()
+            .putBoolean("direct-aoq", state.directAoq).putBoolean("sound", state.sound).putString("scene", state.sceneId).apply()
     }
 }

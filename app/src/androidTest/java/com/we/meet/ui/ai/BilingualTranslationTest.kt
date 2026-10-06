@@ -18,6 +18,18 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationTest {
+    @Test fun translationTransportCannotChangeDuringAnActiveCloudSession() {
+        val f = Fixture()
+        try {
+            main { f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+            main { f.controller.directAoq(true) }
+            assertFalse(f.controller.state.value.directAoq)
+            assertFalse(f.wire!!.closed.get())
+        } finally { main { f.controller.close() } }
+    }
+
     @Test fun realMutedOutputCanReplayAndReturnToListening() {
         androidx.test.core.app.ActivityScenario.launch(androidx.activity.ComponentActivity::class.java).use {
             val f = Fixture(realPlayback = true)

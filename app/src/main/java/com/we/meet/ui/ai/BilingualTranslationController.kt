@@ -54,6 +54,7 @@ internal data class BilingualState(
     val replayError: Boolean = false,
     val inputPaused: Boolean = false,
     val sceneId: String? = null,
+    val directAoq: Boolean = false,
 ) {
     val active get() = phase in setOf(BilingualPhase.CONNECTING, BilingualPhase.LISTENING, BilingualPhase.SPEAKING, BilingualPhase.FINISHING)
     override fun toString() = "BilingualState(<private>)"
@@ -93,6 +94,7 @@ internal class BilingualTranslationController(
     val history: com.we.meet.feature.assistant.history.AssistantHistoryStore? = null,
     private val preferences: BilingualPreferences? = null,
 ) : Closeable {
+    private val applicationContext = context.applicationContext
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutable = MutableStateFlow(preferences?.load() ?: BilingualState())
     val state = mutable.asStateFlow()
@@ -159,7 +161,8 @@ internal class BilingualTranslationController(
             } catch (canceled: CancellationException) {
                 if (canceled is TimeoutCancellationException && active === session) stop(BilingualPhase.ERROR)
                 else throw canceled
-            } catch (_: Exception) {
+            } catch (error: Exception) {
+                Log.w(LOG_TAG, "translation_failed stage=${session.stage} class=${error.javaClass.simpleName}")
                 if (active === session) stop(BilingualPhase.ERROR)
             } finally {
                 session.release()
@@ -193,6 +196,11 @@ internal class BilingualTranslationController(
         ) }
         preferences?.save(mutable.value)
     }
+    fun directAoq(enabled: Boolean) {
+        if (active != null || !com.we.meet.BuildConfig.DEBUG) return
+        mutable.update { it.copy(directAoq = enabled) }
+        preferences?.save(mutable.value)
+    }
     fun selectScene(id: String?) {
         if (active != null) return
         val scene = com.we.meet.feature.assistant.scenes.TranslationScene.find(id)
@@ -207,6 +215,8 @@ internal class BilingualTranslationController(
     override fun close() { stop(); scope.cancel(); replayCache.clear(); mutable.value = BilingualState() }
 
     private inner class Session(private val pair: AssistantTranslationPair) {
+        var stage = "foreground"
+        private val direct = mutable.value.directAoq && com.we.meet.BuildConfig.DEBUG
         private val sessionId = java.util.UUID.randomUUID().toString()
         private val recording = history?.begin("translation")
         private val rowOrder = linkedMapOf<String, Int>()
@@ -257,17 +267,21 @@ internal class BilingualTranslationController(
         suspend fun run(): Unit = coroutineScope {
             check(BilingualLanguages.valid(pair))
             foreground = openForeground { if (active === this@Session) stop() }
-            val ticket = api.ticket(pair)
-            check(!closed.get() && authorized() && ticket.url.startsWith("wss://"))
+            stage = "allocation"
+            val ticket = if (direct) null else api.ticket(pair)
+            check(!closed.get() && authorized() && (direct || ticket!!.url.startsWith("wss://")))
             // Resource installation occurs on Main, serialized with stop/disposal.
-            output = openOutput(::failure)
-            output!!.open()
-            output!!.mute(!mutable.value.sound)
-            wire = openWire(ticket.url, object : CaptureTranslationWire.Listener {
+            stage = "playback"
+            if (!direct) {
+                output = openOutput(::failure)
+                output!!.open()
+                output!!.mute(!mutable.value.sound)
+            }
+            val listener = object : CaptureTranslationWire.Listener {
                 override fun opened() {
                     scope.launch {
-                        if (!closed.get()) {
-                            val value = JSONObject().put("type", "assistant_translation").put("ticket", ticket.ticket).toString()
+                        if (!closed.get() && !direct) {
+                            val value = JSONObject().put("type", "assistant_translation").put("ticket", ticket!!.ticket).toString()
                             if (wire?.send(value) != true) failure()
                         }
                     }
@@ -279,7 +293,10 @@ internal class BilingualTranslationController(
                     // Preserve final translation/finished events ahead of socket closure.
                     if (!closed.get() && !events.trySend("{\"type\":\"disconnected\"}").isSuccess) failure()
                 }
-            })
+            }
+            stage = if (direct) "aoq_transport" else "cloud_transport"
+            wire = if (direct) AoqBilingualWire(applicationContext, api, pair, listener)
+                else openWire(ticket!!.url, listener)
             launch(Dispatchers.Default) {
                 for (raw in events) {
                     if (closed.get()) break
@@ -324,12 +341,25 @@ internal class BilingualTranslationController(
                             audioReady.trySend(Unit)
                         }
                         "expired" -> withContext(Dispatchers.Main.immediate) { if (active === this@Session) stop(BilingualPhase.EXPIRED) }
-                        "finished" -> withContext(Dispatchers.Main.immediate) { if (active === this@Session) stop() }
+                        "finished" -> {
+                            withTimeout(20_000) {
+                                while (!audio.isEmpty() || speaking.get() || (output?.pendingSamples ?: 0) > 0) delay(20)
+                            }
+                            withContext(Dispatchers.Main.immediate) { if (active === this@Session) stop() }
+                        }
                         else -> error("Translation connection failed")
                     }
                 }
             }
             withTimeout(60_000) { ready.await() }
+            if (direct) {
+                // The SDK initializes focus even for external decoding. Acquire
+                // the app player's focus after all native players are ready.
+                output = openOutput(::failure)
+                output!!.open()
+                output!!.mute(!mutable.value.sound)
+            }
+            stage = "microphone"
             check(!closed.get() && authorized())
             microphone = openMicrophone(::failure)
             microphone!!.start()

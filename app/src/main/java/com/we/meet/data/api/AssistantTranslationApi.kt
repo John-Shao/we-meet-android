@@ -19,6 +19,25 @@ data class AssistantTranslationTicket(val url: String, val ticket: String) {
 
 interface AssistantTranslationApi {
     @Headers("Cache-Control: no-store")
+    @POST("api/v1.0/assistant-translation/session/")
+    suspend fun directSession(@Body request: AssistantTranslationDirectRequest): AssistantTranslationDirectSession =
+        error("Direct translation is unavailable")
+    @Headers("Cache-Control: no-store")
     @POST("api/v1.0/assistant-translation/ticket/")
     suspend fun ticket(@Body pair: AssistantTranslationPair): AssistantTranslationTicket
+}
+
+@JsonClass(generateAdapter = true)
+data class AssistantTranslationDirectRequest(
+    @Json(name = "source_language") val source: String,
+    @Json(name = "target_language") val target: String,
+    val purpose: String = "translation",
+)
+
+@JsonClass(generateAdapter = true)
+data class AssistantTranslationDirectSession(
+    val model: String,
+    val aoq: com.we.meet.feature.assistant.aicall.model.AoqCredentials,
+) {
+    override fun toString() = "AssistantTranslationDirectSession(<private>)"
 }

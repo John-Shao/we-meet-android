@@ -177,6 +177,11 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
 
     override fun onCreate() {
         super.onCreate()
+        // Native AOQ worker processes have no UI, account state, or push client.
+        val process = if (android.os.Build.VERSION.SDK_INT >= 28) android.app.Application.getProcessName()
+            else (getSystemService(android.app.ActivityManager::class.java).runningAppProcesses
+                ?.firstOrNull { it.pid == android.os.Process.myPid() }?.processName ?: "")
+        if (process.substringAfterLast(':').startsWith("aoq_")) return
         tokenStore = TokenStore(this)
         apiClient = ApiClient(tokenStore)
         authRepository = AuthRepository(
