@@ -1,6 +1,10 @@
 # Compiled class file
 *.class
 
+# Developer candidate packaging scripts
+__pycache__/
+*.pyc
+
 # Log file
 *.log
 
