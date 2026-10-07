@@ -69,6 +69,8 @@ WE_MEET_LIVEKIT_URL_OVERRIDE=ws://10.0.2.2:7880
 
 ## Work 桌面任务（Android，2026-10-07）
 
+内部候选归档：提交并保持本仓库及同级 `jusi-light-im` 工作区干净后，运行 `python scripts/package-work-candidate.py --android-sdk <SDK目录>`。命令执行规范检查、全应用 JVM 测试与正常 Debug 构建，再用 Android 原生工具核实 APK 身份、版本和 Debug 签名，归档到 ignored `release/<版本>-<提交>/`。归档含 APK、来源提交、SDK 提交、配置文件哈希、签名证书指纹、测试计数及 SHA256SUMS；配置值不进入清单。fixture 包、错误版本、签名失败或构建期间源码变化均拒绝交付。运行 `python scripts/package-work-candidate.py --verify <归档目录>` 可复核内容哈希；清单是完整性记录，不能替代可信发布签名。该命令不安装、不上传，不执行商店发布。
+
 `0.3.0-work.2` 提供侧边抽屉“工作”入口：查看同账号已登记桌面工作空间，向在线或离线桌面派发待办，查看统一任务状态、取消及预览桌面主动同步的成果。Android 不安装 dsh、不读取桌面目录，也不保存模型供应商密钥。iOS 暂不开发。
 
 后端先迁移至 `work.0005`，并启用 `WORK_ENABLED`、`WORK_LOCAL_AGENT_ENABLED`、`WORK_REMOTE_AGENT_ENABLED`；模型为服务端 `WORK_AGENT_MODEL` 指定值。桌面先通过原生目录选择器授权，并允许远程待办；重新登录需重新授权，任务必须在桌面“审阅并领取”后执行，工具调用还需逐次原生审批。手机不自动领取任务，也不将断线任务改成云端执行。
