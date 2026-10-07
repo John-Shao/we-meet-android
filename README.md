@@ -66,3 +66,24 @@ WE_MEET_LIVEKIT_URL_OVERRIDE=ws://10.0.2.2:7880
 ## 许可
 
 见 [LICENSE](LICENSE)。
+
+## Work 桌面任务（Android，2026-10-07）
+
+`0.3.0-work.1` 增加侧边抽屉“工作”入口：查看同账号已登记桌面工作空间，向在线或离线桌面派发待办，查看统一任务状态、取消及预览桌面主动同步的成果。Android 不安装 dsh、不读取桌面目录，也不保存 DeepSeek 密钥。iOS 暂不开发。
+
+后端先迁移至 `work.0005`，并启用 `WORK_ENABLED`、`WORK_LOCAL_AGENT_ENABLED`、`WORK_REMOTE_AGENT_ENABLED`；模型为服务端 `WORK_AGENT_MODEL` 指定值。桌面先通过原生目录选择器授权，并允许远程待办；重新登录需重新授权，任务必须在桌面“审阅并领取”后执行，工具调用还需逐次原生审批。手机不自动领取任务，也不将断线任务改成云端执行。
+
+提交应答丢失保留原 UUID、目标及工作空间，界面锁住输入并允许确认同一请求；SavedStateHandle 支持 Android 系统进程恢复，不作为强制停止/重启设备后的持久存储保证。成果只预览已明确同步、校验 SHA-256 的受限 UTF-8 文本，未同步时提示在桌面完成同步。
+
+构建/测试（JDK 17）：`./gradlew.bat :app:testDebugUnitTest :app:assembleDebug`。Work 仪器测试使用现有 `IsolatedRecordsRunner` 与独立 `.fixturework` applicationId，避免覆盖正式安装：
+
+```powershell
+$env:ANDROID_SERIAL='emulator-5556'
+./gradlew.bat :app:connectedDebugAndroidTest '-PWE_MEET_TEST_ID_SUFFIX=.fixturework' '-PWE_MEET_TEST_RUNNER=com.we.meet.ui.records.IsolatedRecordsRunner' '-Pandroid.testInstrumentationRunnerArguments.class=com.we.meet.ui.work.WorkScreenTest'
+```
+
+正常构建不要传 fixture 参数；正常输出 `applicationId=com.we.meet`，测试包不安装到用户现有账号。当前 APK 为 Android Debug 签名内部候选，未发布应用商店。真实服务端/dsh/DeepSeek 联调与 Android fixture UI 验收分别记录在主仓库 `docs/reviews/work-delivery-and-android-2026-10-07.md`，尚未覆盖真实 Android 登录到桌面的整条 UI 验收。
+
+### 实际跨端验收补充
+
+新增 opt-in `WorkRemoteIntegrationTest`，通过正式 `ApiClient.workApi` 实际 HTTP 访问隔离 Django API，同一任务由实际 Electron / 内置 dsh / DeepSeek 执行、逐次审批并同步，手机校验预览和取消待办均通过。它使用隔离预置会话，不覆盖真实 OTP/OIDC 登录；默认无 `workCrossDevice=1` 时跳过，不会自动产生模型调用。测试专用 `.fixturework` / 本机端口构建与后端编排见主仓库 `docs/reviews/work-cross-device-acceptance-2026-10-07.md`。测试后已正常构建 `com.we.meet` 候选，哈希与前阶段一致。

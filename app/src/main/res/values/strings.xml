@@ -1124,4 +1124,35 @@
     <string name="cd_records_play">Play</string>
     <string name="cd_records_pause">Pause</string>
     <string name="cd_records_close">Close</string>
+    <!-- Desktop work requests: business API only. -->
+    <string name="work_title">Work</string>
+    <string name="work_refresh">Refresh</string>
+    <string name="work_request_failed">The request did not finish. Refresh the original task or retry the same request.</string>
+    <string name="work_back_list">Back to my work</string>
+    <string name="work_execution_workspace">Workspace: %1$s</string>
+    <string name="work_cancel">Cancel original task</string>
+    <string name="work_local_results">Results remain on the desktop. Select and sync files on the desktop to view them here.</string>
+    <string name="work_view_file">View %1$s</string>
+    <string name="work_dispatch_title">Request desktop work</string>
+    <string name="work_dispatch_help">Choose an authorized desktop workspace. Requests enter the desktop inbox; task acceptance and each operation approval take place on that computer.</string>
+    <string name="work_remote_disabled">Remote dispatch is not enabled on the server. Existing work remains available.</string>
+    <string name="work_device_state">%1$s · %2$s</string>
+    <string name="work_online">Online</string>
+    <string name="work_offline">Offline, awaiting return to desktop</string>
+    <string name="work_no_workspace">Select a folder on the desktop and allow remote task requests first.</string>
+    <string name="work_goal">Work goal</string>
+    <string name="work_dispatch_unknown">Submission is awaiting confirmation. The original request ID is retained; tasks are never automatically repeated.</string>
+    <string name="work_confirm_request">Confirm original request</string>
+    <string name="work_dispatch">Submit to desktop inbox</string>
+    <string name="work_my_tasks">My work</string>
+    <string name="work_more">Load more</string>
+    <string name="work_status_desktop_queued">Awaiting desktop acceptance</string>
+    <string name="work_status_queued">Queued</string>
+    <string name="work_status_desktop_running">Processing on desktop (may await operation approval)</string>
+    <string name="work_status_running">Processing</string>
+    <string name="work_status_disconnected">Desktop disconnected; awaiting reconciliation of the original task</string>
+    <string name="work_status_succeeded">Results completed</string>
+    <string name="work_status_canceled">Canceled</string>
+    <string name="work_status_failed">Processing failed</string>
+    <string name="work_status_unknown">Awaiting status confirmation</string>
 </resources>

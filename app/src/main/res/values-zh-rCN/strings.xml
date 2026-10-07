@@ -1103,4 +1103,35 @@
     <string name="cd_records_play">播放</string>
     <string name="cd_records_pause">暂停</string>
     <string name="cd_records_close">关闭</string>
+    <!-- Desktop work requests: business API only. -->
+    <string name="work_title">工作</string>
+    <string name="work_refresh">刷新</string>
+    <string name="work_request_failed">请求未完成，请刷新原任务或重试原请求。</string>
+    <string name="work_back_list">返回我的工作</string>
+    <string name="work_execution_workspace">执行工作空间：%1$s</string>
+    <string name="work_cancel">取消原任务</string>
+    <string name="work_local_results">成果仍在桌面。请在桌面选择文件并同步后查看。</string>
+    <string name="work_view_file">查看 %1$s</string>
+    <string name="work_dispatch_title">发起桌面工作</string>
+    <string name="work_dispatch_help">选择已授权的电脑工作空间。请求先进入桌面待办，领取和每次操作审批均在电脑上完成。</string>
+    <string name="work_remote_disabled">服务端尚未启用远程任务派发。已有工作记录仍可查看。</string>
+    <string name="work_device_state">%1$s · %2$s</string>
+    <string name="work_online">在线</string>
+    <string name="work_offline">离线，等待回到桌面</string>
+    <string name="work_no_workspace">请先在桌面选择文件夹，并允许接收远程任务。</string>
+    <string name="work_goal">工作目标</string>
+    <string name="work_dispatch_unknown">提交结果待确认。继续使用原请求编号，不会自动重复执行。</string>
+    <string name="work_confirm_request">确认原请求</string>
+    <string name="work_dispatch">提交到桌面待办</string>
+    <string name="work_my_tasks">我的工作</string>
+    <string name="work_more">加载更多</string>
+    <string name="work_status_desktop_queued">等待桌面领取</string>
+    <string name="work_status_queued">等待处理</string>
+    <string name="work_status_desktop_running">桌面处理中（操作可能等待审批）</string>
+    <string name="work_status_running">处理中</string>
+    <string name="work_status_disconnected">桌面连接中断，等待核对原任务</string>
+    <string name="work_status_succeeded">成果已完成</string>
+    <string name="work_status_canceled">已取消</string>
+    <string name="work_status_failed">处理失败</string>
+    <string name="work_status_unknown">等待确认状态</string>
 </resources>

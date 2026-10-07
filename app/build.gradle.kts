@@ -56,8 +56,8 @@ android {
         // which uses audio-routing / WebRTC APIs that require API 29+.
         minSdk = 29
         targetSdk = 34
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0-work.1"
         testInstrumentationRunner = providers.gradleProperty("WE_MEET_TEST_RUNNER")
             .getOrElse("androidx.test.runner.AndroidJUnitRunner")
 
@@ -92,6 +92,10 @@ android {
     buildTypes {
         debug {
             isMinifyEnabled = false
+            providers.gradleProperty("WE_MEET_TEST_ID_SUFFIX").orNull?.let { suffix ->
+                require(suffix.matches(Regex("\\.fixture[a-z0-9]*")) && providers.gradleProperty("WE_MEET_TEST_RUNNER").isPresent)
+                applicationIdSuffix = suffix
+            }
         }
         release {
             isMinifyEnabled = false
@@ -200,6 +204,7 @@ dependencies {
     // 必须和 Web / 服务端三处对齐,而「对齐」这种事只有测试守得住。
     // 先例:feature-im 的 build.gradle.kts。
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)

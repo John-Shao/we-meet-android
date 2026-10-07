@@ -80,6 +80,7 @@ fun ProfileScreen(
     onSettingsClick: () -> Unit,
     onOpenAiHub: () -> Unit,
     onOpenApproval: () -> Unit,
+    onOpenWork: () -> Unit = {},
     // When hosted in a drawer this is false while closed: the composable must stay
     // in the tree (gating its composition breaks the drawer's drag anchors), but
     // its /users/me/ fetch should follow the user actually opening the page.
@@ -288,6 +289,8 @@ fun ProfileScreen(
                 label = stringResource(R.string.profile_approval_entry),
                 onClick = onOpenApproval,
             )
+            SettingsDivider()
+            SettingsRow(label = stringResource(R.string.work_title), onClick = onOpenWork)
             SettingsDivider()
             SettingsRow(
                 label = stringResource(R.string.profile_settings),

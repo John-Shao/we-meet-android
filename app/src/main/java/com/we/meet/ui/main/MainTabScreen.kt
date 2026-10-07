@@ -136,6 +136,7 @@ fun MainTabScreen(
     onOpenSummaryRecord: (String) -> Unit = onOpenRecord,
     onOpenAiHub: () -> Unit,
     onOpenApproval: () -> Unit,
+    onOpenWork: () -> Unit = {},
     onOpenChat: (cid: String) -> Unit,
     onNewChat: () -> Unit,
     onOpenSearch: () -> Unit,
@@ -523,6 +524,7 @@ fun MainTabScreen(
                     onSettingsClick = onSettingsClick,
                     onOpenAiHub = onOpenAiHub,
                     onOpenApproval = onOpenApproval,
+                    onOpenWork = onOpenWork,
                     active = drawerState.isOpen || drawerState.isAnimationRunning,
                 )
             }

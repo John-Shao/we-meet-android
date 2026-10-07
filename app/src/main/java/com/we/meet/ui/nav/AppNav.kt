@@ -1,4 +1,7 @@
 package com.we.meet.ui.nav
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -680,6 +683,7 @@ fun AppNav() {
                 onOpenMeetingSettings = { navController.navigate(Routes.MEETING_SETTINGS) },
                 onOpenAiHub = { navController.navigate(Routes.AI_HUB) },
                 onOpenApproval = { navController.navigate(Routes.APPROVAL) },
+                onOpenWork = { navController.navigate("work-agent") },
                 onOpenChat = { cid -> navController.navigate(Routes.imChat(cid)) },
                 onNewChat = { navController.navigate(Routes.imNewChat()) },
                 onSearchMeetingAi = { navController.navigate(Routes.imSearch(SearchCategory.AI, meetingAi = true)) },
@@ -1188,6 +1192,13 @@ fun AppNav() {
                     )
                 },
             )
+        }
+
+        composable("work-agent") {
+            val vm: com.we.meet.ui.work.WorkViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = viewModelFactory {
+                initializer { com.we.meet.ui.work.WorkViewModel(com.we.meet.data.repository.WorkRepository(app.apiClient.workApi), createSavedStateHandle()) }
+            })
+            com.we.meet.ui.work.WorkScreen(vm, onBack = rememberOnceOnly(safePop))
         }
 
         composable(
