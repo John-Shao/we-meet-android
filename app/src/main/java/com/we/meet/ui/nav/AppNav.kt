@@ -1196,7 +1196,9 @@ fun AppNav() {
 
         composable("work-agent") {
             val vm: com.we.meet.ui.work.WorkViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = viewModelFactory {
-                initializer { com.we.meet.ui.work.WorkViewModel(com.we.meet.data.repository.WorkRepository(app.apiClient.workApi), createSavedStateHandle()) }
+                initializer { com.we.meet.ui.work.WorkViewModel(com.we.meet.data.repository.WorkRepository(app.apiClient.workApi) {
+                    if (app.tokenStore.isLoggedIn()) app.tokenStore.authSnapshot().session else null
+                }, createSavedStateHandle()) }
             })
             com.we.meet.ui.work.WorkScreen(vm, onBack = rememberOnceOnly(safePop))
         }

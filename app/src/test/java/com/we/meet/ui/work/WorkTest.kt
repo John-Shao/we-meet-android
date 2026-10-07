@@ -16,7 +16,7 @@ import org.junit.Test
 import java.io.IOException
 import java.security.MessageDigest
 
-private class WorkFixture : WorkApi {
+internal open class WorkFixture : WorkApi {
     val requests = mutableListOf<RemoteWorkRequest>()
     var lose = true
     var body = "# approved desktop result\n"
@@ -32,6 +32,7 @@ private class WorkFixture : WorkApi {
     override suspend fun task(id: String) = WorkTaskDto(id, "goal", emptyList())
     override suspend fun cancel(id: String, empty: Map<String, String>) = WorkRunDto(id, "canceled", "local")
     override suspend fun files(id: String) = emptyList<WorkFileDto>()
+    override suspend fun reviews(id: String) = emptyList<WorkReviewDto>()
     override suspend fun download(id: String, name: String): ResponseBody = body.toResponseBody()
 }
 

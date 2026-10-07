@@ -1,0 +1,25 @@
+<resources>
+    <string name="work_review_title">成果复核</string>
+    <string name="work_review_help">复核只检查选定成果与任务已授权材料，不修改文件或执行命令。复核意见需要核实。</string>
+    <string name="work_review_disabled">复核服务尚未启用，已有授权记录仍可查看。</string>
+    <string name="work_review_empty">暂无复核记录。请在桌面选择并同步文件后，从成果页面开启复核。</string>
+    <string name="work_review_unavailable">暂时无法确认复核访问权限，旧内容已隐藏。请刷新后重新确认。</string>
+    <string name="work_review_queued">等待复核</string>
+    <string name="work_review_running">正在复核</string>
+    <string name="work_review_succeeded">复核完成</string>
+    <string name="work_review_failed">复核失败</string>
+    <string name="work_review_canceled">已取消复核</string>
+    <string name="work_review_unknown">等待确认复核状态</string>
+    <string name="work_review_selection">选定成果：%1$s</string>
+    <string name="work_review_reserved">预留 %1$d tokens，实际用量待确认</string>
+    <string name="work_review_usage">实际输入 %1$d / 输出 %2$d tokens</string>
+    <string name="work_review_delivery_failed">本次复核未交付完整结果，请在桌面查看原复核记录。</string>
+    <string name="work_review_no_issues">在提供的材料中未发现问题</string>
+    <string name="work_review_needs_changes">发现需要处理的问题</string>
+    <string name="work_review_inconclusive">信息不足，仍需确认</string>
+    <string name="work_review_verdict_unknown">复核结论仍需确认</string>
+    <string name="work_review_issue">问题：%1$s</string>
+    <string name="work_review_warning">提醒：%1$s</string>
+    <string name="work_review_evidence">%1$s · SHA-256 %2$s</string>
+    <string name="work_review_missing">缺失信息</string>
+</resources>

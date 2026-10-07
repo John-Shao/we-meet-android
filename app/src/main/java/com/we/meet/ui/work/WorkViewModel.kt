@@ -17,6 +17,8 @@ data class WorkUi(
     val workspaces: List<DesktopWorkspace> = emptyList(), val tasks: List<WorkTaskDto> = emptyList(),
     val page: Int = 1, val hasMore: Boolean = false, val selected: WorkTaskDto? = null,
     val files: List<WorkFileDto> = emptyList(), val previewName: String = "", val preview: String = "",
+    val reviewEnabled: Boolean = false, val reviewSupported: Boolean = false,
+    val reviews: List<WorkReviewDto> = emptyList(), val reviewsUnavailable: Boolean = false,
     val error: String = "", val uncertain: Boolean = false,
 )
 
@@ -24,27 +26,47 @@ data class WorkUi(
 class WorkViewModel(private val repo: WorkRepository, private val saved: SavedStateHandle) : ViewModel() {
     private val _ui = MutableStateFlow(WorkUi(uncertain = saved.get<String>("requestId") != null))
     val ui = _ui.asStateFlow()
-    init { refresh() }
+    private var detailEpoch = 0L
+    private var detailTask: String? = null
+    init {
+        val previousSession = saved.get<String>("workSession")
+        if (previousSession != repo.session) clearIntent()
+        saved["workSession"] = repo.session
+        refresh()
+    }
     val pendingGoal: String get() = saved["requestGoal"] ?: ""
     val pendingWorkspace: String get() = saved["requestWorkspace"] ?: ""
 
+    fun poll() {
+        val current = _ui.value
+        val pending = setOf("queued", "running", "disconnected")
+        if (current.tasks.any { task -> task.runs.any { it.status in pending } } ||
+            current.selected?.runs?.lastOrNull()?.status in pending ||
+            current.reviews.any { it.status in setOf("queued", "running") }) refresh()
+    }
+
     private fun fail(e: Exception) {
         if (e is CancellationException) throw e
-        _ui.update { it.copy(error = "work_request_failed") }
+        if (!repo.active()) {
+            clearIntent(); detailEpoch++; detailTask = null
+            _ui.value = WorkUi(error = "work_account_changed")
+        } else _ui.update { it.copy(error = "work_request_failed", files = emptyList(), preview = "", previewName = "", reviews = emptyList(), reviewsUnavailable = detailTask != null) }
     }
     fun refresh() {
         if (_ui.value.loading || _ui.value.acting) return
         _ui.update { it.copy(loading = true, error = "") }
+        val epoch = detailEpoch
+        val selectedId = detailTask
         viewModelScope.launch {
             try {
                 val cap = repo.capabilities()
                 val folders = if (cap.remoteEnabled) repo.workspaces() else emptyList()
                 val tasks = repo.tasks(1)
-                _ui.update { it.copy(enabled = cap.remoteEnabled, workspaces = folders, tasks = tasks.results, page = 1, hasMore = tasks.next != null) }
+                _ui.update { it.copy(enabled = cap.remoteEnabled, workspaces = folders, tasks = tasks.results, page = 1, hasMore = tasks.next != null, reviewEnabled = cap.reviewEnabled == true, reviewSupported = cap.reviewEnabled != null) }
                 saved.get<String>("requestId")?.let { id ->
                     if (tasks.results.any { task -> task.runs.any { it.id == id } }) clearIntent()
                 }
-                _ui.value.selected?.let { selectInternal(it.id) }
+                if (selectedId != null && epoch == detailEpoch) selectInternal(selectedId, epoch)
             } catch (e: Exception) { fail(e) }
             finally { _ui.update { it.copy(loading = false) } }
         }
@@ -69,28 +91,39 @@ class WorkViewModel(private val repo: WorkRepository, private val saved: SavedSt
         _ui.update { it.copy(uncertain = true) }
         val response = repo.dispatch(RemoteWorkRequest(saved["requestId"]!!, pendingWorkspace, pendingGoal))
         clearIntent()
-        _ui.update { it.copy(selected = response.task, tasks = (listOf(response.task) + it.tasks).distinctBy { t -> t.id }, files = emptyList(), preview = "", previewName = "") }
+        detailEpoch++; detailTask = response.task.id
+        _ui.update { it.copy(selected = response.task, tasks = (listOf(response.task) + it.tasks).distinctBy { t -> t.id }, files = emptyList(), preview = "", previewName = "", reviews = emptyList(), reviewsUnavailable = false) }
     }
-    fun select(id: String) = act { selectInternal(id) }
-    private suspend fun selectInternal(id: String) {
+    fun select(id: String) = act {
+        val epoch = ++detailEpoch; detailTask = id
+        _ui.update { it.copy(selected = null, files = emptyList(), preview = "", previewName = "", reviews = emptyList(), reviewsUnavailable = false) }
+        selectInternal(id, epoch)
+    }
+    private suspend fun selectInternal(id: String, epoch: Long) {
         val task = repo.task(id)
         val run = task.runs.lastOrNull()
         val files = if (run?.status == "succeeded") repo.files(run.id) else emptyList()
+        val reviews = if (run?.status == "succeeded" && _ui.value.reviewSupported) repo.reviews(run.id) else emptyList()
+        if (epoch != detailEpoch || detailTask != id) return
         _ui.update {
-            val keep = it.selected?.id == task.id && files.any { f -> f.name == it.previewName && it.files.any { old -> old.name == f.name && old.sha256 == f.sha256 } }
-            it.copy(selected = task, files = files, previewName = if (keep) it.previewName else "", preview = if (keep) it.preview else "")
+            val keep = it.selected?.id == task.id && it.selected.runs.lastOrNull()?.id == run?.id && files.any { f -> f.name == it.previewName && it.files.any { old -> old.name == f.name && old.sha256 == f.sha256 } }
+            it.copy(selected = task, files = files, previewName = if (keep) it.previewName else "", preview = if (keep) it.preview else "", reviews = reviews, reviewsUnavailable = false)
         }
     }
-    fun closeDetail() { _ui.update { it.copy(selected = null, files = emptyList(), preview = "", previewName = "") } }
+    fun closeDetail() { detailEpoch++; detailTask = null; _ui.update { it.copy(selected = null, files = emptyList(), preview = "", previewName = "", reviews = emptyList(), reviewsUnavailable = false) } }
     fun cancel() = act {
         val task = _ui.value.selected ?: return@act
+        val epoch = detailEpoch
         task.runs.lastOrNull()?.let { repo.cancel(it.id) }
-        selectInternal(task.id)
+        selectInternal(task.id, epoch)
     }
     fun preview(file: WorkFileDto) = act {
         val run = _ui.value.selected?.runs?.lastOrNull() ?: return@act
+        val epoch = detailEpoch
+        require(_ui.value.files.contains(file))
+        _ui.update { it.copy(previewName = "", preview = "") }
         val text = repo.preview(run.id, file)
-        _ui.update { it.copy(previewName = file.name, preview = text) }
+        if (epoch == detailEpoch && _ui.value.selected?.runs?.lastOrNull()?.id == run.id) _ui.update { it.copy(previewName = file.name, preview = text) }
     }
     private fun act(action: suspend () -> Unit) {
         if (_ui.value.acting || _ui.value.loading) return

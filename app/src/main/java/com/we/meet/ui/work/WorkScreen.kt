@@ -10,6 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.we.meet.R
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
@@ -31,10 +34,10 @@ fun WorkScreen(vm: WorkViewModel, onBack: () -> Unit) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     var goal by rememberSaveable { mutableStateOf(vm.pendingGoal) }
     var folder by rememberSaveable { mutableStateOf(vm.pendingWorkspace) }
-    LaunchedEffect(ui.selected?.id, ui.tasks) {
-        while (true) {
-            delay(10000)
-            if (ui.tasks.any { t -> t.runs.any { it.status in setOf("queued", "running", "disconnected") } } || ui.selected?.runs?.lastOrNull()?.status in setOf("queued", "running", "disconnected")) vm.refresh()
+    val lifecycle = LocalLifecycleOwner.current
+    LaunchedEffect(vm, lifecycle) {
+        lifecycle.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) { delay(10000); vm.poll() }
         }
     }
     Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = {
@@ -55,12 +58,13 @@ fun WorkScreen(vm: WorkViewModel, onBack: () -> Unit) {
                     Text(stringResource(workStatus(run.status, run.executionTarget == "local")))
                     if (run.executionTarget == "local") Text(stringResource(R.string.work_execution_workspace, run.workspaceLabel))
                     if (run.status in setOf("queued", "running", "disconnected")) OutlinedButton(onClick = vm::cancel, enabled = !ui.acting) { Text(stringResource(R.string.work_cancel)) }
-                    if (run.status == "succeeded" && ui.files.isEmpty()) Text(stringResource(R.string.work_local_results))
+                    if (run.status == "succeeded" && ui.files.isEmpty() && !ui.reviewsUnavailable && !ui.loading) Text(stringResource(R.string.work_local_results))
                     ui.files.forEach { file -> OutlinedButton(onClick = { vm.preview(file) }, enabled = !ui.acting) { Text(stringResource(R.string.work_view_file, file.name)) } }
                     if (ui.previewName.isNotEmpty()) {
                         Text(ui.previewName, style = MaterialTheme.typography.titleMedium)
                         Text(ui.preview, fontFamily = FontFamily.Monospace)
                     }
+                    if (run.status == "succeeded") WorkReviews(ui)
                 }
             } else {
                 Text(stringResource(R.string.work_dispatch_title), style = MaterialTheme.typography.titleLarge)

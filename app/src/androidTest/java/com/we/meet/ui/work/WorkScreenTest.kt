@@ -37,6 +37,7 @@ class WorkScreenTest {
             }
             override suspend fun task(id: String) = WorkTaskDto(id, "Read input and prepare report", listOf(WorkRunDto(request!!.runId, "succeeded", "local", "Fixture Project", true, syncedFiles = listOf("report.md"))))
             override suspend fun files(id: String) = listOf(WorkFileDto("report.md", sha))
+            override suspend fun reviews(id: String) = emptyList<WorkReviewDto>()
             override suspend fun download(id: String, name: String): ResponseBody = text.toResponseBody()
             override suspend fun cancel(id: String, empty: Map<String, String>) = WorkRunDto(id, "canceled", "local")
         }

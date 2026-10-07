@@ -1,0 +1,25 @@
+<resources>
+    <string name="work_review_title">Result review</string>
+    <string name="work_review_help">Reviews check selected results and authorized task materials. They do not modify files or execute commands. Verify the findings before using them.</string>
+    <string name="work_review_disabled">The reviewer is not enabled. Existing authorized records remain available.</string>
+    <string name="work_review_empty">No reviews yet. Start a review from the desktop result page after selecting and syncing files.</string>
+    <string name="work_review_unavailable">Review access could not be confirmed. Previous content is hidden; refresh to check access again.</string>
+    <string name="work_review_queued">Review queued</string>
+    <string name="work_review_running">Review in progress</string>
+    <string name="work_review_succeeded">Review completed</string>
+    <string name="work_review_failed">Review failed</string>
+    <string name="work_review_canceled">Review canceled</string>
+    <string name="work_review_unknown">Awaiting review status confirmation</string>
+    <string name="work_review_selection">Selected results: %1$s</string>
+    <string name="work_review_reserved">Reserved %1$d tokens; actual usage awaits confirmation</string>
+    <string name="work_review_usage">Actual input %1$d / output %2$d tokens</string>
+    <string name="work_review_delivery_failed">A complete review was not delivered. Check the original review on the desktop.</string>
+    <string name="work_review_no_issues">No issues found in the provided materials</string>
+    <string name="work_review_needs_changes">Issues require attention</string>
+    <string name="work_review_inconclusive">More information is required</string>
+    <string name="work_review_verdict_unknown">Review conclusion requires confirmation</string>
+    <string name="work_review_issue">Issue: %1$s</string>
+    <string name="work_review_warning">Reminder: %1$s</string>
+    <string name="work_review_evidence">%1$s · SHA-256 %2$s</string>
+    <string name="work_review_missing">Missing information</string>
+</resources>

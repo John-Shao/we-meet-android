@@ -4,7 +4,11 @@ import com.squareup.moshi.Json
 import okhttp3.ResponseBody
 import retrofit2.http.*
 
-data class WorkCapabilities(@Json(name = "remote_agent_enabled") val remoteEnabled: Boolean = false)
+data class WorkCapabilities(
+    @Json(name = "remote_agent_enabled") val remoteEnabled: Boolean = false,
+    // Null distinguishes older servers without the review API from a disabled reviewer.
+    @Json(name = "review_enabled") val reviewEnabled: Boolean? = null,
+)
 data class DesktopWorkspace(
     val id: String, @Json(name = "device_id") val deviceId: String,
     @Json(name = "device_name") val deviceName: String,
@@ -28,7 +32,26 @@ data class WorkTasksPage(val results: List<WorkTaskDto>, val next: String? = nul
 data class RemoteWorkResponse(val contract: String, val task: WorkTaskDto, val run: WorkRunDto)
 data class WorkFileDto(val name: String, val sha256: String)
 
-/** Business API only. Agent SDKs and model credentials stay on the desktop. */
+data class WorkReviewEvidence(val file: String, val sha256: String, val quote: String)
+data class WorkReviewFinding(val severity: String, val message: String, val evidence: List<WorkReviewEvidence>)
+data class WorkReviewReport(
+    val verdict: String? = null, val summary: String = "",
+    val findings: List<WorkReviewFinding> = emptyList(),
+    @Json(name = "missing_information") val missingInformation: List<String> = emptyList(),
+)
+data class WorkReviewDto(
+    val id: String,
+    @Json(name = "source_run_id") val sourceRunId: String,
+    val status: String, val model: String,
+    @Json(name = "error_code") val errorCode: String = "",
+    val selection: List<WorkFileDto>, val snapshot: List<WorkFileDto>,
+    @Json(name = "reserved_tokens") val reservedTokens: Long,
+    @Json(name = "input_tokens") val inputTokens: Long? = null,
+    @Json(name = "output_tokens") val outputTokens: Long? = null,
+    val report: WorkReviewReport = WorkReviewReport(),
+)
+
+/** Business API only. Agent SDKs and provider credentials stay outside the mobile app. */
 interface WorkApi {
     @GET("api/v1.0/work/capabilities/") suspend fun capabilities(): WorkCapabilities
     @GET("api/v1.0/work/local/workspaces/") suspend fun workspaces(): DesktopWorkspaces
@@ -37,6 +60,7 @@ interface WorkApi {
     @GET("api/v1.0/work/tasks/{id}/") suspend fun task(@Path("id") id: String): WorkTaskDto
     @POST("api/v1.0/work/runs/{id}/cancel/") suspend fun cancel(@Path("id") id: String, @Body empty: Map<String, String> = emptyMap()): WorkRunDto
     @GET("api/v1.0/work/runs/{id}/files/") suspend fun files(@Path("id") id: String): List<WorkFileDto>
+    @GET("api/v1.0/work/runs/{id}/reviews/") suspend fun reviews(@Path("id") id: String): List<WorkReviewDto>
     @Streaming @GET("api/v1.0/work/runs/{id}/file-download/")
     suspend fun download(@Path("id") id: String, @Query("name") name: String): ResponseBody
 }

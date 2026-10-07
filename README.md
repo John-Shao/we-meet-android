@@ -69,7 +69,7 @@ WE_MEET_LIVEKIT_URL_OVERRIDE=ws://10.0.2.2:7880
 
 ## Work 桌面任务（Android，2026-10-07）
 
-`0.3.0-work.1` 增加侧边抽屉“工作”入口：查看同账号已登记桌面工作空间，向在线或离线桌面派发待办，查看统一任务状态、取消及预览桌面主动同步的成果。Android 不安装 dsh、不读取桌面目录，也不保存 DeepSeek 密钥。iOS 暂不开发。
+`0.3.0-work.2` 提供侧边抽屉“工作”入口：查看同账号已登记桌面工作空间，向在线或离线桌面派发待办，查看统一任务状态、取消及预览桌面主动同步的成果。Android 不安装 dsh、不读取桌面目录，也不保存模型供应商密钥。iOS 暂不开发。
 
 后端先迁移至 `work.0005`，并启用 `WORK_ENABLED`、`WORK_LOCAL_AGENT_ENABLED`、`WORK_REMOTE_AGENT_ENABLED`；模型为服务端 `WORK_AGENT_MODEL` 指定值。桌面先通过原生目录选择器授权，并允许远程待办；重新登录需重新授权，任务必须在桌面“审阅并领取”后执行，工具调用还需逐次原生审批。手机不自动领取任务，也不将断线任务改成云端执行。
 
@@ -79,11 +79,17 @@ WE_MEET_LIVEKIT_URL_OVERRIDE=ws://10.0.2.2:7880
 
 ```powershell
 $env:ANDROID_SERIAL='emulator-5556'
-./gradlew.bat :app:connectedDebugAndroidTest '-PWE_MEET_TEST_ID_SUFFIX=.fixturework' '-PWE_MEET_TEST_RUNNER=com.we.meet.ui.records.IsolatedRecordsRunner' '-Pandroid.testInstrumentationRunnerArguments.class=com.we.meet.ui.work.WorkScreenTest'
+./gradlew.bat :app:connectedDebugAndroidTest '-PWE_MEET_TEST_ID_SUFFIX=.fixturework' '-PWE_MEET_TEST_RUNNER=com.we.meet.ui.records.IsolatedRecordsRunner' '-Pandroid.testInstrumentationRunnerArguments.class=com.we.meet.ui.work.WorkScreenTest,com.we.meet.ui.work.WorkReviewScreenTest'
 ```
 
 正常构建不要传 fixture 参数；正常输出 `applicationId=com.we.meet`，测试包不安装到用户现有账号。当前 APK 为 Android Debug 签名内部候选，未发布应用商店。真实服务端/dsh/DeepSeek 联调与 Android fixture UI 验收分别记录在主仓库 `docs/reviews/work-delivery-and-android-2026-10-07.md`，尚未覆盖真实 Android 登录到桌面的整条 UI 验收。
 
 ### 实际跨端验收补充
+
+`0.3.0-work.2` 在任务详情增加成果复核历史：展示排队/运行/完成/失败/取消状态、模型、选定文件、结论、意见、证据文件与哈希及实际 token 用量。原任务结束后，未完成复核仍会在页面可见时轮询。手机只读取业务接口；复核由桌面显式选择并同步成果后开启，模型与供应商 key 在服务端管理。
+
+服务端 capabilities 缺少 `review_enabled` 时兼容旧版并跳过复核接口；值为 false 时仍可读取有权限的历史。访问失败会隐藏缓存的文件、预览和报告；切换账号或关闭详情后，迟到响应不能重新显示旧内容。待确认派发意图也绑定登录会话，刷新 access token 保留会话，重新登录清除旧意图。
+
+新增 `WorkReviewScreenTest` 使用实际 Retrofit 与本机 MockWebServer 检查复核进度、结构化证据与撤权后的隐藏；`WorkBackendReviewIntegrationTest` 由主仓库 `src/backend/work/tests/test_android_review_delivery.py` 显式启动，读取真实 PostgreSQL、Work API 和锁定 Pi Docker 运行时交付的报告。后者模型响应为合成 SSE，身份为隔离预置会话，不产生付费模型调用；默认跳过。验收记录见主仓库 `docs/reviews/work-android-review-2026-10-07.md`。
 
 新增 opt-in `WorkRemoteIntegrationTest`，通过正式 `ApiClient.workApi` 实际 HTTP 访问隔离 Django API，同一任务由实际 Electron / 内置 dsh / DeepSeek 执行、逐次审批并同步，手机校验预览和取消待办均通过。它使用隔离预置会话，不覆盖真实 OTP/OIDC 登录；默认无 `workCrossDevice=1` 时跳过，不会自动产生模型调用。测试专用 `.fixturework` / 本机端口构建与后端编排见主仓库 `docs/reviews/work-cross-device-acceptance-2026-10-07.md`。测试后已正常构建 `com.we.meet` 候选，哈希与前阶段一致。
