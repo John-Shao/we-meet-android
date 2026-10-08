@@ -26,3 +26,8 @@ fun interface CameraToolHandler {
 }
 
 data class CameraPermissionRequest(val id: String)
+
+enum class CameraFeedbackStage { StateSync, ToolExecution, ResultSend, ResponseEnd, Continuation }
+
+/** The result belongs to this failed tool round; null never means the previous result. */
+data class CameraFeedbackFailure(val stage: CameraFeedbackStage, val result: CameraActionResult?)

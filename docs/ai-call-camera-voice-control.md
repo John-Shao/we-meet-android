@@ -1,6 +1,8 @@
-# Android AI 电话语音控制摄像头
+# Android AI 电话：语音控制摄像头与结束对话
 
 Android 的 AI 工具“打电话”通过当前 `qwen3.8-omni-flash-realtime` 会话理解自然语言，调用客户端工具控制摄像头，并使用当前通话音色播报实际结果。AOQ 与 WebRTC 共用工具协调器和摄像头状态控制器。媒体仍直连百炼，切换不重新申请业务会话、租约或模型连接，不增加 ASR、TTS、数据库或后端接口。
+
+“结束对话”“停止对话”“结束通话”“挂断电话”等明确请求调用 `end_call`，由 App 立即执行当前通话的挂断操作。语音和视频模式、输出静音、后台通话都沿用同一结束流程；用户麦克风关闭时模型无法接收新的语音指令，仍可使用挂断按钮。不会等待告别语、引入本地 TTS 或再次请求模型续答。“不要结束对话”“怎么停止对话”、假设、引用和画面文字不构成挂断请求；“关闭摄像头”“只用语音聊”也不结束通话。
 
 ## 用户行为
 
@@ -19,22 +21,29 @@ Android 的 AI 工具“打电话”通过当前 `qwen3.8-omni-flash-realtime` �
 
 ## 工具协议
 
-客户端在最终场景提示词之后追加控制规则，并在 `session.update` 注册两个嵌套 `function` 工具，显式设置 `enable_search=false`。
+客户端在最终场景提示词之后追加控制规则，`OmniCallTools` 按各自开关在 `session.update` 注册嵌套 `function` 工具，显式设置 `enable_search=false`。开启全部语音控制时共三个工具；摄像头工具关闭时仍可单独注册结束工具。
 
 工具启用时同时设置 `temperature=0`、`presence_penalty=0`，降低生成随机性并避免重复惩罚影响用户反复发出相同摄像头指令；不设置未经官方协议确认的 `tool_choice`。这有助于一致性，但不能把模型的普通回复当作执行结果。工具关闭时不改变原会话生成参数。
 
 - `set_camera_enabled`：仅接受一个必填 JSON Boolean 参数 `enabled`。字符串、缺失或额外字段均返回错误。
 - `get_camera_state`：参数必须为空对象，不改变设备状态。
+- `end_call`：参数只能为 `{}`，不接受额外字段。它是终止工具，不进入摄像头串行队列、不需要新权限，也不等待摄像头授权。完整工具项通过类型、参数及当前响应归属校验后，抑制旧输出、取消工具／反馈任务，调用当前客户端绑定的 `AiCallViewModel.endCall()`；取消摄像头权限和设备任务，关闭客户端、音视频资源、前台服务与本次业务租约，完成记录关闭，更新为通话结束状态。只影响当前 App 通话。
 
 完整 `response.function_call_arguments.done` 才进入执行；增量事件不执行。`response.output_item.done.item` 和 `response.done.output` 中的完整工具项用于缺失事件补充。三个入口共用 `call_id` 去重，同一连接中的重复事件不重复操作或回传。
 
+以下结果回传和语音续答仅适用于摄像头工具。`end_call` 在本地校验后立即关闭连接，不等待 `response.done`、不发送 `function_call_output` 或 `response.create`；这是产品选择的终止行为，不宣称已经生成或播放告别语。关闭后的重复／迟到事件全部忽略，旧客户端的回调以实例身份检查防止结束新通话。非法结束参数仍回传 `invalid_arguments`，保持通话。
+
 工具通过 `conversation.item.create` 的 `function_call_output` 回传原始 `call_id`。结果包含 `success`、实际 `enabled`、`changed`、`code` 和本地化 `message`。无法确认状态时 `enabled=null`，禁止播报成功。该响应全部结果已回传后，仅发送一次 `response.create` 请求续答。通常使用 `response.done` 作为输出结束依据；AOQ 实测部分仅有 Function Calling 的轮次没有 `response.done`，因此还接受全部已声明工具项的 `response.output_item.done`，等待 200 毫秒收齐相邻项后续答。有普通消息项的混合响应仍等待 `response.done`；参数增量、未完成工具项或未回传结果都不能触发续答。模型必须每轮调用工具核实状态，不能用历史结果代替重复用户请求。
 
-这是相对最初方案的协议修正：官方要求 Function Calling 回传结果后显式续答，必须等待 `response.done` 的说明针对 MCP；本功能没有注册 MCP。仅等待 AOQ 工具轮的 `response.done` 会导致部分请求没有语音反馈。
+这是相对最初方案的协议修正：官方要求 Function Calling 回传结果后显式续答，必须等待 `response.done` 的说明针对 MCP；本功能没有注册 MCP。仅等待 AOQ 工具轮的 `response.done` 会导致部分请求没有语音反馈。上述 200ms 补充结束条件仅在 AOQ 启用；WebRTC 必须收到本轮 `response.done` 且全部结果回传后才能续答，不能把工具项结束当作整轮结束。
+
+WebRTC 对真实链路实测的 `invalid_request_error`、空错误码、`Conversation already has an active response` 请求冲突做精确处理：必须有 30 秒内尚未确认的 `response.create`，错误参数不得归属其他操作；有请求 ID 时必须匹配。无请求 ID 时关联最新未确认的续答请求。若是工具续答被拒绝，显示反馈失败、保留实际设备状态；已有响应及媒体连接继续使用，不重做摄像头操作、不重新分配会话。其他协议错误及 PeerConnection、DataChannel、音频焦点或设备故障继续按原失败流程处理。日志只记录协议类型、响应 ID、错误类型／码和断连原因，不记录指令、工具参数、音频、SDP 或凭证。
 
 常见代码：`enabled`、`disabled`、`already_enabled`、`already_disabled`、`permission_denied`、`foreground_required`、`video_unavailable`、`device_error`、`timeout`、`cancelled`、`invalid_arguments`。
 
 结果回传失败保留已完成的设备状态，不重做操作、不重连。仅匹配客户端工具事件 ID 的服务端错误按反馈失败处理。续答等待 15 秒，失败显示文字，不增加声音兜底或重复请求。新用户语音、取消响应和挂断使未开始的旧操作及续答失效；已完成操作不会因打断而自动反向切换。
+
+错误反馈区分状态同步、工具执行、结果回传、等待响应结束和语音续答五个阶段，携带本轮实际设备结果；没有结果时不得借用历史成功结果。新摄像头工具开始时清除旧结果。状态同步失败显示“摄像头状态同步暂时失败”；尚未取得本轮结果时显示“尚未确认摄像头操作结果”，不再宣称“结果已显示”。只有本轮结果已确认时才显示该结果并提示暂时无法语音确认。反馈错误本身不改变实际摄像头状态或触发设备重试。Release 日志记录规范化操作类别、实际状态、结果码、执行耗时和反馈阶段，便于区分没有工具调用、设备失败与播报失败，不记录原始指令或参数。
 
 ## 权限和设备状态
 
@@ -76,6 +85,8 @@ AOQ 已建连后若收到实测的精确帧顺序错误 `Error append image befo
 ## 构建和回退
 
 `feature-assistant` 的 `BuildConfig.AI_CALL_CAMERA_VOICE_CONTROL` 同时控制工具注册和控制提示词。Debug 默认开启，可用 `-PAI_CALL_CAMERA_VOICE_CONTROL=false` 回退。Release 默认关闭，内部验收可显式指定 `-PAI_CALL_CAMERA_VOICE_CONTROL_RELEASE=true`；生产默认值等待 AOQ、WebRTC 和荣耀 Android 16 真机验收后再修改。关闭时恢复原按钮入口，不向模型提供摄像头工具。
+
+语音挂断独立使用 `BuildConfig.AI_CALL_VOICE_HANGUP`，Debug 和 Release 默认开启，构建时可用 `-PAI_CALL_VOICE_HANGUP=false` 关闭其工具和提示词。关闭摄像头语音工具不会关闭挂断工具；同时关闭两项开关时恢复原会话行为。修改开关需重建安装 APK，按钮挂断始终保留。已有摄像头语音控制的完整实机验收门槛不变。
 
 内部测试包包含真实工具、权限和媒体操作。工作区候选包不等于已提交或正式发布版本；发布版仍需正式签名和真机验收。测试与交付证据见 [验收记录](ai-call-camera-voice-verification.md)。
 

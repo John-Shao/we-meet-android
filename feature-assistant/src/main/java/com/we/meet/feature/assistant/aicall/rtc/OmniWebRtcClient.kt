@@ -9,6 +9,7 @@ import com.twilio.audioswitch.AudioSwitch
 import com.we.meet.feature.assistant.aicall.model.AiCallAnswer
 import com.we.meet.feature.assistant.aicall.model.CameraToolHandler
 import com.we.meet.feature.assistant.aicall.model.CameraActionResult
+import com.we.meet.feature.assistant.aicall.model.CameraFeedbackFailure
 import com.we.meet.feature.assistant.R
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -37,14 +38,16 @@ class OmniWebRtcClient(
     private val onFailure: () -> Unit,
     private val onTranscript: (com.we.meet.feature.assistant.history.AssistantHistoryRow) -> Unit = {},
     toolHandler: CameraToolHandler? = null,
-    onToolFeedbackFailure: () -> Unit = {},
+    onToolFeedbackFailure: (CameraFeedbackFailure) -> Unit = {},
+    onEndCall: (() -> Unit)? = null,
 ) : OmniCallClient {
     private val playbackDiagnostics = OmniPlaybackDiagnostics(context, "WebRTC", "inbound_rtp_audio_level")
     private val transcript = OmniTranscript(onTranscript)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val handshake = OmniHandshake()
-    private val recovery = OmniConnectionRecovery(scope, ::fail)
+    private val recovery = OmniConnectionRecovery(scope) { fail("connection_recovery_timeout") }
     private val cancellation = OmniCancellation(SystemClock::elapsedRealtime)
+    private val responseCreation = OmniResponseCreation(SystemClock::elapsedRealtime)
     private val iceComplete = CompletableDeferred<Unit>()
     private val ready = CompletableDeferred<Unit>()
     private val channels = mutableSetOf<DataChannel>()
@@ -79,10 +82,12 @@ class OmniWebRtcClient(
     private var outputMuted = false
     private var outputSuppressed = false
     private var toolOutputHeld = false
-    private val tools = toolHandler?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_CAMERA_VOICE_CONTROL }?.let {
-        OmniCameraTools(scope, it, ::send, { held -> toolOutputHeld = held; updateOutput() }, onToolFeedbackFailure,
-            { code -> CameraActionResult(false, cameraEnabled, false, code, context.getString(R.string.assistant_camera_invalid_tool)) })
-    }
+    private val cameraToolHandler = toolHandler?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_CAMERA_VOICE_CONTROL }
+    private val endCallHandler = onEndCall?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_VOICE_HANGUP }
+    private val tools = if (cameraToolHandler != null || endCallHandler != null) {
+        OmniCallTools(scope, cameraToolHandler, ::send, { held -> toolOutputHeld = held; updateOutput() }, onToolFeedbackFailure,
+            { code -> CameraActionResult(false, cameraEnabled, false, code, context.getString(R.string.assistant_call_invalid_tool)) }, endCallHandler)
+    } else null
     private fun updateOutput() { remoteAudio?.setEnabled(!outputMuted && !outputSuppressed && !toolOutputHeld) }
 
     override fun setOutputMuted(muted: Boolean) {
@@ -122,7 +127,7 @@ class OmniWebRtcClient(
         audioSwitch = AudioSwitch(
             context,
             audioFocusChangeListener = { focus ->
-                if (focus == AudioManager.AUDIOFOCUS_LOSS) dispatch { fail() }
+                if (focus == AudioManager.AUDIOFOCUS_LOSS) dispatch { fail("audio_focus_lost") }
             },
             // Discovery is asynchronous: selecting from availableAudioDevices
             // immediately after start() sees an empty list. Keep speaker ahead
@@ -183,7 +188,7 @@ class OmniWebRtcClient(
                     recovery.disconnected()
                 }
                 PeerConnection.PeerConnectionState.FAILED,
-                PeerConnection.PeerConnectionState.CLOSED -> fail()
+                PeerConnection.PeerConnectionState.CLOSED -> fail("peer_${state.name.lowercase()}")
                 else -> handshake.connected = false
             }
         }
@@ -212,7 +217,7 @@ class OmniWebRtcClient(
             override fun onStateChange() = dispatch {
                 if (channel === eventChannel) {
                     handshake.channelOpen = channel.state() == DataChannel.State.OPEN
-                    if (channel.state() == DataChannel.State.CLOSED) fail()
+                    if (channel.state() == DataChannel.State.CLOSED) fail("data_channel_closed")
                 }
                 configureIfReady()
             }
@@ -226,6 +231,12 @@ class OmniWebRtcClient(
     }
 
     private fun handleEvent(channel: DataChannel, event: JSONObject) {
+        val eventType = event.optString("type")
+        if (eventType in setOf("response.created", "response.done", "response.output_item.added", "response.output_item.done",
+                "response.function_call_arguments.done", "input_audio_buffer.speech_started", "error")) {
+            // Metadata only: never log arguments, audio, transcripts, credentials or SDP.
+            Log.i("OmniWebRtc", "Event=$eventType response=${event.optString("response_id", event.optJSONObject("response")?.optString("id").orEmpty())}")
+        }
         tools?.accept(event)
         transcript.accept(event, tools?.suppressesAssistant(event) == true)
         when (event.optString("type")) {
@@ -239,6 +250,7 @@ class OmniWebRtcClient(
             "session.updated" -> if (handshake.acknowledge()) ready.complete(Unit)
             "input_audio_buffer.speech_stopped" -> { speechEndedAt = SystemClock.elapsedRealtime() }
             "response.created" -> {
+                responseCreation.created()
                 responding = true
                 outputSuppressed = false
                 updateOutput()
@@ -250,10 +262,20 @@ class OmniWebRtcClient(
             }
             "error" -> {
                 val error = event.optJSONObject("error")
+                Log.w("OmniWebRtc", "Protocol error type=${error?.optString("type")} code=${error?.optString("code")}")
+                val rejected = if (error != null && handshake.ready) responseCreation.rejectedRequest(error) else null
+                if (rejected != null) {
+                    // The active provider response and media connection remain valid.
+                    // A rejected tool continuation reports feedback failure; never retry
+                    // the device operation or allocate/reconnect the whole call.
+                    tools?.recoverableError(JSONObject(error!!.toString()).put("event_id", rejected))
+                    Log.i("OmniWebRtc", "Overlapping response request rejected; retaining current connection")
+                    return
+                }
                 if (error == null || !handshake.ready || (tools?.recoverableError(error) != true && !cancellation.recoverable(
                         error.optString("type"), error.optString("code"),
                         error.optString("message"), error.optString("event_id"), error.optString("param"),
-                    ))) fail()
+                    ))) fail("protocol_error")
             }
         }
     }
@@ -266,12 +288,12 @@ class OmniWebRtcClient(
             .put("input_audio_format", "pcm")
             .put("output_audio_format", "pcm")
             .put("voice", config.voice)
-            .put("instructions", if (tools != null) OmniCameraTools.instructions(config.instructions) else config.instructions)
+            .put("instructions", tools?.instructions(config.instructions) ?: config.instructions)
             .put("input_audio_transcription", JSONObject().put("model", "qwen3-asr-flash-realtime"))
             .put("turn_detection", JSONObject().put("type", "server_vad")
                 .put("threshold", 0.5).put("silence_duration_ms", 800))
             .apply { if (tools != null) {
-                put("tools", OmniCameraTools.definitions()); put("enable_search", false)
+                put("tools", tools.definitions()); put("enable_search", false)
                 put("temperature", 0.0); put("presence_penalty", 0.0)
             } }))
     }
@@ -323,7 +345,7 @@ class OmniWebRtcClient(
                 capturer = checkNotNull(enumerator.createCapturer(name, object : CameraVideoCapturer.CameraEventsHandler {
                     override fun onCameraError(message: String) = dispatch { cameraFailed() }
                     override fun onCameraDisconnected() = dispatch { cameraFailed() }
-                    override fun onCameraFreezed(message: String) = dispatch { fail() }
+                    override fun onCameraFreezed(message: String) = dispatch { fail("camera_frozen") }
                     override fun onCameraOpening(name: String) = Unit
                     override fun onFirstFrameAvailable() = dispatch { firstVideoFrame?.complete(Unit) }
                     override fun onCameraClosed() = dispatch { videoStopped?.complete(Unit) }
@@ -360,7 +382,7 @@ class OmniWebRtcClient(
     private fun cameraFailed() {
         firstVideoFrame?.completeExceptionally(IllegalStateException("Camera capture failed"))
         videoStopped?.completeExceptionally(IllegalStateException("Camera stop failed"))
-        if (cameraStarted) fail()
+        if (cameraStarted) fail("camera_capture_failed")
     }
 
     override suspend fun flipCamera(): Boolean = suspendCancellableCoroutine { continuation ->
@@ -393,6 +415,7 @@ class OmniWebRtcClient(
         val channel = checkNotNull(eventChannel)
         check(channel.state() == DataChannel.State.OPEN)
         check(channel.send(DataChannel.Buffer(ByteBuffer.wrap(event.toString().toByteArray(Charsets.UTF_8)), false)))
+        if (event.optString("type") == "response.create") responseCreation.sent(event.getString("event_id"))
     }
 
     private fun startStats() {
@@ -421,12 +444,13 @@ class OmniWebRtcClient(
 
     private fun dispatch(block: () -> Unit) {
         scope.launch {
-            if (!closed) runCatching(block).onFailure { fail() }
+            if (!closed) runCatching(block).onFailure { fail("callback_${it.javaClass.simpleName}") }
         }
     }
 
-    private fun fail() {
+    private fun fail(reason: String) {
         if (closed) return
+        Log.w("OmniWebRtc", "Call failed reason=$reason camera=$cameraEnabled capturing=$captureActive responding=$responding")
         recovery.close()
         ready.completeExceptionally(IllegalStateException("AI connection failed"))
         iceComplete.completeExceptionally(IllegalStateException("AI connection failed"))
@@ -440,6 +464,7 @@ class OmniWebRtcClient(
         firstVideoFrame?.cancel(); videoStopped?.cancel()
         recovery.close()
         handshake.close()
+        responseCreation.close()
         ready.cancel()
         tools?.close()
         iceComplete.cancel()

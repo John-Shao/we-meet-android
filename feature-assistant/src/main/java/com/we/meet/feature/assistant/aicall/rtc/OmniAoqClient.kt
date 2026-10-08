@@ -16,6 +16,7 @@ import com.we.meet.feature.assistant.aicall.model.AiCallAnswer
 import com.we.meet.feature.assistant.aicall.model.AiCallSetupException
 import com.we.meet.feature.assistant.aicall.model.CameraToolHandler
 import com.we.meet.feature.assistant.aicall.model.CameraActionResult
+import com.we.meet.feature.assistant.aicall.model.CameraFeedbackFailure
 import com.we.meet.feature.assistant.R
 import com.we.meet.feature.assistant.history.AssistantHistoryRow
 import kotlinx.coroutines.*
@@ -30,7 +31,8 @@ class OmniAoqClient(
     private val onFailure: () -> Unit,
     onTranscript: (AssistantHistoryRow) -> Unit = {},
     toolHandler: CameraToolHandler? = null,
-    onToolFeedbackFailure: () -> Unit = {},
+    onToolFeedbackFailure: (CameraFeedbackFailure) -> Unit = {},
+    onEndCall: (() -> Unit)? = null,
 ) : OmniCallClient {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val playbackDiagnostics = OmniPlaybackDiagnostics(context, "AOQ", "decoded_pcm_rms")
@@ -56,14 +58,16 @@ class OmniAoqClient(
     @Volatile private var outputMuted = false
     @Volatile private var toolOutputHeld = false
     @Volatile private var outputSuppressed = false
-    private val tools = toolHandler?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_CAMERA_VOICE_CONTROL }?.let {
-        OmniCameraTools(scope, it, ::send, { held ->
+    private val cameraToolHandler = toolHandler?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_CAMERA_VOICE_CONTROL }
+    private val endCallHandler = onEndCall?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_VOICE_HANGUP }
+    private val tools = if (cameraToolHandler != null || endCallHandler != null) {
+        OmniCallTools(scope, cameraToolHandler, ::send, { held ->
             // Keep decoding/draining the SDK stream; pausing the player can
             // defer response.done until playback resumes, deadlocking a tool.
             toolOutputHeld = held
         }, onToolFeedbackFailure, { code -> CameraActionResult(false, cameraEnabled, false, code,
-            context.getString(R.string.assistant_camera_invalid_tool)) })
-    }
+            context.getString(R.string.assistant_call_invalid_tool)) }, endCallHandler, allowMissingResponseDone = true)
+    } else null
     override var cameraFront = false
         private set
     private val audio = AoqTrackType.AoqTrackTypeAudio
@@ -249,12 +253,12 @@ class OmniAoqClient(
         send(JSONObject().put("type", "session.update").put("session", JSONObject()
             .put("modalities", JSONArray(listOf("text", "audio")))
             .put("input_audio_format", "pcm").put("output_audio_format", "pcm")
-            .put("voice", config.voice).put("instructions", if (tools != null) OmniCameraTools.instructions(config.instructions) else config.instructions)
+            .put("voice", config.voice).put("instructions", tools?.instructions(config.instructions) ?: config.instructions)
             .put("input_audio_transcription", JSONObject().put("model", "qwen3-asr-flash-realtime"))
             .put("turn_detection", JSONObject().put("type", "server_vad")
                 .put("threshold", 0.5).put("silence_duration_ms", 800))
             .apply { if (tools != null) {
-                put("tools", OmniCameraTools.definitions()); put("enable_search", false)
+                put("tools", tools.definitions()); put("enable_search", false)
                 put("temperature", 0.0); put("presence_penalty", 0.0)
             } }))
     }

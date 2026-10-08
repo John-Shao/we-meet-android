@@ -83,6 +83,9 @@ class AiCallViewModel(
             { currentRecording?.put(it) },
             CameraToolHandler { request ->
                 val started = android.os.SystemClock.elapsedRealtime()
+                if (rtcClient === client) _state.update { it.copy(cameraResult = null, errorToastRes = null) }
+                val action = when (request) { CameraToolRequest.GetState -> "query"; is CameraToolRequest.SetEnabled -> if (request.enabled) "open" else "close" }
+                android.util.Log.i("OmniCamera", "source=Voice action=$action actual=${client.cameraEnabled}")
                 val result = if (rtcClient !== client || _state.value.status !is AiCallStatus.Active)
                     cameraResult("cancelled", client.cameraEnabled, false)
                 else when (request) {
@@ -90,11 +93,19 @@ class AiCallViewModel(
                     is CameraToolRequest.SetEnabled -> checkNotNull(owner).requestCameraEnabled(request.enabled, CameraActionSource.Voice)
                 }
                 if (rtcClient === client) _state.update { it.copy(cameraResult = result) }
-                if (com.we.meet.feature.assistant.BuildConfig.DEBUG) android.util.Log.i("OmniCamera",
-                    "source=Voice code=${result.code} durationMs=${android.os.SystemClock.elapsedRealtime() - started}")
+                android.util.Log.i("OmniCamera",
+                    "source=Voice code=${result.code} actual=${result.enabled} durationMs=${android.os.SystemClock.elapsedRealtime() - started}")
                 result
             },
-            { if (rtcClient === client) _state.update { it.copy(errorToastRes = R.string.assistant_camera_feedback_failed) } },
+            { failure -> if (rtcClient === client) {
+                android.util.Log.w("OmniCamera", "feedbackStage=${failure.stage} result=${failure.result?.code} actual=${client.cameraEnabled}")
+                _state.update {
+                    if (failure.stage == CameraFeedbackStage.StateSync) it.copy(cameraResult = null, errorToastRes = R.string.assistant_camera_state_sync_failed)
+                    else it.copy(cameraResult = failure.result, errorToastRes = if (failure.result == null)
+                        R.string.assistant_camera_result_unconfirmed else R.string.assistant_camera_feedback_failed)
+                }
+            } },
+            { if (rtcClient === client) endCall() },
         )
         rtcClient = client
         owner = CameraActionController(

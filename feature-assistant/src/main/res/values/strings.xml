@@ -125,8 +125,11 @@
     <string name="assistant_camera_timeout">Camera operation timed out. Please retry.</string>
     <string name="assistant_camera_device_error">Camera operation failed.</string>
     <string name="assistant_camera_invalid_tool">Invalid camera request. The camera was not changed.</string>
+    <string name="assistant_call_invalid_tool">Invalid call request. No action was performed.</string>
     <string name="assistant_camera_cancelled">Camera request was cancelled.</string>
-    <string name="assistant_camera_feedback_failed">The camera result is shown here. Voice confirmation is unavailable.</string>
+    <string name="assistant_camera_feedback_failed">Voice confirmation is unavailable. Check this camera result.</string>
+    <string name="assistant_camera_result_unconfirmed">The camera operation is unconfirmed. Check its state or retry with the camera button.</string>
+    <string name="assistant_camera_state_sync_failed">Camera state sync failed. Retry the voice command or use the camera button.</string>
     <string name="assistant_camera_working">Switching camera…</string>
     <string name="assistant_camera_video_unavailable">Video is unavailable on this device with WebRTC. Use AOQ or a compatible phone.</string>
 </resources>

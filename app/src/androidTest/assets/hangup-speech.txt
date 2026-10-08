@@ -1,0 +1,7 @@
+Synthetic Mandarin test speech, generated locally with Microsoft Huihui Desktop.
+Format: 16 kHz, mono, signed 16-bit little-endian raw PCM.
+hangup-end.pcm: 结束对话
+hangup-stop.pcm: 停止对话
+hangup-negative.pcm: 不要结束对话，我们继续聊。
+hangup-question.pcm: 怎么停止对话？
+No user recording is included. Used only by opt-in real-provider instrumentation.

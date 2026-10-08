@@ -19,8 +19,10 @@ import org.junit.Test
 class OmniCameraToolLiveTest {
     @Test fun aoqReadOnlyToolReturnsResultAndSameVoiceReply() = probe(AiCallTransport.AOQ)
     @Test fun webRtcReadOnlyToolReturnsResultAndSameVoiceReply() = probe(AiCallTransport.WebRTC)
+    @Test fun webRtcRepeatedCameraOffKeepsSameConnectionAndReplies() = probe(AiCallTransport.WebRTC, repeatOff = true)
+    @Test fun webRtcOverlappingResponseIsARequestErrorNotADisconnection() = probe(AiCallTransport.WebRTC, repeatOff = true, overlap = true)
 
-    private fun probe(transport: AiCallTransport) = runBlocking {
+    private fun probe(transport: AiCallTransport, repeatOff: Boolean = false, overlap: Boolean = false) = runBlocking {
         assumeTrue(InstrumentationRegistry.getArguments().getString("liveBackend") == "true")
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
@@ -56,7 +58,10 @@ class OmniCameraToolLiveTest {
                 withContext(Dispatchers.Main) {
                     val handler = CameraToolHandler { request ->
                         calls.send(request)
-                        check(request is CameraToolRequest.GetState)
+                        if (repeatOff) {
+                            check(request == CameraToolRequest.SetEnabled(false))
+                            checkNotNull(client).setCameraEnabled(false)
+                        } else check(request is CameraToolRequest.GetState)
                         CameraActionResult(true, false, false, "already_disabled", "摄像头已经关闭了")
                     }
                     val level: (Float) -> Unit = { if (it > 0.001f) audioSamples++ }
@@ -72,19 +77,32 @@ class OmniCameraToolLiveTest {
                             transport = transport.name.lowercase())).also { lease = repository.track(it) { failed.complete(Unit) } }
                     }
                     client!!.setMicrophoneEnabled(false)
-                    // Probe only: production has no text-injection API.
+                }
+                repeat(if (repeatOff) 10 else 1) { index ->
+                    while (replies.tryReceive().isSuccess) Unit
+                    val started = android.os.SystemClock.elapsedRealtime()
+                    val initialSamples = audioSamples
+                    withContext(Dispatchers.Main) {
+                    // Probe only: production has no text-injection API. Real DataChannel/model,
+                    // including native OFF, but no physical microphone or negotiated H264 camera.
                     val send = client!!.javaClass.getDeclaredMethod("send", JSONObject::class.java).apply { isAccessible = true }
                     send.invoke(client, JSONObject().put("type", "conversation.item.create").put("item", JSONObject()
                         .put("type", "message").put("role", "user").put("content", org.json.JSONArray(listOf(
-                            JSONObject().put("type", "input_text").put("text", "请调用get_camera_state查询摄像头状态，然后用中文朗读工具结果message。"))))))
+                            JSONObject().put("type", "input_text").put("text", if (repeatOff) "关闭摄像头" else "请调用get_camera_state查询摄像头状态，然后用中文朗读工具结果message。"))))))
                     send.invoke(client, JSONObject().put("type", "response.create"))
+                    if (overlap && index == 0) send.invoke(client, JSONObject().put("type", "response.create"))
                 }
-                assertEquals(CameraToolRequest.GetState, withTimeout(25_000) { calls.receive() })
+                assertEquals(if (repeatOff) CameraToolRequest.SetEnabled(false) else CameraToolRequest.GetState, withTimeout(25_000) { calls.receive() })
                 val reply = withTimeout(25_000) { replies.receive() }
-                assertTrue(reply.contains("关闭"))
-                withTimeout(10_000) { while (audioSamples == 0) { check(!failed.isCompleted); delay(50) } }
+                assertTrue("Camera reply must report closed: $reply",
+                    listOf("已经关闭", "已关闭", "已经关了", "已关", "处于关闭").any { it in reply })
+                withTimeout(10_000) { while (audioSamples <= initialSamples) { check(!failed.isCompleted); delay(50) } }
                 assertFalse(failed.isCompleted)
                 assertEquals(1, allocations)
+                assertEquals(false, client!!.cameraEnabled)
+                android.util.Log.i("OmniCameraToolTest", "Round=${index + 1} transport=$transport camera=${client!!.cameraEnabled} replyMs=${android.os.SystemClock.elapsedRealtime() - started}")
+                delay(1500)
+                }
             } finally {
                 withContext(Dispatchers.Main) { client?.close(); lease?.close() }
             }

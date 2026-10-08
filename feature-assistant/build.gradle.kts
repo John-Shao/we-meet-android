@@ -23,6 +23,9 @@ android {
         minSdk = 29
         buildConfigField("int", "AI_CALL_LOCAL_PREVIEW_FPS", aiCallPreviewFps.toString())
         buildConfigField("int", "AI_CALL_MODEL_UPLOAD_FPS", aiCallUploadFps.toString())
+        // Independent of camera-control acceptance; applies to both build variants.
+        buildConfigField("boolean", "AI_CALL_VOICE_HANGUP",
+            providers.gradleProperty("AI_CALL_VOICE_HANGUP").orElse("true").get().toBooleanStrict().toString())
         // SDK default media playback avoids quiet VoIP output on validated Honor devices.
         buildConfigField("boolean", "AOQ_MEDIA_PLAYBACK", "true")
         // Enable release only after both transports and physical-device acceptance.
