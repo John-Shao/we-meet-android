@@ -7,7 +7,8 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.sqrt
 import android.util.Log
-import android.view.View
+import livekit.org.webrtc.EglBase
+import livekit.org.webrtc.VideoSink
 import com.alibaba.aoq.clientsdk.AoqClientEngine
 import com.alibaba.aoq.clientsdk.AoqClientEngine.*
 import com.alibaba.aoq.clientsdk.AoqClientListener
@@ -49,6 +50,7 @@ class OmniAoqClient(
     private val camera = AoqCameraCapture(context, { frame ->
         ok(checkNotNull(engine).pushExternalVideoCapturedFrame(video, frame))
     }, { dispatch { if (cameraStarted) fail() } })
+    val eglContext: EglBase.Context? get() = camera.eglContext
     override val cameraEnabled: Boolean? get() = if (cameraCertain) cameraStarted else null
     private var responding = false
     @Volatile private var outputMuted = false
@@ -282,7 +284,7 @@ class OmniAoqClient(
             cameraCertain = false
             ok(sdk.setVideoEncoderConfig(AoqVideoCodecConfig().apply {
                 trackType = video; codecType = AoqEncoderType.AoqEncoderTypeVideoH264
-                width = 1280; height = 720; fps = 2; bitrate = 500_000; minBitrate = 128_000; keyframeInterval = 2
+                width = 1280; height = 720; fps = AiCallVideoConfig.modelUploadFps; bitrate = 500_000; minBitrate = 128_000; keyframeInterval = 2
                 isExternal = false // SDK encodes raw external frames.
             }))
             captureActive = true
@@ -303,10 +305,8 @@ class OmniAoqClient(
         check(cameraStarted)
         return camera.flip().also { cameraFront = it }
     }
-    fun attachPreview(view: View) {
-        ok(engine!!.setLocalView(video, AoqVideoCanvas().apply { this.view = view; renderMode = AoqRenderMode.AoqRenderModeCrop }))
-    }
-    fun detachPreview() { if (!closed) engine?.setLocalView(video, AoqVideoCanvas()) }
+    fun attachPreview(sink: VideoSink) { if (!closed) camera.attachPreview(sink) }
+    fun detachPreview(sink: VideoSink) = camera.detachPreview(sink)
     private fun send(event: JSONObject) {
         if (!event.has("event_id")) event.put("event_id", UUID.randomUUID().toString())
         ok(engine!!.sendDataMsg(AoqDataMsg().apply { data = event.toString().toByteArray(Charsets.UTF_8) }))

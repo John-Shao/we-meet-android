@@ -6,6 +6,8 @@ Android 的 AI 工具“打电话”通过当前 `qwen3.8-omni-flash-realtime` �
 
 首次开始语音通话保持摄像头关闭，首次开启默认使用后置镜头；本次通话再次开启沿用最后使用的镜头。
 
+实际摄像头已开启、通话为 Active 且页面处于 RESUMED 时，设置 `FLAG_KEEP_SCREEN_ON` 防止因闲置超时变暗、熄屏和自动锁屏。摄像头关闭、挂断、页面进入后台或离开后释放本页持有的常亮标志；返回前台且摄像头仍开启时重新保持常亮。按钮和语音开启共用实际状态，AOQ、WebRTC 一致，功能不依赖语音工具构建开关。仅选择视频模式、正在连接或等待授权不触发常亮；保留用户主动锁屏和系统自动亮度行为，不修改系统超时设置、不新增权限。退出时恢复窗口原有常亮标志，避免清除其他页面已有的设置。
+
 | 当前摄像头 | 用户请求 | 实际操作 | 中文反馈含义 |
 |---|---|---|---|
 | 关闭 | 打开摄像头 | 开启采集、发送和预览 | 摄像头已打开 |
@@ -42,7 +44,18 @@ Android 的 AI 工具“打电话”通过当前 `qwen3.8-omni-flash-realtime` �
 
 开启顺序：前台与解锁检查、摄像头权限、摄像头前台服务类型确认、启动采集、首帧确认、开启发送、更新视频模式。关闭顺序：停止视频发送、停止采集并确认停止回调、更新语音模式并移除预览、撤销摄像头前台服务类型。
 
-AOQ SDK 1.3.0 的内部 Camera1 采集在当前模拟器上停止后无法可靠再次输出首帧，连续开关测试暴露了该问题。实现改为 Android Camera2 采集，使用已有的摄像头组件提供原始帧，通过 AOQ 官方 `pushExternalVideoCapturedFrame` 接口交给 SDK 编码和发送；没有创建 WebRTC PeerConnection。摄像头硬件以兼容的 15fps 工作，每 500ms 最多提交一帧，AOQ 编码目标仍为 2fps。帧按设备方向旋转并转换为 I420，复制仅用于 SDK 所需的传输缓冲，不保存图像。首次实际 Camera2 帧被 SDK 接受后才开启发送并更新视频模式；关闭先停止发送和推帧，再等待实际摄像头关闭回调并停止 SDK 外部采集。
+AOQ SDK 1.3.0 的内部 Camera1 采集在当前模拟器上停止后无法可靠再次输出首帧，连续开关测试暴露了该问题。实现改为 Android Camera2 采集，使用已有的摄像头组件提供原始帧，通过 AOQ 官方 `pushExternalVideoCapturedFrame` 接口交给 SDK 编码和发送；没有创建 WebRTC PeerConnection。摄像头硬件以兼容的 15fps 工作，`CameraFrameRouter` 将原始帧直接交给本机预览，仅上传分支每 500ms 最多提交一帧，AOQ 编码目标仍为 2fps。旋转、I420 转换和复制只发生在上传分支，不对全部预览帧做 CPU 图像转换，也不保存图像。首次实际 Camera2 帧被 SDK 接受后才开启发送并更新视频模式；关闭先停止发送和推帧，再等待实际摄像头关闭回调并停止 SDK 外部采集。
+
+AOQ 和 WebRTC 均使用共享 EGL 上下文的 `TextureViewRenderer` 直接预览 Camera2 原始帧，保留帧自带方向并随前后镜头设置预览镜像；预览不再依赖 AOQ SDK 本地渲染或 WebRTC 的低帧率模型轨道。默认本地预览为 15fps，模型上传为 2fps，WebRTC 的 VideoSource 和 RTP 编码上限使用同一上传参数。每次停止屏蔽新帧，解除预览绑定等待已有回调返回后才释放渲染器。AOQ 摄像头、纹理采集资源每次关闭释放；共享 EGL 根上下文保留到当前通话挂断，确保快速重开及页面旋转仍使用兼容上下文，挂断时统一释放。实际帧率仍受设备、曝光与运行负载影响。
+
+帧率为两个独立的构建配置，统一适用于 AOQ、WebRTC、Debug 和 Release，在 `gradle.properties` 中设置：
+
+| 参数 | 默认值 | 配置范围 | 生效位置 |
+| --- | --- | --- | --- |
+| `AI_CALL_LOCAL_PREVIEW_FPS` | 15 | 1–30 的整数 | 本地原始帧预览上限；硬件采集目标为 `max(15, 配置值)`，保持低预览帧率下的 Camera2 兼容性 |
+| `AI_CALL_MODEL_UPLOAD_FPS` | 2 | 1–本地预览帧率的整数 | 模型分支提交上限、AOQ 编码 fps、WebRTC RTP maxFramerate |
+
+也可执行 `./gradlew.bat :app:assembleDebug -PAI_CALL_LOCAL_PREVIEW_FPS=30 -PAI_CALL_MODEL_UPLOAD_FPS=3` 覆盖。参数在构建时校验，修改后需重新构建并安装 APK；不是用户设置或云端热配置。`AiCallVideoConfig` 汇总配置，分流器使用纳秒时钟独立计算两个分支的最小帧间隔，不再写死 500ms；摄像头实际输出高于请求值时，本地预览也按配置限帧。模型上传不依赖预览是否已绑定，帧率配置不改变分辨率、码率、媒体连接或语音控制发布开关。
 
 这是相对原方案“AOQ 内部采集首帧观察接口”的设备兼容性调整。[AOQ 官方外部视频输入](https://www.alibabacloud.com/help/zh/model-studio/aoq-custom-video-input)支持此类自定义采集，编码和媒体传输仍由 AOQ SDK 完成。WebRTC 使用 CameraEventsHandler 首帧及关闭回调。已有支持 H264 的 WebRTC 连接预先协商视频发送器，开启只附加轨道，关闭移除轨道；不重新协商业务会话。
 

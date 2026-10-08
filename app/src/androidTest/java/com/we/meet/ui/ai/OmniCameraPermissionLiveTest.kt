@@ -17,6 +17,9 @@ import com.we.meet.feature.assistant.aicall.data.*
 import com.we.meet.feature.assistant.aicall.model.*
 import com.we.meet.feature.assistant.aicall.ui.AssistantCallScreen
 import com.we.meet.feature.assistant.aicall.vm.AiCallViewModel
+import com.we.meet.feature.assistant.aicall.rtc.OmniAoqClient
+import livekit.org.webrtc.VideoSink
+import java.util.concurrent.atomic.AtomicInteger
 import com.we.meet.ui.theme.WeMeetTheme
 import kotlinx.coroutines.*
 import org.junit.Assert.*
@@ -69,6 +72,9 @@ class OmniCameraPermissionLiveTest {
             override val baseUrl = app.baseUrl
             override val authedOkHttp = app.authedOkHttp
         }
+        var observedClient: OmniAoqClient? = null
+        val previewFrames = AtomicInteger()
+        val previewSink = VideoSink { previewFrames.incrementAndGet() }
         try {
             compose.runOnIdle { compose.activity.setContent {
                 CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
@@ -101,8 +107,14 @@ class OmniCameraPermissionLiveTest {
             assertSame(client, vm.rtcClient)
             assertTrue(vm.state.value.status is AiCallStatus.Active)
             if (grant) {
+                observedClient = client as OmniAoqClient
+                observedClient!!.attachPreview(previewSink)
                 compose.waitForIdle()
                 delay(2000)
+                android.util.Log.i("OmniCameraPreviewTest", "Preview frames in 2 seconds: ${previewFrames.get()}")
+                // Cadence is measured separately on the native Camera2 source/renderer.
+                // ARM translation plus the emulator GPU is not a physical-device FPS benchmark.
+                assertTrue("Original camera preview must deliver real frames", previewFrames.get() > 0)
                 val screenshot = instrumentation.uiAutomation.takeScreenshot()
                 context.getExternalFilesDir(null)!!.resolve("camera-preview.png").outputStream().use {
                     screenshot.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
@@ -113,6 +125,11 @@ class OmniCameraPermissionLiveTest {
                 assertTrue(vm.state.value.cameraFront)
                 withContext(Dispatchers.Main) {
                     assertTrue(vm.requestCameraEnabled(false, CameraActionSource.Button).success)
+                }
+                val stoppedFrames = previewFrames.get()
+                delay(300)
+                assertEquals("Closed camera must not feed the preview", stoppedFrames, previewFrames.get())
+                withContext(Dispatchers.Main) {
                     assertTrue(vm.requestCameraEnabled(true, CameraActionSource.Button).success)
                     assertTrue(vm.state.value.cameraFront) // Reopening preserves last lens.
                 }
@@ -124,7 +141,10 @@ class OmniCameraPermissionLiveTest {
                     assertEquals(false, client.cameraEnabled)
                 }
             }
-        } finally { compose.runOnIdle { vm.endCall(); owner.viewModelStore.clear(); prefs.save(original) } }
+        } finally {
+            observedClient?.detachPreview(previewSink)
+            compose.runOnIdle { vm.endCall(); owner.viewModelStore.clear(); prefs.save(original) }
+        }
     }
 
     private fun find(node: AccessibilityNodeInfo?, id: String): AccessibilityNodeInfo? {

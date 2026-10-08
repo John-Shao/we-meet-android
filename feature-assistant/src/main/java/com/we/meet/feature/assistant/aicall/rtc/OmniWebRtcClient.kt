@@ -48,7 +48,7 @@ class OmniWebRtcClient(
     private val iceComplete = CompletableDeferred<Unit>()
     private val ready = CompletableDeferred<Unit>()
     private val channels = mutableSetOf<DataChannel>()
-    private val sinks = mutableSetOf<VideoSink>()
+    private val cameraFrames = CameraFrameRouter { videoSource?.capturerObserver?.onFrameCaptured(it) }
     private var eventChannel: DataChannel? = null
     private var egl: EglBase? = null
     val eglContext: EglBase.Context? get() = egl?.eglBaseContext
@@ -300,6 +300,7 @@ class OmniWebRtcClient(
         if (!enabled) {
             cameraCertain = false
             videoSender?.let { check(it.setTrack(null, false)) }
+            cameraFrames.stop()
             if (captureActive) {
                 val stopped = CompletableDeferred<Unit>().also { videoStopped = it }
                 try {
@@ -330,16 +331,26 @@ class OmniWebRtcClient(
                 videoSource = factory!!.createVideoSource(false)
                 videoTrack = factory!!.createVideoTrack("omni-camera", videoSource)
                 textureHelper = SurfaceTextureHelper.create("OmniCamera", eglContext)
-                capturer!!.initialize(textureHelper, context, videoSource!!.capturerObserver)
+                capturer!!.initialize(textureHelper, context, object : CapturerObserver {
+                    override fun onCapturerStarted(success: Boolean) {
+                        videoSource?.capturerObserver?.onCapturerStarted(success)
+                    }
+                    override fun onCapturerStopped() {
+                        cameraFrames.stop()
+                        videoSource?.capturerObserver?.onCapturerStopped()
+                    }
+                    override fun onFrameCaptured(frame: VideoFrame) = cameraFrames.onFrame(frame)
+                })
             }
-            // Native video RTP. Keep visual input low-rate for scene Q&A.
+            // Preview raw frames before the separately throttled model branch and native adaptation.
             captureActive = true
-            capturer!!.startCapture(1280, 720, 2)
+            cameraFrames.start()
+            capturer!!.startCapture(1280, 720, AiCallVideoConfig.captureFps)
             withTimeout(8000) { firstVideoFrame!!.await() }
             check(!closed)
             check(videoSender!!.setTrack(videoTrack, false))
             val parameters = videoSender!!.parameters
-            parameters.encodings.forEach { it.maxFramerate = 2; it.maxBitrateBps = 1_000_000 }
+            parameters.encodings.forEach { it.maxFramerate = AiCallVideoConfig.modelUploadFps; it.maxBitrateBps = 1_000_000 }
             videoSender!!.parameters = parameters
             cameraStarted = true; cameraCertain = true
         } finally { firstVideoFrame = null }
@@ -370,11 +381,11 @@ class OmniWebRtcClient(
     }
 
     fun attachPreview(sink: VideoSink) {
-        if (!closed && sinks.add(sink)) videoTrack?.addSink(sink)
+        if (!closed) cameraFrames.attach(sink)
     }
 
     fun detachPreview(sink: VideoSink) {
-        if (!closed && sinks.remove(sink)) videoTrack?.removeSink(sink)
+        cameraFrames.detach(sink)
     }
 
     private fun send(event: JSONObject) {
@@ -440,8 +451,7 @@ class OmniWebRtcClient(
         }
         channels.clear()
         runCatching { peer?.close() }
-        sinks.forEach { runCatching { videoTrack?.removeSink(it) } }
-        sinks.clear()
+        cameraFrames.close()
         runCatching { capturer?.stopCapture() }
         // A failed native cleanup must not prevent the remaining hardware and
         // routing resources from being released, including on partial startup.

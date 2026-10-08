@@ -12,6 +12,7 @@ import android.content.ContextWrapper
 import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.os.Build
+import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -111,8 +112,29 @@ fun AssistantCallScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // Keep volume keys on the actual playback stream, including during silence.
     val activity = remember(context) { context.callActivity() }
+    // Only an actual foreground video call holds the screen awake.
+    val keepVideoScreenOn = state.status is AiCallStatus.Active && state.isCameraEnabled
+    DisposableEffect(activity, lifecycleOwner, keepVideoScreenOn) {
+        val window = activity?.window
+        val screenOnFlag = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+        val previouslyKeptOn = window?.attributes?.flags?.let { it and screenOnFlag != 0 } ?: false
+        fun updateScreenOn() {
+            val keepOn = keepVideoScreenOn &&
+                lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+            if (keepOn || previouslyKeptOn) window?.addFlags(screenOnFlag)
+            else window?.clearFlags(screenOnFlag)
+        }
+        val observer = LifecycleEventObserver { _, _ -> updateScreenOn() }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        updateScreenOn()
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            if (previouslyKeptOn) window?.addFlags(screenOnFlag)
+            else window?.clearFlags(screenOnFlag)
+        }
+    }
+    // Keep volume keys on the actual playback stream, including during silence.
     val callInProgress = state.status is AiCallStatus.Connecting || state.status is AiCallStatus.Active
     val playbackStream = if (state.selection.transport == AiCallTransport.AOQ)
         AoqPlaybackMode.volumeStream else AudioManager.STREAM_VOICE_CALL

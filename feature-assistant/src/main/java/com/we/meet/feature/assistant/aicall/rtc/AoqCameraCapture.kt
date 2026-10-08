@@ -1,7 +1,6 @@
 package com.we.meet.feature.assistant.aicall.rtc
 
 import android.content.Context
-import android.os.SystemClock
 import com.alibaba.aoq.clientsdk.AoqClientEngine.*
 import kotlinx.coroutines.*
 import livekit.org.webrtc.*
@@ -13,12 +12,11 @@ internal class AoqCameraCapture(
     private val push: (AoqVideoFrame) -> Unit,
     private val failed: () -> Unit,
 ) {
-    private val frameLock = Any()
-    private var acceptingFrames = false
-    private var lastFrameAt = 0L
+    private val frames = CameraFrameRouter(upload = ::pushFrame)
     private var capturer: CameraVideoCapturer? = null
     private var texture: SurfaceTextureHelper? = null
     private var egl: EglBase? = null
+    val eglContext: EglBase.Context? get() = egl?.eglBaseContext
     @Volatile private var deviceOpen = false
     @Volatile private var first: CompletableDeferred<Unit>? = null
     @Volatile private var stopped: CompletableDeferred<Unit>? = null
@@ -27,7 +25,8 @@ internal class AoqCameraCapture(
         check(capturer == null)
         val ready = CompletableDeferred<Unit>().also { first = it }
         PeerConnectionFactory.initialize(PeerConnectionFactory.InitializationOptions.builder(context).createInitializationOptions())
-        egl = EglBase.create()
+        // Keep a stable shared context across reopen, even if Compose skips a brief Voice state.
+        if (egl == null) egl = EglBase.create()
         texture = SurfaceTextureHelper.create("OmniAoqCamera", egl!!.eglBaseContext)
         val cameras = Camera2Enumerator(context)
         val name = cameras.deviceNames.firstOrNull {
@@ -51,26 +50,12 @@ internal class AoqCameraCapture(
                 else ready.completeExceptionally(IllegalStateException("Camera capture failed"))
             }
             override fun onCapturerStopped() = Unit
-            override fun onFrameCaptured(frame: VideoFrame) = synchronized(frameLock) {
-                if (!acceptingFrames) return@synchronized
-                val now = SystemClock.elapsedRealtime()
-                if (now - lastFrameAt < 500) return@synchronized
-                lastFrameAt = now
-                try {
-                    push(pack(frame))
-                    first?.complete(Unit) // First actual Camera2 frame accepted by AOQ.
-                } catch (error: Exception) {
-                    android.util.Log.w("OmniAoqCamera", "External frame submission failed", error)
-                    acceptingFrames = false
-                    first?.completeExceptionally(error)
-                    failed()
-                }
-            }
+            override fun onFrameCaptured(frame: VideoFrame) = frames.onFrame(frame)
         })
-        synchronized(frameLock) { acceptingFrames = true; lastFrameAt = 0 }
+        frames.start()
         try {
-            // Camera hardware usually requires >= 15fps; submit only 2fps to AOQ.
-            capturer!!.startCapture(1280, 720, 15)
+            // Hardware cadence and the two output branches use the shared video configuration.
+            capturer!!.startCapture(1280, 720, AiCallVideoConfig.captureFps)
             withTimeout(8_000) { ready.await() }
         } finally { first = null }
     }
@@ -99,19 +84,32 @@ internal class AoqCameraCapture(
         })
     }
 
-    fun stopFrames() = synchronized(frameLock) { acceptingFrames = false }
+    fun attachPreview(sink: VideoSink) = frames.attach(sink)
+    fun detachPreview(sink: VideoSink) = frames.detach(sink)
+    fun stopFrames() = frames.stop()
 
     fun close() {
-        stopFrames()
+        frames.close()
         first?.cancel(); stopped?.cancel()
-        release()
+        try { release() } finally { egl?.release(); egl = null }
     }
 
     private fun release() {
         capturer?.dispose(); capturer = null
         texture?.dispose(); texture = null
-        egl?.release(); egl = null
         deviceOpen = false
+    }
+
+    private fun pushFrame(frame: VideoFrame) {
+        try {
+            push(pack(frame))
+            first?.complete(Unit) // First actual Camera2 frame accepted by AOQ.
+        } catch (error: Exception) {
+            android.util.Log.w("OmniAoqCamera", "External frame submission failed", error)
+            frames.stop()
+            first?.completeExceptionally(error)
+            failed()
+        }
     }
 
     private fun pack(frame: VideoFrame): AoqVideoFrame {
