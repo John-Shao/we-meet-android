@@ -38,6 +38,12 @@ private class ReviewFixture : WorkFixture() {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class WorkReviewTest {
+    @Test fun missingInformationKeepsHistoricalFindingsInconclusiveWithoutRewritingReport() {
+        val report = WorkReviewReport("needs_changes", "Model opinion", missingInformation = listOf("Original input was not supplied"))
+        assertEquals("inconclusive", reviewVerdict(report))
+        assertEquals("needs_changes", report.verdict)
+        assertEquals("needs_changes", reviewVerdict(report.copy(missingInformation = emptyList())))
+    }
     @Test fun disabledReviewerRetainsHistoryAndOldServerSkipsUnsupportedApi() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val store = ViewModelStore()

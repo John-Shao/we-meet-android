@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import com.we.meet.R
+import com.we.meet.data.api.WorkReviewReport
 import com.we.meet.ui.theme.Dimens
 
 fun reviewStatus(status: String): Int = when (status) {
@@ -23,6 +24,9 @@ fun reviewStatus(status: String): Int = when (status) {
     "canceled" -> R.string.work_review_canceled
     else -> R.string.work_review_unknown
 }
+
+fun reviewVerdict(report: WorkReviewReport): String? =
+    if (report.verdict != null && report.missingInformation.isNotEmpty()) "inconclusive" else report.verdict
 
 @Composable
 fun WorkReviews(ui: WorkUi) {
@@ -44,7 +48,7 @@ fun WorkReviews(ui: WorkUi) {
                 Text(if (review.inputTokens == null) stringResource(R.string.work_review_reserved, review.reservedTokens)
                      else stringResource(R.string.work_review_usage, review.inputTokens, requireNotNull(review.outputTokens)))
                 if (review.errorCode.isNotEmpty()) Text(stringResource(R.string.work_review_delivery_failed), color = MaterialTheme.colorScheme.error)
-                review.report.verdict?.let { verdict ->
+                reviewVerdict(review.report)?.let { verdict ->
                     Text(stringResource(when (verdict) {
                         "no_issues" -> R.string.work_review_no_issues
                         "needs_changes" -> R.string.work_review_needs_changes
