@@ -27,11 +27,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.FlipCameraIos
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -55,6 +58,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -266,6 +271,9 @@ fun AssistantCallScreen(
                 canOpenSettings = state.status is AiCallStatus.Idle ||
                     state.status is AiCallStatus.Failed ||
                     state.status is AiCallStatus.Ended,
+                isOutputMuted = state.isOutputMuted,
+                canToggleOutput = state.status is AiCallStatus.Active,
+                onToggleOutput = vm::toggleOutput,
                 tintOnDark = isVideoActive,
                 showFlipCamera = isVideoActive,
                 onFlipCamera = vm::flipCamera,
@@ -287,9 +295,22 @@ fun AssistantCallScreen(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     contentAlignment = Alignment.Center,
                 ) {
-                    when {
-                        isVideoActive -> Unit // video fills the background
-                        else -> AnimatedSphere(
+                    if (state.status is AiCallStatus.Active) {
+                        Text(
+                            text = state.selection.transport.name,
+                            color = if (isVideoActive) WeMeetTheme.extras.aiCall.onVideo
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.align(Alignment.TopEnd)
+                                .padding(top = Dimens.SpaceS, end = Dimens.ScreenPadding)
+                                .clip(RoundedCornerShape(Dimens.CornerS))
+                                .background(if (isVideoActive) WeMeetTheme.extras.aiCall.videoScrim
+                                    else MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
+                        )
+                    }
+                    if (!isVideoActive) {
+                        AnimatedSphere(
                             audioLevel = { state.agentAudioLevel },
                             contentDescription = stringResource(R.string.assistant_cd_interrupt),
                             enabled = state.status is AiCallStatus.Active,
@@ -304,16 +325,11 @@ fun AssistantCallScreen(
                     onDark = isVideoActive,
                 )
 
-                if (state.status is AiCallStatus.Active && (state.cameraPending || state.cameraResult != null)) {
+                if (state.status is AiCallStatus.Active && (state.cameraPending || state.cameraResult?.success == false)) {
                     Text(if (state.cameraPending) stringResource(R.string.assistant_camera_working) else state.cameraResult!!.message,
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (isVideoActive) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.align(Alignment.CenterHorizontally).padding(horizontal = Dimens.SpaceL))
-                }
-
-                if (state.status is AiCallStatus.Active) androidx.compose.material3.TextButton(
-                    onClick = vm::toggleOutput, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                    Text(stringResource(if (state.isOutputMuted) R.string.assistant_background_unmute else R.string.assistant_background_mute))
                 }
 
                 BottomControls(
@@ -371,6 +387,9 @@ private fun TopBar(
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
     canOpenSettings: Boolean,
+    isOutputMuted: Boolean,
+    canToggleOutput: Boolean,
+    onToggleOutput: () -> Unit,
     tintOnDark: Boolean,
     showFlipCamera: Boolean,
     onFlipCamera: () -> Unit,
@@ -395,6 +414,21 @@ private fun TopBar(
                         tint = tint,
                     )
                 }
+            }
+            val playbackState = stringResource(if (isOutputMuted)
+                R.string.assistant_background_muted else R.string.assistant_background_sound)
+            IconToggleButton(
+                checked = isOutputMuted,
+                onCheckedChange = { onToggleOutput() },
+                enabled = canToggleOutput,
+                modifier = Modifier.semantics { stateDescription = playbackState },
+            ) {
+                Icon(
+                    imageVector = if (isOutputMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                    contentDescription = stringResource(if (isOutputMuted)
+                        R.string.assistant_background_unmute else R.string.assistant_background_mute),
+                    tint = if (canToggleOutput) tint else tint.copy(alpha = 0.4f),
+                )
             }
             IconButton(onClick = onOpenSettings, enabled = canOpenSettings) {
                 Icon(

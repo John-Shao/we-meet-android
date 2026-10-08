@@ -121,7 +121,7 @@
     <string name="assistant_camera_invalid_tool">摄像头指令无效，未执行操作</string>
     <string name="assistant_call_invalid_tool">通话指令无效，未执行操作</string>
     <string name="assistant_camera_cancelled">摄像头操作已取消</string>
-    <string name="assistant_camera_feedback_failed">暂时无法语音确认，请查看本次摄像头结果</string>
+    <string name="assistant_camera_feedback_failed">暂时无法语音确认</string>
     <string name="assistant_camera_result_unconfirmed">尚未确认摄像头操作结果，请检查状态或使用摄像头按钮重试</string>
     <string name="assistant_camera_state_sync_failed">摄像头状态同步暂时失败，请重试语音指令或使用摄像头按钮</string>
     <string name="assistant_camera_working">正在切换摄像头…</string>
