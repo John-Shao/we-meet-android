@@ -86,6 +86,20 @@ AOQ 已建连后若收到实测的精确帧顺序错误 `Error append image befo
 
 ## 构建和回退
 
+### AOQ 扬声器回声排查（2026-10-08）
+
+荣耀设备反馈 AOQ 视频模式下无人讲话也偶现语音中断，尚未进行耳机对照。当前没有该设备的 VAD／网络日志，因此不能确认是扬声器回声、环境声音、网络拥塞还是播放卡顿。
+
+AOQ SDK 1.3.0 的采集／播放 `isVoipMode` 默认均为 `false`。官方[音频功能说明](https://www.alibabacloud.com/help/en/model-studio/aoq-audio-features)将 `true` 定义为启用 VoIP 硬件 AEC，并说明采集／播放以先配置的模式为准；文档同时提及 SDK 的 3A 处理流水线，不能据此断言媒体模式完全没有软件回声消除。App 现将采集、播放配置统一从 `AoqPlaybackMode` 创建，避免 VoIP 播放与默认媒体采集混用。
+
+`AOQ_MEDIA_PLAYBACK` 对 Debug、Release 都生效，默认仍为 `true`。此前内部回声对照包使用 `-PAOQ_MEDIA_PLAYBACK=false -PAI_CALL_CAMERA_VOICE_CONTROL_RELEASE=true`，整通 AOQ 电话使用 VoIP 模式，通过系统“通话”调节音量。用户实测该包未复现偶现中断，但明显复现 AOQ 音量偏小：系统媒体、通话均调到最大（设备显示 200%）时，AOQ 200% 体感仅相当于 WebRTC 100%。这是该设备的听感对照，不是音频增益测量，也不能证明 VoIP 消除了偶现中断。VoIP 路径不采用为默认方案，新内部诊断包使用 `-PAOQ_MEDIA_PLAYBACK=true`，恢复媒体音量路径。摄像头开关不重启音频设备，WebRTC 与双语翻译不受此参数影响。
+
+Release 可读取 `OmniAoqAudio` 日志中的 VAD 事件、距最近可听播放的时间、摄像头／播放抑制状态、VoIP 开关、路由、音频焦点及 SDK 警告编号。SDK [onStats 统计](https://help.aliyun.com/zh/model-studio/aoq-android-sdk-reference)每 5 秒最多记录一次 RTT、丢包率、总收发码率、音频收发码率／累计字节及编码／播放音量；每次 VAD 附带最新统计及其年龄，字段缺失为 `na`，不以旧值或零流量替代。播放帧时间与可听播放时间分别记录，最大解码帧间隔在周期日志后重新累计；帧回调间隔本身不能证明播放器欠载，静音和正常句间停顿也会影响观察。RTT 不是单向上行时延，当前 SDK 公开统计不包含播放抖动缓冲长度，不能单凭某一指标确诊网络或回声。
+
+日志不保存音频或转写，诊断不改变 VAD 阈值、输入采集、增益或用户主动打断行为。播放与 VAD 时间接近只说明可能相关，不自动判定为回声。SDK 1.3.0 公开内部采集配置未提供独立于 `isVoipMode` 的硬件 AEC 开关；外部流 `enable3A` 适用于外部 PCM，不直接适用于当前内部麦克风采集。本次不改造外部采集管线或增加播报增益。
+
+荣耀实机对照：媒体包与 VoIP 包分别在扬声器、耳机上保持相近实际响度，测试语音及前后摄像头视频；AI 连续播报时保持安静，再主动讲话打断，测试摄像头指令和挂断。模拟器仅能确认音频配置、设备初始化及模型链路，不能验证手机的声学回声效果。
+
 `feature-assistant` 的 `BuildConfig.AI_CALL_CAMERA_VOICE_CONTROL` 同时控制工具注册和控制提示词。Debug 默认开启，可用 `-PAI_CALL_CAMERA_VOICE_CONTROL=false` 回退。Release 默认关闭，内部验收可显式指定 `-PAI_CALL_CAMERA_VOICE_CONTROL_RELEASE=true`；生产默认值等待 AOQ、WebRTC 和荣耀 Android 16 真机验收后再修改。关闭时恢复原按钮入口，不向模型提供摄像头工具。
 
 语音挂断独立使用 `BuildConfig.AI_CALL_VOICE_HANGUP`，Debug 和 Release 默认开启，构建时可用 `-PAI_CALL_VOICE_HANGUP=false` 关闭其工具和提示词。关闭摄像头语音工具不会关闭挂断工具；同时关闭两项开关时恢复原会话行为。修改开关需重建安装 APK，按钮挂断始终保留。已有摄像头语音控制的完整实机验收门槛不变。

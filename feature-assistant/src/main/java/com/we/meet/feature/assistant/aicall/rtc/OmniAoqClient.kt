@@ -36,6 +36,7 @@ class OmniAoqClient(
 ) : OmniCallClient {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val playbackDiagnostics = OmniPlaybackDiagnostics(context, "AOQ", "decoded_pcm_rms")
+    private val audioDiagnostics = AoqAudioDiagnostics(SystemClock::elapsedRealtime)
     private val transcript = OmniTranscript(onTranscript)
     private val ready = CompletableDeferred<Unit>()
     private val recovery = OmniConnectionRecovery(scope, ::fail)
@@ -73,7 +74,25 @@ class OmniAoqClient(
     private val audio = AoqTrackType.AoqTrackTypeAudio
     private val video = AoqTrackType.AoqTrackTypeVideo
     private val listener = object : AoqClientListener() {
+        override fun onWarning(code: Int, message: String?) {
+            // Do not log SDK text: it can contain provider/session details.
+            Log.w("OmniAoqAudio", "SDK warning code=$code")
+        }
+        override fun onAudioDeviceRouteChanged(routeType: Int) {
+            Log.i("OmniAoqAudio", "Route type=$routeType")
+        }
+        override fun onAudioDeviceInterrupted(interrupt: Boolean) {
+            Log.i("OmniAoqAudio", "Device interrupted=$interrupt")
+        }
+        override fun onAudioDeviceFocusChanged(focusChange: Int) {
+            Log.i("OmniAoqAudio", "Focus change=$focusChange")
+        }
         override fun onStats(stats: AoqStats) {
+            if (closed) return
+            audioDiagnostics.update(stats)?.let { quality -> dispatch {
+                Log.i("OmniAoqAudio", "Quality camera=$cameraStarted responding=$responding " +
+                    "muted=$outputMuted held=$toolOutputHeld suppressed=$outputSuppressed voip=${AoqPlaybackMode.voip} $quality")
+            } }
             if (com.we.meet.feature.assistant.BuildConfig.DEBUG && cameraStarted) {
                 stats.videoPublishStats?.forEach {
                     Log.d("OmniAoqCamera", "Video encodeFps=${it.encodeFps} bitrate=${it.bitrate} bytes=${it.bytes}")
@@ -115,6 +134,11 @@ class OmniAoqClient(
                 "response.created" -> { responding = true; outputSuppressed = false }
                 "response.done" -> { responding = false; onAudioLevel(0f) }
                 "input_audio_buffer.speech_started" -> {
+                    // A server VAD event, not proof of user speech or acoustic echo.
+                    // Keep only timing/state metadata, never PCM or transcripts.
+                    Log.i("OmniAoqAudio", "VAD speech_started camera=$cameraStarted responding=$responding " +
+                        "muted=$outputMuted held=$toolOutputHeld suppressed=$outputSuppressed " +
+                        "voip=${AoqPlaybackMode.voip} ${audioDiagnostics.snapshot()}")
                     // Refresh before generation, not during a tool continuation.
                     // Button changes and older tool results must not leave a stale snapshot.
                     publishCameraState()
@@ -179,6 +203,8 @@ class OmniAoqClient(
             }))
             ok(sdk.setAudioFrameObserver(object : AoqClientListener.AoqAudioFrameListener {
                 override fun onPlaybackAudioFrame(frame: AoqAudioFrameData) {
+                    if (closed) return
+                    audioDiagnostics.frameReceived()
                     if (tools != null && (outputMuted || toolOutputHeld || outputSuppressed)) {
                         frame.dataPtr?.fill(0)
                         dispatch { onAudioLevel(0f) }
@@ -198,6 +224,9 @@ class OmniAoqClient(
                         squares += value * value; count++
                     }
                     val level = sqrt(squares / count).toFloat()
+                    if (level > 0.01f && !outputMuted && !toolOutputHeld && !outputSuppressed) {
+                        audioDiagnostics.audiblePlayback()
+                    }
                     dispatch {
                         if (!outputMuted && !toolOutputHeld && !outputSuppressed) playbackDiagnostics.sample(level)
                         onAudioLevel(if (outputMuted || toolOutputHeld || outputSuppressed) 0f else level)
@@ -233,10 +262,8 @@ class OmniAoqClient(
             withTimeout(25_000) { ready.await() }
             check(!closed)
             Log.i("OmniAoq", "Playback mode: ${if (AoqPlaybackMode.media) "media" else "voip"}")
-            ok(sdk.startAudioPlayer(AoqAudioPlaybackConfig().apply {
-                channel = 1; isExternal = false; isDefaultSpeaker = true; isVoipMode = AoqPlaybackMode.voip
-            }))
-            ok(sdk.startAudioCapture(AoqAudioCaptureConfig().apply { channel = 1; isExternal = false }))
+            ok(sdk.startAudioPlayer(AoqPlaybackMode.playbackConfig()))
+            ok(sdk.startAudioCapture(AoqPlaybackMode.captureConfig()))
             // Capture can reinitialize the SDK audio manager after the player config.
             // Reassert its speaker preference after both devices are initialized;
             // the SDK continues to manage focus and connected headset routing.

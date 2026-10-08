@@ -26,8 +26,10 @@ android {
         // Independent of camera-control acceptance; applies to both build variants.
         buildConfigField("boolean", "AI_CALL_VOICE_HANGUP",
             providers.gradleProperty("AI_CALL_VOICE_HANGUP").orElse("true").get().toBooleanStrict().toString())
-        // SDK default media playback avoids quiet VoIP output on validated Honor devices.
-        buildConfigField("boolean", "AOQ_MEDIA_PLAYBACK", "true")
+        // Keep the validated media default; allow internal AEC comparisons in both variants.
+        // VoIP selects the SDK hardware-AEC path and Android call volume.
+        buildConfigField("boolean", "AOQ_MEDIA_PLAYBACK",
+            providers.gradleProperty("AOQ_MEDIA_PLAYBACK").orElse("true").get().toBooleanStrict().toString())
         // Enable release only after both transports and physical-device acceptance.
         buildConfigField("boolean", "AI_CALL_CAMERA_VOICE_CONTROL", "false")
     }
@@ -36,9 +38,6 @@ android {
         debug {
             buildConfigField("boolean", "AI_CALL_CAMERA_VOICE_CONTROL",
                 providers.gradleProperty("AI_CALL_CAMERA_VOICE_CONTROL").orElse("true").get().toBooleanStrict().toString())
-            buildConfigField("boolean", "AOQ_MEDIA_PLAYBACK",
-                // Debug builds can still compare the former VoIP path with -PAOQ_MEDIA_PLAYBACK=false.
-                providers.gradleProperty("AOQ_MEDIA_PLAYBACK").orElse("true").get().toBooleanStrict().toString())
         }
         release {
             // Explicit opt-in for internal release acceptance; production default stays off.

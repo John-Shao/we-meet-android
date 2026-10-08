@@ -56,12 +56,8 @@ class AoqSdkStartupTest {
                 engine = AoqClientEngine.createEngine(context, AoqCreateConfig().apply {
                     workDir = context.filesDir.absolutePath
                 }, object : AoqClientListener() {})
-                assertEquals(0, engine!!.startAudioPlayer(AoqAudioPlaybackConfig().apply {
-                    channel = 1; isExternal = false; isDefaultSpeaker = true; isVoipMode = AoqPlaybackMode.voip
-                }))
-                assertEquals(0, engine!!.startAudioCapture(AoqAudioCaptureConfig().apply {
-                    channel = 1; isExternal = false
-                }))
+                assertEquals(0, engine!!.startAudioPlayer(AoqPlaybackMode.playbackConfig()))
+                assertEquals(0, engine!!.startAudioCapture(AoqPlaybackMode.captureConfig()))
                 // Simulate a device that falls back to its earpiece during SDK startup.
                 assertEquals(0, engine!!.enableSpeakerphone(false))
             }
