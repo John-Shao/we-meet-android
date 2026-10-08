@@ -47,6 +47,8 @@ class AiCallViewModel(
     private var connectJob: Job? = null
     private var cameraJob: Job? = null
     private var foreground: AssistantSessionLease? = null
+    private var cameraController: CameraActionController? = null
+    private var pageVisible = false
 
     init { loadConfig() }
 
@@ -68,17 +70,49 @@ class AiCallViewModel(
         val selection = config.resolveSelection(_state.value.selection)
         recording = history?.begin("call")
         val currentRecording = recording
-        _state.update { it.copy(status = AiCallStatus.Connecting(ConnectingStep.Connecting), isMicMuted = false, isOutputMuted = false) }
+        _state.update { it.copy(status = AiCallStatus.Connecting(ConnectingStep.Connecting), isMicMuted = false, isOutputMuted = false, cameraResult = null) }
         val makeClient = if (selection.transport == AiCallTransport.AOQ) ::OmniAoqClient else ::OmniWebRtcClient
-        val client = makeClient(
+        lateinit var client: OmniCallClient
+        var owner: CameraActionController? = null
+        client = makeClient(
             appContext,
             { level ->
-                _state.update { it.copy(agentAudioLevel = (level * 2.5f).coerceIn(0f, 1f), agentSpeaking = level > 0.01f) }
+                if (rtcClient === client) _state.update { it.copy(agentAudioLevel = (level * 2.5f).coerceIn(0f, 1f), agentSpeaking = level > 0.01f) }
             },
-            { endCall(R.string.assistant_disconnected_ended) },
+            { if (rtcClient === client) endCall(R.string.assistant_disconnected_ended) },
             { currentRecording?.put(it) },
+            CameraToolHandler { request ->
+                val started = android.os.SystemClock.elapsedRealtime()
+                val result = if (rtcClient !== client || _state.value.status !is AiCallStatus.Active)
+                    cameraResult("cancelled", client.cameraEnabled, false)
+                else when (request) {
+                    CameraToolRequest.GetState -> checkNotNull(owner).query()
+                    is CameraToolRequest.SetEnabled -> checkNotNull(owner).requestCameraEnabled(request.enabled, CameraActionSource.Voice)
+                }
+                if (rtcClient === client) _state.update { it.copy(cameraResult = result) }
+                if (com.we.meet.feature.assistant.BuildConfig.DEBUG) android.util.Log.i("OmniCamera",
+                    "source=Voice code=${result.code} durationMs=${android.os.SystemClock.elapsedRealtime() - started}")
+                result
+            },
+            { if (rtcClient === client) _state.update { it.copy(errorToastRes = R.string.assistant_camera_feedback_failed) } },
         )
         rtcClient = client
+        owner = CameraActionController(
+            current = { rtcClient === client }, enabled = { client.cameraEnabled }, available = { client.cameraAvailable },
+            visible = { pageVisible && !appContext.getSystemService(android.app.KeyguardManager::class.java).isKeyguardLocked },
+            permissionGranted = { androidx.core.content.ContextCompat.checkSelfPermission(appContext, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED },
+            permissionRequested = { request -> if (rtcClient === client) _state.update { it.copy(cameraPermissionRequest = request) } },
+            foregroundCamera = { checkNotNull(foreground).camera(it) }, mediaCamera = client::setCameraEnabled,
+            applied = { enabled -> if (rtcClient === client) {
+                _state.update {
+                it.copy(mode = if (enabled) AiCallMode.Video else AiCallMode.Voice,
+                    status = AiCallStatus.Active(if (enabled) AiCallMode.Video else AiCallMode.Voice),
+                    isCameraEnabled = enabled, cameraFront = client.cameraFront)
+            } } },
+            pending = { pending -> if (rtcClient === client) _state.update { it.copy(cameraPending = pending) } },
+            unsafe = { if (rtcClient === client) endCall(R.string.assistant_camera_device_error) }, result = ::cameraResult,
+        )
+        cameraController = owner
         connectJob = viewModelScope.launch {
             try {
                 foreground = AssistantForegroundSession.start(appContext, AssistantSessionKind.CALL,
@@ -96,7 +130,8 @@ class AiCallViewModel(
                     modelLease = lease
                     answer.forScene(selection.sceneId)
                 }
-                if (_state.value.mode == AiCallMode.Video) client.setCameraEnabled(true)
+                if (_state.value.mode == AiCallMode.Video) withTimeout(10_000) { client.setCameraEnabled(true) }
+                if (_state.value.mode == AiCallMode.Video) client.publishCameraState()
                 _state.update { it.copy(status = AiCallStatus.Active(it.mode), isCameraEnabled = it.mode == AiCallMode.Video, cameraFront = client.cameraFront) }
                 updateControls()
             } catch (error: Exception) {
@@ -122,7 +157,7 @@ class AiCallViewModel(
         cameraJob = null
         closeClient()
         _state.update {
-            it.copy(status = AiCallStatus.Ended, isCameraEnabled = false, cameraPending = false,
+            it.copy(status = AiCallStatus.Ended, isCameraEnabled = false, cameraPending = false, cameraPermissionRequest = null,
                 cameraFront = false, isMicMuted = false, micPending = false,
                 agentSpeaking = false, agentAudioLevel = 0f, errorToastRes = reasonRes)
         }
@@ -134,28 +169,50 @@ class AiCallViewModel(
         when (_state.value.status) {
             is AiCallStatus.Connecting -> Unit
             is AiCallStatus.Active -> {
-                val client = rtcClient ?: return
-                _state.update { it.copy(cameraPending = true) }
                 cameraJob = viewModelScope.launch {
-                    try {
-                        val video = next == AiCallMode.Video
-                        if (video) checkNotNull(foreground).camera(true)
-                        client.setCameraEnabled(video)
-                        if (!video) checkNotNull(foreground).camera(false)
-                        _state.update { it.copy(mode = next, status = AiCallStatus.Active(next), isCameraEnabled = next == AiCallMode.Video, cameraFront = client.cameraFront) }
-                    } catch (error: Exception) {
-                        if (error is CancellationException && error !is TimeoutCancellationException) throw error
-                        if (rtcClient === client) {
-                            runCatching { foreground?.camera(_state.value.isCameraEnabled) }
-                            _state.update { it.copy(errorToastRes = R.string.assistant_camera_switch_failed) }
-                        }
-                    } finally {
-                        _state.update { it.copy(cameraPending = false) }
-                    }
+                    requestCameraEnabled(next == AiCallMode.Video, CameraActionSource.Button)
                 }
             }
             else -> _state.update { it.copy(mode = next) }
         }
+    }
+
+    fun setPageVisible(visible: Boolean) { pageVisible = visible }
+    fun selectMode(mode: AiCallMode) {
+        if (_state.value.status !is AiCallStatus.Active && _state.value.status !is AiCallStatus.Connecting)
+            _state.update { it.copy(mode = mode) }
+    }
+    fun cameraPermissionResult(id: String, granted: Boolean) { cameraController?.permissionResult(id, granted) }
+    suspend fun requestCameraEnabled(enabled: Boolean, source: CameraActionSource): CameraActionResult {
+        val started = android.os.SystemClock.elapsedRealtime()
+        val client = rtcClient
+        val result = if (client == null || _state.value.status !is AiCallStatus.Active)
+            cameraResult("cancelled", client?.cameraEnabled, false)
+        else checkNotNull(cameraController).requestCameraEnabled(enabled, source)
+        if (rtcClient === client) _state.update { it.copy(cameraResult = result) }
+        // Tool results already carry current state. Update instructions only
+        // for a manual change, which the model would otherwise not observe.
+        if (rtcClient === client && source == CameraActionSource.Button && result.success && result.changed)
+            client?.publishCameraState()
+        if (com.we.meet.feature.assistant.BuildConfig.DEBUG) android.util.Log.i("OmniCamera",
+            "source=$source code=${result.code} durationMs=${android.os.SystemClock.elapsedRealtime() - started}")
+        return result
+    }
+
+    private fun cameraResult(code: String, enabled: Boolean?, changed: Boolean): CameraActionResult {
+        val resource = when (code) {
+            "enabled" -> R.string.assistant_camera_opened
+            "disabled" -> R.string.assistant_camera_closed
+            "already_enabled" -> R.string.assistant_camera_already_open
+            "already_disabled" -> R.string.assistant_camera_already_closed
+            "permission_denied" -> R.string.assistant_camera_permission_denied
+            "foreground_required" -> R.string.assistant_camera_foreground_required
+            "video_unavailable" -> R.string.assistant_camera_video_unavailable
+            "timeout" -> R.string.assistant_camera_timeout
+            "cancelled" -> R.string.assistant_camera_cancelled
+            else -> R.string.assistant_camera_device_error
+        }
+        return CameraActionResult(code in setOf("enabled", "disabled", "already_enabled", "already_disabled"), enabled, changed, code, appContext.getString(resource))
     }
 
     fun toggleMic() {
@@ -173,13 +230,13 @@ class AiCallViewModel(
         _state.update { it.copy(cameraPending = true) }
         cameraJob = viewModelScope.launch {
             try {
-                val front = withTimeout(10_000) { client.flipCamera() }
-                _state.update { it.copy(cameraFront = front) }
+                val front = checkNotNull(cameraController).flip { withTimeout(10_000) { client.flipCamera() } }
+                if (rtcClient === client) _state.update { it.copy(cameraFront = front) }
             } catch (error: Exception) {
                 if (error is CancellationException && error !is TimeoutCancellationException) throw error
-                _state.update { it.copy(errorToastRes = R.string.assistant_camera_switch_failed) }
+                if (rtcClient === client) _state.update { it.copy(errorToastRes = R.string.assistant_camera_switch_failed) }
             } finally {
-                _state.update { it.copy(cameraPending = false) }
+                if (rtcClient === client) _state.update { it.copy(cameraPending = false) }
             }
         }
     }
@@ -227,6 +284,7 @@ class AiCallViewModel(
         }
     }
     private fun closeClient() {
+        cameraController?.close(); cameraController = null
         modelLease?.close(); modelLease = null
         val client = rtcClient
         rtcClient = null

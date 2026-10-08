@@ -8,7 +8,7 @@ internal class OmniTranscript(private val emit: (AssistantHistoryRow) -> Unit) {
     private val positions = linkedMapOf<String, Int>()
     private fun position(id: String) = positions.getOrPut(id) { positions.size }
 
-    fun accept(event: JSONObject) {
+    fun accept(event: JSONObject, suppressAssistant: Boolean = false) {
         when (event.optString("type")) {
             "input_audio_buffer.committed" -> event.optString("item_id").takeIf { it.isNotBlank() }?.let(::position)
             "response.output_item.added", "conversation.item.created" -> {
@@ -16,8 +16,8 @@ internal class OmniTranscript(private val emit: (AssistantHistoryRow) -> Unit) {
                 item.optString("id").takeIf { it.isNotBlank() }?.let(::position)
             }
             "conversation.item.input_audio_transcription.completed" -> emitFinal(event, "user", event.optString("transcript"))
-            "response.audio_transcript.done" -> emitFinal(event, "assistant", event.optString("transcript"))
-            "response.text.done" -> emitFinal(event, "assistant", event.optString("text"))
+            "response.audio_transcript.done" -> if (!suppressAssistant) emitFinal(event, "assistant", event.optString("transcript"))
+            "response.text.done" -> if (!suppressAssistant) emitFinal(event, "assistant", event.optString("text"))
         }
     }
 

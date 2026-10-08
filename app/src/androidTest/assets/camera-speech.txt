@@ -1,0 +1,8 @@
+Synthetic Mandarin test speech, generated locally with Microsoft Huihui Desktop.
+Format: 16 kHz, mono, signed 16-bit little-endian raw PCM.
+camera-open.pcm: 打开摄像头
+camera-close.pcm: 关闭摄像头
+camera-natural.pcm: 让你看看眼前的东西
+camera-negative.pcm: 不要打开摄像头
+camera-question.pcm: 怎么打开摄像头
+No user recording is included. Used only by opt-in real-provider instrumentation.

@@ -47,6 +47,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +57,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.feature.assistant.AssistantDeps
@@ -99,6 +101,13 @@ fun AssistantCallScreen(
         factory = AiCallViewModel.Factory(context.applicationContext, deps),
     )
     val state by vm.state.collectAsState()
+    DisposableEffect(vm, lifecycleOwner) {
+        fun updateVisibility() { vm.setPageVisible(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) }
+        val observer = LifecycleEventObserver { _, _ -> updateVisibility() }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        updateVisibility()
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer); vm.setPageVisible(false) }
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -150,10 +159,24 @@ fun AssistantCallScreen(
                 pendingAction = null
                 if (!lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return@rememberLauncherForActivityResult
                 // Only hits this branch when going Voice → Video.
-                if (cameraGranted) vm.toggleMode()
+                if (cameraGranted) vm.selectMode(AiCallMode.Video)
                 else scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.assistant_need_camera)) }
             }
             null -> Unit
+        }
+    }
+
+    var launchedCameraPermissionId by rememberSaveable { mutableStateOf<String?>(null) }
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val id = launchedCameraPermissionId
+        launchedCameraPermissionId = null
+        if (id != null) vm.cameraPermissionResult(id, granted)
+    }
+    LaunchedEffect(state.cameraPermissionRequest?.id, launchedCameraPermissionId) {
+        val request = state.cameraPermissionRequest ?: return@LaunchedEffect
+        if (launchedCameraPermissionId == null) {
+            launchedCameraPermissionId = request.id
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
@@ -177,6 +200,7 @@ fun AssistantCallScreen(
     }
 
     fun handleToggleVideo() {
+        if (state.status is AiCallStatus.Active) { vm.toggleMode(); return }
         val goingToVideo = state.mode == AiCallMode.Voice
         val cameraGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
             PackageManager.PERMISSION_GRANTED
@@ -257,6 +281,13 @@ fun AssistantCallScreen(
                     mode = state.mode,
                     onDark = isVideoActive,
                 )
+
+                if (state.status is AiCallStatus.Active && (state.cameraPending || state.cameraResult != null)) {
+                    Text(if (state.cameraPending) stringResource(R.string.assistant_camera_working) else state.cameraResult!!.message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isVideoActive) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(horizontal = Dimens.SpaceL))
+                }
 
                 if (state.status is AiCallStatus.Active) androidx.compose.material3.TextButton(
                     onClick = vm::toggleOutput, modifier = Modifier.align(Alignment.CenterHorizontally)) {

@@ -15,15 +15,22 @@ android {
         minSdk = 29
         // SDK default media playback avoids quiet VoIP output on validated Honor devices.
         buildConfigField("boolean", "AOQ_MEDIA_PLAYBACK", "true")
+        // Enable release only after both transports and physical-device acceptance.
+        buildConfigField("boolean", "AI_CALL_CAMERA_VOICE_CONTROL", "false")
     }
 
     buildTypes {
         debug {
+            buildConfigField("boolean", "AI_CALL_CAMERA_VOICE_CONTROL",
+                providers.gradleProperty("AI_CALL_CAMERA_VOICE_CONTROL").orElse("true").get().toBooleanStrict().toString())
             buildConfigField("boolean", "AOQ_MEDIA_PLAYBACK",
                 // Debug builds can still compare the former VoIP path with -PAOQ_MEDIA_PLAYBACK=false.
                 providers.gradleProperty("AOQ_MEDIA_PLAYBACK").orElse("true").get().toBooleanStrict().toString())
         }
         release {
+            // Explicit opt-in for internal release acceptance; production default stays off.
+            buildConfigField("boolean", "AI_CALL_CAMERA_VOICE_CONTROL",
+                providers.gradleProperty("AI_CALL_CAMERA_VOICE_CONTROL_RELEASE").orElse("false").get().toBooleanStrict().toString())
             isMinifyEnabled = false
         }
     }

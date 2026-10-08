@@ -36,6 +36,8 @@ data class AiCallUiState(
     val micPending: Boolean = false,
     val isCameraEnabled: Boolean = false,
     val cameraPending: Boolean = false,
+    val cameraPermissionRequest: CameraPermissionRequest? = null,
+    val cameraResult: CameraActionResult? = null,
     // AI 视频通话默认用后置：场景多是「给 AI 看东西」(屏幕/物体/文字),
     // 而不是自拍式的「让 AI 看到我」。用户随时可在通话中切换前置。
     val cameraFront: Boolean = false,

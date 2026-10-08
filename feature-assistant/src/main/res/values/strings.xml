@@ -116,4 +116,17 @@
     <string name="assistant_call_transport">Call connection</string>
     <string name="assistant_error_aoq_backend">The server does not support AOQ yet. Update the backend or switch to WebRTC.</string>
     <string name="assistant_error_aoq_native">AOQ requires an ARM Android app process. Use an ARM device or install the ARM build on your emulator.</string>
+    <string name="assistant_camera_opened">Camera is now on.</string>
+    <string name="assistant_camera_closed">Camera is now off.</string>
+    <string name="assistant_camera_already_open">Camera is already on.</string>
+    <string name="assistant_camera_already_closed">Camera is already off.</string>
+    <string name="assistant_camera_permission_denied">Camera permission was not granted. Unable to turn it on.</string>
+    <string name="assistant_camera_foreground_required">Return to the call screen to turn on the camera.</string>
+    <string name="assistant_camera_timeout">Camera operation timed out. Please retry.</string>
+    <string name="assistant_camera_device_error">Camera operation failed.</string>
+    <string name="assistant_camera_invalid_tool">Invalid camera request. The camera was not changed.</string>
+    <string name="assistant_camera_cancelled">Camera request was cancelled.</string>
+    <string name="assistant_camera_feedback_failed">The camera result is shown here. Voice confirmation is unavailable.</string>
+    <string name="assistant_camera_working">Switching camera…</string>
+    <string name="assistant_camera_video_unavailable">Video is unavailable on this device with WebRTC. Use AOQ or a compatible phone.</string>
 </resources>

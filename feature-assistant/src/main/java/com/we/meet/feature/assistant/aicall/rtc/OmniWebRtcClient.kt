@@ -7,6 +7,9 @@ import android.util.Log
 import com.twilio.audioswitch.AudioDevice
 import com.twilio.audioswitch.AudioSwitch
 import com.we.meet.feature.assistant.aicall.model.AiCallAnswer
+import com.we.meet.feature.assistant.aicall.model.CameraToolHandler
+import com.we.meet.feature.assistant.aicall.model.CameraActionResult
+import com.we.meet.feature.assistant.R
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +20,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withContext
 import livekit.org.webrtc.*
 import livekit.org.webrtc.audio.JavaAudioDeviceModule
 import org.json.JSONArray
@@ -32,6 +36,8 @@ class OmniWebRtcClient(
     private val onAudioLevel: (Float) -> Unit,
     private val onFailure: () -> Unit,
     private val onTranscript: (com.we.meet.feature.assistant.history.AssistantHistoryRow) -> Unit = {},
+    toolHandler: CameraToolHandler? = null,
+    onToolFeedbackFailure: () -> Unit = {},
 ) : OmniCallClient {
     private val playbackDiagnostics = OmniPlaybackDiagnostics(context, "WebRTC", "inbound_rtp_audio_level")
     private val transcript = OmniTranscript(onTranscript)
@@ -55,21 +61,33 @@ class OmniWebRtcClient(
     private var remoteAudio: AudioTrack? = null
     private var audioSender: RtpSender? = null
     private var videoSender: RtpSender? = null
+    override val cameraAvailable: Boolean get() = videoSender != null
     private var videoSource: VideoSource? = null
     private var videoTrack: VideoTrack? = null
     private var capturer: CameraVideoCapturer? = null
     private var textureHelper: SurfaceTextureHelper? = null
     private var cameraStarted = false
+    private var captureActive = false
+    private var cameraCertain = true
+    private var firstVideoFrame: CompletableDeferred<Unit>? = null
+    private var videoStopped: CompletableDeferred<Unit>? = null
+    override val cameraEnabled: Boolean? get() = if (cameraCertain) cameraStarted else null
     override var cameraFront = false
         private set
     private var answer: AiCallAnswer? = null
     private var responding = false
     private var outputMuted = false
     private var outputSuppressed = false
+    private var toolOutputHeld = false
+    private val tools = toolHandler?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_CAMERA_VOICE_CONTROL }?.let {
+        OmniCameraTools(scope, it, ::send, { held -> toolOutputHeld = held; updateOutput() }, onToolFeedbackFailure,
+            { code -> CameraActionResult(false, cameraEnabled, false, code, context.getString(R.string.assistant_camera_invalid_tool)) })
+    }
+    private fun updateOutput() { remoteAudio?.setEnabled(!outputMuted && !outputSuppressed && !toolOutputHeld) }
 
     override fun setOutputMuted(muted: Boolean) {
         outputMuted = muted
-        remoteAudio?.setEnabled(!muted && !outputSuppressed)
+        updateOutput()
     }
     private var closed = false
     private var speechEndedAt: Long? = null
@@ -125,9 +143,11 @@ class OmniWebRtcClient(
             .setUseHardwareAcousticEchoCanceler(true)
             .setUseHardwareNoiseSuppressor(true)
             .createAudioDeviceModule()
+        val encoderFactory = DefaultVideoEncoderFactory(eglContext, true, true)
+        val hasH264 = encoderFactory.supportedCodecs.any { it.name.equals("H264", ignoreCase = true) }
         factory = PeerConnectionFactory.builder()
             .setAudioDeviceModule(audioModule)
-            .setVideoEncoderFactory(DefaultVideoEncoderFactory(eglContext, true, true))
+            .setVideoEncoderFactory(encoderFactory)
             .setVideoDecoderFactory(DefaultVideoDecoderFactory(eglContext))
             .createPeerConnectionFactory()
         val config = PeerConnection.RTCConfiguration(emptyList()).apply {
@@ -140,10 +160,13 @@ class OmniWebRtcClient(
         ).sender
         // Negotiate video even for an audio-only start. Camera hardware is opened
         // only when requested; attaching/detaching the track needs no renegotiation.
-        videoSender = peer!!.addTransceiver(
+        // Omni rejects the emulator's VP8/VP9-only video offer. Keep voice usable
+        // on devices lacking a compatible encoder; never advertise a fake H264 codec.
+        if (hasH264) videoSender = peer!!.addTransceiver(
             MediaStreamTrack.MediaType.MEDIA_TYPE_VIDEO,
             RtpTransceiver.RtpTransceiverInit(RtpTransceiver.RtpTransceiverDirection.SEND_ONLY),
         ).sender
+        if (!hasH264) Log.i("OmniWebRtc", "H264 encoder unavailable; negotiating voice only")
         bindChannel(peer!!.createDataChannel("oai-events", DataChannel.Init()))
     }
 
@@ -170,7 +193,7 @@ class OmniWebRtcClient(
         override fun onDataChannel(channel: DataChannel) = dispatch { bindChannel(channel) }
         override fun onTrack(transceiver: RtpTransceiver) = dispatch {
             remoteAudio = transceiver.receiver.track() as? AudioTrack
-            remoteAudio?.setEnabled(!outputMuted && !outputSuppressed)
+            updateOutput()
         }
         override fun onSignalingChange(state: PeerConnection.SignalingState) = Unit
         override fun onIceConnectionChange(state: PeerConnection.IceConnectionState) = Unit
@@ -203,7 +226,8 @@ class OmniWebRtcClient(
     }
 
     private fun handleEvent(channel: DataChannel, event: JSONObject) {
-        transcript.accept(event)
+        tools?.accept(event)
+        transcript.accept(event, tools?.suppressesAssistant(event) == true)
         when (event.optString("type")) {
             "session.created" -> {
                 // Server-created 'txt' is supported as well as the local channel.
@@ -217,16 +241,19 @@ class OmniWebRtcClient(
             "response.created" -> {
                 responding = true
                 outputSuppressed = false
-                remoteAudio?.setEnabled(!outputMuted)
+                updateOutput()
             }
             "response.done" -> responding = false
-            "input_audio_buffer.speech_started" -> { outputSuppressed = true; remoteAudio?.setEnabled(false) }
+            "input_audio_buffer.speech_started" -> {
+                publishCameraState()
+                outputSuppressed = true; remoteAudio?.setEnabled(false)
+            }
             "error" -> {
                 val error = event.optJSONObject("error")
-                if (error == null || !handshake.ready || !cancellation.recoverable(
+                if (error == null || !handshake.ready || (tools?.recoverableError(error) != true && !cancellation.recoverable(
                         error.optString("type"), error.optString("code"),
                         error.optString("message"), error.optString("event_id"), error.optString("param"),
-                    )) fail()
+                    ))) fail()
             }
         }
     }
@@ -239,10 +266,14 @@ class OmniWebRtcClient(
             .put("input_audio_format", "pcm")
             .put("output_audio_format", "pcm")
             .put("voice", config.voice)
-            .put("instructions", config.instructions)
+            .put("instructions", if (tools != null) OmniCameraTools.instructions(config.instructions) else config.instructions)
             .put("input_audio_transcription", JSONObject().put("model", "qwen3-asr-flash-realtime"))
             .put("turn_detection", JSONObject().put("type", "server_vad")
-                .put("threshold", 0.5).put("silence_duration_ms", 800))))
+                .put("threshold", 0.5).put("silence_duration_ms", 800))
+            .apply { if (tools != null) {
+                put("tools", OmniCameraTools.definitions()); put("enable_search", false)
+                put("temperature", 0.0); put("presence_penalty", 0.0)
+            } }))
     }
 
     override fun setMicrophoneEnabled(enabled: Boolean) {
@@ -250,6 +281,7 @@ class OmniWebRtcClient(
     }
 
     override fun interrupt() {
+        tools?.interrupted()
         check(!closed && handshake.ready)
         outputSuppressed = true
         remoteAudio?.setEnabled(false)
@@ -262,15 +294,25 @@ class OmniWebRtcClient(
         onAudioLevel(0f)
     }
 
-    override fun setCameraEnabled(enabled: Boolean) {
+    override suspend fun setCameraEnabled(enabled: Boolean) {
         check(!closed && handshake.ready)
-        if (enabled == cameraStarted) return
+        if (cameraCertain && enabled == cameraStarted && (enabled || !captureActive)) return
         if (!enabled) {
-            check(videoSender!!.setTrack(null, false))
-            capturer?.stopCapture()
-            cameraStarted = false
+            cameraCertain = false
+            videoSender?.let { check(it.setTrack(null, false)) }
+            if (captureActive) {
+                val stopped = CompletableDeferred<Unit>().also { videoStopped = it }
+                try {
+                    withContext(Dispatchers.IO) { capturer?.stopCapture() }
+                    withTimeout(8000) { stopped.await() }
+                } finally { videoStopped = null }
+            }
+            captureActive = false; cameraStarted = false; cameraCertain = true
             return
         }
+        check(cameraAvailable) { "H264 camera encoding unavailable" }
+        cameraCertain = false
+        firstVideoFrame = CompletableDeferred()
         try {
             if (capturer == null) {
                 val enumerator = Camera2Enumerator(context)
@@ -278,12 +320,12 @@ class OmniWebRtcClient(
                     ?: enumerator.deviceNames.first()
                 cameraFront = enumerator.isFrontFacing(name)
                 capturer = checkNotNull(enumerator.createCapturer(name, object : CameraVideoCapturer.CameraEventsHandler {
-                    override fun onCameraError(message: String) = dispatch { fail() }
-                    override fun onCameraDisconnected() = dispatch { fail() }
+                    override fun onCameraError(message: String) = dispatch { cameraFailed() }
+                    override fun onCameraDisconnected() = dispatch { cameraFailed() }
                     override fun onCameraFreezed(message: String) = dispatch { fail() }
                     override fun onCameraOpening(name: String) = Unit
-                    override fun onFirstFrameAvailable() = Unit
-                    override fun onCameraClosed() = Unit
+                    override fun onFirstFrameAvailable() = dispatch { firstVideoFrame?.complete(Unit) }
+                    override fun onCameraClosed() = dispatch { videoStopped?.complete(Unit) }
                 }))
                 videoSource = factory!!.createVideoSource(false)
                 videoTrack = factory!!.createVideoTrack("omni-camera", videoSource)
@@ -291,18 +333,23 @@ class OmniWebRtcClient(
                 capturer!!.initialize(textureHelper, context, videoSource!!.capturerObserver)
             }
             // Native video RTP. Keep visual input low-rate for scene Q&A.
+            captureActive = true
             capturer!!.startCapture(1280, 720, 2)
-            cameraStarted = true
+            withTimeout(8000) { firstVideoFrame!!.await() }
+            check(!closed)
             check(videoSender!!.setTrack(videoTrack, false))
             val parameters = videoSender!!.parameters
             parameters.encodings.forEach { it.maxFramerate = 2; it.maxBitrateBps = 1_000_000 }
             videoSender!!.parameters = parameters
-        } catch (error: Exception) {
-            videoSender?.setTrack(null, false)
-            runCatching { capturer?.stopCapture() }
-            cameraStarted = false
-            throw error
-        }
+            cameraStarted = true; cameraCertain = true
+        } finally { firstVideoFrame = null }
+    }
+    override fun publishCameraState() { answer?.let { tools?.publishState(it.instructions, cameraEnabled) } }
+
+    private fun cameraFailed() {
+        firstVideoFrame?.completeExceptionally(IllegalStateException("Camera capture failed"))
+        videoStopped?.completeExceptionally(IllegalStateException("Camera stop failed"))
+        if (cameraStarted) fail()
     }
 
     override suspend fun flipCamera(): Boolean = suspendCancellableCoroutine { continuation ->
@@ -347,9 +394,10 @@ class OmniWebRtcClient(
                     val now = SystemClock.elapsedRealtime()
                     dispatch {
                         val amplitude = level?.toFloat() ?: 0f
-                        if (!outputMuted && !outputSuppressed) playbackDiagnostics.sample(amplitude)
-                        onAudioLevel(amplitude)
-                        if (amplitude > 0.01f && !outputMuted && !outputSuppressed) {
+                        if (!outputMuted && !outputSuppressed && !toolOutputHeld) playbackDiagnostics.sample(amplitude)
+                        onAudioLevel(if (outputMuted || outputSuppressed || toolOutputHeld) 0f else amplitude)
+                        if (amplitude > 0.01f && !outputMuted && !outputSuppressed && !toolOutputHeld) {
+                            tools?.playback()
                             speechEndedAt?.let { Log.i("OmniWebRtc", "First playback after speech end: ${now - it} ms") }
                             speechEndedAt = null
                         }
@@ -378,9 +426,11 @@ class OmniWebRtcClient(
     override fun close() {
         if (closed) return
         closed = true
+        firstVideoFrame?.cancel(); videoStopped?.cancel()
         recovery.close()
         handshake.close()
         ready.cancel()
+        tools?.close()
         iceComplete.cancel()
         scope.cancel()
         channels.forEach {
