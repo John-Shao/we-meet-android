@@ -12,15 +12,20 @@ internal class BilingualPreferences(context: Context, account: String) {
     private val prefs = context.getSharedPreferences("bilingual-settings-$key", Context.MODE_PRIVATE)
 
     fun load(): BilingualState {
+        // Migrate the former cloud default once without overwriting later user choices.
+        if (!prefs.getBoolean("aoq_default_v1", false)) {
+            prefs.edit().putBoolean("direct-aoq", true).putBoolean("aoq_default_v1", true).apply()
+        }
         val pair = AssistantTranslationPair(prefs.getString("source", "zh") ?: "zh", prefs.getString("target", "en") ?: "en")
             .takeIf(BilingualLanguages::valid) ?: AssistantTranslationPair()
         val sound = prefs.getBoolean("sound", true)
         val scene = TranslationScene.find(prefs.getString("scene", null))
-        return BilingualState(pair = pair, sound = sound, sceneId = scene?.id, directAoq = com.we.meet.BuildConfig.DEBUG && prefs.getBoolean("direct-aoq", false))
+        return BilingualState(pair = pair, sound = sound, sceneId = scene?.id, directAoq = prefs.getBoolean("direct-aoq", true))
     }
 
     fun save(state: BilingualState) {
         prefs.edit().putString("source", state.pair.source).putString("target", state.pair.target)
+            .putBoolean("aoq_default_v1", true)
             .putBoolean("direct-aoq", state.directAoq).putBoolean("sound", state.sound).putString("scene", state.sceneId).apply()
     }
 }

@@ -113,7 +113,7 @@
     <string name="assistant_summary_too_long">This conversation is too long to summarize in full.</string>
     <string name="assistant_summary_working">Generating…</string>
     <string name="assistant_summary_generate">Generate summary and to-dos</string>
-    <string name="assistant_call_transport">Call connection (validation)</string>
+    <string name="assistant_call_transport">Call connection</string>
     <string name="assistant_error_aoq_backend">The server does not support AOQ yet. Update the backend or switch to WebRTC.</string>
     <string name="assistant_error_aoq_native">AOQ requires an ARM Android app process. Use an ARM device or install the ARM build on your emulator.</string>
 </resources>

@@ -2,6 +2,10 @@ package com.we.meet.ui.ai
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.lifecycle.ViewModel
@@ -26,6 +30,24 @@ import org.junit.Test
 
 class AiCallFailureUiTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun callSettingsExposeAoqAndManualWebRtcOutsideDebugBuilds() {
+        val selection = mutableStateOf(AiCallSelection())
+        val enabled = mutableStateOf(true)
+        compose.setContent { WeMeetTheme(darkTheme = false) {
+            com.we.meet.feature.assistant.aicall.ui.AiSettingsSheet(config = null,
+                selection = selection.value, historyStore = null, historyEnabled = enabled.value,
+                onSelectTransport = { selection.value = selection.value.copy(transport = it) },
+                onSelectVoice = {}, onSelectPrompt = {}, onSelectScene = {}, onDismiss = {})
+        } }
+        compose.onNodeWithText("AOQ").performScrollTo().performClick()
+        compose.onNodeWithText("WebRTC").performClick()
+        compose.runOnIdle {
+            assertEquals(AiCallTransport.WebRTC, selection.value.transport)
+            enabled.value = false
+        }
+        compose.onNodeWithText("WebRTC").assertIsNotEnabled()
+    }
 
     @Test fun backgroundLifecycleDoesNotEndAnActiveCall() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext

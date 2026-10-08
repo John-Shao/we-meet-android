@@ -47,7 +47,8 @@ class AoqBilingualLiveTest {
                     controller = BilingualTranslationController(context,
                         ApiClient(com.we.meet.data.auth.TokenStore(context)).assistantTranslationApi,
                         authorized = { true }, openMicrophone = { microphone })
-                    controller!!.directAoq(true); controller!!.start()
+                    assertTrue(controller!!.state.value.directAoq)
+                    controller!!.start()
                 }
                 withTimeout(50_000) { while (controller!!.state.value.phase != BilingualPhase.LISTENING) {
                     check(controller!!.state.value.phase != BilingualPhase.ERROR); delay(50)
@@ -61,7 +62,10 @@ class AoqBilingualLiveTest {
                 assertTrue(row.source.lowercase().contains("coffee"))
                 withContext(Dispatchers.Main) { controller!!.replay(row.id) }
                 withTimeout(5000) { while (!controller!!.state.value.replaying) delay(10) }
-                withTimeout(15_000) { while (controller!!.state.value.replaying) delay(20) }
+                withTimeout(15_000) { while (controller!!.state.value.replaying
+                        || controller!!.state.value.phase != BilingualPhase.LISTENING) {
+                    check(controller!!.state.value.phase != BilingualPhase.ERROR); delay(20)
+                } }
                 assertEquals(BilingualPhase.LISTENING, controller!!.state.value.phase)
                 withContext(Dispatchers.Main) { controller!!.finish() }
                 withTimeout(25_000) { while (controller!!.state.value.active) delay(50) }

@@ -14,7 +14,7 @@
     <string name="capture_direct_asr_paused">转写已暂停，恢复录音后继续识别。</string>
     <string name="capture_direct_asr_save_failed">文字尚未保存到实录，请联网后重试保存。</string>
     <string name="capture_direct_asr_gap">转写仅覆盖开启期间的音频。需要完整文字时，可结束录音后使用整段转写。</string>
-    <string name="bilingual_transport_validation">连接方式（验证）</string>
+    <string name="bilingual_transport">连接方式</string>
     <string name="bilingual_transport_aoq">AOQ 客户端直连</string>
     <string name="bilingual_transport_cloud">云端接入</string>
     <string name="app_name">We Meet</string>

@@ -60,7 +60,7 @@
     <string name="assistant_state_unmuted">Micro activé</string>
     <string name="assistant_state_video">Appel vidéo</string>
     <string name="assistant_state_voice">Appel audio</string>
-    <string name="assistant_call_transport">Connexion d’appel (test)</string>
+    <string name="assistant_call_transport">Connexion d’appel</string>
     <string name="assistant_error_aoq_backend">Le serveur ne prend pas encore en charge AOQ. Mettez le backend à jour ou passez à WebRTC.</string>
     <string name="assistant_error_aoq_native">AOQ exige un processus Android ARM. Utilisez un appareil ARM ou installez la version ARM sur votre émulateur.</string>
 </resources>

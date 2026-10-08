@@ -27,6 +27,29 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationUiTest {
+    @Test fun translationTransportIsAvailableAndLockedDuringActiveSessions() {
+        val state = mutableStateOf(BilingualState())
+        compose.setContent { WeMeetTheme(darkTheme = false) {
+            BilingualTranslationSettingsScreen(state.value, facing = true, history = null,
+                onSelectLanguage = { _, _ -> }, onFacingChange = {}, onSoundChange = {},
+                onBack = {}, onSelectScene = {},
+                onDirectAoqChange = { state.value = state.value.copy(directAoq = it) })
+        } }
+        compose.onNodeWithTag("bilingual-aoq").assertIsDisplayed()
+        compose.onNodeWithTag("bilingual-cloud").performClick()
+        compose.runOnIdle {
+            assertEquals(false, state.value.directAoq)
+            state.value = state.value.copy(phase = BilingualPhase.LISTENING)
+        }
+        compose.onNodeWithTag("bilingual-aoq").performClick()
+        compose.runOnIdle {
+            assertEquals(false, state.value.directAoq)
+            state.value = state.value.copy(phase = BilingualPhase.IDLE)
+        }
+        compose.onNodeWithTag("bilingual-aoq").performClick()
+        compose.runOnIdle { assertEquals(true, state.value.directAoq) }
+    }
+
     @Test fun faceToFaceShowsBothDirectionsInEachParticipantsLanguage() {
         val state = BilingualState(rows = listOf(
             BilingualRow("one", "早上好", "Good morning", "zh", "en"),

@@ -9,6 +9,10 @@ class AiCallPreferences(context: Context) {
         .getSharedPreferences("we_meet_ai_call_prefs", Context.MODE_PRIVATE)
 
     fun load(): AiCallSelection {
+        // Promote existing validation preferences once; later manual fallback choices persist.
+        if (!prefs.getBoolean("aoq_default_v1", false)) {
+            prefs.edit().putString("call_transport", "AOQ").putBoolean("aoq_default_v1", true).apply()
+        }
         if (!prefs.getBoolean("unified_selection", false)) {
             // Prefer the previous Qwen/video settings. Catalog validation drops
             // incompatible voice IDs left by an older provider or model.
@@ -27,7 +31,7 @@ class AiCallPreferences(context: Context) {
         return AiCallSelection(
             voiceId = prefs.getString("call_voice_id", null),
             promptId = prefs.getString("call_prompt_id", null),
-            transport = com.we.meet.feature.assistant.aicall.model.AiCallTransport.entries.firstOrNull { it.name == prefs.getString("call_transport", null) } ?: com.we.meet.feature.assistant.aicall.model.AiCallTransport.WebRTC,
+            transport = com.we.meet.feature.assistant.aicall.model.AiCallTransport.entries.firstOrNull { it.name == prefs.getString("call_transport", null) } ?: com.we.meet.feature.assistant.aicall.model.AiCallTransport.AOQ,
             sceneId = com.we.meet.feature.assistant.scenes.AssistantScene.find(prefs.getString("call_scene_id", null))?.id,
         )
     }
@@ -35,6 +39,7 @@ class AiCallPreferences(context: Context) {
     fun save(selection: AiCallSelection) {
         prefs.edit().apply {
             putBoolean("unified_selection", true)
+            putBoolean("aoq_default_v1", true)
             putString("call_voice_id", selection.voiceId)
             putString("call_prompt_id", selection.promptId)
             putString("call_scene_id", selection.sceneId)

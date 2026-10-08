@@ -18,6 +18,26 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationTest {
+    @Test fun defaultTranslationUsesAoqWithoutRequestingACloudTicket() {
+        val f = Fixture(cloud = false)
+        try {
+            assertTrue(f.controller.state.value.directAoq)
+            main { f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+            assertTrue(f.aoqOpened)
+            assertNull(f.api.selected)
+            main { f.controller.directAoq(false) }
+            assertTrue(f.controller.state.value.directAoq)
+            assertFalse(f.wire!!.closed.get())
+            main { f.controller.stop(); f.controller.directAoq(false); f.controller.start() }
+            waitFor { f.api.selected != null && f.wire != null && !f.wire!!.closed.get() }
+            f.wire!!.ready()
+            waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+            assertFalse(f.controller.state.value.directAoq)
+        } finally { main { f.controller.close() } }
+    }
+
     @Test fun translationTransportCannotChangeDuringAnActiveCloudSession() {
         val f = Fixture()
         try {
@@ -185,10 +205,11 @@ class BilingualTranslationTest {
             assertEquals(listOf("fr", "ja"), f.controller.state.value.rows.map { it.targetLanguage })
         } finally { main { f.controller.close() } }
     }
-    private class Fixture(val api: Api = Api(), realPlayback: Boolean = false, writeDelayMs: Long = 0, realBackground: Boolean = false) {
+    private class Fixture(val api: Api = Api(), realPlayback: Boolean = false, writeDelayMs: Long = 0, realBackground: Boolean = false, cloud: Boolean = true) {
         val microphone = Microphone()
         val output = Output()
         @Volatile var wire: Wire? = null
+        @Volatile var aoqOpened = false
         var opened = false
         @Volatile var playbackUnderruns = 0
         val controller = BilingualTranslationController(
@@ -224,7 +245,8 @@ class BilingualTranslationTest {
                     override fun close() = Unit
                 }
             },
-        )
+            openAoqWire = { _, listener -> Wire(listener).also { aoqOpened = true; wire = it } },
+        ).also { if (cloud) it.directAoq(false) }
     }
 
     @Test fun realMicrophoneAndTranslationContinueWhileBackgroundedAndScreenOff() {

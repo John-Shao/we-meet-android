@@ -1,10 +1,21 @@
 # AI 电话
 
-「AI 工具 → 打电话」使用 Qwen 3.8 Omni WebRTC 直连。普通会议的 LiveKit 通话不受影响。
+「AI 工具 → 打电话」默认使用 Qwen 3.8 Omni AOQ 直连，Debug 与 Release 一致。普通会议的 LiveKit 通话不受影响。
+
+## AOQ 正式默认接入（2026-10-08）
+
+- 新安装默认 AOQ；升级时将原验证阶段的 WebRTC／云端偏好一次性迁移到 AOQ，保留音色、提示词、场景、翻译语言与播报设置。迁移后手动选择的接入方式持续保留。
+- 正式版通话设置保留 WebRTC，双语互译设置保留云端接入，均只能在会话开始前手动切换。连接失败不自动创建另一条收费会话。
+- 双语互译不再受 `BuildConfig.DEBUG` 限制，默认通过 `AoqBilingualWire` 建立正向翻译、反向翻译和语言识别连接；后端只分配会话凭证，音频直达模型。
+- AOQ 默认沿用媒体音量控制；WebRTC 沿用通话音量控制。两种音量由系统分别保存。
+- `app` 模块负责打包 `libs/AoqClientSdk-release.aar`；`feature-assistant` 使用编译期依赖。宿主集成时必须包含该 SDK，避免 library 的 Release AAR 检查失败。SDK 与 Opus 原生库沿用现有 ARM 版本。
+- `AoqDefaultPreferencesTest` 覆盖新安装、旧偏好迁移、手动回退持久化和账号隔离；`BilingualTranslationTest` 验证默认直连不申请云端 ticket，以及会话中禁止切换；设置 UI 测试验证正式入口。
+
+## 通话生命周期
 
 - 客户端从目录读取 `model_code=aliyun/qwen3.8-omni-flash-realtime` 的 profile。
 - 音色和提示词共用一套选择；旧版视频设置优先迁入，失效音色按新目录默认值回退。
-- 使用用户登录态调用 `POST /api/v1.0/ai-call/session/`。后端代理 SDP 交换，并返回音色、提示词。
+- 使用用户登录态调用 `POST /api/v1.0/ai-call/session/`。AOQ 返回会话令牌与 Relay 配置；WebRTC 返回 SDP answer，两者均返回音色、提示词。
 - 客户端不接收百炼 API Key，也不创建 LiveKit 房间或分派 AI worker。
 - WebRTC 预先协商双向音频、上行视频、DataChannel。收到 `session.created` 后发送配置，
   等待 `session.updated` 才开始上行媒体；同时支持服务端创建的 `txt` 事件通道。
@@ -19,7 +30,7 @@
 
 需同步发布后端 SDP 接口及带 `model_code` 的目录接口，并完成后端 0195 模型迁移。
 后端需要配置 `DASHSCOPE_API_KEY`、`DASHSCOPE_WORKSPACE_ID`、`DASHSCOPE_REGION`。
-地域必须与业务空间和 API Key 匹配。正式连接还依赖手机网络到百炼 WebRTC 媒体端点可达。
+地域必须与业务空间和 API Key 匹配。正式连接还依赖手机网络到所选百炼媒体端点可达。
 
 AI 电话与双语互译共用 `AssistantForegroundService`，在用户可见页面发起会话时
 先启动并确认前台服务，再打开麦克风/摄像头。语音模式声明 microphone/mediaPlayback，
@@ -44,7 +55,7 @@ AI 电话与双语互译共用 `AssistantForegroundService`，在用户可见页
   单次删除及清空。打电话与双语互译分别在各自设置页控制文字保存，设置仅对对应的新会话生效；会话记录页不再提供保存开关。升级时两项设置继承原有统一开关，之后独立保存。删除中的会话不会被迟到回调重新创建。
 - 通话启用 `qwen3-asr-flash-realtime` 输入转写，通过 DataChannel 的 ASR completed、
   audio_transcript.done / text.done 保存双方最终文字。提前用 committed / output_item.added
-  分配顺序，避免源语音转写晚到导致问答倒序。音视频传输仍直连 WebRTC。
+  分配顺序，避免源语音转写晚到导致问答倒序。音视频传输默认直连 AOQ，手动选择 WebRTC 时沿用原通道。
 - 双语互译保存原文、译文及每句方向；每次连接独立标识，重连不会覆盖先前会话。
   历史详情标题栏右侧提供整段复制、系统分享与删除，句子卡片仅展示可选择的文字；超过 100000 字符的分享使用完整 UTF-8 文本附件，
   不截断。长文本复制提示改用分享。附件仅通过专用 FileProvider 临时授权读取。
@@ -108,4 +119,3 @@ AI 电话与双语互译共用 `AssistantForegroundService`，在用户可见页
 - 验证：`BilingualPlaybackQueueTest` 覆盖队列顺序、分片与上限；真机弱网下同时观察
   `AudioTrack.underrunCount`（`BilingualTranslationTest` 暴露的 `playbackUnderruns`），
   确认 80 ms 预缓冲没有带来欠载或咔哒声。真实设备音频路由、蓝牙与回声仍需实机验收。
-

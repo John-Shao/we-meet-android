@@ -172,6 +172,7 @@ dependencies {
     // Composable 签名里会出现 Dimens/WeMeetTheme 这些类型。
     api(project(":core-design"))
     implementation(project(":feature-assistant"))
+    implementation(files("../feature-assistant/libs/AoqClientSdk-release.aar"))
 
     // IM feature (P4) — chat list + 1:1/group messaging via jusi-light-im SDK.
     implementation(project(":feature-im"))

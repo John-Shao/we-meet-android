@@ -56,14 +56,14 @@ data class AiAgentConfigResponse(
     }
 }
 
-// SDP exchange is authenticated with the user's normal application session.
+// Session allocation is authenticated with the user's normal application session.
 @JsonClass(generateAdapter = true)
 data class AiCallOffer(
     val sdp: String,
     val profile_code: String,
     val voice_id: String? = null,
     val prompt_id: String? = null,
-    val transport: String = "webrtc",
+    val transport: String = "aoq",
 )
 
 @JsonClass(generateAdapter = true)

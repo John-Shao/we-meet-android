@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
-/** One-to-one calls use direct WebRTC; no meeting room or agent is created. */
+/** One-to-one calls default to direct AOQ; no meeting room or agent is created. */
 class AiCallViewModel(
     private val appContext: Context,
     private val agentRepo: AiAgentRepository,

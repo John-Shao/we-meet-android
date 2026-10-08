@@ -27,6 +27,8 @@ D:\workspace\we-meet\
 移动端设计与接口说明（位于后端仓库）：
 [../we-meet/docs/extensions/移动端App客户端支持方案.md](../we-meet/docs/extensions/移动端App客户端支持方案.md)
 
+模型、直连协议及云端分工见[大模型接入方案](../we-meet/docs/features/llm-integration.md)；Omni 通话和独立双语互译在新版 Debug／Release 中均默认 AOQ，升级迁移与手动备选入口见 [AI 电话说明](feature-assistant/README.md)。
+
 ## UI 设计规范
 
 新增和改动移动端页面须遵循[移动端 UI 设计规范：页面层级与配色](docs/page-backgrounds.md)，统一一级与二级及更深页面的背景分区、状态栏衔接、底部模块导航栏和日历日期栏例外。

@@ -107,7 +107,7 @@
     <string name="assistant_summary_too_long">本次会话过长，暂时无法生成完整摘要。</string>
     <string name="assistant_summary_working">生成中…</string>
     <string name="assistant_summary_generate">生成摘要与待办</string>
-    <string name="assistant_call_transport">通话连接方式（验证）</string>
+    <string name="assistant_call_transport">通话连接方式</string>
     <string name="assistant_error_aoq_backend">服务端尚未支持 AOQ，请更新后端或切换到 WebRTC。</string>
     <string name="assistant_error_aoq_native">AOQ 需要 ARM Android 进程，请使用 ARM 手机，或在模拟器上安装 ARM 版本。</string>
 </resources>

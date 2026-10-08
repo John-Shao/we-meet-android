@@ -25,7 +25,7 @@ data class AiCallSelection(
     val voiceId: String? = null,
     val promptId: String? = null,
     val sceneId: String? = null,
-    val transport: AiCallTransport = AiCallTransport.WebRTC,
+    val transport: AiCallTransport = AiCallTransport.AOQ,
 )
 
 data class AiCallUiState(

@@ -82,5 +82,7 @@ dependencies {
 
     // LiveKit realtime (raw SDK; no compose-components here)
     implementation(libs.livekit.android)
-    implementation(files("libs/AoqClientSdk-release.aar"))
+    // The host APK packages the local AAR; libraries cannot embed another local AAR.
+    compileOnly(files("libs/AoqClientSdk-release.aar"))
+    testImplementation(files("libs/AoqClientSdk-release.aar"))
 }

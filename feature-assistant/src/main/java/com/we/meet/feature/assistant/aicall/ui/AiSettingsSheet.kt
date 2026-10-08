@@ -59,15 +59,13 @@ fun AiSettingsSheet(
             AiCallScenePicker(config, selection, onSelectScene, onSelectPrompt,
                 modifier = Modifier.padding(horizontal = Dimens.SpaceXl), enabled = historyEnabled)
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
-            if (com.we.meet.feature.assistant.BuildConfig.DEBUG) {
-                SectionLabel(stringResource(R.string.assistant_call_transport))
-                CallSettingsDropdown(
-                    selection.transport.name,
-                    listOf("WebRTC", "AOQ"),
-                    { onSelectTransport(com.we.meet.feature.assistant.aicall.model.AiCallTransport.entries[it]) },
-                    historyEnabled,
-                )
-            }
+            SectionLabel(stringResource(R.string.assistant_call_transport))
+            CallSettingsDropdown(
+                selection.transport.name,
+                listOf("WebRTC", "AOQ"),
+                { onSelectTransport(com.we.meet.feature.assistant.aicall.model.AiCallTransport.entries[it]) },
+                historyEnabled,
+            )
             CallConfigSection(config, selection, onSelectVoice, enabled = historyEnabled)
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
             AssistantHistoryPreference(historyStore, kind = "call", enabled = historyEnabled,

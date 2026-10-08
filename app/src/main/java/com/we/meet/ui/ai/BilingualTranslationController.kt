@@ -54,7 +54,7 @@ internal data class BilingualState(
     val replayError: Boolean = false,
     val inputPaused: Boolean = false,
     val sceneId: String? = null,
-    val directAoq: Boolean = false,
+    val directAoq: Boolean = true,
 ) {
     val active get() = phase in setOf(BilingualPhase.CONNECTING, BilingualPhase.LISTENING, BilingualPhase.SPEAKING, BilingualPhase.FINISHING)
     override fun toString() = "BilingualState(<private>)"
@@ -93,8 +93,10 @@ internal class BilingualTranslationController(
     },
     val history: com.we.meet.feature.assistant.history.AssistantHistoryStore? = null,
     private val preferences: BilingualPreferences? = null,
+    private val openAoqWire: (AssistantTranslationPair, CaptureTranslationWire.Listener) -> CaptureTranslationWire = { pair, listener ->
+        AoqBilingualWire(context.applicationContext, api, pair, listener)
+    },
 ) : Closeable {
-    private val applicationContext = context.applicationContext
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutable = MutableStateFlow(preferences?.load() ?: BilingualState())
     val state = mutable.asStateFlow()
@@ -197,7 +199,7 @@ internal class BilingualTranslationController(
         preferences?.save(mutable.value)
     }
     fun directAoq(enabled: Boolean) {
-        if (active != null || !com.we.meet.BuildConfig.DEBUG) return
+        if (active != null) return
         mutable.update { it.copy(directAoq = enabled) }
         preferences?.save(mutable.value)
     }
@@ -216,7 +218,7 @@ internal class BilingualTranslationController(
 
     private inner class Session(private val pair: AssistantTranslationPair) {
         var stage = "foreground"
-        private val direct = mutable.value.directAoq && com.we.meet.BuildConfig.DEBUG
+        private val direct = mutable.value.directAoq
         private val sessionId = java.util.UUID.randomUUID().toString()
         private val recording = history?.begin("translation")
         private val rowOrder = linkedMapOf<String, Int>()
@@ -295,7 +297,7 @@ internal class BilingualTranslationController(
                 }
             }
             stage = if (direct) "aoq_transport" else "cloud_transport"
-            wire = if (direct) AoqBilingualWire(applicationContext, api, pair, listener)
+            wire = if (direct) openAoqWire(pair, listener)
                 else openWire(ticket!!.url, listener)
             launch(Dispatchers.Default) {
                 for (raw in events) {
