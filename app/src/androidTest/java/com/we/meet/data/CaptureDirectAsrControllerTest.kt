@@ -22,6 +22,10 @@ class CaptureDirectAsrControllerTest {
         var authorized = true
         var loseStart = false
         var credentialGate: CompletableDeferred<Unit>? = null
+        var modelGate: CompletableDeferred<Unit>? = null
+        var leaseInfo: com.we.meet.feature.assistant.aicall.data.DirectAILeaseInfo? = null
+        var rejectHeartbeat = false
+        val heartbeatSeen = CompletableDeferred<Unit>()
         val delivered = linkedMapOf<Int, DirectAsrFinal>()
         override suspend fun start(capture: String, lease: String, key: String, body: RequestBody): CaptureAsrCreatedDto {
             created=true
@@ -40,7 +44,14 @@ class CaptureDirectAsrControllerTest {
         }
         override suspend fun session(): DirectAsrCredentials {
             credentialGate?.await()
-            return DirectAsrCredentials(DirectAsrWire.MODEL, "wss://test.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference", "st-test", Long.MAX_VALUE)
+            return DirectAsrCredentials(DirectAsrWire.MODEL, "wss://test.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference", "st-test", Long.MAX_VALUE, leaseInfo)
+        }
+        override suspend fun sessionLease(id: String, operation: com.we.meet.feature.assistant.aicall.data.DirectAILeaseOperation) {
+            if (operation.operation == "heartbeat") {
+                heartbeatSeen.complete(Unit)
+                if (rejectHeartbeat) throw retrofit2.HttpException(retrofit2.Response.error<Unit>(410,
+                    okhttp3.ResponseBody.create(null, "{}")))
+            }
         }
         override suspend fun state(capture: String) = CaptureAsrStateDto(available=true, liveAvailable=true, directAvailable=true, results=if(created) listOf(job) else emptyList())
         override suspend fun request(capture: String, key: String, request: RequestBody): CaptureAsrCreatedDto = error("No cloud dispatch")
@@ -50,7 +61,7 @@ class CaptureDirectAsrControllerTest {
     private class Wire(private val callback: (List<DirectAsrRow>) -> Unit, private val fixture: Fixture) : DirectAsrConnection {
         @Volatile var input=0L
         var fail=false
-        override suspend fun start(credentials: DirectAsrCredentials) { fixture.models++ }
+        override suspend fun start(credentials: DirectAsrCredentials) { fixture.models++; fixture.modelGate?.await() }
         override fun send(pcm: ByteArray): Boolean { if(fail) return false; input+=pcm.size/32; return true }
         override suspend fun finish(): List<DirectAsrRow> {
             val rows=if(input>0) listOf(DirectAsrRow(0, "Tail ${fixture.models}", 0, input)) else emptyList()
@@ -92,6 +103,35 @@ class CaptureDirectAsrControllerTest {
             assertEquals("saved", controller.state.value.phase)
             assertEquals(2, fixture.models)
             assertEquals(2, fixture.delivered.size)
+        }
+    }
+    @Test fun enforcedLeaseLossDuringConnectionPreventsMicrophoneDelivery() = runBlocking {
+        withFixture { fixture, controller, local, newTap, _, _, _, _ ->
+            fixture.leaseInfo = com.we.meet.feature.assistant.aicall.data.DirectAILeaseInfo(UUID.randomUUID().toString(), 120, 30, true)
+            fixture.rejectHeartbeat = true
+            val gate = CompletableDeferred<Unit>(); fixture.modelGate = gate
+            newTap(0)
+            controller.start(local)
+            withTimeout(8000) { fixture.heartbeatSeen.await() }
+            delay(50); gate.complete(Unit)
+            waitFor { controller.state.value.phase == "error" }
+            assertTrue(controller.state.value.rows.isEmpty())
+            assertTrue(controller.state.value.gap)
+        }
+    }
+    @Test fun observationLeaseFailureKeepsWorkingMicrophoneAndModel() = runBlocking {
+        withFixture { fixture, controller, local, newTap, wire, _, _, _ ->
+            fixture.leaseInfo = com.we.meet.feature.assistant.aicall.data.DirectAILeaseInfo(UUID.randomUUID().toString(), 120, 30, false)
+            fixture.rejectHeartbeat = true
+            val tap = newTap(0)
+            controller.start(local)
+            withTimeout(8000) { fixture.heartbeatSeen.await() }
+            waitFor { controller.state.value.phase == "running" }
+            delay(50)
+            tap.offer(ShortArray(1600), 1600); waitFor { wire().input == 100L }
+            controller.pause()
+            assertEquals("paused", controller.state.value.phase)
+            assertEquals(1, controller.state.value.rows.size)
         }
     }
     @Test fun lostFinishResponseRetriesTextWithoutReconnectingModel() = runBlocking {

@@ -24,7 +24,7 @@ class MeetingTranslationRepositoryTest {
     private var viewer: String? = "owner"
     private val requests = mutableListOf<Request>()
     private val input = PrivateTranslationRequestDto(room, sid, "start", null, connection, "zh", "en", "simultaneous", true, false)
-    private val config = PrivateTranslationConfigurationDto("zh", "en", "simultaneous", true, "qwen3.5-livetranslate-flash-realtime", "controller_only")
+    private val config = PrivateTranslationConfigurationDto("zh", "en", "simultaneous", true, "qwen3.8-livetranslate-flash-realtime", "controller_only")
     private val row = PrivateTranslationRunDto(runId, 1, "starting", config, "PA_current", "")
     private val state = PrivateTranslationStateDto(true, true, listOf("zh", "en"), row, listOf(TranslationConnectionDto(connection, "PA_current")))
     private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
@@ -79,6 +79,12 @@ class MeetingTranslationRepositoryTest {
         }
         assertTrue(repository { 200 to json(PrivateTranslationReceiptDto(row.copy(configuration = config.copy(archiveRecordId = key)), null, false)) }.control("owner", key, input.copy(saveTranslations = true)).isSuccess)
         assertTrue(repository { 200 to json(PrivateTranslationReceiptDto(row.copy(state = "translating"), null, true)) }.control("owner", key, input).isFailure)
+    }
+    @Test fun currentAndHistoricalModelsAreReadableButUnknownModelsFail() {
+        for (model in listOf("qwen3.8-livetranslate-flash-realtime", "qwen3.5-livetranslate-flash-realtime")) {
+            MeetingTranslationRepository.validateRun(row.copy(configuration = config.copy(model = model)))
+        }
+        assertTrue(runCatching { MeetingTranslationRepository.validateRun(row.copy(configuration = config.copy(model = "qwen3.0-livetranslate-flash-realtime"))) }.isFailure)
     }
     @Test fun invalidRequestsNeverDispatch() = runBlocking {
         val repo = repository { error("No dispatch") }

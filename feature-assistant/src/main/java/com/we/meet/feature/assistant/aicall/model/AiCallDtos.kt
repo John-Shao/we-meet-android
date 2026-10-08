@@ -72,6 +72,7 @@ data class AiCallAnswer(
     val voice: String,
     val instructions: String,
     val aoq: AoqCredentials? = null,
+    val session_lease: com.we.meet.feature.assistant.aicall.data.DirectAILeaseInfo? = null,
 ) {
     fun forScene(id: String?): AiCallAnswer =
         com.we.meet.feature.assistant.scenes.AssistantScene.find(id)?.let { copy(instructions = it.instructions) } ?: this

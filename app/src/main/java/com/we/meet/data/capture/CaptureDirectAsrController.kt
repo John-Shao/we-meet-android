@@ -77,6 +77,8 @@ class CaptureDirectAsrController(private val journal: DirectAsrJournal, private 
         var complete = false
         var consumer: CapturePcmTap.Subscription? = null
         var wire: DirectAsrConnection? = null
+        var modelLease: com.we.meet.feature.assistant.aicall.data.DirectAILease? = null
+        val leaseLost = AtomicBoolean()
         try {
             check(authorized())
             val remote = requireNotNull(capture.remote)
@@ -96,6 +98,10 @@ class CaptureDirectAsrController(private val journal: DirectAsrJournal, private 
             flush(false)
             check(!stopRequested.get())
             val token = credentials.session()
+            modelLease = token.sessionLease?.let { info ->
+                com.we.meet.feature.assistant.aicall.data.DirectAILease(info, credentials::sessionLease,
+                    { leaseLost.set(true); wire?.close(); consumer?.close() }).also { it.start() }
+            }
             check(!stopRequested.get())
             var count = 0
             wire = newWire { rows ->
@@ -103,8 +109,9 @@ class CaptureDirectAsrController(private val journal: DirectAsrJournal, private 
                 count = rows.size
             }
             socket = wire
+            check(!leaseLost.get())
             wire.start(token)
-            check(authorized() && !stopRequested.get())
+            check(authorized() && !stopRequested.get() && !leaseLost.get())
             consumer = observe(remote.id)
             tap = consumer
             if(stopRequested.get()) consumer.finish()
@@ -137,6 +144,7 @@ class CaptureDirectAsrController(private val journal: DirectAsrJournal, private 
                 }
             }
             while(currentCoroutineContext().isActive && authorized()) {
+                check(!leaseLost.get())
                 collector.ensureActive()
                 val frame = consumer.poll()
                 if(frame != null) frame.use {
@@ -159,6 +167,7 @@ class CaptureDirectAsrController(private val journal: DirectAsrJournal, private 
             withContext(NonCancellable) {
                 flusher?.cancelAndJoin()
                 consumer?.close(); wire?.close(); tap = null; socket = null
+                modelLease?.close()
                 events.close()
                 collector?.join()
                 complete = complete && collector?.isCancelled != true

@@ -72,7 +72,9 @@ class CaptureTranslationRepository(private val api: CaptureTranslationApi, priva
     catch (error: Exception) { Result.failure(error) }
 
     companion object {
-        const val MODEL = "qwen3.5-livetranslate-flash-realtime"
+        const val MODEL = "qwen3.8-livetranslate-flash-realtime"
+        // Archived configurations retain the model used when they were created.
+        private val readableModels = setOf(MODEL, "qwen3.5-livetranslate-flash-realtime")
         val activeStates = setOf("starting", "translating", "stopping")
         private val archiveStates = setOf("capturing", "complete", "incomplete")
         private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
@@ -89,7 +91,7 @@ class CaptureTranslationRepository(private val api: CaptureTranslationApi, priva
             require(value.mode in setOf("simultaneous", "push_to_talk"))
         }
         fun validateConfiguration(value: CaptureTranslationConfigDto) {
-            validateChoice(value.choice()); require(value.model == MODEL && value.region in setOf("cn-beijing", "ap-southeast-1"))
+            validateChoice(value.choice()); require(value.model in readableModels && value.region in setOf("cn-beijing", "ap-southeast-1"))
         }
         fun validate(value: CaptureTranslationRequestDto, device: String) {
             require(value.deviceId == device && device.isNotBlank() && device.length <= 128 && value.expectedRevision in 1..9007199254740991L)

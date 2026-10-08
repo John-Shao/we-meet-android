@@ -7,12 +7,14 @@
 - 新安装默认 AOQ；升级时将原验证阶段的 WebRTC／云端偏好一次性迁移到 AOQ，保留音色、提示词、场景、翻译语言与播报设置。迁移后手动选择的接入方式持续保留。
 - 正式版通话设置保留 WebRTC，双语互译设置保留云端接入，均只能在会话开始前手动切换。连接失败不自动创建另一条收费会话。
 - 双语互译不再受 `BuildConfig.DEBUG` 限制，默认通过 `AoqBilingualWire` 建立正向翻译、反向翻译和语言识别连接；后端只分配会话凭证，音频直达模型。
+- 候选版本的互译设置增加固定方向：仅建立一条翻译连接，跳过反向翻译和 Omni 语言判断。默认仍是自动双向；方向按账号保存，改变语言对或切回云端时恢复自动，会话中不可修改。
 - AOQ 默认沿用媒体音量控制；WebRTC 沿用通话音量控制。两种音量由系统分别保存。
 - `app` 模块负责打包 `libs/AoqClientSdk-release.aar`；`feature-assistant` 使用编译期依赖。宿主集成时必须包含该 SDK，避免 library 的 Release AAR 检查失败。SDK 与 Opus 原生库沿用现有 ARM 版本。
 - `AoqDefaultPreferencesTest` 覆盖新安装、旧偏好迁移、手动回退持久化和账号隔离；`BilingualTranslationTest` 验证默认直连不申请云端 ticket，以及会话中禁止切换；设置 UI 测试验证正式入口。
 
 ## 通话生命周期
 
+- 候选客户端支持后端返回可选 `session_lease`：每 30 秒报告心跳，连接关闭时释放；旧后端未返回时沿用现有行为。后端迁移 `0197` 新增申请记录，两个准入限额默认 0，只观测；开启活动限额时客户端处理租约拒绝，纯观测故障不打断直连音频。应用声明与供应商费用、实际并发分开核对。发布顺序和验收见 [接入改进记录](../../we-meet/docs/reviews/llm-integration-improvements-2026-10-08.md)。
 - 客户端从目录读取 `model_code=aliyun/qwen3.8-omni-flash-realtime` 的 profile。
 - 音色和提示词共用一套选择；旧版视频设置优先迁入，失效音色按新目录默认值回退。
 - 使用用户登录态调用 `POST /api/v1.0/ai-call/session/`。AOQ 返回会话令牌与 Relay 配置；WebRTC 返回 SDP answer，两者均返回音色、提示词。

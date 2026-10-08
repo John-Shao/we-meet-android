@@ -69,6 +69,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
             onSelectLanguage = controller::selectLanguage,
             onSelectScene = controller::selectScene,
             onDirectAoqChange = controller::directAoq,
+            onFixedSourceChange = controller::fixedSource,
             onFacingChange = { facing = it },
             onSoundChange = controller::sound,
             onBack = { showSettings = false },

@@ -107,6 +107,13 @@ class CaptureTranslationRepositoryTest {
             assertTrue(runCatching { CaptureTranslationRepository.validateTicket(bad, source, row) }.isFailure)
         }
     }
+    @Test fun currentAndHistoricalModelsAreReadableButUnknownModelsFail() {
+        assertEquals("qwen3.8-livetranslate-flash-realtime", CaptureTranslationRepository.MODEL)
+        for (model in listOf(CaptureTranslationRepository.MODEL, "qwen3.5-livetranslate-flash-realtime")) {
+            CaptureTranslationRepository.validateConfiguration(configuration.copy(model = model))
+        }
+        assertTrue(runCatching { CaptureTranslationRepository.validateConfiguration(configuration.copy(model = "other")) }.isFailure)
+    }
     @Test fun intentAdapterRejectsCredentialInjectionAndInvalidChoice() {
         val body = CaptureTranslationRepository.requestAdapter.toJson(input)
         assertTrue(runCatching { CaptureTranslationRepository.requestAdapter.fromJson(body.dropLast(1) + ",\"lease\":\"private\"}") }.isFailure)

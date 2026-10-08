@@ -72,6 +72,15 @@ class AoqDefaultPreferencesTest {
         assertTrue(BilingualState().directAoq)
         assertTrue(BilingualPreferences(context, "new").load().directAoq)
     }
+    @Test fun explicitDirectionPersistsOnlyForAoqAndValidLanguages() {
+        val prefs = BilingualPreferences(context, "direction")
+        prefs.save(prefs.load().copy(fixedSource = "en"))
+        assertEquals("en", prefs.load().fixedSource)
+        prefs.save(prefs.load().copy(directAoq = false))
+        assertNull(prefs.load().fixedSource)
+        prefs.save(prefs.load().copy(directAoq = true, fixedSource = "fr"))
+        assertNull(prefs.load().fixedSource)
+    }
 
     @Test fun existingCloudTranslationKeepsLanguagesSoundAndScene() {
         translationStore("legacy").edit().putBoolean("direct-aoq", false)

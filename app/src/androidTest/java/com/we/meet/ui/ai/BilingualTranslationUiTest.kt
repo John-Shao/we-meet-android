@@ -27,6 +27,18 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationUiTest {
+    @Test fun fixedDirectionCanBeSelectedAndIsLockedDuringTranslation() {
+        val state = mutableStateOf(BilingualState())
+        compose.setContent { WeMeetTheme(darkTheme = false) {
+            BilingualTranslationSettingsScreen(state.value, true, null, { _, _ -> }, {}, {}, {}, {},
+                onFixedSourceChange = { state.value = state.value.copy(fixedSource = it) })
+        } }
+        compose.onNodeWithTag("bilingual-direction-en").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals("en", state.value.fixedSource); state.value = state.value.copy(phase = BilingualPhase.LISTENING) }
+        compose.onNodeWithTag("bilingual-direction-auto").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals("en", state.value.fixedSource) }
+        screenshot("bilingual-direction-settings.png")
+    }
     @Test fun translationTransportIsAvailableAndLockedDuringActiveSessions() {
         val state = mutableStateOf(BilingualState())
         compose.setContent { WeMeetTheme(darkTheme = false) {

@@ -35,6 +35,7 @@ internal fun BilingualTranslationSettingsScreen(
     onBack: () -> Unit,
     onSelectScene: (String?) -> Unit,
     onDirectAoqChange: (Boolean) -> Unit = {},
+    onFixedSourceChange: (String?) -> Unit = {},
 ) {
     Scaffold(topBar = {
         WeMeetTopBar(title = stringResource(R.string.bilingual_settings_title), onBack = onBack)
@@ -62,6 +63,21 @@ internal fun BilingualTranslationSettingsScreen(
                 }
             }
             if (state.active) SettingsHint(stringResource(R.string.bilingual_settings_locked))
+            if (state.directAoq) {
+                SettingsGroupHeader(stringResource(R.string.bilingual_direction_settings))
+                SettingsGroup {
+                    listOf(null, state.pair.source, state.pair.target).forEach { source ->
+                        val label = if (source == null) stringResource(R.string.bilingual_direction_auto)
+                            else stringResource(R.string.bilingual_direction_fixed,
+                                stringResource(BilingualLanguages.label(source)),
+                                stringResource(BilingualLanguages.label(BilingualLanguages.opposite(state.pair, source))))
+                        SettingsRow(label = label, modifier = Modifier.testTag("bilingual-direction-${source ?: "auto"}"),
+                            onClick = { if (!state.active) onFixedSourceChange(source) },
+                            trailing = { RadioButton(selected = state.fixedSource == source, onClick = null, enabled = !state.active) })
+                    }
+                }
+                SettingsHint(stringResource(R.string.bilingual_direction_hint))
+            }
             SettingsGroupHeader(stringResource(R.string.bilingual_display_mode))
             SettingsGroup {
                 listOf(true, false).forEach { faceToFace ->

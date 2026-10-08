@@ -55,6 +55,7 @@ internal data class BilingualState(
     val inputPaused: Boolean = false,
     val sceneId: String? = null,
     val directAoq: Boolean = true,
+    val fixedSource: String? = null,
 ) {
     val active get() = phase in setOf(BilingualPhase.CONNECTING, BilingualPhase.LISTENING, BilingualPhase.SPEAKING, BilingualPhase.FINISHING)
     override fun toString() = "BilingualState(<private>)"
@@ -93,8 +94,8 @@ internal class BilingualTranslationController(
     },
     val history: com.we.meet.feature.assistant.history.AssistantHistoryStore? = null,
     private val preferences: BilingualPreferences? = null,
-    private val openAoqWire: (AssistantTranslationPair, CaptureTranslationWire.Listener) -> CaptureTranslationWire = { pair, listener ->
-        AoqBilingualWire(context.applicationContext, api, pair, listener)
+    private val openAoqWire: (AssistantTranslationPair, String?, CaptureTranslationWire.Listener) -> CaptureTranslationWire = { pair, source, listener ->
+        AoqBilingualWire(context.applicationContext, api, pair, listener, source)
     },
 ) : Closeable {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -195,12 +196,20 @@ internal class BilingualTranslationController(
         mutable.update { it.copy(
             pair = BilingualLanguages.select(it.pair, first, language),
             unknownLanguage = false,
+            fixedSource = null,
         ) }
         preferences?.save(mutable.value)
     }
     fun directAoq(enabled: Boolean) {
         if (active != null) return
-        mutable.update { it.copy(directAoq = enabled) }
+        mutable.update { it.copy(directAoq = enabled, fixedSource = if (enabled) it.fixedSource else null) }
+        preferences?.save(mutable.value)
+    }
+    fun fixedSource(language: String?) {
+        if (active != null || !mutable.value.directAoq) return
+        val pair = mutable.value.pair
+        if (language != null && language != pair.source && language != pair.target) return
+        mutable.update { it.copy(fixedSource = language, unknownLanguage = false) }
         preferences?.save(mutable.value)
     }
     fun selectScene(id: String?) {
@@ -297,7 +306,7 @@ internal class BilingualTranslationController(
                 }
             }
             stage = if (direct) "aoq_transport" else "cloud_transport"
-            wire = if (direct) openAoqWire(pair, listener)
+            wire = if (direct) openAoqWire(pair, mutable.value.fixedSource, listener)
                 else openWire(ticket!!.url, listener)
             launch(Dispatchers.Default) {
                 for (raw in events) {

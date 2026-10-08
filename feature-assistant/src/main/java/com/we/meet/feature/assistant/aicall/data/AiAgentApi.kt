@@ -6,6 +6,7 @@ import com.we.meet.feature.assistant.aicall.model.AiCallAnswer
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 
 /** Uses the host's authenticated HTTP client; provider keys never reach Android. */
 interface AiAgentApi {
@@ -14,4 +15,6 @@ interface AiAgentApi {
 
     @POST("api/v1.0/ai-call/session/")
     suspend fun exchangeOffer(@Body offer: AiCallOffer): AiCallAnswer
+    @POST("api/v1.0/direct-ai/sessions/{id}/")
+    suspend fun sessionLease(@Path("id") id: String, @Body operation: DirectAILeaseOperation) = Unit
 }

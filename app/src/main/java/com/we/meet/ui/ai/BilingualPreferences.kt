@@ -20,12 +20,15 @@ internal class BilingualPreferences(context: Context, account: String) {
             .takeIf(BilingualLanguages::valid) ?: AssistantTranslationPair()
         val sound = prefs.getBoolean("sound", true)
         val scene = TranslationScene.find(prefs.getString("scene", null))
-        return BilingualState(pair = pair, sound = sound, sceneId = scene?.id, directAoq = prefs.getBoolean("direct-aoq", true))
+        val direct = prefs.getBoolean("direct-aoq", true)
+        val fixed = prefs.getString("fixed-source", null)?.takeIf { direct && it in setOf(pair.source, pair.target) }
+        return BilingualState(pair = pair, sound = sound, sceneId = scene?.id, directAoq = direct, fixedSource = fixed)
     }
 
     fun save(state: BilingualState) {
         prefs.edit().putString("source", state.pair.source).putString("target", state.pair.target)
             .putBoolean("aoq_default_v1", true)
+            .putString("fixed-source", state.fixedSource)
             .putBoolean("direct-aoq", state.directAoq).putBoolean("sound", state.sound).putString("scene", state.sceneId).apply()
     }
 }

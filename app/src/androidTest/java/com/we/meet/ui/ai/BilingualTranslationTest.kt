@@ -18,6 +18,19 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationTest {
+    @Test fun fixedDirectionIsPassedToAoqAndLockedUntilTheSessionStops() {
+        val f = Fixture(cloud = false)
+        try {
+            main { f.controller.fixedSource("en"); f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+            assertEquals("en", f.fixedSource)
+            main { f.controller.fixedSource("zh") }
+            assertEquals("en", f.controller.state.value.fixedSource)
+            main { f.controller.stop(); f.controller.directAoq(false) }
+            assertNull(f.controller.state.value.fixedSource)
+        } finally { main { f.controller.close() } }
+    }
     @Test fun defaultTranslationUsesAoqWithoutRequestingACloudTicket() {
         val f = Fixture(cloud = false)
         try {
@@ -210,6 +223,7 @@ class BilingualTranslationTest {
         val output = Output()
         @Volatile var wire: Wire? = null
         @Volatile var aoqOpened = false
+        @Volatile var fixedSource: String? = null
         var opened = false
         @Volatile var playbackUnderruns = 0
         val controller = BilingualTranslationController(
@@ -245,7 +259,7 @@ class BilingualTranslationTest {
                     override fun close() = Unit
                 }
             },
-            openAoqWire = { _, listener -> Wire(listener).also { aoqOpened = true; wire = it } },
+            openAoqWire = { _, source, listener -> fixedSource = source; Wire(listener).also { aoqOpened = true; wire = it } },
         ).also { if (cloud) it.directAoq(false) }
     }
 

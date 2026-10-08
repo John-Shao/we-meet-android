@@ -70,7 +70,7 @@ class MeetingTranslationRepository(private val api: MeetingTranslationApi, priva
             value.sourceParticipantSid?.let(::participant)
             with(value.configuration) {
                 require(source in languages && target in languages && source != target && mode in modes)
-                require(model == "qwen3.5-livetranslate-flash-realtime" && scope == "controller_only")
+                require(model in setOf("qwen3.8-livetranslate-flash-realtime", "qwen3.5-livetranslate-flash-realtime") && scope == "controller_only")
                 archiveRecordId?.let(::uuid)
             }
         }

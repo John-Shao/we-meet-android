@@ -38,6 +38,7 @@ class AiCallViewModel(
     private val prefs: AiCallPreferences,
     val history: com.we.meet.feature.assistant.history.AssistantHistoryStore? = null,
 ) : ViewModel() {
+    private var modelLease: com.we.meet.feature.assistant.aicall.data.DirectAILease? = null
     private var recording: com.we.meet.feature.assistant.history.AssistantHistoryStore.Recording? = null
     private val _state = MutableStateFlow(AiCallUiState(selection = prefs.load()))
     val state = _state.asStateFlow()
@@ -86,6 +87,13 @@ class AiCallViewModel(
                 client.connect { sdp ->
                     _state.update { it.copy(status = AiCallStatus.Connecting(ConnectingStep.Configuring)) }
                     val answer = agentRepo.exchangeOffer(AiCallOffer(sdp = sdp, profile_code = config.callProfile()!!.code, voice_id = selection.voiceId, prompt_id = selection.promptId, transport = selection.transport.name.lowercase()))
+                    val lease = agentRepo.track(answer) {
+                        viewModelScope.launch {
+                            if (rtcClient === client) endCall(R.string.assistant_disconnected_ended)
+                        }
+                    }
+                    if (rtcClient !== client) { lease?.close(); throw CancellationException("Call was stopped") }
+                    modelLease = lease
                     answer.forScene(selection.sceneId)
                 }
                 if (_state.value.mode == AiCallMode.Video) client.setCameraEnabled(true)
@@ -219,6 +227,7 @@ class AiCallViewModel(
         }
     }
     private fun closeClient() {
+        modelLease?.close(); modelLease = null
         val client = rtcClient
         rtcClient = null
         try { client?.close() } finally {

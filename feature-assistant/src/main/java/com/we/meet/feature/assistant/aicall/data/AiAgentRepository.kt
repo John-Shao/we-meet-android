@@ -9,6 +9,9 @@ import org.json.JSONObject
 import retrofit2.HttpException
 
 class AiAgentRepository(private val api: AiAgentApi) {
+    fun track(answer: AiCallAnswer, lost: () -> Unit): DirectAILease? = answer.session_lease?.let {
+        DirectAILease(it, api::sessionLease, lost).also(DirectAILease::start)
+    }
     suspend fun fetchConfig(): AiAgentConfigResponse = api.fetchConfig()
     suspend fun exchangeOffer(offer: AiCallOffer): AiCallAnswer {
         if (offer.transport != "aoq") return api.exchangeOffer(offer)

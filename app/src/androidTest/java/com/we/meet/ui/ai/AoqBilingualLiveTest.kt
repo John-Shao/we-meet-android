@@ -14,10 +14,23 @@ import java.io.File
 
 /** Opt-in synthetic speech probe of both private worker processes, text and PCM. */
 class AoqBilingualLiveTest {
-    @Test fun controllerKeepsPlaybackFocusAndReplaysRealAoqAudio() = runBlocking {
+    @Test fun controllerKeepsPlaybackFocusAndReplaysRealAoqAudio() = verifyController(null)
+    @Test fun fixedDirectionUsesOneRealSessionAndKeepsPlaybackAndFinish() = verifyController("en")
+
+    private fun verifyController(fixedSource: String?) = runBlocking {
         assumeTrue(InstrumentationRegistry.getArguments().getString("liveBackend") == "true")
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
+        val delegate = ApiClient(com.we.meet.data.auth.TokenStore(context)).assistantTranslationApi
+        val allocations = mutableListOf<AssistantTranslationDirectRequest>()
+        val api = object : AssistantTranslationApi {
+            override suspend fun ticket(pair: AssistantTranslationPair) = error("Cloud gateway must not be used")
+            override suspend fun directSession(request: AssistantTranslationDirectRequest): AssistantTranslationDirectSession {
+                allocations += request
+                return delegate.directSession(request)
+            }
+            override suspend fun sessionLease(id: String, operation: com.we.meet.feature.assistant.aicall.data.DirectAILeaseOperation) = delegate.sessionLease(id, operation)
+        }
         val pcm = instrumentation.context.assets.open("aoq-english.pcm").use { it.readBytes() }
         val samples = ShortArray(pcm.size / 2).also {
             java.nio.ByteBuffer.wrap(pcm).order(java.nio.ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(it)
@@ -45,9 +58,10 @@ class AoqBilingualLiveTest {
             try {
                 withContext(Dispatchers.Main) {
                     controller = BilingualTranslationController(context,
-                        ApiClient(com.we.meet.data.auth.TokenStore(context)).assistantTranslationApi,
+                        api,
                         authorized = { true }, openMicrophone = { microphone })
                     assertTrue(controller!!.state.value.directAoq)
+                    controller!!.fixedSource(fixedSource)
                     controller!!.start()
                 }
                 withTimeout(50_000) { while (controller!!.state.value.phase != BilingualPhase.LISTENING) {
@@ -70,6 +84,12 @@ class AoqBilingualLiveTest {
                 withContext(Dispatchers.Main) { controller!!.finish() }
                 withTimeout(25_000) { while (controller!!.state.value.active) delay(50) }
                 assertEquals(BilingualPhase.IDLE, controller!!.state.value.phase)
+                assertEquals(if (fixedSource == null) 3 else 1, allocations.size)
+                if (fixedSource != null) {
+                    assertEquals("translation", allocations.single().purpose)
+                    assertEquals("en", allocations.single().source)
+                    assertEquals("zh", allocations.single().target)
+                }
             } finally { withContext(Dispatchers.Main) { controller?.close() } }
         }
     }
