@@ -65,6 +65,9 @@ class WorkProductionReviewIntegrationTest {
             assertTrue(review.inputTokens!! + review.outputTokens!! <= 20000)
             assertTrue(review.report.verdict in setOf("no_issues", "needs_changes", "inconclusive"))
             compose.onNodeWithText(context.getString(R.string.work_review_succeeded)).performScrollTo().assertIsDisplayed()
+            if (review.report.missingInformation.isNotEmpty()) {
+                compose.onNodeWithText(context.getString(R.string.work_review_inconclusive)).performScrollTo().assertIsDisplayed()
+            }
             compose.onNodeWithText(review.report.summary, substring = false).performScrollTo().assertIsDisplayed()
             val folder = File(context.getExternalFilesDir(null), "work-production-review").apply { mkdirs() }
             File(folder, "review.png").outputStream().use {
@@ -81,6 +84,7 @@ class WorkProductionReviewIntegrationTest {
                 put("input_tokens", review.inputTokens)
                 put("output_tokens", review.outputTokens)
                 put("review_visible", true)
+                put("uncertainty_visible", review.report.missingInformation.isNotEmpty())
                 put("original_result_preview_verified", true)
                 put("new_tasks_created", 0)
                 put("new_reviews_created", 0)
