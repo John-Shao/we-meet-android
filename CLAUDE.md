@@ -130,6 +130,8 @@ we-meet-specific notes:
 - ViewModels expose `StateFlow<UiState>`; Compose collects via `collectAsStateWithLifecycle`
 - LiveKit SDK 2.x `Room.events: SharedFlow<RoomEvent>` — use this, NOT the legacy listener API
 - All user-facing strings go in `res/values/strings.xml` + `values-zh-rCN/strings.xml`
+- Supported locales are exactly `en` (default), `zh-rCN`, `fr`, `de`, `nl` — see `SettingsScreen.LANGUAGE_OPTIONS`. Simplified Chinese always lives in **`values-zh-rCN/`**, never in `values-zh/`: a language-only `values-zh/` also matches zh-TW/zh-HK/zh-SG, so a stray file there makes those devices show a few Simplified strings above an otherwise English UI while zh-CN is unaffected. That directory was created twice by accident (`d3d82d1b`, then the voice-tools POC) and has been removed; keep Chinese copy in `values-zh-rCN/`.
+- Run `python scripts/i18n.py check` before touching `res/values*/`; it fails on a missing key, a stale key, a broken format specifier, a `plurals` entry without `other`, a changed `string-array` item count and an unescaped apostrophe. [docs/i18n.md](docs/i18n.md) has the locale rules, the per-language glossary and the `plan`/`merge` backfill workflow.
 - LiveKit connection options: `adaptiveStream = true`, `dynacast = true`
 - Debug builds only: `usesCleartextTraffic="true"` for local HTTP testing
 

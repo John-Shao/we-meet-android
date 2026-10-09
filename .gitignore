@@ -70,3 +70,6 @@ Thumbs.db
 
 # Local direct ASR validation results
 /artifacts/direct-asr/verification.json
+
+# Translation backfill bundles (scripts/i18n.py plan)
+/.i18n-work/
