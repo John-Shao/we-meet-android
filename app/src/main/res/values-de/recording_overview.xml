@@ -5,7 +5,7 @@
     <string name="record_import_audio">Importiertes Audio</string>
     <string name="record_import_video">Importiertes Video</string>
     <string name="record_import_all">Aufnahmen und Importe</string>
-    <string name="record_import_video_hint">Das Originalvideo bleibt erhalten; seine Sprache wird für Transkript und Zusammenfassung transkribiert.</string>
+    <string name="record_import_video_hint">Das Originalvideo bleibt erhalten; nur die darin enthaltene Sprachaufnahme wird für Transkript und Zusammenfassung transkribiert.</string>
     <string name="record_import_invalid">Dateiformat oder Dateigröße wird nicht unterstützt. Wählen Sie eine andere Datei.</string>
     <string name="record_import_size_unknown">Größe unbekannt</string>
     <string name="record_import_pending">Warten auf Transkription</string>

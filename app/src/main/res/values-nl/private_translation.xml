@@ -14,7 +14,7 @@
     <string name="translation_no_save">Vertalingen niet opslaan na de sessie</string>
     <string name="translation_unknown">De bewerking kon niet worden bevestigd. Controleer het oorspronkelijke verzoek voordat je iets anders doet.</string>
     <string name="translation_start">Vertaling starten</string>
-    <string name="translation_stop">Vertaling beëindigen</string>
+    <string name="translation_stop">Vertaling stoppen</string>
     <string name="translation_start_effect">Dit verwerkt de microfoon van je vergadering en kan AI-gebruik met zich meebrengen. Controleer hieronder de taal, modus en de opslagkeuze. Schakel de vertaalde spraak apart in wanneer je klaar bent.</string>
     <string name="translation_stop_effect">Beëindig deze persoonlijke vertaalsessie en het nog openstaande antwoord. De vergadering en de tolkkanalen van andere deelnemers lopen door.</string>
     <string name="translation_other_connection">Dit apparaat heeft zijn eigen actieve vergaderverbinding nodig. Een vertaling die op een andere verbinding is gestart, kun je hier beëindigen.</string>

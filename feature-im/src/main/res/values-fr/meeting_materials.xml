@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="im_material_record">Enregistrement de réunion</string>
-    <string name="im_material_minutes">Compte rendu intelligent</string>
+    <string name="im_material_record">Archives de réunion</string>
+    <string name="im_material_minutes">Compte rendu IA</string>
     <string name="im_material_reader">Vous pouvez lire</string>
     <string name="im_material_editor">Vous pouvez modifier</string>
     <string name="im_material_manager">Vous pouvez gérer</string>

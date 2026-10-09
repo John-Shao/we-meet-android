@@ -4,7 +4,7 @@
     <string name="online_capture_description">Dieses Meeting als Aufzeichnung für die Zusammenfassung transkribieren. Die Cloud-Videoaufzeichnung wird separat gesteuert.</string>
     <string name="online_capture_guest">Melden Sie sich mit einem Managerkonto des Meetingraums an, um die KI-Aufnahme zu steuern.</string>
     <string name="online_capture_unavailable">Die Steuerung der KI-Aufnahme ist für dieses Meeting nicht verfügbar.</string>
-    <string name="online_capture_coverage">Die Übermittlung des Transkripts belegt keine vollständige Audioabdeckung. Prüfen Sie fehlende Redebeiträge, bevor Sie die Zusammenfassung verwenden.</string>
+    <string name="online_capture_coverage">Die Übermittlung des Transkripts belegt keine vollständige Audioabdeckung. Prüfen Sie, ob Redebeiträge fehlen, bevor Sie die Zusammenfassung verwenden.</string>
     <string name="online_capture_open">Diese Meeting-Aufzeichnung öffnen</string>
     <string name="online_capture_unknown">Das Ergebnis der Steuerung ist unbekannt. Prüfen Sie die ursprüngliche Anfrage, bevor Sie eine weitere Aktion ausführen.</string>
     <string name="online_capture_start">KI-Aufnahme starten</string>

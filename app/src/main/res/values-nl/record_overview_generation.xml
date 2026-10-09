@@ -18,7 +18,7 @@
     <string name="record_overview_failed_preserved">Genereren mislukt. Je vorige overzicht en hoofdstukken zijn bewaard. Probeer het opnieuw.</string>
     <string name="record_overview_language">Generatietaal</string>
     <string name="record_overview_follow_source">Transcriptie volgen</string>
-    <string name="record_overview_language_hint">Geldt voor het overzicht en de onderwerpen bij de volgende generatie. Bestaande inhoud blijft bewaard tot het genereren lukt.</string>
+    <string name="record_overview_language_hint">Geldt voor het overzicht en de hoofdstukken bij de volgende generatie. Bestaande inhoud blijft bewaard tot het genereren lukt.</string>
     <string name="record_overview_language_save_failed">De taalinstelling kon niet worden bevestigd. Vernieuw en probeer het opnieuw.</string>
     <string name="record_overview_language_save">Opslaan</string>
     <string name="record_overview_language_cancel">Annuleren</string>

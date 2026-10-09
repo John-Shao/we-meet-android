@@ -4,6 +4,6 @@
     <string name="records_created_through">Créé jusqu\'au</string>
     <string name="records_clear_dates">Effacer les dates</string>
     <string name="records_date_hint">Format YYYY-MM-DD ; laissez vide pour ne fixer aucune limite. Fuseau horaire local, date de fin incluse.</string>
-    <string name="records_date_error">Saisissez des dates valides, avec une date de début au plus tard égale à la date de fin.</string>
+    <string name="records_date_error">Saisissez des dates valides : la date de début ne peut pas être postérieure à la date de fin.</string>
     <string name="records_date_active">Créé : %1$s — %2$s</string>
 </resources>

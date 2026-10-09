@@ -19,7 +19,7 @@
     <string name="interpretation_connection">Wacht tot de vergaderverbinding van dit apparaat is bevestigd voordat je gaat luisteren.</string>
     <string name="interpretation_wait_ready">Wachten op tolkgeluid…</string>
     <string name="interpretation_error">De bewerking of luisterstatus is niet bevestigd. Vernieuw of controleer de oorspronkelijke aanvraag en kies daarna opnieuw een kanaal.</string>
-    <string name="interpretation_start_effect">Hiermee open je dit gedeelde taalkanaal. De vertaling begint pas wanneer iemand kiest om te luisteren en kan AI-tegoed verbruiken. Het openen van het kanaal schakelt jouw luisteren niet automatisch in.</string>
+    <string name="interpretation_start_effect">Hiermee open je dit gedeelde taalkanaal. De vertaling begint pas wanneer iemand kiest om te luisteren en kan AI-tegoed verbruiken. Als je het kanaal opent, ga je niet automatisch meeluisteren.</string>
     <string name="interpretation_stop_effect">Hiermee sluit je dit taalkanaal voor iedereen die nu luistert. Zij ontvangen geen tolkgeluid meer uit dit kanaal. De vergadering gaat door.</string>
     <string name="interpretation_speaker">Spreker</string>
     <string name="interpretation_paused">Luisteren gepauzeerd</string>

@@ -17,7 +17,7 @@
     <string name="summary_controls_quick">Snelle notulen genereren</string>
     <string name="summary_controls_final">Volledige notulen genereren</string>
     <string name="summary_controls_all_versions">Alle notulen bekijken</string>
-    <string name="summary_job_queued">Wachten om te genereren</string>
+    <string name="summary_job_queued">Wachten op genereren</string>
     <string name="summary_job_running">Notulen worden gegenereerd</string>
     <string name="summary_job_succeeded">Notulen gegenereerd</string>
     <string name="summary_job_partial">Notulen gedeeltelijk gegenereerd</string>

@@ -15,7 +15,7 @@
     <string name="docs_load_error">Documenten konden niet worden geladen. Controleer het netwerk en probeer opnieuw</string>
     <string name="docs_create_title">Nieuw document</string>
     <string name="docs_create_hint">Documenttitel</string>
-    <string name="docs_create_confirm">Maken</string>
+    <string name="docs_create_confirm">Aanmaken</string>
     <string name="docs_untitled">Document zonder naam</string>
     <string name="docs_rename_title">Hernoemen</string>
     <string name="docs_copy_link">Link kopiëren</string>
@@ -68,7 +68,7 @@
     <string name="docs_attachment_open">Tik om te openen</string>
     <string name="docs_comments">Reacties</string>
     <string name="docs_ask_access">Toegang aanvragen</string>
-    <string name="docs_ask_access_title">U heeft geen toegang tot dit document</string>
+    <string name="docs_ask_access_title">Je hebt geen toegang tot dit document</string>
     <string name="docs_ask_access_desc">Vraag de eigenaar om leestoegang om de inhoud te bekijken.</string>
     <string name="docs_ask_access_pending">Toegangsverzoek verzonden - wachten op de eigenaar.</string>
     <string name="docs_ask_access_sent">Toegangsverzoek verzonden</string>
@@ -82,7 +82,7 @@
     <string name="docs_unknown_user">Onbekende gebruiker</string>
     <string name="docs_reply">Beantwoorden</string>
     <string name="docs_view_in_doc">In document bekijken</string>
-    <string name="docs_reply_confirm">Versturen</string>
+    <string name="docs_reply_confirm">Verzenden</string>
     <string name="docs_resolve">Als opgelost markeren</string>
     <string name="docs_reopen">Heropenen</string>
     <string name="docs_resolved_label">Opgelost</string>
@@ -112,7 +112,7 @@
     <string name="docs_share_ask_sent">Aanvraag verzonden — je krijgt bericht zodra deze is goedgekeurd</string>
     <string name="docs_role_reader">Bekijken</string>
     <string name="docs_role_commenter">Reageren</string>
-    <string name="docs_role_editor">Bewerken</string>
+    <string name="docs_role_editor">Kan bewerken</string>
     <string name="docs_role_administrator">Beheerder</string>
     <string name="docs_role_owner">Eigenaar</string>
     <string name="docs_reach_restricted">Alleen bevoegde gebruikers</string>

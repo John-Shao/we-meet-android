@@ -24,7 +24,7 @@
     <string name="collaboration_selected">Geselecteerd: %1$d</string>
     <string name="collaboration_count">Samenwerkers (%1$d)</string>
     <string name="collaboration_role">Rol</string>
-    <string name="collaboration_inviteHint">Iedereen die nu wordt uitgenodigd krijgt deze rol. Pas daarna personen afzonderlijk aan in de lijst.</string>
+    <string name="collaboration_inviteHint">Iedereen die nu wordt uitgenodigd, krijgt deze rol. Pas daarna personen afzonderlijk aan in de lijst.</string>
     <string name="collaboration_noCandidates">Niemand kan worden uitgenodigd</string>
     <string name="collaboration_viewOnly">Je rol kan alleen de lijst met samenwerkers bekijken.</string>
     <string name="collaboration_back">Terug</string>

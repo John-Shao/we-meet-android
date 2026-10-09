@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="capture_translation_title">Traduction de l\'enregistrement</string>
-    <string name="capture_translation_scope">Utilise le microphone de l\'enregistrement en cours. La transcription d\'origine et la traduction sont traitées séparément. La traduction terminée, l\'enregistrement se poursuit.</string>
+    <string name="capture_translation_scope">Utilise le microphone de l\'enregistrement en cours. La transcription d\'origine et la traduction sont traitées séparément. Une fois la traduction terminée, l\'enregistrement se poursuit.</string>
     <string name="capture_translation_simultaneous">Interprétation simultanée</string>
     <string name="capture_translation_speech">Traduction vocale bidirectionnelle</string>
     <string name="capture_translation_zh_en">Chinois → anglais</string>

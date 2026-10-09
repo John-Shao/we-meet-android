@@ -38,7 +38,7 @@
 
     <!-- QR scan / web sign-in confirmation -->
     <string name="qr_scan_confirm_title">Im Web anmelden</string>
-    <string name="qr_scan_confirm_hint">Bestätige, um dich auf dem Gerät anzumelden, das diesen QR anzeigt.</string>
+    <string name="qr_scan_confirm_hint">Bestätigen Sie, um sich auf dem Gerät anzumelden, das diesen QR anzeigt.</string>
     <string name="qr_scan_confirm_button">Anmeldung bestätigen</string>
     <string name="qr_scan_cancel_button">Abbrechen</string>
     <string name="qr_scan_back_button">Zurück</string>
@@ -54,7 +54,7 @@
     <string name="meeting_settings_title">Besprechungseinstellungen</string>
     <string name="settings_video_codec">Video-Codec</string>
     <string name="settings_video_codec_default_suffix">(Standard)</string>
-    <string name="settings_video_codec_hint">Gilt für dein nächstes Meeting.</string>
+    <string name="settings_video_codec_hint">Gilt für Ihr nächstes Meeting.</string>
     <string name="settings_language">Sprache</string>
     <string name="settings_language_system">System folgen</string>
     <string name="settings_language_hint">Starte die App neu, falls einige Bildschirme noch nicht aktualisiert sind.</string>
@@ -71,12 +71,12 @@
     <string name="preview_meeting_id_hint">Meeting-ID</string>
     <string name="preview_speaker">Lautsprecher</string>
     <string name="preview_earpiece">Hörmuschel</string>
-    <string name="preview_mute">Stumm</string>
+    <string name="preview_mute">Stummschalten</string>
 
     <!-- Room screen -->
     <string name="room_title">Im Meeting</string>
     <string name="room_slug_label">Meeting-ID: %1$s</string>
-    <string name="room_connecting">Verbinde…</string>
+    <string name="room_connecting">Verbindung wird hergestellt…</string>
     <string name="room_action_mic">Mikrofon</string>
     <string name="room_action_camera">Kamera</string>
     <string name="room_action_switch_camera">Wechseln</string>
@@ -103,13 +103,13 @@
     <string name="room_screen_share_whiteboard">Whiteboard teilen</string>
     <string name="room_screen_share_stop">Teilen beenden</string>
     <string name="room_screen_share_of">%1$ss Bildschirm</string>
-    <string name="room_screen_share_self_sharing">Du teilst deinen Bildschirm</string>
+    <string name="room_screen_share_self_sharing">Sie teilen Ihren Bildschirm</string>
     <string name="room_screen_share_overlay_prompt">Berechtigung \"Über andere Apps anzeigen\" gewähren, um das Teilen vom Desktop aus zu beenden</string>
     <string name="room_action_hangup">Verlassen</string>
     <string name="room_end">Beenden</string>
     <string name="room_leave">Meeting verlassen</string>
     <string name="room_end_meeting">Meeting beenden</string>
-    <string name="room_leave_hint">Wenn du das Meeting nicht beenden möchtest, weise vor dem Verlassen einen neuen Host zu.</string>
+    <string name="room_leave_hint">Wenn Sie das Meeting nicht beenden möchten, weisen Sie vor dem Verlassen einen neuen Host zu.</string>
     <string name="room_participant_me"> (Ich)</string>
     <string name="room_permission_required">Kamera- und Mikrofonberechtigung sind erforderlich, um einem Meeting beizutreten.</string>
     <string name="room_no_video">Kein Video</string>
@@ -147,12 +147,12 @@
     <string name="room_lobby_admit_all">Alle zulassen</string>
     <string name="room_lobby_action_failed">Wartebereich konnte nicht aktualisiert werden. Bitte erneut versuchen.</string>
     <string name="waiting_title">Warte auf Bestätigung des Hosts</string>
-    <string name="waiting_subtitle">Du trittst „%1$s“ bei, sobald der Host dich hereinlässt.</string>
+    <string name="waiting_subtitle">Sie treten „%1$s“ bei, sobald der Host Sie hereinlässt.</string>
     <string name="waiting_cancel">Abbrechen</string>
     <string name="waiting_back">Zurück</string>
     <string name="waiting_retry">Erneut versuchen</string>
-    <string name="waiting_denied_title">Der Host hat deine Anfrage abgelehnt</string>
-    <string name="waiting_denied_subtitle">Du kannst es später erneut versuchen oder den Host direkt kontaktieren.</string>
+    <string name="waiting_denied_title">Der Host hat Ihre Anfrage abgelehnt</string>
+    <string name="waiting_denied_subtitle">Sie können es später erneut versuchen oder den Host direkt kontaktieren.</string>
     <string name="waiting_error_title">Meeting nicht erreichbar</string>
     <string name="room_host_settings_title">Host-Einstellungen</string>
     <string name="room_host_settings_subtitle">Nur der Host kann diese ändern.</string>
@@ -200,7 +200,7 @@
     <string name="room_ai_input_hint">Frage die KI…</string>
     <string name="room_ai_send">Senden</string>
     <string name="history_delete_confirm_title">Meeting löschen?</string>
-    <string name="history_delete_confirm_text">„%1$s“ aus deiner Liste entfernen. Wenn du der Host bist, wird es auch für alle anderen gelöscht.</string>
+    <string name="history_delete_confirm_text">„%1$s“ aus Ihrer Liste entfernen. Wenn Sie der Host sind, wird es auch für alle anderen gelöscht.</string>
     <string name="history_detail_joined">Meeting beigetreten</string>
     <string name="history_detail_left">Meeting verlassen</string>
 
@@ -217,7 +217,7 @@
     <string name="meeting_detail_info_participants">Teilnehmer</string>
     <string name="meeting_detail_info_ongoing">Läuft</string>
     <string name="meeting_detail_info_empty">—</string>
-    <string name="meeting_detail_info_timeline">Dein Verlauf</string>
+    <string name="meeting_detail_info_timeline">Ihr Verlauf</string>
     <string name="meeting_detail_action_items_empty">Keine Aufgaben.</string>
     <string name="meeting_detail_action_items_owner">Verantwortlich</string>
     <string name="meeting_detail_action_items_due">Fällig</string>
@@ -278,7 +278,7 @@
     <string name="task_group_by_custom">Benutzerdefinierte Gruppe</string>
     <string name="task_group_by_start_date">Startdatum</string>
     <string name="task_group_by_due_date">Fälligkeitsdatum</string>
-    <string name="task_group_by_creator">Ersteller</string>
+    <string name="task_group_by_creator">Erstellt von</string>
     <string name="task_group_no_date">Kein Datum</string>
     <string name="task_group_none">Keine Gruppierung</string>
     <string name="task_grouping">Gruppieren nach</string>
@@ -313,7 +313,7 @@
     <string name="task_reminder_three_days_0900">3 Tage vorher um 09:00</string>
     <string name="task_date_not_set">Nicht festgelegt</string>
     <string name="task_clear_date">Datum löschen</string>
-    <string name="task_belongs_to_list">Zugehörige Aufgabenliste</string>
+    <string name="task_belongs_to_list">Aufgabenliste</string>
     <string name="task_belongs_to_group">Zugehörige Gruppe</string>
     <string name="task_placement">Zuordnung</string>
     <string name="task_collaboration">Zusammenarbeit</string>
@@ -460,7 +460,7 @@
     <string name="task_search_overdue">Überfällig</string>
     <string name="task_search_no_due">Kein Fälligkeitsdatum</string>
     <string name="task_search_all_priorities">Alle Prioritäten</string>
-    <string name="task_clear_filters">Filter löschen</string>
+    <string name="task_clear_filters">Filter zurücksetzen</string>
 
     <!-- WebView Keycloak login -->
     <string name="web_login_error">Anmeldung fehlgeschlagen</string>
@@ -599,9 +599,9 @@
     <string name="event_organizer">Organisator</string>
     <string name="event_attendees_count">Teilnehmer (%1$d)</string>
     <string name="event_attendee_optional">Optional</string>
-    <string name="event_rsvp_accept">Zusagen</string>
+    <string name="event_rsvp_accept">Annehmen</string>
     <string name="event_rsvp_tentative">Vielleicht</string>
-    <string name="event_rsvp_decline">Absagen</string>
+    <string name="event_rsvp_decline">Ablehnen</string>
     <string name="event_rsvp_failed">Antwort konnte nicht gespeichert werden</string>
     <string name="event_join_meeting">Meeting beitreten</string>
     <string name="event_cancelled_flag">Abgesagt</string>
@@ -623,7 +623,7 @@
     <string name="profile_sign_out_confirm">Wirklich abmelden?</string>
     <string name="profile_deregister">Konto löschen</string>
     <string name="profile_deregister_title">Konto löschen?</string>
-    <string name="profile_deregister_warning">Dies entfernt dein Konto dauerhaft aus We Meet. Verlauf, Profil und gespeicherte Daten werden unwiderruflich gelöscht. Tippe deine Telefonnummer zur Bestätigung ein.</string>
+    <string name="profile_deregister_warning">Dies entfernt Ihr Konto dauerhaft aus We Meet. Verlauf, Profil und gespeicherte Daten werden unwiderruflich gelöscht. Geben Sie Ihre Telefonnummer zur Bestätigung ein.</string>
     <string name="profile_deregister_phone_hint">Telefonnummer</string>
     <string name="profile_deregister_confirm">Löschen</string>
     <string name="profile_deregister_error">Löschen fehlgeschlagen. Bitte erneut versuchen.</string>
@@ -690,7 +690,7 @@
     <string name="approval_empty_mine">Noch keine Genehmigung eingereicht</string>
     <string name="approval_empty_mine_description">Erstellen Sie eine Genehmigungsanfrage und verfolgen Sie hier den Fortschritt.</string>
     <string name="approval_load_error">Laden fehlgeschlagen</string>
-    <string name="approval_retry">Erneut</string>
+    <string name="approval_retry">Erneut versuchen</string>
     <string name="approval_load_more">Mehr laden</string>
     <string name="approval_status_pending">Ausstehend</string>
     <string name="approval_status_approved">Genehmigt</string>
@@ -810,13 +810,13 @@
     <string name="notification_settings_title">Benachrichtigungen</string>
     <string name="starred_toggle_hint">Nur zur Ablage: erscheint unter markierten Kontakten und in der Chatliste. Ändert keine Benachrichtigungen.</string>
     <string name="special_alert_toggle">Sonderhinweis für seine Nachrichten</string>
-    <string name="special_alert_toggle_hint">Seine Nachrichten benachrichtigen dich auch in den Ruhezeiten.</string>
+    <string name="special_alert_toggle_hint">Seine Nachrichten benachrichtigen Sie auch in den Ruhezeiten.</string>
     <string name="special_alert_title">Sonderhinweise</string>
     <string name="special_alert_add">Hinzufügen</string>
     <string name="special_alert_remove">Ausschalten</string>
     <string name="special_alert_empty">Noch keine Kontakte mit Sonderhinweis</string>
     <string name="special_alert_empty_description">Aktiviere den Sonderhinweis in den Kontaktdetails, um Nachrichten auch während der Ruhezeiten zu erhalten.</string>
-    <string name="special_alert_entry_hint">Diese Kontakte erreichen dich auch in den Ruhezeiten. Der Schalter pro Person steht in seinem Profil.</string>
+    <string name="special_alert_entry_hint">Diese Kontakte erreichen Sie auch in den Ruhezeiten. Der Schalter pro Person steht in seinem Profil.</string>
     <string name="calendar_settings_working_start">Arbeitsbeginn</string>
     <string name="calendar_settings_working_end">Arbeitsende</string>
     <string name="calendar_settings_working_hours_hint">Einstellung in 30-Minuten-Schritten. Die Arbeitszeit muss 6 bis 12 Stunden betragen.</string>
@@ -930,7 +930,7 @@
     <string name="room_call_again">Erneut anrufen</string>
     <string name="room_call_cancel">Anruf abbrechen</string>
     <string name="room_invite_state_inviting">Anruf wird aufgebaut…</string>
-    <string name="room_invite_state_ringing">Es klingelt…</string>
+    <string name="room_invite_state_ringing">Klingelt…</string>
     <string name="room_invite_state_rejected">Abgelehnt</string>
     <string name="room_invite_state_busy">Besetzt</string>
     <string name="room_invite_state_unreachable">Nicht erreichbar</string>
@@ -1054,13 +1054,13 @@
     <string name="calendar_share_reset_confirm_title">Diesen Link zurücksetzen?</string>
     <string name="calendar_share_reset_confirm_message">Der vorherige Link und der QR-Code funktionieren danach sofort nicht mehr.</string>
     <string name="calendar_settings_group_timezone">Zeitzone und Datum</string>
-    <string name="calendar_settings_group_working_hours">Arbeitszeiten</string>
+    <string name="calendar_settings_group_working_hours">Arbeitszeit</string>
     <string name="calendar_settings_group_defaults">Terminstandardwerte</string>
     <string name="calendar_settings_group_display">Anzeige</string>
     <string name="calendar_settings_group_reminders">Erinnerungen</string>
     <string name="calendar_month_year">%1$d/%2$d</string>
     <string name="calendar_busy_saving">Wird gespeichert…</string>
-    <string name="waiting_no_token">Der Host hat deine Anfrage genehmigt, aber die Verbindungsdaten fehlen. Bitte versuche es erneut.</string>
+    <string name="waiting_no_token">Der Host hat Ihre Anfrage genehmigt, aber die Verbindungsdaten fehlen. Bitte versuchen Sie es erneut.</string>
     <string name="web_login_network_error">Netzwerkfehler</string>
     <string name="web_login_invalid_callback">Ungültiger Anmelde-Callback</string>
     <string name="docs_editor_save_failed">Das Speichern wurde nicht bestätigt. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut. Diese Seite bleibt geöffnet.</string>
@@ -1108,8 +1108,8 @@
     <string name="cd_records_list_view">Zur Listenansicht wechseln</string>
     <string name="cd_records_grid_view">Zur Rasteransicht wechseln</string>
     <string name="cd_records_skip_back">15 Sekunden zurück</string>
-    <string name="cd_records_skip_forward">15 Sekunden vor</string>
-    <string name="cd_records_play">Wiedergeben</string>
+    <string name="cd_records_skip_forward">15 Sekunden vorspulen</string>
+    <string name="cd_records_play">Abspielen</string>
     <string name="cd_records_pause">Pausieren</string>
     <string name="cd_records_close">Schließen</string>
     <string name="work_title">Arbeit</string>

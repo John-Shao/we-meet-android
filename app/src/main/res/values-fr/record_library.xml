@@ -20,7 +20,7 @@
     <string name="records_start_recording">Enregistrer</string>
     <string name="records_upload">Importer</string>
     <string name="record_upload_title">Confirmer l\'import</string>
-    <string name="record_upload_hint">Choisissez un fichier audio ou vidéo, jusqu\'à %1$d Mo. La transcription se poursuit après l\'import.</string>
+    <string name="record_upload_hint">Choisissez un fichier audio ou vidéo, jusqu\'à %1$d Mo. La transcription se lance automatiquement après l\'import.</string>
     <string name="record_upload_choose">Choisir un fichier</string>
     <string name="record_upload_advanced">Améliorer la reconnaissance (facultatif)</string>
     <string name="record_upload_context">Contexte de la réunion (400 caractères maximum)</string>

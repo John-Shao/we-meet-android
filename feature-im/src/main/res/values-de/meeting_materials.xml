@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="im_material_record">Meeting-Aufzeichnung</string>
-    <string name="im_material_minutes">Intelligente Zusammenfassungen</string>
+    <string name="im_material_minutes">Intelligente Zusammenfassung</string>
     <string name="im_material_reader">Sie können lesen</string>
     <string name="im_material_editor">Sie können bearbeiten</string>
     <string name="im_material_manager">Sie können verwalten</string>

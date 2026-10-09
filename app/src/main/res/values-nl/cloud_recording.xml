@@ -2,8 +2,8 @@
 <resources>
     <string name="cloud_recording_title">Cloudopname</string>
     <string name="cloud_recording_description">Neem de audio en video van de vergadering op. AI-notulen kun je apart inschakelen via AI-opname.</string>
-    <string name="cloud_recording_guest">Meld je aan als gastheer of beheerder om cloudopnamen te beheren.</string>
-    <string name="cloud_recording_unavailable">De opnamebediening kan niet worden geverifieerd. Controleer of je bent aangemeld met actuele gastheer- of beheerdersrechten en vernieuw daarna.</string>
+    <string name="cloud_recording_guest">Meld je aan als host of beheerder om cloudopnamen te beheren.</string>
+    <string name="cloud_recording_unavailable">De opnamebediening kan niet worden geverifieerd. Controleer of je bent aangemeld met actuele host- of beheerdersrechten en vernieuw daarna.</string>
     <string name="cloud_recording_start">Cloudopname starten</string>
     <string name="cloud_recording_stop">Cloudopname stoppen</string>
     <string name="cloud_recording_confirm">Bevestigen</string>

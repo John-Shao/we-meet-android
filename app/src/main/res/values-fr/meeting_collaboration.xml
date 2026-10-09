@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="collaboration_record">Archives de réunion</string>
-    <string name="collaboration_minutes">Comptes rendus IA</string>
+    <string name="collaboration_minutes">Compte rendu IA</string>
     <string name="collaboration_share">Partager</string>
     <string name="collaboration_manage">Collaborateurs</string>
     <string name="collaboration_send">Envoyer dans la conversation</string>

@@ -8,11 +8,11 @@
     <string name="records_retention_text">Nur Text</string>
     <string name="records_retention_unknown">Nicht aufgezeichnet</string>
     <string name="records_skip_back">15 Sekunden zurück</string>
-    <string name="records_skip_forward">15 Sekunden vor</string>
+    <string name="records_skip_forward">15 Sekunden vorspulen</string>
     <string name="records_filters">Filter</string>
     <string name="records_source_filter">Quelle</string>
     <string name="records_filters_done">Filter anwenden</string>
-    <string name="records_reset_filters">Filter löschen</string>
+    <string name="records_reset_filters">Filter zurücksetzen</string>
     <string name="records_clear_search">Suche schließen</string>
     <string name="records_grid_view">Zur Rasteransicht wechseln</string>
     <string name="records_list_view">Zur Listenansicht wechseln</string>

@@ -9,7 +9,7 @@
     <string name="translation_simultaneous">Fortlaufende Übersetzung</string>
     <string name="translation_manual">Beidseitige Sprachübersetzung</string>
     <string name="translation_audio">Übersetzte Stimme erzeugen</string>
-    <string name="translation_text_only">Nur übersetzter Text</string>
+    <string name="translation_text_only">Nur übersetzten Text erzeugen</string>
     <string name="translation_save">Bestätigte Übersetzungen in der Meeting-Aufzeichnung speichern</string>
     <string name="translation_no_save">Übersetzungen nach der Sitzung nicht speichern</string>
     <string name="translation_unknown">Der Vorgang konnte nicht bestätigt werden. Prüfen Sie die ursprüngliche Anfrage, bevor Sie einen weiteren Vorgang ausführen.</string>
@@ -33,7 +33,7 @@
     <string name="translation_candidate">Vorläufige Übersetzung</string>
     <string name="translation_controls">Steuerung</string>
     <string name="translation_starting">Wird gestartet</string>
-    <string name="translation_running">Übersetzung läuft</string>
+    <string name="translation_running">Wird übersetzt</string>
     <string name="translation_stopping">Übersetzung wird beendet</string>
     <string name="translation_stopped">Übersetzung beendet</string>
     <string name="translation_incomplete">Übersetzung unvollständig beendet</string>

@@ -10,6 +10,6 @@
     <string name="video_material_unavailable">Nog geen toegankelijk materiaal</string>
     <string name="video_record_hint">Opname en transcriptie van deze vergadering openen</string>
     <string name="video_summary_pending">Nog geen notulen gegenereerd</string>
-    <string name="video_view_record">Opname bekijken</string>
+    <string name="video_view_record">Vergaderrecord bekijken</string>
     <string name="video_view_summary">Notulen bekijken</string>
 </resources>

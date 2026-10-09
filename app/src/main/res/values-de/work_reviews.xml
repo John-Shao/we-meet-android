@@ -2,7 +2,7 @@
 <resources>
     <string name="work_review_title">Ergebnisprüfung</string>
     <string name="work_review_help">Die Prüfung untersucht ausgewählte Ergebnisse und autorisierte Aufgabenmaterialien. Sie ändert keine Dateien und führt keine Befehle aus. Prüfen Sie die Feststellungen, bevor Sie sie verwenden.</string>
-    <string name="work_review_disabled">Die Prüfung ist nicht aktiviert. Vorhandene autorisierte Einträge bleiben verfügbar.</string>
+    <string name="work_review_disabled">Der Prüfungsdienst ist noch nicht aktiviert. Vorhandene autorisierte Einträge bleiben sichtbar.</string>
     <string name="work_review_empty">Noch keine Prüfungen. Starten Sie eine Prüfung auf der Ergebnisseite am Desktop, nachdem Sie Dateien ausgewählt und synchronisiert haben.</string>
     <string name="work_review_unavailable">Der Zugriff auf die Prüfung konnte nicht bestätigt werden. Frühere Inhalte sind ausgeblendet; aktualisieren Sie, um den Zugriff erneut zu prüfen.</string>
     <string name="work_review_queued">Warten auf Prüfung</string>

@@ -8,7 +8,7 @@
     <string name="video_collapse">Einklappen</string>
     <string name="video_material_loading">Meeting-Material wird geladen…</string>
     <string name="video_material_unavailable">Noch kein zugängliches Material</string>
-    <string name="video_record_hint">Aufnahmen und Transkript dieser Sitzung öffnen</string>
+    <string name="video_record_hint">Aufnahmen und Transkript dieses Meetings öffnen</string>
     <string name="video_summary_pending">Noch keine Zusammenfassung erstellt</string>
     <string name="video_view_record">Aufnahme anzeigen</string>
     <string name="video_view_summary">Zusammenfassung anzeigen</string>

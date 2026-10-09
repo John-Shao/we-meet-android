@@ -14,7 +14,7 @@
     <string name="summary_controls_next">Prochaine mise à jour possible : %1$s</string>
     <string name="summary_controls_operation_error">L\'action n\'a pas pu être confirmée. Actualisez son état avant de réessayer.</string>
     <string name="summary_controls_realtime">Mettre à jour la synthèse en direct</string>
-    <string name="summary_controls_quick">Générer un récapitulatif express</string>
+    <string name="summary_controls_quick">Générer un compte rendu express</string>
     <string name="summary_controls_final">Générer le compte rendu complet</string>
     <string name="summary_controls_all_versions">Voir tous les comptes rendus</string>
     <string name="summary_job_queued">En attente de génération</string>
@@ -24,7 +24,7 @@
     <string name="summary_job_canceled">Génération annulée</string>
     <string name="summary_job_failed">Échec de la génération</string>
     <string name="summary_automation_title">Compte rendu automatique</string>
-    <string name="summary_automation_usage">Lorsqu\'il est activé, l\'IA met à jour la synthèse en direct et génère le récapitulatif express et le compte rendu complet au fur et à mesure que l\'enregistrement est prêt. Cette fonction consomme du quota IA. Vous pouvez arrêter la génération automatique à tout moment.</string>
+    <string name="summary_automation_usage">Lorsqu\'il est activé, l\'IA met à jour la synthèse en direct et génère le compte rendu en version express, puis en version complète au fur et à mesure que l\'enregistrement progresse. Cette fonction consomme du quota IA. Vous pouvez arrêter la génération automatique à tout moment.</string>
     <string name="summary_automation_read_error">L\'état du compte rendu automatique est indisponible. Actualisez pour le vérifier.</string>
     <string name="summary_automation_unknown">Une modification du compte rendu automatique n\'est pas confirmée. Vérifiez la modification d\'origine avant de changer à nouveau ce paramètre.</string>
     <string name="summary_automation_reconcile">Vérifier la demande de compte rendu automatique</string>

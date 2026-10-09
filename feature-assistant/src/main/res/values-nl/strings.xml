@@ -12,7 +12,7 @@
     <string name="assistant_background_return">Tik om terug te keren naar het gesprek</string>
     <string name="assistant_background_stop">Beëindigen</string>
     <string name="assistant_step_connecting">Verbinden…</string>
-    <string name="assistant_step_configuring">AI-gesprek voorbereiden</string>
+    <string name="assistant_step_configuring">AI-gesprek wordt voorbereid</string>
     <string name="assistant_error_network">Netwerkfout. Controleer je verbinding en probeer opnieuw.</string>
     <string name="assistant_error_unknown">Er ging iets mis. Probeer opnieuw.</string>
     <string name="assistant_error_auth_expired">Je sessie is verlopen. Meld je opnieuw aan.</string>
@@ -65,8 +65,8 @@
     <string name="assistant_cd_switch_to_voice">Overschakelen naar spraakgesprek</string>
     <string name="assistant_state_muted">Gedempt</string>
     <string name="assistant_state_unmuted">Microfoon ingeschakeld</string>
-    <string name="assistant_state_video">Videogesprek</string>
-    <string name="assistant_state_voice">Spraakgesprek</string>
+    <string name="assistant_state_video">Video-oproep</string>
+    <string name="assistant_state_voice">Spraakoproep</string>
     <string name="assistant_history_title">Gespreksgeschiedenis</string>
     <string name="assistant_history_subtitle">Bekijk, kopieer en deel je gesprekken</string>
     <string name="assistant_history_you">Ik</string>
@@ -78,7 +78,7 @@
     <string name="assistant_history_copied">Gekopieerd</string>
     <string name="assistant_history_copy_large">Kan niet alle tekst kopiëren. Deel in plaats daarvan het hele gesprek.</string>
     <string name="assistant_history_share">Tekst delen</string>
-    <string name="assistant_history_share_failed">Kan delen niet openen</string>
+    <string name="assistant_history_share_failed">Delen kan niet worden geopend.</string>
     <string name="assistant_history_save">Gesprekstekst op dit apparaat opslaan</string>
     <string name="assistant_history_error">Een deel van de gespreksgeschiedenis kon niet worden opgeslagen of geladen.</string>
     <string name="assistant_history_back">Terug</string>
@@ -101,7 +101,7 @@
     <string name="assistant_background_pause">Invoer pauzeren</string>
     <string name="assistant_background_resume">Invoer hervatten</string>
     <string name="assistant_background_mute">Spraakweergave dempen</string>
-    <string name="assistant_background_unmute">Spraakweergave dempen opheffen</string>
+    <string name="assistant_background_unmute">Spraakweergave hervatten</string>
     <string name="assistant_summary_title">Samenvatting en taken</string>
     <string name="assistant_summary_decisions">Besluiten</string>
     <string name="assistant_summary_todos">Taken op dit apparaat</string>
@@ -113,11 +113,11 @@
     <string name="assistant_summary_too_long">Dit gesprek is te lang voor een volledige samenvatting.</string>
     <string name="assistant_summary_working">Genereren…</string>
     <string name="assistant_summary_generate">Samenvatting en taken genereren</string>
-    <string name="assistant_call_transport">Oproepverbinding</string>
+    <string name="assistant_call_transport">Verbinding</string>
     <string name="assistant_call_transport_aoq">Directe AOQ-verbinding</string>
     <string name="assistant_call_transport_webrtc">Directe WebRTC-clientverbinding</string>
     <string name="assistant_error_aoq_backend">De server ondersteunt AOQ nog niet. Werk de backend bij of schakel over naar WebRTC.</string>
-    <string name="assistant_error_aoq_native">AOQ vereist een ARM Android-proces. Gebruik een ARM-apparaat of installeer de ARM-versie op uw emulator.</string>
+    <string name="assistant_error_aoq_native">AOQ vereist een ARM Android-proces. Gebruik een ARM-apparaat of installeer de ARM-versie op je emulator.</string>
     <string name="assistant_camera_opened">De camera staat nu aan.</string>
     <string name="assistant_camera_closed">De camera staat nu uit.</string>
     <string name="assistant_camera_already_open">De camera staat al aan.</string>

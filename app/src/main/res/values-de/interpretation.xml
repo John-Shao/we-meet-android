@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="interpretation_title">Simultanverdolmetschung</string>
-    <string name="interpretation_description">Wählen Sie eine Hörsprache für dieses Meeting. Hosts des Meetings öffnen oder schließen gemeinsam genutzte Kanäle. Das Verlassen eines Kanals betrifft nur Ihr eigenes Zuhören; der übersetzte Text bleibt vom Original getrennt.</string>
+    <string name="interpretation_description">Wählen Sie eine Hörsprache für dieses Meeting. Manager des Meetingraums öffnen oder schließen gemeinsam genutzte Kanäle. Das Verlassen eines Kanals betrifft nur Ihr eigenes Zuhören; der übersetzte Text bleibt vom Original getrennt.</string>
     <string name="interpretation_guest">Melden Sie sich an, um einen Verdolmetschungskanal zu wählen.</string>
     <string name="interpretation_unavailable">Für dieses Meeting ist die Simultanverdolmetschung nicht verfügbar.</string>
     <string name="interpretation_unknown">Prüfen Sie zuerst die ursprüngliche Anfrage, bevor Sie den Kanal oder das Zuhören ändern.</string>

@@ -8,7 +8,7 @@
     <string name="docs_sort_title">Titel</string>
     <string name="docs_trash">Papierkorb</string>
     <string name="docs_empty_title">Noch keine Dokumente</string>
-    <string name="docs_empty_description">Tippe auf +, um dein erstes Dokument zu erstellen</string>
+    <string name="docs_empty_description">Tippen Sie auf +, um Ihr erstes Dokument zu erstellen</string>
     <string name="docs_empty_favorites_title">Noch keine Favoriten</string>
     <string name="docs_empty_favorites_description">Hefte wichtige Dokumente an, um sie hier zu finden</string>
     <string name="docs_empty_trash_title">Der Papierkorb ist leer</string>
@@ -107,9 +107,9 @@
     <string name="cd_docs_remove_invitation">Einladung zurückziehen</string>
     <string name="docs_share_leave">Dokument verlassen</string>
     <string name="docs_share_leave_title">Dokument verlassen</string>
-    <string name="docs_share_leave_message">Du verlierst den Zugriff, bis dir das Dokument erneut geteilt wird</string>
-    <string name="docs_share_ask_access">Zugriff anfragen</string>
-    <string name="docs_share_ask_sent">Anfrage gesendet — du wirst benachrichtigt, sobald sie genehmigt ist</string>
+    <string name="docs_share_leave_message">Sie verlieren den Zugriff, bis das Dokument erneut für Sie freigegeben wird</string>
+    <string name="docs_share_ask_access">Zugriff anfordern</string>
+    <string name="docs_share_ask_sent">Anfrage gesendet — Sie werden benachrichtigt, sobald sie genehmigt ist</string>
     <string name="docs_role_reader">Ansehen</string>
     <string name="docs_role_commenter">Kommentieren</string>
     <string name="docs_role_editor">Bearbeiten</string>
@@ -124,8 +124,8 @@
     <string name="docs_nav_mine">Meine Dokumente</string>
     <string name="docs_nav_shared">Mit mir geteilt</string>
     <string name="docs_nav_trash">Papierkorb</string>
-    <string name="docs_empty_shared_title">Noch nichts mit dir geteilt</string>
-    <string name="docs_empty_shared_desc">Mit dir geteilte Dokumente erscheinen hier</string>
+    <string name="docs_empty_shared_title">Noch nichts mit Ihnen geteilt</string>
+    <string name="docs_empty_shared_desc">Mit Ihnen geteilte Dokumente erscheinen hier</string>
     <string name="cd_docs_nav">Navigation öffnen</string>
     <string name="docs_version_preview">Version anzeigen</string>
     <string name="docs_children">Unterseiten</string>
@@ -172,7 +172,7 @@
     </plurals>
     <string name="docs_share_to_chat">Im Chat teilen</string>
     <string name="docs_share_to_chat_help">Sendet eine Dokumentkarte und versucht, Chatmitgliedern Lesezugriff zu geben.</string>
-    <string name="docs_link_share">Link teilen</string>
+    <string name="docs_link_share">Link-Freigabe</string>
     <string name="docs_save_copy_link">Speichern und Link kopieren</string>
     <string name="docs_share_picker_help">Nach der Bestätigung erhalten die ausgewählten Personen Zugriff. Eine E-Mail oder das Annehmen der Einladung ist nicht erforderlich.</string>
     <string name="docs_share_batch_result">Hinzugefügt: %1$d · Bereits enthalten: %2$d</string>

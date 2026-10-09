@@ -75,7 +75,7 @@
     <string name="records_search">Titel durchsuchen</string>
     <string name="records_search_action">Suchen</string>
     <string name="records_ongoing">Läuft</string>
-    <string name="records_ongoing_unavailable">Die laufende Aufnahme konnte nicht gelesen werden. Die Aufzeichnung läuft weiter; versuchen Sie es erneut, um sie hier zu sehen.</string>
+    <string name="records_ongoing_unavailable">Die laufende Aufnahme konnte nicht gelesen werden. Die Aufnahme läuft weiter; versuchen Sie es erneut, um sie hier zu sehen.</string>
     <string name="records_archive">Verlauf</string>
     <string name="records_owner_unknown">Unbekannt</string>
     <string name="records_previous">Zurück</string>

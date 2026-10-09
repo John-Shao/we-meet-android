@@ -10,7 +10,7 @@
     <string name="translation_manual">Traduction vocale bidirectionnelle</string>
     <string name="translation_audio">Générer la voix traduite</string>
     <string name="translation_text_only">Texte traduit uniquement</string>
-    <string name="translation_save">Enregistrer les traductions confirmées dans le compte rendu de la réunion</string>
+    <string name="translation_save">Enregistrer les traductions confirmées dans les archives de la réunion</string>
     <string name="translation_no_save">Ne pas enregistrer les traductions après la session</string>
     <string name="translation_unknown">L\'opération n\'a pas pu être confirmée. Vérifiez la demande d\'origine avant toute autre action.</string>
     <string name="translation_start">Démarrer la traduction</string>
@@ -27,7 +27,7 @@
     <string name="translation_speak_zh">Commencer à parler chinois</string>
     <string name="translation_speak_en">Commencer à parler anglais</string>
     <string name="translation_end_turn">Terminer cette prise de parole</string>
-    <string name="translation_open_archive">Ouvrir le compte rendu de réunion associé</string>
+    <string name="translation_open_archive">Ouvrir les archives de la réunion associée</string>
     <string name="translation_text">Texte traduit · séparé des originaux</string>
     <string name="translation_confirmed">Traduction confirmée</string>
     <string name="translation_candidate">Traduction provisoire</string>

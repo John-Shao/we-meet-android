@@ -15,7 +15,7 @@
     <string name="bilingual_pair">Chinees ⇄ Engels</string>
     <string name="bilingual_hint">Tik op Start en spreek daarna om de beurt. De taal wordt automatisch herkend. Tijdens het afspelen wordt de spraakinvoer gepauzeerd; zet het voorlezen uit om continu te luisteren.</string>
     <string name="bilingual_sound">Vertalingen voorlezen</string>
-    <string name="bilingual_permission">Microfoontoestemming is vereist. Als je geen melding meer krijgt, schakel deze dan in via de systeeminstellingen.</string>
+    <string name="bilingual_permission">Microfoontoestemming is vereist. Als je geen toestemmingsvraag meer krijgt, schakel deze dan in via de systeeminstellingen.</string>
     <string name="bilingual_unknown">Taal niet herkend. Spreek %1$s of %2$s.</string>
     <string name="bilingual_idle">Klaar wanneer je wilt</string>
     <string name="bilingual_connecting">Verbinden…</string>

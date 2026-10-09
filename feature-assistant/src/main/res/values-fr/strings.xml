@@ -20,7 +20,7 @@
     <string name="assistant_error_server">Erreur du serveur. Veuillez réessayer plus tard.</string>
 
     <!-- 通话页 -->
-    <string name="assistant_title">Assistant AI</string>
+    <string name="assistant_title">Assistant IA</string>
     <string name="assistant_ai_generated">Généré par AI</string>
     <string name="assistant_need_mic_camera">Les autorisations du microphone et de la caméra sont requises</string>
     <string name="assistant_need_camera">L\'autorisation de la caméra est requise</string>
@@ -66,7 +66,7 @@
     <string name="assistant_state_muted">Micro coupé</string>
     <string name="assistant_state_unmuted">Micro activé</string>
     <string name="assistant_state_video">Appel vidéo</string>
-    <string name="assistant_state_voice">Appel audio</string>
+    <string name="assistant_state_voice">Appel vocal</string>
     <string name="assistant_history_title">Historique des conversations</string>
     <string name="assistant_history_subtitle">Consultez, copiez et partagez vos conversations</string>
     <string name="assistant_history_you">Vous</string>
@@ -113,7 +113,7 @@
     <string name="assistant_summary_too_long">Cette conversation est trop longue pour être résumée intégralement.</string>
     <string name="assistant_summary_working">Génération…</string>
     <string name="assistant_summary_generate">Générer le résumé et les tâches</string>
-    <string name="assistant_call_transport">Connexion d’appel</string>
+    <string name="assistant_call_transport">Mode de connexion</string>
     <string name="assistant_call_transport_aoq">Connexion directe AOQ</string>
     <string name="assistant_call_transport_webrtc">Connexion directe du client WebRTC</string>
     <string name="assistant_error_aoq_backend">Le serveur ne prend pas encore en charge AOQ. Mettez le backend à jour ou passez à WebRTC.</string>
@@ -130,8 +130,8 @@
     <string name="assistant_call_invalid_tool">Demande d\'appel non valide. Aucune action n\'a été effectuée.</string>
     <string name="assistant_camera_cancelled">La demande de caméra a été annulée.</string>
     <string name="assistant_camera_feedback_failed">La confirmation vocale est indisponible.</string>
-    <string name="assistant_camera_result_unconfirmed">L\'opération sur la caméra n\'est pas confirmée. Vérifiez son état ou réessayez avec le bouton de la caméra.</string>
-    <string name="assistant_camera_state_sync_failed">La synchronisation de l\'état de la caméra a échoué. Réessayez la commande vocale ou utilisez le bouton de la caméra.</string>
-    <string name="assistant_camera_working">Changement de caméra…</string>
+    <string name="assistant_camera_result_unconfirmed">L\'opération sur la caméra n\'a pas été confirmée. Vérifiez son état ou réessayez avec le bouton de la caméra.</string>
+    <string name="assistant_camera_state_sync_failed">La synchronisation de l\'état de la caméra a échoué. Relancez la commande vocale ou utilisez le bouton de la caméra.</string>
+    <string name="assistant_camera_working">Commutation de la caméra…</string>
     <string name="assistant_camera_video_unavailable">La vidéo est indisponible sur cet appareil avec WebRTC. Utilisez AOQ ou un téléphone compatible.</string>
 </resources>

@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="online_capture_title">AI-vergaderopname</string>
-    <string name="online_capture_description">Zet de spraak van deze vergadering om in tekst en sla die op als vergaderopname voor de notulen. Cloudvideo-opname wordt apart bediend.</string>
+    <string name="online_capture_description">Zet de spraak van deze vergadering om in tekst en sla die op in het vergaderrecord voor de notulen. Cloudvideo-opname wordt apart bediend.</string>
     <string name="online_capture_guest">Meld je aan met een account van een vergaderbeheerder om AI-opname te bedienen.</string>
     <string name="online_capture_unavailable">De bediening van AI-opname is niet beschikbaar voor deze vergadering.</string>
     <string name="online_capture_coverage">De levering van de transcriptie bevestigt geen volledige audiodekking. Controleer op ontbrekende spraak voordat je de notulen gebruikt.</string>
-    <string name="online_capture_open">Deze vergaderopname openen</string>
+    <string name="online_capture_open">Dit vergaderrecord openen</string>
     <string name="online_capture_unknown">Het resultaat van de bediening is onbekend. Controleer de oorspronkelijke aanvraag voordat je iets anders doet.</string>
     <string name="online_capture_start">AI-opname starten</string>
     <string name="online_capture_stop">AI-opname stoppen</string>
     <string name="online_capture_manager">Alleen huidige vergaderbeheerders kunnen AI-opname starten of stoppen.</string>
     <string name="online_capture_error">De bewerking kon niet worden bevestigd. Vernieuw of controleer de oorspronkelijke aanvraag.</string>
-    <string name="online_capture_start_effect">Hiermee start de spraakverwerking en wordt de transcriptie in deze vergaderopname opgeslagen. De verwerking kan AI-gebruik kosten. Deelnemers zien de opnamestatus.</string>
+    <string name="online_capture_start_effect">Hiermee start de spraakverwerking en wordt de transcriptie in dit vergaderrecord opgeslagen. De verwerking kan AI-gebruik kosten. Deelnemers zien de opnamestatus.</string>
     <string name="online_capture_stop_effect">Hiermee stopt het verzamelen van spraak voor de opname en wordt gewacht op de laatst ontvangen tekst. De vergadering gaat door.</string>
     <string name="online_capture_confirm">Bevestigen</string>
     <string name="online_capture_unknown_state">Status niet bevestigd</string>

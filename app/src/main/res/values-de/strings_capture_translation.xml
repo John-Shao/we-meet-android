@@ -15,17 +15,17 @@
     <string name="capture_translation_unmute">Stummschaltung der Übersetzung aufheben</string>
     <string name="capture_translation_speak">Beginnen Sie, %1$s zu sprechen</string>
     <string name="capture_translation_end_turn">Beitrag beenden und übersetzen</string>
-    <string name="capture_translation_pending">Ein früherer Vorgang muss geprüft werden. Die Prüfung verbindet das Mikrofon nie erneut.</string>
+    <string name="capture_translation_pending">Ein früherer Vorgang muss geprüft werden. Beim Prüfen wird das Mikrofon nicht erneut verbunden.</string>
     <string name="capture_translation_recover">Früheren Vorgang prüfen</string>
     <string name="capture_translation_error">Das Übersetzungsergebnis konnte nicht bestätigt werden. Prüfen Sie ausstehende Vorgänge, bevor Sie fortfahren.</string>
     <string name="capture_translation_storage_error">Ausstehende Vorgänge konnten nicht geladen oder gespeichert werden. Die Übersetzung ist nicht verfügbar.</string>
-    <string name="capture_translation_detached">Zu dieser Aufnahme läuft eine Übersetzung, aber diese Seite ist getrennt. Beenden Sie sie, bevor Sie erneut starten.</string>
+    <string name="capture_translation_detached">Zu dieser Aufnahme läuft eine Übersetzung, aber diese Seite ist nicht verbunden. Beenden Sie die Übersetzung, bevor Sie erneut starten.</string>
     <string name="capture_translation_connecting">Übersetzung wird verbunden…</string>
     <string name="capture_translation_ready">Übersetzung bereit</string>
-    <string name="capture_translation_listening">Wird empfangen…</string>
+    <string name="capture_translation_listening">Sprache wird empfangen…</string>
     <string name="capture_translation_awaiting">Übersetzung wird erstellt…</string>
     <string name="capture_translation_finishing">Übersetzung wird beendet…</string>
     <string name="capture_translation_stopped">Übersetzung beendet</string>
     <string name="capture_translation_interrupted">Übersetzung unterbrochen; die Originalaufnahme ist nicht betroffen</string>
-    <string name="capture_translation_unknown">Getrennt; das Übersetzungsergebnis muss geprüft werden</string>
+    <string name="capture_translation_unknown">Verbindung getrennt; das Übersetzungsergebnis muss geprüft werden</string>
 </resources>

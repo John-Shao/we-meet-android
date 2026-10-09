@@ -15,7 +15,7 @@
     <string name="capture_direct_asr_save_failed">Le texte n\'est pas encore enregistré. Reconnectez-vous et réessayez l\'enregistrement.</string>
     <string name="capture_direct_asr_gap">La transcription ne couvre que l\'audio pendant son activation. Pour obtenir le texte complet, utilisez la transcription de l\'enregistrement entier une fois celui-ci terminé.</string>
     <string name="bilingual_transport">Mode de connexion</string>
-    <string name="bilingual_transport_aoq">Connexion directe du client AOQ</string>
+    <string name="bilingual_transport_aoq">Connexion directe AOQ</string>
     <string name="bilingual_transport_webrtc">Connexion directe du client WebRTC</string>
     <string name="app_name">We Meet</string>
 
@@ -65,13 +65,13 @@
 
     <!-- Preview screen -->
     <string name="preview_start_meeting">Démarrer la réunion</string>
-    <string name="preview_join_meeting">Rejoindre la réunion</string>
+    <string name="preview_join_meeting">Rejoindre une réunion</string>
     <string name="preview_mic">Microphone</string>
     <string name="preview_camera">Caméra</string>
-    <string name="preview_meeting_id_hint">ID de réunion</string>
+    <string name="preview_meeting_id_hint">N° de réunion</string>
     <string name="preview_speaker">Haut-parleur</string>
     <string name="preview_earpiece">Écouteur</string>
-    <string name="preview_mute">Muet</string>
+    <string name="preview_mute">Couper le micro</string>
 
     <!-- Room screen -->
     <string name="room_title">En réunion</string>
@@ -209,11 +209,11 @@
     <string name="meeting_detail_title">Détails de la réunion</string>
     <string name="meeting_detail_tab_info">Infos</string>
     <string name="meeting_detail_tab_summary">Compte rendu</string>
-    <string name="meeting_detail_tab_action_items">Actions</string>
+    <string name="meeting_detail_tab_action_items">Tâches</string>
     <string name="meeting_detail_tab_transcript">Transcription</string>
     <string name="meeting_detail_info_name">Nom</string>
     <string name="meeting_detail_info_time">Heure</string>
-    <string name="meeting_detail_info_code">ID de réunion</string>
+    <string name="meeting_detail_info_code">N° de réunion</string>
     <string name="meeting_detail_info_owner">Propriétaire</string>
     <string name="meeting_detail_info_participants">Participants</string>
     <string name="meeting_detail_info_ongoing">En cours</string>
@@ -314,7 +314,7 @@
     <string name="task_reminder_three_days_0900">3 jours avant à 09:00</string>
     <string name="task_date_not_set">Non définie</string>
     <string name="task_clear_date">Effacer la date</string>
-    <string name="task_belongs_to_list">Liste associée</string>
+    <string name="task_belongs_to_list">Liste de tâches</string>
     <string name="task_belongs_to_group">Groupe associé</string>
     <string name="task_placement">Organisation</string>
     <string name="task_collaboration">Collaboration</string>
@@ -457,7 +457,7 @@
     <string name="task_delete_confirm_single">Supprimer « %1$s » ? Cette action est irréversible.</string>
     <string name="task_delete_confirm_with_subtasks">Supprimer « %1$s » ? Ses sous-tâches seront conservées et deviendront des tâches indépendantes.</string>
     <string name="task_search_filter_me">%1$s : moi</string>
-    <string name="task_search_open">En cours</string>
+    <string name="task_search_open">Ouvertes</string>
     <string name="task_search_all_due">Toutes les échéances</string>
     <string name="task_search_this_week">Cette semaine</string>
     <string name="task_search_overdue">En retard</string>
@@ -491,7 +491,7 @@
     <string name="member_message_failed">Impossible de démarrer la conversation</string>
 
     <!-- Calendar -->
-    <string name="calendar_today">Aujourd\'hui</string>
+    <string name="calendar_today">Aujourd’hui</string>
     <string name="calendar_has_events">Événements présents</string>
     <string name="calendar_no_events">Aucun événement ce jour-là</string>
     <string name="calendar_all_day">Journée entière</string>
@@ -542,7 +542,7 @@
     <string name="reminder_tomorrow">Programme de demain</string>
     <string name="reminder_now">Maintenant</string>
     <string name="reminder_in_minutes">dans %1$d min</string>
-    <string name="reminder_join">Rejoindre la réunion</string>
+    <string name="reminder_join">Rejoindre une réunion</string>
     <string name="reminder_empty">Aucun événement aujourd\'hui ni demain</string>
     <!-- P8: calendar settings page -->
     <string name="calendar_settings_title">Paramètres du calendrier</string>
@@ -612,7 +612,7 @@
     <string name="event_rsvp_tentative">Peut-être</string>
     <string name="event_rsvp_decline">Refuser</string>
     <string name="event_rsvp_failed">Impossible d\'enregistrer votre réponse</string>
-    <string name="event_join_meeting">Rejoindre la réunion</string>
+    <string name="event_join_meeting">Rejoindre une réunion</string>
     <string name="event_cancelled_flag">Annulé</string>
     <string name="event_load_error">Échec du chargement de l\'événement</string>
 
@@ -766,7 +766,7 @@
     <!-- P9 会议室(实体会议室;LiveKit 视频房间用 room_* 前缀,勿混) -->
     <string name="meeting_room_field_label">Salle de réunion</string>
     <string name="meeting_room_add">Ajouter une salle</string>
-    <string name="meeting_room_change">Changer</string>
+    <string name="meeting_room_change">Modifier</string>
     <string name="meeting_room_none">Aucune salle réservée</string>
     <string name="meeting_room_all_day_unsupported">Les événements sur la journée ne peuvent pas réserver de salle</string>
     <string name="meeting_room_detail_label">Salle de réunion</string>
@@ -791,7 +791,7 @@
     <string name="meeting_room_load_error">Impossible de charger les salles</string>
     <string name="meeting_room_retry">Réessayer</string>
     <!-- 视频会议可选(对标飞书「移除视频会议」) -->
-    <string name="calendar_video_meeting">Visioconférence</string>
+    <string name="calendar_video_meeting">Réunion vidéo</string>
     <string name="calendar_video_meeting_on">Une visioconférence sera créée avec cet événement</string>
     <string name="calendar_video_meeting_off">Pas de visioconférence — simple entrée d’agenda</string>
     <!-- M1.5 会议室时间轴 -->
@@ -834,7 +834,7 @@
     <string name="calendar_settings_working_hours_hint">Réglage par pas de 30 minutes. La durée doit être comprise entre 6 et 12 heures.</string>
     <string name="calendar_settings_calendar_time_range">Plage horaire du calendrier</string>
     <string name="calendar_settings_meeting_room_time_range">Plage horaire des salles de réunion</string>
-    <string name="calendar_working_time">Heures de travail</string>
+    <string name="calendar_working_time">Horaires de travail</string>
     <string name="calendar_full_day_time">Journée entière</string>
     <plurals name="calendar_outside_working_hours">
         <item quantity="one">%1$d événement hors des heures de travail</item>
@@ -882,7 +882,7 @@
     <string name="room_badge_coming_soon">Bientôt</string>
     <string name="subtitle_speaker_prefix">%1$s : </string>
     <string name="room_end_meeting_confirm">Mettre fin à la réunion déconnectera tout le monde. Continuer ?</string>
-    <string name="invite_share_to_chat">Partager dans le chat</string>
+    <string name="invite_share_to_chat">Partager dans un chat</string>
     <string name="history_today_prefix">Aujourd’hui</string>
     <string name="external_contacts_title">Contacts externes</string>
     <string name="external_contacts_tag">Externe</string>
@@ -949,7 +949,7 @@
     <string name="room_invite_state_rejected">Refusé</string>
     <string name="room_invite_state_busy">Occupé</string>
     <string name="room_invite_state_unreachable">Injoignable</string>
-    <string name="room_invite_state_timeout">Aucune réponse</string>
+    <string name="room_invite_state_timeout">Pas de réponse</string>
     <string name="room_invite_state_failed">Échec de l’appel</string>
     <string name="room_meeting_code_label">Code de réunion : %1$s</string>
     <string name="contacts_my_groups">Mes groupes</string>
@@ -1107,7 +1107,7 @@
     <string name="minutes_recorded_at">Heure de la réunion : %1$s</string>
     <string name="minutes_generated_at">Généré le : %1$s</string>
     <string name="minutes_empty">Aucun compte rendu intelligent pour le moment</string>
-    <string name="minutes_empty_hint">Essayez une autre catégorie ou un autre terme de recherche, ou générez un compte rendu depuis un enregistrement de réunion.</string>
+    <string name="minutes_empty_hint">Essayez une autre catégorie ou un autre terme de recherche, ou générez un compte rendu depuis les archives de réunion.</string>
     <string name="minutes_overview">Aperçu</string>
     <string name="minutes_ask">Demander à l\'IA</string>
     <string name="minutes_manage">Gérer les comptes rendus</string>
@@ -1119,7 +1119,7 @@
     <string name="room_ai_prompt_actions">Liste les tâches et leurs responsables</string>
     <string name="meeting_ai_search">Rechercher des réunions avec l\'IA</string>
     <string name="cd_records_ai_search">Rechercher des réunions avec l\'IA</string>
-    <string name="cd_records_search">Rechercher des titres</string>
+    <string name="cd_records_search">Rechercher un titre</string>
     <string name="cd_records_clear_search">Effacer la recherche</string>
     <string name="cd_records_more">Plus d\'actions</string>
     <string name="cd_records_list_view">Passer à la vue en liste</string>
@@ -1127,7 +1127,7 @@
     <string name="cd_records_skip_back">Reculer de 15 secondes</string>
     <string name="cd_records_skip_forward">Avancer de 15 secondes</string>
     <string name="cd_records_play">Lire</string>
-    <string name="cd_records_pause">Suspendre la lecture</string>
+    <string name="cd_records_pause">Suspendre</string>
     <string name="cd_records_close">Fermer</string>
     <string name="work_title">Travail</string>
     <string name="work_refresh">Actualiser</string>

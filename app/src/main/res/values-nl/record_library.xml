@@ -20,7 +20,7 @@
     <string name="records_start_recording">Opnemen</string>
     <string name="records_upload">Importeren</string>
     <string name="record_upload_title">Import bevestigen</string>
-    <string name="record_upload_hint">Kies een audio- of videobestand van maximaal %1$d MB. Na de import wordt de transcriptie voortgezet.</string>
+    <string name="record_upload_hint">Kies een audio- of videobestand van maximaal %1$d MB. Na de import wordt er automatisch getranscribeerd.</string>
     <string name="record_upload_choose">Bestand kiezen</string>
     <string name="record_upload_advanced">Herkenning verbeteren (optioneel)</string>
     <string name="record_upload_context">Vergadercontext (maximaal 400 tekens)</string>
@@ -31,7 +31,7 @@
     <string name="record_upload_cancel">Upload annuleren</string>
     <string name="record_upload_cancelled">Upload geannuleerd. Al verzonden onderdelen blijven bewaard, dus als je opnieuw start, gaat het daar verder.</string>
     <string name="record_upload_wait">Importeren… Houd dit scherm open tot de import is voltooid.</string>
-    <string name="record_upload_confirming">Bytes verzonden. Wachten op het importresultaat…</string>
+    <string name="record_upload_confirming">Bestand verzonden. Wachten op het importresultaat…</string>
     <string name="record_upload_diarization">Sprekers onderscheiden</string>
     <string name="record_upload_diarization_hint">Voor opnamen met meerdere sprekers. Stemmen worden automatisch gescheiden; namen kun je na de transcriptie toewijzen.</string>
     <string name="record_upload_stopped">Het uploadverzoek is gestopt. De server heeft het bestand mogelijk ontvangen. Probeer het opnieuw met hetzelfde bestand en dezelfde instellingen om het resultaat te bevestigen.</string>

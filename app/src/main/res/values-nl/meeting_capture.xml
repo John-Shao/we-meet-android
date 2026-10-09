@@ -20,7 +20,7 @@
     <string name="capture_background_hint">Je kunt deze pagina verlaten of je scherm vergrendelen. Pauzeer via de opnamemelding.</string>
     <string name="capture_background_without_notifications">De opname gaat door als je deze pagina verlaat of je scherm vergrendelt. Meldingen staan uit; kom hier terug om te pauzeren of af te ronden.</string>
     <string name="capture_interrupted_hint">Je opgeslagen audio blijft bewaard. Hervat de opname, of rond af en sla de beschikbare audio op.</string>
-    <string name="capture_intro">Neem een fysieke vergadering of een interview op. Je vindt de opgeslagen audio terug in de vergaderopnamen.</string>
+    <string name="capture_intro">Neem een fysieke vergadering of een interview op. Je vindt de opgeslagen audio terug in de vergaderrecords.</string>
     <string name="capture_permission_error">De opname kon niet starten. Geef toegang tot de microfoon, beëindig een lopende vergadering en probeer het opnieuw.</string>
     <string name="capture_operation_error">Deze actie kon niet worden bevestigd. Je lokale herstelgegevens blijven bewaard. Probeer opnieuw om de status te controleren.</string>
     <string name="capture_start">Opname starten</string>
@@ -30,7 +30,7 @@
     <string name="capture_saved_hint">Audio is opgeslagen. Deze opname wordt niet automatisch hervat.</string>
     <string name="capture_pending_count">Wacht op upload: %1$d KB</string>
     <string name="capture_retry_uploads">Upload opnieuw proberen</string>
-    <string name="capture_open_record">Vergaderopname openen</string>
+    <string name="capture_open_record">Vergaderrecord openen</string>
     <string name="capture_finish_hint">Stop de opname en sla de audio op. Als een upload mislukt, blijft de lokale audio beschikbaar om het opnieuw te proberen.</string>
     <string name="capture_finish_confirm">Beëindigen en opslaan</string>
     <string name="capture_keep_recording">Annuleren</string>

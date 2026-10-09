@@ -3,7 +3,7 @@
     <string name="upload_translation_description">Vertaal de gecorrigeerde volledige transcriptie. Lezers met toegang tot de originele tekst kunnen de vertalingen bekijken. Het genereren kan AI-gebruik met zich meebrengen; opnieuw proberen gebeurt handmatig.</string>
     <string name="upload_translation_generate">Volledige transcriptie vertalen</string>
     <string name="upload_translation_regenerate">Opnieuw vertalen</string>
-    <string name="upload_translation_check">Vorig verzoek controleren</string>
+    <string name="upload_translation_check">Eerdere aanvraag controleren</string>
     <string name="upload_translation_empty">Geen vertaling in deze taal.</string>
     <string name="upload_translation_stale">Het origineel is gewijzigd. Deze vertaling gebruikt een oudere versie; vertaal opnieuw voordat je exporteert.</string>
     <string name="upload_translation_uncertain">Het resultaat is onbekend. Controleer hetzelfde verzoek voordat je een nieuwe vertaling start.</string>

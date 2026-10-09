@@ -9,7 +9,7 @@
     <string name="record_import_invalid">Bestandsformaat of bestandsgrootte wordt niet ondersteund. Kies een ander bestand.</string>
     <string name="record_import_size_unknown">Grootte onbekend</string>
     <string name="record_import_pending">Wachten op transcriptie</string>
-    <string name="record_import_processing">Transcriberen</string>
+    <string name="record_import_processing">Bezig met transcriberen</string>
     <string name="record_import_ready">Transcriptie voltooid</string>
     <string name="recording_detail">Opnamedetails</string>
 </resources>

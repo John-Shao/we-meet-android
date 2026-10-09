@@ -112,7 +112,7 @@
     <string name="docs_share_ask_sent">Demande envoyée — vous serez notifié dès son approbation</string>
     <string name="docs_role_reader">Lecture</string>
     <string name="docs_role_commenter">Commentaire</string>
-    <string name="docs_role_editor">Édition</string>
+    <string name="docs_role_editor">Modification</string>
     <string name="docs_role_administrator">Administrateur</string>
     <string name="docs_role_owner">Propriétaire</string>
     <string name="docs_reach_restricted">Utilisateurs autorisés uniquement</string>

@@ -32,7 +32,7 @@
     <string name="im_time_yesterday">Gisteren</string>
 
     <string name="im_input_placeholder">Typ een bericht…</string>
-    <string name="im_input_send">Versturen</string>
+    <string name="im_input_send">Verzenden</string>
     <string name="im_attach_image">Afbeelding versturen</string>
     <string name="im_attach_file">Bestand versturen</string>
     <string name="im_sending_image">Afbeelding wordt verstuurd…</string>
@@ -96,7 +96,7 @@
     <string name="im_call_mic_on">Microfoon aan</string>
     <string name="im_call_mic_off">Gedempt</string>
     <string name="im_call_speaker">Luidspreker</string>
-    <string name="im_call_earpiece">Oortje</string>
+    <string name="im_call_earpiece">Oortelefoon</string>
     <string name="im_call_hangup">Ophangen</string>
     <string name="im_call_camera_on">Camera aan</string>
     <string name="im_call_camera_off">Camera uit</string>
@@ -190,7 +190,7 @@
     <string name="im_action_forward_merged">Als gesprek doorsturen</string>
     <string name="im_action_forward_one_by_one">Eén voor één doorsturen</string>
     <string name="im_forward_to">Doorsturen naar</string>
-    <string name="im_forward_multi">Meervoudige selectie</string>
+    <string name="im_forward_multi">Meerdere selecteren</string>
     <string name="im_forward_new_group">Groep maken en doorsturen</string>
     <string name="im_forward_recent">Recente gesprekken</string>
     <string name="im_forward_send">Verzenden</string>
@@ -429,17 +429,17 @@ Limieten: 100 verzoeken per minuut en 5 per seconde per bot, hoofdteksten tot 20
     <string name="im_search_ai_empty_body">De AI-service gaf een leeg antwoord. Probeer het opnieuw.</string>
     <string name="im_search_ai_server_error">De AI-service is mislukt. Probeer het opnieuw.</string>
     <string name="im_doc_card_access">Chatmachtigingen</string>
-    <string name="im_doc_access_reader">Lezen</string>
+    <string name="im_doc_access_reader">Kan lezen</string>
     <string name="im_doc_access_commenter">Reageren</string>
-    <string name="im_doc_access_editor">Bewerken</string>
+    <string name="im_doc_access_editor">Kan bewerken</string>
     <string name="im_doc_access_help">Wijzig de toegang voor huidige chatleden. Hogere rechten uit andere chats, links en handmatige toekenningen blijven behouden, ook bij oudere kaarten.</string>
-    <string name="im_doc_access_denied">U kunt de machtigingen van dit document niet beheren.</string>
+    <string name="im_doc_access_denied">Je kunt de machtigingen van dit document niet beheren.</string>
     <string name="im_doc_access_failed">Toegang kon niet worden bevestigd. Probeer opnieuw.</string>
     <string name="im_doc_access_saved">Machtigingen bijgewerkt</string>
     <string name="im_doc_access_retry">Opnieuw proberen</string>
     <string name="im_doc_access_save">Opslaan</string>
     <string name="im_doc_access_close">Sluiten</string>
-    <string name="im_search_meeting_ai">Vraag over vergaderingen</string>
+    <string name="im_search_meeting_ai">Vraag het aan de vergader-AI</string>
     <string name="im_search_ai_scope_all">Alle toegankelijke inhoud</string>
     <string name="im_search_ai_scope_meetings">Vergaderingen en opnamen</string>
     <string name="im_search_ai_date_from">Vanaf (optioneel)</string>

@@ -94,13 +94,13 @@
     <string name="im_call_end_failed">Échec de l\'appel, veuillez réessayer</string>
     <string name="im_call_busy_local">Vous êtes déjà en communication</string>
     <string name="im_call_mic_on">Micro activé</string>
-    <string name="im_call_mic_off">Muet</string>
+    <string name="im_call_mic_off">Micro coupé</string>
     <string name="im_call_speaker">Haut-parleur</string>
     <string name="im_call_earpiece">Écouteur</string>
     <string name="im_call_hangup">Raccrocher</string>
     <string name="im_call_camera_on">Caméra activée</string>
     <string name="im_call_camera_off">Caméra coupée</string>
-    <string name="im_call_flip">Basculer</string>
+    <string name="im_call_flip">Retourner</string>
     <string name="im_calllog_voice">Appel vocal</string>
     <string name="im_calllog_video">Appel vidéo</string>
     <string name="im_phone_viewed_by_peer">On a consulté votre numéro</string>
@@ -218,7 +218,7 @@
     <string name="im_call_invite_rejected">Refusé</string>
     <string name="im_call_invite_busy">Occupé</string>
     <string name="im_call_invite_unreachable">Hors ligne</string>
-    <string name="im_call_invite_timeout">Sans réponse</string>
+    <string name="im_call_invite_timeout">Pas de réponse</string>
     <string name="im_call_invite_failed">Invitation échouée</string>
     <string name="im_meet_invite_room_name">Appel de groupe de %1$s</string>
     <!-- P4.1 group voice call -->
@@ -305,7 +305,7 @@
     <string name="im_preview_meeting">[Réunion]</string>
     <string name="im_meeting_card_ongoing">En cours</string>
     <string name="im_meeting_card_no">N° de réunion %1$s</string>
-    <string name="im_meeting_card_join">Rejoindre la réunion</string>
+    <string name="im_meeting_card_join">Rejoindre une réunion</string>
     <string name="im_doc_picker_title">Envoyer un document</string>
     <string name="im_doc_picker_search">Rechercher des documents</string>
     <string name="im_doc_picker_selected">Sélectionné : %1$d</string>

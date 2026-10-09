@@ -3,7 +3,7 @@
     <string name="upload_translation_description">Übersetzt das korrigierte vollständige Transkript. Personen mit Zugriff auf den Originaltext können die Übersetzungen sehen. Die Erstellung kann KI-Kontingent verbrauchen; Wiederholungen erfolgen manuell.</string>
     <string name="upload_translation_generate">Gesamtes Transkript übersetzen</string>
     <string name="upload_translation_regenerate">Erneut übersetzen</string>
-    <string name="upload_translation_check">Letzte Anfrage prüfen</string>
+    <string name="upload_translation_check">Frühere Anfrage prüfen</string>
     <string name="upload_translation_empty">Keine Übersetzung in dieser Sprache.</string>
     <string name="upload_translation_stale">Das Original wurde geändert. Diese Übersetzung basiert auf einer älteren Version; übersetzen Sie vor dem Export erneut.</string>
     <string name="upload_translation_uncertain">Das Ergebnis ist unbekannt. Prüfen Sie dieselbe Anfrage, bevor Sie eine weitere Übersetzung starten.</string>

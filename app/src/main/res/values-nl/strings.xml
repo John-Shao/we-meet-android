@@ -15,8 +15,8 @@
     <string name="capture_direct_asr_save_failed">De tekst wacht op verzending. Herstel de verbinding en probeer het opslaan opnieuw.</string>
     <string name="capture_direct_asr_gap">De transcriptie dekt alleen de audio tijdens het inschakelen. Gebruik voor de volledige tekst de transcriptie van de hele opname nadat de opname is beëindigd.</string>
     <string name="bilingual_transport">Verbinding</string>
-    <string name="bilingual_transport_aoq">AOQ-directverbinding</string>
-    <string name="bilingual_transport_webrtc">WebRTC-client direct</string>
+    <string name="bilingual_transport_aoq">Directe AOQ-verbinding</string>
+    <string name="bilingual_transport_webrtc">Directe WebRTC-clientverbinding</string>
     <string name="app_name">We Meet</string>
 
     <!-- Login screen -->
@@ -65,7 +65,7 @@
 
     <!-- Preview screen -->
     <string name="preview_start_meeting">Vergadering starten</string>
-    <string name="preview_join_meeting">Vergadering deelnemen</string>
+    <string name="preview_join_meeting">Deelnemen aan vergadering</string>
     <string name="preview_mic">Microfoon</string>
     <string name="preview_camera">Camera</string>
     <string name="preview_meeting_id_hint">Vergader-ID</string>
@@ -113,7 +113,7 @@
     <string name="room_participant_me"> (Ik)</string>
     <string name="room_permission_required">Camera- en microfoontoestemming zijn vereist om deel te nemen.</string>
     <string name="room_no_video">Geen video</string>
-    <string name="room_pin_participant">Vastpinnen</string>
+    <string name="room_pin_participant">Vastzetten</string>
     <string name="room_unpin_participant">Losmaken</string>
     <string name="room_host_ended_title">Host heeft de vergadering beëindigd</string>
     <string name="room_host_ended_ack">OK</string>
@@ -198,7 +198,7 @@
     <string name="room_ai_empty_hint">Vraag de AI iets over wat in deze vergadering is gezegd.</string>
     <string name="room_ai_thinking">Aan het denken…</string>
     <string name="room_ai_input_hint">Vraag de AI…</string>
-    <string name="room_ai_send">Versturen</string>
+    <string name="room_ai_send">Verzenden</string>
     <string name="history_delete_confirm_title">Vergadering verwijderen?</string>
     <string name="history_delete_confirm_text">„%1$s” uit je lijst verwijderen. Als je de host bent, wordt het ook voor anderen verwijderd.</string>
     <string name="history_detail_joined">Vergadering bijgewoond</string>
@@ -208,7 +208,7 @@
     <string name="meeting_detail_title">Vergaderdetail</string>
     <string name="meeting_detail_tab_info">Info</string>
     <string name="meeting_detail_tab_summary">Notulen</string>
-    <string name="meeting_detail_tab_action_items">Acties</string>
+    <string name="meeting_detail_tab_action_items">Actiepunten</string>
     <string name="meeting_detail_tab_transcript">Transcriptie</string>
     <string name="meeting_detail_info_name">Naam</string>
     <string name="meeting_detail_info_time">Tijd</string>
@@ -251,7 +251,7 @@
     <string name="task_lists">Takenlijsten</string>
     <string name="task_list_group_empty">Geen takenlijsten in deze groep</string>
     <string name="task_create">Nieuwe taak</string>
-    <string name="task_create_action">Maken</string>
+    <string name="task_create_action">Aanmaken</string>
     <string name="task_search">Taken zoeken</string>
     <string name="task_search_hint">Zoek titels, beschrijvingen, personen en lijsten</string>
     <string name="task_search_empty">Geen overeenkomende taken gevonden</string>
@@ -313,7 +313,7 @@
     <string name="task_reminder_three_days_0900">3 dagen van tevoren om 09:00</string>
     <string name="task_date_not_set">Niet ingesteld</string>
     <string name="task_clear_date">Datum wissen</string>
-    <string name="task_belongs_to_list">Bijbehorende takenlijst</string>
+    <string name="task_belongs_to_list">Takenlijst</string>
     <string name="task_belongs_to_group">Bijbehorende groep</string>
     <string name="task_placement">Indeling</string>
     <string name="task_collaboration">Samenwerking</string>
@@ -360,7 +360,7 @@
     <string name="task_delete_attachment">Bijlage verwijderen</string>
     <string name="task_uploading_attachment">Uploaden…</string>
     <string name="task_download_attachment">%1$s downloaden</string>
-    <string name="task_comments">Opmerkingen</string>
+    <string name="task_comments">Reacties</string>
     <string name="task_add_comment">Opmerking toevoegen</string>
     <string name="task_share_card_title">Taak</string>
     <string name="task_view_details">Details bekijken</string>
@@ -392,7 +392,7 @@
     <string name="task_role_owner">Eigenaar</string>
     <string name="task_remove_collaborator">%1$s verwijderen</string>
     <string name="task_leave_list">Takenlijst verlaten</string>
-    <string name="task_leave_list_confirm">‘%1$s’ verlaten? U verliest de toegang tot deze takenlijst.</string>
+    <string name="task_leave_list_confirm">‘%1$s’ verlaten? Je verliest de toegang tot deze takenlijst.</string>
     <string name="task_list_name_hint">Lijstnaam</string>
     <string name="task_edit_list_details">Lijstdetails bewerken</string>
     <string name="task_list_description">Beschrijving</string>
@@ -430,7 +430,7 @@
     </plurals>
     <string name="task_repeat_save">Herhaling opslaan</string>
     <string name="task_repeat_stop">Herhaling stoppen</string>
-    <string name="task_rename">Naam wijzigen</string>
+    <string name="task_rename">Hernoemen</string>
     <string name="task_move_to_group">Naar groep verplaatsen</string>
     <string name="task_move_list_title">‘%1$s’ naar groep verplaatsen</string>
     <string name="task_new_group_above">Groep erboven maken</string>
@@ -585,7 +585,7 @@
     <string name="calendar_visibility_default">Standaardzichtbaarheid</string>
     <string name="calendar_visibility_public">Openbaar</string>
     <string name="calendar_visibility_private">Privé</string>
-    <string name="calendar_visibility_default_hint">Volgt de deelrechten van uw persoonlijke agenda</string>
+    <string name="calendar_visibility_default_hint">Volgt de deelrechten van je persoonlijke agenda</string>
     <string name="calendar_visibility_public_hint">Agenda-abonnees zien alle details</string>
     <string name="calendar_visibility_private_hint">Alleen organisator en deelnemers zien alle details</string>
     <string name="calendar_busy">Bezet</string>
@@ -690,7 +690,7 @@
     <string name="approval_empty_mine">Je hebt nog geen goedkeuring ingediend</string>
     <string name="approval_empty_mine_description">Maak een goedkeuringsverzoek en volg hier de voortgang.</string>
     <string name="approval_load_error">Laden mislukt</string>
-    <string name="approval_retry">Opnieuw</string>
+    <string name="approval_retry">Opnieuw proberen</string>
     <string name="approval_load_more">Meer laden</string>
     <string name="approval_status_pending">In behandeling</string>
     <string name="approval_status_approved">Goedgekeurd</string>
@@ -749,7 +749,7 @@
     <string name="docs_editor_title">Bewerken</string>
     <string name="docs_editor_title_hint">Documenttitel</string>
     <string name="docs_editor_unsaved_title">Niet-opgeslagen wijzigingen</string>
-    <string name="docs_editor_unsaved_desc">U heeft niet-opgeslagen wijzigingen in het document.</string>
+    <string name="docs_editor_unsaved_desc">Je hebt niet-opgeslagen wijzigingen in het document.</string>
     <string name="docs_editor_unsaved_save">Opslaan en afsluiten</string>
     <string name="docs_editor_unsaved_continue">Doorgaan met bewerken</string>
 
@@ -778,7 +778,7 @@
     <string name="meeting_room_empty">Geen ruimtes gevonden</string>
     <string name="meeting_room_empty_available">Geen ruimte vrij op dit moment</string>
     <string name="meeting_room_load_error">Vergaderruimtes konden niet worden geladen</string>
-    <string name="meeting_room_retry">Opnieuw</string>
+    <string name="meeting_room_retry">Opnieuw proberen</string>
     <!-- 视频会议可选(对标飞书「移除视频会议」) -->
     <string name="calendar_video_meeting">Videovergadering</string>
     <string name="calendar_video_meeting_on">Er wordt een videovergadering bij deze afspraak aangemaakt</string>
@@ -822,7 +822,7 @@
     <string name="calendar_settings_working_hours_hint">Instelbaar per 30 minuten. De werktijd moet tussen 6 en 12 uur liggen.</string>
     <string name="calendar_settings_calendar_time_range">Tijdbereik kalender</string>
     <string name="calendar_settings_meeting_room_time_range">Tijdbereik vergaderruimtes</string>
-    <string name="calendar_working_time">Werktijd</string>
+    <string name="calendar_working_time">Werktijden</string>
     <string name="calendar_full_day_time">Volledige dag</string>
     <plurals name="calendar_outside_working_hours">
         <item quantity="one">%1$d afspraak buiten werktijd</item>
@@ -969,7 +969,7 @@
     <string name="calendar_discover_public">Openbaar</string>
     <string name="calendar_name">Agendanaam</string>
     <string name="calendar_description">Beschrijving</string>
-    <string name="calendar_create">Maken</string>
+    <string name="calendar_create">Aanmaken</string>
     <string name="calendar_subscribed">Geabonneerd</string>
     <string name="calendar_subscribe">Abonneren</string>
     <string name="calendar_operation_failed">Bewerking mislukt</string>
@@ -1066,7 +1066,7 @@
     <string name="docs_editor_save_failed">Het opslaan is niet bevestigd. Controleer je verbinding en probeer het opnieuw. Deze pagina blijft open.</string>
     <string name="docs_editor_incompatible">De editor kan niet worden geopend. Probeer het later opnieuw of ga terug om verder te lezen.</string>
     <string name="docs_editor_pending_work">Nog niet alle wijzigingen zijn bevestigd. Controleer de verbinding, titel, bijlagen en niet-gepubliceerde reacties en probeer opnieuw.</string>
-    <string name="docs_editor_reloaded">De editor is opnieuw geladen. Alleen op de server opgeslagen inhoud kan worden bevestigd. Controleer uw laatste wijzigingen.</string>
+    <string name="docs_editor_reloaded">De editor is opnieuw geladen. Alleen op de server opgeslagen inhoud kan worden bevestigd. Controleer je laatste wijzigingen.</string>
     <string name="docs_chat_share_title">Delen in chat</string>
     <string name="docs_chat_share_sent">Gedeeld in chat</string>
     <string name="docs_chat_share_delivery_failed">Verzonden naar %1$d chats; %2$d mislukt. Bevestigde verzendingen worden bij opnieuw proberen overgeslagen.</string>
@@ -1077,9 +1077,9 @@
     <string name="docs_chat_share_targets">Geselecteerde chats: %d</string>
     <string name="docs_chat_share_permission_retry">Rechten laden mislukt. Opnieuw proberen</string>
     <string name="docs_chat_share_permission">Toegangsrecht</string>
-    <string name="docs_chat_share_reader">Lezen</string>
-    <string name="docs_chat_share_editor">Bewerken</string>
-    <string name="docs_chat_share_grant_help">Stelt toegang voor huidige chatleden in. Uw kaarten voor hetzelfde document in elke chat delen deze instelling. Hogere rechten uit andere bronnen blijven behouden.</string>
+    <string name="docs_chat_share_reader">Kan lezen</string>
+    <string name="docs_chat_share_editor">Kan bewerken</string>
+    <string name="docs_chat_share_grant_help">Stelt toegang voor huidige chatleden in. Je kaarten voor hetzelfde document in elke chat delen deze instelling. Hogere rechten uit andere bronnen blijven behouden.</string>
     <string name="docs_chat_share_existing_access">Alleen de kaart verzenden. Ontvangers behouden hun bestaande toegangsrechten.</string>
     <string name="docs_chat_share_send">Verzenden</string>
     <string name="docs_chat_share_back">Terug</string>
@@ -1102,7 +1102,7 @@
     <string name="room_ai_prompt_actions">Actiepunten en verantwoordelijken op een rij</string>
     <string name="meeting_ai_search">Vergaderingen doorzoeken met AI</string>
     <string name="cd_records_ai_search">Vergaderingen doorzoeken met AI</string>
-    <string name="cd_records_search">Titels doorzoeken</string>
+    <string name="cd_records_search">Titels zoeken</string>
     <string name="cd_records_clear_search">Zoekopdracht wissen</string>
     <string name="cd_records_more">Meer acties</string>
     <string name="cd_records_list_view">Overschakelen naar lijstweergave</string>

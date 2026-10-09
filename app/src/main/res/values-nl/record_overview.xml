@@ -3,6 +3,6 @@
     <string name="record_overview_title">Notulen</string>
     <string name="record_overview_open_minutes">AI-notulen openen</string>
     <string name="record_overview_empty">Nog geen notulen. Genereer ze op basis van de transcriptie.</string>
-    <string name="record_overview_back">Opname en overzicht bekijken</string>
+    <string name="record_overview_back">Vergaderrecord en overzicht bekijken</string>
     <string name="record_overview_synopsis_title">Overzicht</string>
 </resources>

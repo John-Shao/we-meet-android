@@ -16,7 +16,7 @@
     <string name="capture_next_title">Titel van de volgende opname (optioneel)</string>
     <string name="capture_tool_interpret">Tolken</string>
     <string name="capture_tool_translate">Vertalen</string>
-    <string name="capture_interpret_title">AI-tolkdienst</string>
+    <string name="capture_interpret_title">AI-tolkvertaling</string>
     <string name="capture_language_title">AI-vertaling</string>
     <string name="capture_translation_direction">Gesproken taal → vertaaltaal</string>
     <string name="capture_translation_active_badge">Vertaling actief</string>

@@ -23,7 +23,7 @@
     <string name="record_share_directory">Organisatiegids</string>
     <string name="record_share_participants">Deelnemers</string>
     <string name="record_share_search">Personen zoeken</string>
-    <string name="record_share_selected">%1$d / 50 geselecteerd</string>
+    <string name="record_share_selected">geselecteerd: %1$d / 50</string>
     <string name="record_share_clear">Selectie wissen</string>
     <string name="record_share_no_candidates">Geen geschikte personen op deze pagina.</string>
     <string name="record_share_review_selection">Rechten van geselecteerde personen bekijken</string>

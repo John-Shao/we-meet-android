@@ -33,7 +33,7 @@
     <string name="summary_automation_off">Nicht aktiviert</string>
     <string name="summary_automation_waiting">Warten auf die nächste Zusammenfassung</string>
     <string name="summary_automation_generating">Zusammenfassung wird automatisch erstellt</string>
-    <string name="summary_controls_blocked_budget">Die Quelle überschreitet das aktuelle Verarbeitungslimit, oder eine einzelne Äußerung ist zu lang. Der Quelltext bleibt erhalten; passen Sie das Material an, bevor Sie die Zusammenfassung erstellen.</string>
+    <string name="summary_controls_blocked_budget">Der Originaltext überschreitet das aktuelle Verarbeitungslimit, oder eine einzelne Äußerung ist zu lang. Der Originaltext bleibt erhalten; passen Sie das Material an, bevor Sie die Zusammenfassung erstellen.</string>
     <string name="summary_controls_waiting_source">Nach dem Ende des Meetings und sobald ein Transkript verfügbar ist, kann die Zusammenfassung erstellt werden.</string>
     <string name="summary_controls_rate_limited">Zu viele Anfragen. Bitte warten Sie, bevor Sie dieselbe Anfrage erneut senden.</string>
     <string name="summary_automation_completed">Vollständige Zusammenfassung bereit</string>

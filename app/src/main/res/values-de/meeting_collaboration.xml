@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="collaboration_record">Meeting-Aufzeichnung</string>
-    <string name="collaboration_minutes">Intelligente Zusammenfassungen</string>
+    <string name="collaboration_minutes">Intelligente Zusammenfassung</string>
     <string name="collaboration_share">Teilen</string>
     <string name="collaboration_manage">Mitwirkende</string>
     <string name="collaboration_send">An Unterhaltung senden</string>

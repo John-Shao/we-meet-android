@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="im_status_disconnected">Getrennt</string>
-    <string name="im_status_connecting">Verbinde…</string>
+    <string name="im_status_connecting">Verbindung wird hergestellt…</string>
     <string name="im_status_connected">Verbunden</string>
     <string name="im_status_reconnecting">Neu verbinden…</string>
     <string name="im_status_auth_failed">Authentifizierung fehlgeschlagen — bitte erneut versuchen</string>
@@ -50,10 +50,10 @@
     <string name="im_menu_delete">Unterhaltung löschen</string>
     <string name="im_menu_leave">Gruppe verlassen</string>
     <string name="im_confirm_delete_title">Unterhaltung löschen?</string>
-    <string name="im_confirm_delete_message">Blendet die Unterhaltung nur für dich aus. Sie erscheint bei einer neuen Nachricht wieder.</string>
+    <string name="im_confirm_delete_message">Blendet die Unterhaltung nur für Sie aus. Sie erscheint bei einer neuen Nachricht wieder.</string>
     <string name="im_confirm_leave_title">Gruppe verlassen?</string>
-    <string name="im_confirm_leave_message">Du erhältst keine Nachrichten mehr aus dieser Gruppe.</string>
-    <string name="im_confirm_leave_owner_message">Du bist Eigentümer dieser Gruppe. Der Besitz geht an das älteste Mitglied über; bist du das letzte, wird die Gruppe aufgelöst.</string>
+    <string name="im_confirm_leave_message">Sie erhalten keine Nachrichten mehr aus dieser Gruppe.</string>
+    <string name="im_confirm_leave_owner_message">Sie sind Eigentümer dieser Gruppe. Der Besitz geht an das älteste Mitglied über; sind Sie das letzte, wird die Gruppe aufgelöst.</string>
 
     <string name="im_read">Gelesen</string>
     <string name="im_unread">Ungelesen</string>
@@ -80,8 +80,8 @@
     <string name="im_call_outgoing_voice">Sprachanruf wird gestartet…</string>
     <string name="im_call_outgoing_video">Videoanruf wird gestartet…</string>
     <string name="im_call_waiting_answer">Warten auf Antwort…</string>
-    <string name="im_call_incoming_voice">lädt dich zu einem Sprachanruf ein</string>
-    <string name="im_call_incoming_video">lädt dich zu einem Videoanruf ein</string>
+    <string name="im_call_incoming_voice">lädt Sie zu einem Sprachanruf ein</string>
+    <string name="im_call_incoming_video">lädt Sie zu einem Videoanruf ein</string>
     <string name="im_call_accept">Annehmen</string>
     <string name="im_call_decline">Ablehnen</string>
     <string name="im_call_connecting">Verbinden…</string>
@@ -92,19 +92,19 @@
     <string name="im_call_end_canceled_remote">Anruf abgebrochen</string>
     <string name="im_call_end_answered_elsewhere">Auf anderem Gerät angenommen</string>
     <string name="im_call_end_failed">Anruf fehlgeschlagen, bitte erneut versuchen</string>
-    <string name="im_call_busy_local">Du bist bereits in einem Anruf</string>
+    <string name="im_call_busy_local">Sie sind bereits in einem Anruf</string>
     <string name="im_call_mic_on">Mikro an</string>
-    <string name="im_call_mic_off">Stumm</string>
+    <string name="im_call_mic_off">Stummgeschaltet</string>
     <string name="im_call_speaker">Lautsprecher</string>
-    <string name="im_call_earpiece">Hörer</string>
+    <string name="im_call_earpiece">Hörmuschel</string>
     <string name="im_call_hangup">Auflegen</string>
     <string name="im_call_camera_on">Kamera an</string>
     <string name="im_call_camera_off">Kamera aus</string>
     <string name="im_call_flip">Wechseln</string>
     <string name="im_calllog_voice">Sprachanruf</string>
     <string name="im_calllog_video">Videoanruf</string>
-    <string name="im_phone_viewed_by_peer">Deine Telefonnummer wurde angesehen</string>
-    <string name="im_phone_viewed_by_me">Du hast die Telefonnummer angesehen</string>
+    <string name="im_phone_viewed_by_peer">Ihre Telefonnummer wurde angesehen</string>
+    <string name="im_phone_viewed_by_me">Sie haben die Telefonnummer angesehen</string>
     <string name="im_phone_viewed_preview">Telefonnummer angesehen</string>
     <string name="im_calllog_canceled">Abgebrochen</string>
     <string name="im_calllog_missed">Keine Antwort</string>
@@ -128,8 +128,8 @@
     <string name="im_group_announce_hint">Gruppenankündigung eingeben (optional)</string>
     <string name="im_group_announce_edit">Bearbeiten</string>
     <string name="im_group_my_nickname_label">Mein Spitzname</string>
-    <string name="im_group_my_nickname_empty">Nicht gesetzt</string>
-    <string name="im_group_my_nickname_hint">Deinen Gruppen-Spitznamen eingeben</string>
+    <string name="im_group_my_nickname_empty">Nicht festgelegt</string>
+    <string name="im_group_my_nickname_hint">Ihren Gruppen-Spitznamen eingeben</string>
     <string name="im_group_rename">Umbenennen</string>
     <string name="im_group_members_count">Mitglieder (%1$d)</string>
     <string name="im_group_add_members">Mitglieder hinzufügen</string>
@@ -139,16 +139,16 @@
     <string name="im_group_transfer_owner">Besitz übertragen</string>
     <string name="im_group_transfer_confirm">Gruppenbesitz an %1$s übertragen?</string>
     <string name="im_group_clear_history">Chatverlauf leeren</string>
-    <string name="im_group_clear_confirm">Leert nur deine eigene Ansicht; andere Mitglieder behalten ihren Verlauf.</string>
+    <string name="im_group_clear_confirm">Leert nur Ihre eigene Ansicht; andere Mitglieder behalten ihren Verlauf.</string>
     <string name="im_group_button">Neue Gruppe</string>
-    <string name="im_removed_from_group">Du wurdest aus dieser Gruppe entfernt</string>
+    <string name="im_removed_from_group">Sie wurden aus dieser Gruppe entfernt</string>
 
     <string name="im_unread_overflow">99+</string>
     <string name="im_preview_voice">[Sprachnachricht]</string>
     <string name="im_preview_merged">[Chatverlauf]</string>
     <string name="im_preview_reaction">[Reaktion]</string>
     <string name="im_recalled_preview">hat eine Nachricht zurückgerufen</string>
-    <string name="im_recalled_self">Du hast eine Nachricht zurückgerufen</string>
+    <string name="im_recalled_self">Sie haben eine Nachricht zurückgerufen</string>
     <string name="im_recalled_other">%1$s hat eine Nachricht zurückgerufen</string>
     <string name="im_merged_title">Chatverlauf</string>
     <plurals name="im_merged_view_count">
@@ -183,7 +183,7 @@
     <string name="im_plus_meeting">Schnellmeeting</string>
     <string name="im_coming_soon">Demnächst</string>
     <string name="im_mention_everyone">Alle</string>
-    <string name="im_mention_notice">Du wurdest erwähnt</string>
+    <string name="im_mention_notice">Sie wurden erwähnt</string>
     <string name="im_mention_marker">@</string>
     <string name="im_action_forward">Weiterleiten</string>
     <string name="im_action_multi_select">Auswählen</string>
@@ -205,7 +205,7 @@
         <item quantity="one">%1$d ausgewählte Nachricht löschen? Sie wird nur aus deiner Ansicht entfernt; andere Mitglieder sehen sie weiterhin.</item>
         <item quantity="other">%1$d ausgewählte Nachrichten löschen? Sie werden nur aus deiner Ansicht entfernt; andere Mitglieder sehen sie weiterhin.</item>
     </plurals>
-    <string name="im_delete_one_confirm_message">Diese Nachricht löschen? Sie wird nur aus deiner Ansicht entfernt; andere Mitglieder sehen sie weiterhin.</string>
+    <string name="im_delete_one_confirm_message">Diese Nachricht löschen? Sie wird nur aus Ihrer Ansicht entfernt; andere Mitglieder sehen sie weiterhin.</string>
     <string name="im_delete_failed">Löschen fehlgeschlagen</string>
     <!-- P4 call escalation -->
     <string name="im_call_incoming_meet_voice">Lädt Sie zu einem Sprachanruf ein</string>
@@ -281,14 +281,14 @@
         <item quantity="one">%1$d Teilnehmer · Organisator %2$s</item>
         <item quantity="other">%1$d Teilnehmer · Organisator %2$s</item>
     </plurals>
-    <string name="im_event_card_view">Details ansehen</string>
+    <string name="im_event_card_view">Details anzeigen</string>
     <string name="im_event_card_all_day">Ganztägig</string>
     <string name="im_event_card_private">Privater Termin</string>
-    <string name="im_event_card_invited">Du bist eingeladen</string>
+    <string name="im_event_card_invited">Sie sind eingeladen</string>
     <string name="im_event_card_time_changed">Verschoben</string>
     <string name="im_event_card_attendees_changed">Teilnehmer geändert</string>
     <string name="im_event_card_organizer_changed">Organisator geändert</string>
-    <string name="im_event_card_removed">Du wurdest entfernt</string>
+    <string name="im_event_card_removed">Sie wurden entfernt</string>
     <string name="im_event_card_rsvp_changed">Antwort aktualisiert</string>
     <string name="im_event_card_rsvp_reply">%1$s: %2$s</string>
     <string name="im_event_card_rsvp_needs_action">Keine Antwort</string>
@@ -307,7 +307,7 @@
     <string name="im_meeting_card_no">Meeting-ID %1$s</string>
     <string name="im_meeting_card_join">Meeting beitreten</string>
     <string name="im_doc_picker_title">Dokument senden</string>
-    <string name="im_doc_picker_search">Dokumente durchsuchen</string>
+    <string name="im_doc_picker_search">Dokumente suchen</string>
     <string name="im_doc_picker_selected">Ausgewählt: %1$d</string>
     <string name="im_doc_picker_send">Senden (%1$d)</string>
     <string name="im_doc_picker_empty">Keine Dokumente zum Teilen</string>
@@ -331,7 +331,7 @@
         <item quantity="one">%1$d Mitglied</item>
         <item quantity="other">%1$d Mitglieder</item>
     </plurals>
-    <string name="im_my_groups_empty">Du bist noch keiner Gruppe beigetreten</string>
+    <string name="im_my_groups_empty">Sie sind noch keiner Gruppe beigetreten</string>
     <string name="im_my_groups_no_match">Keine passenden Gruppen</string>
     <string name="im_departed_suffix">\" (verlassen)\"</string>
     <string name="im_departed_chip">Verlassen</string>
@@ -361,7 +361,7 @@
     <string name="im_bots_owner_only">Nur der Gruppeneigentümer kann Bots hinzufügen oder Webhook-Einstellungen ändern.</string>
     <string name="im_bots_builtin_hint">Integrierte Assistenten sind im Produkt enthalten und können nicht entfernt werden. Das Ausschalten stoppt ihre Benachrichtigungen in dieser Gruppe.</string>
     <string name="im_bots_catalog_custom">Eigener Bot</string>
-    <string name="im_bots_catalog_custom_desc">Nachrichten von deinem eigenen Dienst per Webhook in diese Gruppe senden</string>
+    <string name="im_bots_catalog_custom_desc">Nachrichten von Ihrem eigenen Dienst per Webhook in diese Gruppe senden</string>
     <string name="im_bots_form_title">Eigener Bot</string>
     <string name="im_bots_form_avatar">Bot-Avatar</string>
     <string name="im_bots_form_color">Vordefinierte Farbe %1$d</string>
@@ -396,7 +396,7 @@
     <string name="im_bots_callback_secret">Verifizierungsschlüssel</string>
     <string name="im_bots_callback_secret_hint">Gib diesen Schlüssel an den externen Dienst weiter. Jeder Callback trägt einen X-WeMeet-Signature-Header; der Dienst prüft damit, ob die Anfrage wirklich von hier stammt. Dies ist ein anderer Schlüssel als der unter „Sicherheit“ oben.</string>
     <string name="im_bots_callback_identity">Namen der klickenden Person senden</string>
-    <string name="im_bots_callback_identity_hint">Standardmäßig wird nur eine anonyme Kennung pro Bot gesendet: Der externe Dienst erkennt, ob es dieselbe Person ist, aber nicht, wer. Wenn du dies aktivierst, wird zusätzlich ihr Name gesendet.</string>
+    <string name="im_bots_callback_identity_hint">Standardmäßig wird nur eine anonyme Kennung pro Bot gesendet: Der externe Dienst erkennt, ob es dieselbe Person ist, aber nicht, wer. Wenn Sie dies aktivieren, wird zusätzlich ihr Name gesendet.</string>
     <string name="im_bots_callback_disabled">Wurde nach wiederholten Fehlern automatisch deaktiviert. Speichere die Adresse erneut, um sie wieder zu aktivieren.</string>
     <string name="im_bots_callback_last_error">Letzter Fehler: %1$s</string>
     <string name="im_bots_callback_reason_timeout">Der Dienst hat nicht rechtzeitig geantwortet</string>
@@ -424,7 +424,7 @@ Grenzwerte: 100 Anfragen pro Minute und 5 pro Sekunde pro Bot, Nachrichtenkörpe
     </plurals>
     <string name="im_preview_calendar">[Kalender]</string>
     <string name="im_preview_calendar_named">[Kalender] %1$s</string>
-    <string name="im_search_ai_network_error">Netzwerkfehler — bitte prüfe deine Verbindung und versuche es erneut.</string>
+    <string name="im_search_ai_network_error">Netzwerkfehler — bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.</string>
     <string name="im_search_ai_http_error">Anfrage fehlgeschlagen (HTTP %1$d). Bitte erneut versuchen.</string>
     <string name="im_search_ai_empty_body">Der KI-Dienst hat eine leere Antwort geliefert. Bitte erneut versuchen.</string>
     <string name="im_search_ai_server_error">Der KI-Dienst ist fehlgeschlagen. Bitte erneut versuchen.</string>

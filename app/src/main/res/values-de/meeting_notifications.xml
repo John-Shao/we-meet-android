@@ -13,7 +13,7 @@
     <string name="record_notice_empty">Noch keine Abschlussbenachrichtigungen für Sie.</string>
     <string name="record_notice_attempt">Versandversuch %1$d</string>
     <string name="record_notice_open_summary">Diese Zusammenfassung ansehen</string>
-    <string name="record_notice_retry">Benachrichtigungswiederholung prüfen</string>
+    <string name="record_notice_retry">Wiederholung der Benachrichtigung prüfen</string>
     <string name="record_notice_confirm">Ursprüngliche Benachrichtigung erneut senden</string>
     <string name="record_notice_retry_effect">Dabei kann die ursprüngliche Zusammenfassungskarte an Ihre Assistenten-Unterhaltung gesendet werden. Empfänger und Version bleiben unverändert; es werden keine neuen Zugriffsrechte erteilt.</string>
     <string name="record_notice_changed">Der Zustellstatus hat sich geändert. Schließen Sie den Dialog und prüfen Sie den aktuellen Status.</string>

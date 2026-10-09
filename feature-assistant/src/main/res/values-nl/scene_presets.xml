@@ -11,7 +11,7 @@
     <string name="assistant_scene_travel_ja">Reizen (Japans)</string>
     <string name="assistant_scene_business">Zakelijke communicatie</string>
     <string name="assistant_scene_practice">Engels gespreksoefening</string>
-    <string name="assistant_scene_travel_hint">Chinese uitleg en nuttige Engelse zinnen voor routevragen, hotels en restaurants.</string>
+    <string name="assistant_scene_travel_hint">Chinese uitleg en nuttige Engelse zinnen voor het vragen naar de weg, hotels en eten bestellen.</string>
     <string name="assistant_scene_travel_ja_hint">Chinese uitleg en beleefde Japanse zinnen voor reizen in Japan.</string>
     <string name="assistant_scene_business_hint">Professionele Chinees-Engelse communicatie met nauwkeurige cijfers, datums en toezeggingen.</string>
     <string name="assistant_scene_practice_hint">Engels gesprek met Chinese ondersteuning, één vraag per keer en vriendelijke grammaticacorrecties.</string>

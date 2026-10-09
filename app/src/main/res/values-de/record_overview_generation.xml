@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="record_overview_chapters_empty">Keine Kapitelnotizen verfügbar.</string>
+    <string name="record_overview_chapters_empty">Keine Kapitel verfügbar.</string>
     <string name="record_overview_more_sources">Weitere Quellenverweise (%1$d)</string>
-    <string name="record_overview_hide_sources">Verweise ausblenden</string>
+    <string name="record_overview_hide_sources">Verweise einklappen</string>
     <string name="record_overview_generate">Meeting-Zusammenfassung erstellen</string>
     <string name="record_overview_regenerate">Meeting-Zusammenfassung neu erstellen</string>
     <string name="record_overview_generating">Wird erstellt…</string>
