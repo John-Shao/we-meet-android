@@ -418,11 +418,12 @@ class MeetingRecordRepository(
         userId?.let(::requireUuid)
         require(revision > 0)
         require(originalRecord(recordId, revision).sourceType in listOf("audio_recording", "upload"))
+        require(currentViewer() == viewer)
         val bound = api.attributeSpeaker(recordId, speakerId, RecordAttributionRequest(userId))
         require(bound.id == speakerId)
         require(bound.attributedUserId == userId)
         // Re-read so an attribution is never reported from a stale revision.
-        originalRecord(recordId, bound.recordRevision ?: revision)
+        require(readableOriginalRecord(recordId).revision >= (bound.recordRevision ?: revision))
         bound
     }
 
@@ -461,14 +462,22 @@ class MeetingRecordRepository(
         departmentId?.let(::requireUuid)
         val page = api.speakerContacts(recordId, query, kind, departmentId, offset)
         require(page.results.size <= 25)
-        page.nextOffset?.let { require(it == offset + 25) }
+        page.nextOffset?.let { require(it == offset + 25 && it <= 10000) }
         page.results.forEach {
-            require(it.name.length <= 200 && it.organizationName.length <= 200 && it.departmentName.length <= 200)
+            require(it.name.codePointCount(0, it.name.length) <= 255)
+            require(it.organizationName.codePointCount(0, it.organizationName.length) <= 255)
+            require(it.departmentName.codePointCount(0, it.departmentName.length) <= 255)
+            it.departmentId?.let(::requireUuid)
             if (kind == "departments") {
-                require(it.kind == "department"); requireUuid(it.ref)
+                require(it.kind == "department")
+                requireUuid(it.ref)
+                require(it.departmentId == it.ref)
             } else {
                 require(it.kind in setOf("member", "external"))
                 validateContactRef(it.ref)
+                require(it.ref.substringBefore(":") == it.kind)
+                require(kind == "all" || it.kind == kind)
+                require(departmentId == null || (it.kind == "member" && it.departmentId == departmentId))
             }
         }
         page
@@ -484,8 +493,9 @@ class MeetingRecordRepository(
                 require(request.contactRef == null)
                 val value = requireNotNull(request.label)
                 require(value == value.trim() && value.isNotBlank() && value.codePointCount(0, value.length) <= 64)
-                require(value.none { Character.getType(it) in setOf(
+                require(value.codePoints().noneMatch { Character.getType(it) in setOf(
                     Character.CONTROL.toInt(), Character.FORMAT.toInt(),
+                    Character.SURROGATE.toInt(),
                     Character.LINE_SEPARATOR.toInt(), Character.PARAGRAPH_SEPARATOR.toInt(),
                 ) })
             }
@@ -493,13 +503,33 @@ class MeetingRecordRepository(
             else -> error("unsupported identity decision")
         }
         require(originalRecord(recordId, request.expectedRevision).sourceType in listOf("audio_recording", "upload"))
+        // A suspend read may complete after an account switch. Never submit the
+        // previous viewer's edit with the new viewer's current credentials.
+        require(currentViewer() == viewer)
         val updated = api.speakerIdentityDecision(recordId, speakerId, request)
         require(updated.id == speakerId)
         val newRevision = requireNotNull(updated.recordRevision)
         require(newRevision.toLong() in request.expectedRevision.toLong()..request.expectedRevision.toLong() + 1)
-        require(updated.manualLabel.length <= 128)
+        require(updated.manualLabel.codePointCount(0, updated.manualLabel.length) <= 128)
         require(updated.attributedUserId == null || updated.manualLabel.isEmpty())
-        originalRecord(recordId, newRevision)
+        updated.attributedUserId?.let(::requireUuid)
+        when (request.action) {
+            "set_label" -> require(updated.attributionKind == "custom" && updated.manualLabel == request.label && updated.attributedUserId == null)
+            "clear" -> require(updated.attributionKind == "none" && updated.manualLabel.isEmpty() && updated.attributedUserId == null)
+            "select_contact" -> {
+                require(
+                    (updated.attributionKind == "member" && updated.attributedUserId != null) ||
+                    (updated.attributionKind == "contact" && updated.manualLabel.isNotBlank() && updated.attributedUserId == null)
+                )
+                if (request.contactRef!!.startsWith("member:")) {
+                    require(updated.attributionKind == "member")
+                    require(updated.attributedUserId.equals(request.contactRef.substringAfter(":"), ignoreCase = true))
+                }
+            }
+        }
+        // A later editor can advance the record while the successful response
+        // is in flight. Reauthorize without rejecting our own accepted edit.
+        require(readableOriginalRecord(recordId).revision >= newRevision)
         updated
     }
 
