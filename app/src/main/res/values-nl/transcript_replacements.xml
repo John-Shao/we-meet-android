@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="batch_correction_title">Zoeken en vervangen</string>
-    <string name="batch_correction_hint">Hoofdlettergevoelig letterlijk vervangen in de opgeslagen transcriptie van dit record, inclusief andere pagina\'s. Maximaal 100 segmenten per keer. Een lege vervanging verwijdert tekst. Niet-opgeslagen concepten en bestaande notulen blijven ongewijzigd.</string>
+    <string name="batch_correction_hint">Hoofdlettergevoelig letterlijk vervangen in de opgeslagen transcriptie van dit record, inclusief andere pagina’s. Maximaal 100 segmenten per keer. Een lege vervanging verwijdert tekst. Niet-opgeslagen concepten en bestaande notulen blijven ongewijzigd.</string>
     <string name="batch_correction_find">Tekst zoeken</string>
     <string name="batch_correction_replacement">Vervangen door</string>
     <string name="batch_correction_preview">Wijzigingen bekijken</string>

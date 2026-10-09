@@ -58,7 +58,7 @@
     <string name="im_menu_unpin">Unpin</string>
     <string name="im_menu_mute">Mute</string>
     <string name="im_menu_unmute">Unmute</string>
-    <string name="im_menu_mute_at_all">Don\'t notify for @everyone</string>
+    <string name="im_menu_mute_at_all">Don’t notify for @everyone</string>
     <string name="im_menu_delete">Delete conversation</string>
     <string name="im_menu_leave">Leave group</string>
     <string name="im_confirm_delete_title">Delete conversation?</string>
@@ -244,9 +244,9 @@
     <string name="im_delete_confirm_title">Delete messages?</string>
     <plurals name="im_delete_confirm_message">
         <item quantity="one">Delete %1$d selected message? It will be removed from your view only — other members can still see it.</item>
-        <item quantity="other">Delete %1$d selected messages? They\'ll be removed from your view only — other members can still see them.</item>
+        <item quantity="other">Delete %1$d selected messages? They’ll be removed from your view only — other members can still see them.</item>
     </plurals>
-    <string name="im_delete_one_confirm_message">Delete this message? It\'s removed from your view only — other members can still see it.</string>
+    <string name="im_delete_one_confirm_message">Delete this message? It’s removed from your view only — other members can still see it.</string>
     <string name="im_delete_failed">Delete failed</string>
     <!-- P4 call escalation (通话中拉人升级会议) -->
     <string name="im_call_incoming_meet_voice">Invites you to join a voice call</string>
@@ -326,7 +326,7 @@
     <string name="im_event_card_view">View details</string>
     <string name="im_event_card_all_day">All day</string>
     <string name="im_event_card_private">Private event</string>
-    <string name="im_event_card_invited">You\'re invited</string>
+    <string name="im_event_card_invited">You’re invited</string>
     <string name="im_event_card_time_changed">Rescheduled</string>
     <string name="im_event_card_attendees_changed">Attendees changed</string>
     <string name="im_event_card_organizer_changed">Organizer changed</string>

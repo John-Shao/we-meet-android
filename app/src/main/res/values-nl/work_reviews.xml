@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="work_review_title">Resultaatcontrole</string>
-    <string name="work_review_help">Controles bekijken geselecteerde resultaten en geautoriseerd materiaal van taken. Ze wijzigen geen bestanden en voeren geen commando\'s uit. Verifieer de bevindingen voordat je ze gebruikt.</string>
+    <string name="work_review_help">Controles bekijken geselecteerde resultaten en geautoriseerd materiaal van taken. Ze wijzigen geen bestanden en voeren geen commando’s uit. Verifieer de bevindingen voordat je ze gebruikt.</string>
     <string name="work_review_disabled">De controlefunctie is niet ingeschakeld. Bestaande geautoriseerde gegevens blijven beschikbaar.</string>
     <string name="work_review_empty">Nog geen controles. Start een controle vanaf de resultatenpagina op je computer nadat je bestanden hebt geselecteerd en gesynchroniseerd.</string>
     <string name="work_review_unavailable">De toegang tot de controle kon niet worden bevestigd. Eerdere inhoud is verborgen; vernieuw om de toegang opnieuw te controleren.</string>

@@ -5,7 +5,7 @@
 -->
 <resources>
     <string name="common_retry">Retry</string>
-    <string name="common_load_error">Couldn\'t load. Check your connection and try again.</string>
+    <string name="common_load_error">Couldn’t load. Check your connection and try again.</string>
 
     <!-- 无障碍(TalkBack)内容描述 -->
     <string name="cd_back">Back</string>
