@@ -279,6 +279,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             }
                         } else if (selectedTab == "speakers") {
                             RecordSpeakers(repository, viewer, record, Modifier.weight(1f),
+                                onRecordChanged = { refresh++ },
                                 fullDuration = fullDuration, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
                         } else if (showTranslations) {
                             Column(Modifier.weight(1f).fillMaxWidth()) {

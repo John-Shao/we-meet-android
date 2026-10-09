@@ -12,6 +12,8 @@ import com.we.meet.data.api.dto.RecordReferenceDto
 import com.we.meet.data.api.dto.RecordSnapshotSegmentDto
 import com.we.meet.data.api.dto.RecordSummaryVersionDto
 import com.we.meet.data.api.dto.RecordSpeakerDto
+import com.we.meet.data.api.dto.RecordSpeakerContactPageDto
+import com.we.meet.data.api.dto.RecordIdentityDecisionRequest
 import kotlinx.coroutines.CancellationException
 import okhttp3.ResponseBody
 import java.util.UUID
@@ -420,7 +422,7 @@ class MeetingRecordRepository(
         require(bound.id == speakerId)
         require(bound.attributedUserId == userId)
         // Re-read so an attribution is never reported from a stale revision.
-        originalRecord(recordId, revision)
+        originalRecord(recordId, bound.recordRevision ?: revision)
         bound
     }
 
@@ -446,6 +448,65 @@ class MeetingRecordRepository(
             require(it.name.length <= 200)
         }
         page.results
+    }
+
+    suspend fun speakerContacts(
+        viewer: String, recordId: String, query: String? = null, kind: String = "all",
+        departmentId: String? = null, offset: Int = 0,
+    ): Result<RecordSpeakerContactPageDto> = scoped(viewer) {
+        requireUuid(recordId)
+        require(query == null || query.length <= 80)
+        require(kind in setOf("all", "member", "external", "departments"))
+        require(offset in 0..10000)
+        departmentId?.let(::requireUuid)
+        val page = api.speakerContacts(recordId, query, kind, departmentId, offset)
+        require(page.results.size <= 25)
+        page.nextOffset?.let { require(it == offset + 25) }
+        page.results.forEach {
+            require(it.name.length <= 200 && it.organizationName.length <= 200 && it.departmentName.length <= 200)
+            if (kind == "departments") {
+                require(it.kind == "department"); requireUuid(it.ref)
+            } else {
+                require(it.kind in setOf("member", "external"))
+                validateContactRef(it.ref)
+            }
+        }
+        page
+    }
+
+    suspend fun speakerIdentityDecision(
+        viewer: String, recordId: String, speakerId: String, request: RecordIdentityDecisionRequest,
+    ): Result<RecordSpeakerDto> = scoped(viewer) {
+        requireUuid(recordId); requireUuid(speakerId); require(request.expectedRevision > 0)
+        when (request.action) {
+            "select_contact" -> { require(request.label == null); validateContactRef(requireNotNull(request.contactRef)) }
+            "set_label" -> {
+                require(request.contactRef == null)
+                val value = requireNotNull(request.label)
+                require(value == value.trim() && value.isNotBlank() && value.codePointCount(0, value.length) <= 64)
+                require(value.none { Character.getType(it) in setOf(
+                    Character.CONTROL.toInt(), Character.FORMAT.toInt(),
+                    Character.LINE_SEPARATOR.toInt(), Character.PARAGRAPH_SEPARATOR.toInt(),
+                ) })
+            }
+            "clear" -> require(request.contactRef == null && request.label == null)
+            else -> error("unsupported identity decision")
+        }
+        require(originalRecord(recordId, request.expectedRevision).sourceType in listOf("audio_recording", "upload"))
+        val updated = api.speakerIdentityDecision(recordId, speakerId, request)
+        require(updated.id == speakerId)
+        val newRevision = requireNotNull(updated.recordRevision)
+        require(newRevision.toLong() in request.expectedRevision.toLong()..request.expectedRevision.toLong() + 1)
+        require(updated.manualLabel.length <= 128)
+        require(updated.attributedUserId == null || updated.manualLabel.isEmpty())
+        originalRecord(recordId, newRevision)
+        updated
+    }
+
+    private fun validateContactRef(reference: String) {
+        val parts = reference.split(":", limit = 2)
+        require(parts.size == 2 && parts[0] in setOf("member", "external"))
+        requireUuid(parts[1])
     }
 
     private suspend fun originalRecord(recordId: String, revision: Int): RecordDto {
