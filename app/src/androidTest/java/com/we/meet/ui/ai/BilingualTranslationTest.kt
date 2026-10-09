@@ -25,6 +25,7 @@ class BilingualTranslationTest {
             waitFor { f.wire != null }; f.wire!!.ready()
             waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
             assertEquals("en", f.fixedSource)
+            assertEquals(AssistantTranslationPair("en", "zh"), f.controller.state.value.pair)
             main { f.controller.fixedSource("zh") }
             assertEquals("en", f.controller.state.value.fixedSource)
             main { f.controller.stop(); f.controller.directAoq(false) }
@@ -32,6 +33,13 @@ class BilingualTranslationTest {
             main { f.controller.start() }
             waitFor { f.webRtcOpened && f.wire != null && !f.wire!!.closed.get() }
             assertEquals("en", f.fixedSource)
+            main { f.controller.stop(); f.controller.selectLanguage(true, "ja") }
+            assertEquals("ja", f.controller.state.value.fixedSource)
+            main { f.controller.selectLanguage(false, "de") }
+            assertEquals(AssistantTranslationPair("ja", "de"), f.controller.state.value.pair)
+            assertEquals("ja", f.controller.state.value.fixedSource)
+            main { f.controller.fixedSource(null); f.controller.selectLanguage(true, "fr") }
+            assertNull(f.controller.state.value.fixedSource)
         } finally { main { f.controller.close() } }
     }
     @Test fun defaultTranslationUsesAoqWithoutRequestingACloudTicket() {

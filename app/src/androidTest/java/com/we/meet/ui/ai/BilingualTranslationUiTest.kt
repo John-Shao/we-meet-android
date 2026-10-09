@@ -2,6 +2,9 @@ package com.we.meet.ui.ai
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -33,10 +36,20 @@ class BilingualTranslationUiTest {
             BilingualTranslationSettingsScreen(state.value, true, null, { _, _ -> }, {}, {}, {}, {},
                 onFixedSourceChange = { state.value = state.value.copy(fixedSource = it) })
         } }
-        compose.onNodeWithTag("bilingual-direction-en").performScrollTo().performClick()
-        compose.runOnIdle { assertEquals("en", state.value.fixedSource); state.value = state.value.copy(phase = BilingualPhase.LISTENING) }
-        compose.onNodeWithTag("bilingual-direction-auto").performScrollTo().performClick()
-        compose.runOnIdle { assertEquals("en", state.value.fixedSource) }
+        compose.onNodeWithText("⇄").assertIsDisplayed()
+        compose.onNodeWithTag("bilingual-direction-picker").performScrollTo().performClick()
+        compose.onNodeWithTag("bilingual-direction-manual").performClick()
+        compose.onNodeWithText("→").assertIsDisplayed()
+        compose.onNodeWithText("⇄").assertDoesNotExist()
+        compose.runOnIdle { assertEquals("zh", state.value.fixedSource); state.value = state.value.copy(phase = BilingualPhase.LISTENING) }
+        compose.onNodeWithTag("bilingual-direction-picker").performScrollTo().performClick()
+        compose.onNodeWithTag("bilingual-direction-auto").assertDoesNotExist()
+        compose.runOnIdle { assertEquals("zh", state.value.fixedSource); state.value = state.value.copy(phase = BilingualPhase.IDLE) }
+        compose.onNodeWithTag("bilingual-direction-picker").performClick()
+        compose.onNodeWithTag("bilingual-direction-auto").performClick()
+        compose.onNodeWithText("⇄").assertIsDisplayed()
+        compose.onNodeWithText("→").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(null, state.value.fixedSource) }
         screenshot("bilingual-direction-settings.png")
     }
     @Test fun translationTransportIsAvailableAndLockedDuringActiveSessions() {
@@ -47,17 +60,20 @@ class BilingualTranslationUiTest {
                 onBack = {}, onSelectScene = {},
                 onDirectAoqChange = { state.value = state.value.copy(directAoq = it) })
         } }
+        compose.onNodeWithTag("bilingual-transport-picker").performClick()
         compose.onNodeWithTag("bilingual-aoq").assertIsDisplayed()
         compose.onNodeWithTag("bilingual-webrtc").performClick()
         compose.runOnIdle {
             assertEquals(false, state.value.directAoq)
             state.value = state.value.copy(phase = BilingualPhase.LISTENING)
         }
-        compose.onNodeWithTag("bilingual-aoq").performClick()
+        compose.onNodeWithTag("bilingual-transport-picker").performClick()
+        compose.onNodeWithTag("bilingual-aoq").assertDoesNotExist()
         compose.runOnIdle {
             assertEquals(false, state.value.directAoq)
             state.value = state.value.copy(phase = BilingualPhase.IDLE)
         }
+        compose.onNodeWithTag("bilingual-transport-picker").performClick()
         compose.onNodeWithTag("bilingual-aoq").performClick()
         compose.runOnIdle { assertEquals(true, state.value.directAoq) }
     }
@@ -113,16 +129,21 @@ class BilingualTranslationUiTest {
         compose.onNodeWithTag("assistant-scene-business").performClick()
         compose.onNodeWithTag("bilingual-first-language").assertIsDisplayed()
         compose.onNodeWithTag("bilingual-second-language").assertIsDisplayed()
-        compose.onNodeWithTag("bilingual-mode-side-by-side").performScrollTo().performClick()
-        compose.onNodeWithTag("bilingual-sound").performScrollTo().performClick()
+        compose.onNodeWithTag("bilingual-display-picker").performScrollTo().performClick()
+        compose.onNodeWithTag("bilingual-mode-side-by-side").performClick()
+        val sound = compose.onNodeWithTag("bilingual-sound").performScrollTo()
+        val soundWasOn = sound.fetchSemanticsNode().config[SemanticsProperties.ToggleableState] == ToggleableState.On
+        sound.performClick()
         screenshot("bilingual-settings.png")
         InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
         compose.runOnIdle { assertEquals(0, exits) }
         compose.onNodeWithTag("bilingual-facing-self").assertDoesNotExist()
         compose.onNodeWithText(context.getString(R.string.bilingual_empty)).assertIsDisplayed()
         compose.onNodeWithTag("bilingual-settings").performClick()
-        compose.onNodeWithTag("bilingual-sound").performScrollTo().assertIsOff()
-        compose.onNodeWithTag("bilingual-mode-facing").performScrollTo().performClick()
+        val restoredSound = compose.onNodeWithTag("bilingual-sound").performScrollTo()
+        if (soundWasOn) restoredSound.assertIsOff() else restoredSound.assertIsOn()
+        compose.onNodeWithTag("bilingual-display-picker").performScrollTo().performClick()
+        compose.onNodeWithTag("bilingual-mode-facing").performClick()
         compose.onNodeWithContentDescription(context.getString(com.we.meet.design.R.string.cd_back)).performClick()
         compose.runOnIdle { assertEquals(0, exits) }
         compose.onNodeWithTag("bilingual-facing-self").assertIsDisplayed()

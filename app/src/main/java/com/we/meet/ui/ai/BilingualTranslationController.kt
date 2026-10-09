@@ -194,11 +194,11 @@ internal class BilingualTranslationController(
     }
     fun selectLanguage(first: Boolean, language: String) {
         if (active != null || language !in BilingualLanguages.labels) return
-        mutable.update { it.copy(
-            pair = BilingualLanguages.select(it.pair, first, language),
-            unknownLanguage = false,
-            fixedSource = null,
-        ) }
+        mutable.update {
+            val pair = BilingualLanguages.select(it.pair, first, language)
+            it.copy(pair = pair, unknownLanguage = false,
+                fixedSource = if (it.fixedSource == null) null else pair.source)
+        }
         preferences?.save(mutable.value)
     }
     fun directAoq(enabled: Boolean) {
@@ -210,7 +210,10 @@ internal class BilingualTranslationController(
         if (active != null) return
         val pair = mutable.value.pair
         if (language != null && language != pair.source && language != pair.target) return
-        mutable.update { it.copy(fixedSource = language, unknownLanguage = false) }
+        mutable.update { it.copy(
+            pair = if (language == pair.target) AssistantTranslationPair(pair.target, pair.source) else pair,
+            fixedSource = language, unknownLanguage = false,
+        ) }
         preferences?.save(mutable.value)
     }
     fun selectScene(id: String?) {

@@ -121,7 +121,7 @@ private fun SectionLabel(text: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun CallSettingsDropdown(
+fun CallSettingsDropdown(
     value: String,
     options: List<String>,
     onSelect: (Int) -> Unit,
@@ -149,7 +149,7 @@ internal fun CallSettingsDropdown(
                 .fillMaxWidth(),
         )
         ExposedDropdownMenu(
-            expanded = expanded,
+            expanded = expanded && enabled,
             onDismissRequest = { expanded = false },
             modifier = Modifier.heightIn(max = Dimens.SheetContentMaxHeight),
         ) {

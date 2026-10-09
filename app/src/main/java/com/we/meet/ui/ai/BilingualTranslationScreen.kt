@@ -189,7 +189,8 @@ internal fun BilingualLanguageSelectors(state: BilingualState, select: (Boolean,
             modifier = Modifier.weight(1f).testTag("bilingual-first-language")) {
             Text(stringResource(BilingualLanguages.label(state.pair.source)), fontWeight = FontWeight.Bold)
         }
-        Text("⇄", style = MaterialTheme.typography.titleLarge)
+        Text(if (state.fixedSource == null) "⇄" else "→", style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.testTag("bilingual-language-arrow"))
         OutlinedButton(onClick = { choosingFirst = false }, enabled = !state.active,
             modifier = Modifier.weight(1f).testTag("bilingual-second-language")) {
             Text(stringResource(BilingualLanguages.label(state.pair.target)), fontWeight = FontWeight.Bold)

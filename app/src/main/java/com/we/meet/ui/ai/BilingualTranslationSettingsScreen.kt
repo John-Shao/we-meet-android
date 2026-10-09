@@ -11,6 +11,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.we.meet.R
+import com.we.meet.feature.assistant.aicall.ui.CallSettingsDropdown
 import com.we.meet.feature.assistant.history.AssistantHistoryPreference
 import com.we.meet.feature.assistant.history.AssistantHistoryStore
 import com.we.meet.ui.components.SettingsDivider
@@ -47,15 +48,24 @@ internal fun BilingualTranslationSettingsScreen(
                     enabled = !state.active,
                     modifier = Modifier.padding(Dimens.ScreenPadding))
             }
+            val dropdownPadding = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM)
             SettingsGroupHeader(stringResource(R.string.bilingual_transport))
             SettingsGroup {
-                listOf(true, false).forEach { direct ->
-                    SettingsRow(label = stringResource(if (direct) R.string.bilingual_transport_aoq else R.string.bilingual_transport_webrtc),
-                        modifier = Modifier.testTag(if (direct) "bilingual-aoq" else "bilingual-webrtc"),
-                        onClick = { if (!state.active) onDirectAoqChange(direct) },
-                        trailing = { RadioButton(selected = state.directAoq == direct, onClick = null, enabled = !state.active) })
-                }
+                val options = listOf(stringResource(R.string.bilingual_transport_aoq), stringResource(R.string.bilingual_transport_webrtc))
+                CallSettingsDropdown(options[if (state.directAoq) 0 else 1], options,
+                    onSelect = { onDirectAoqChange(it == 0) }, enabled = !state.active,
+                    modifier = dropdownPadding.testTag("bilingual-transport-picker"),
+                    optionTag = { if (it == 0) "bilingual-aoq" else "bilingual-webrtc" })
             }
+            SettingsGroupHeader(stringResource(R.string.bilingual_direction_settings))
+            SettingsGroup {
+                val options = listOf(stringResource(R.string.bilingual_direction_auto), stringResource(R.string.bilingual_direction_manual))
+                CallSettingsDropdown(options[if (state.fixedSource == null) 0 else 1], options,
+                    onSelect = { onFixedSourceChange(if (it == 0) null else state.pair.source) }, enabled = !state.active,
+                    modifier = dropdownPadding.testTag("bilingual-direction-picker"),
+                    optionTag = { if (it == 0) "bilingual-direction-auto" else "bilingual-direction-manual" })
+            }
+            SettingsHint(stringResource(R.string.bilingual_direction_hint))
             SettingsGroupHeader(stringResource(R.string.bilingual_languages))
             SettingsGroup {
                 Box(Modifier.padding(horizontal = Dimens.ScreenPadding)) {
@@ -63,32 +73,13 @@ internal fun BilingualTranslationSettingsScreen(
                 }
             }
             if (state.active) SettingsHint(stringResource(R.string.bilingual_settings_locked))
-            run {
-                SettingsGroupHeader(stringResource(R.string.bilingual_direction_settings))
-                SettingsGroup {
-                    listOf(null, state.pair.source, state.pair.target).forEach { source ->
-                        val label = if (source == null) stringResource(R.string.bilingual_direction_auto)
-                            else stringResource(R.string.bilingual_direction_fixed,
-                                stringResource(BilingualLanguages.label(source)),
-                                stringResource(BilingualLanguages.label(BilingualLanguages.opposite(state.pair, source))))
-                        SettingsRow(label = label, modifier = Modifier.testTag("bilingual-direction-${source ?: "auto"}"),
-                            onClick = { if (!state.active) onFixedSourceChange(source) },
-                            trailing = { RadioButton(selected = state.fixedSource == source, onClick = null, enabled = !state.active) })
-                    }
-                }
-                SettingsHint(stringResource(R.string.bilingual_direction_hint))
-            }
             SettingsGroupHeader(stringResource(R.string.bilingual_display_mode))
             SettingsGroup {
-                listOf(true, false).forEach { faceToFace ->
-                    if (!faceToFace) SettingsDivider()
-                    SettingsRow(
-                        label = stringResource(if (faceToFace) AssistantR.string.assistant_facing_mode else AssistantR.string.assistant_side_by_side_mode),
-                        modifier = Modifier.testTag(if (faceToFace) "bilingual-mode-facing" else "bilingual-mode-side-by-side"),
-                        onClick = { onFacingChange(faceToFace) },
-                        trailing = { RadioButton(selected = facing == faceToFace, onClick = null) },
-                    )
-                }
+                val options = listOf(stringResource(AssistantR.string.assistant_facing_mode), stringResource(AssistantR.string.assistant_side_by_side_mode))
+                CallSettingsDropdown(options[if (facing) 0 else 1], options,
+                    onSelect = { onFacingChange(it == 0) }, enabled = true,
+                    modifier = dropdownPadding.testTag("bilingual-display-picker"),
+                    optionTag = { if (it == 0) "bilingual-mode-facing" else "bilingual-mode-side-by-side" })
             }
             Spacer(Modifier.height(Dimens.SpaceL))
             SettingsGroup {

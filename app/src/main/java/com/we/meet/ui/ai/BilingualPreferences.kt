@@ -22,7 +22,9 @@ internal class BilingualPreferences(context: Context, account: String) {
         val scene = TranslationScene.find(prefs.getString("scene", null))
         val direct = prefs.getBoolean("direct-aoq", true)
         val fixed = prefs.getString("fixed-source", null)?.takeIf { it in setOf(pair.source, pair.target) }
-        return BilingualState(pair = pair, sound = sound, sceneId = scene?.id, directAoq = direct, fixedSource = fixed)
+        // Preserve legacy reverse directions by placing the chosen source on the left.
+        val orderedPair = if (fixed == pair.target) AssistantTranslationPair(pair.target, pair.source) else pair
+        return BilingualState(pair = orderedPair, sound = sound, sceneId = scene?.id, directAoq = direct, fixedSource = fixed)
     }
 
     fun save(state: BilingualState) {

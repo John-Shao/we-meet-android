@@ -76,6 +76,7 @@ class AoqDefaultPreferencesTest {
         val prefs = BilingualPreferences(context, "direction")
         prefs.save(prefs.load().copy(fixedSource = "en"))
         assertEquals("en", prefs.load().fixedSource)
+        assertEquals(AssistantTranslationPair("en", "zh"), prefs.load().pair)
         prefs.save(prefs.load().copy(directAoq = false))
         assertEquals("en", prefs.load().fixedSource)
         prefs.save(prefs.load().copy(directAoq = true, fixedSource = "fr"))

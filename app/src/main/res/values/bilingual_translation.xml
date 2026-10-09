@@ -4,9 +4,9 @@
     <string name="bilingual_settings_title">Translation settings</string>
     <string name="bilingual_languages">Translation languages</string>
     <string name="bilingual_direction_settings">Translation direction</string>
-    <string name="bilingual_direction_auto">Automatic two-way translation</string>
-    <string name="bilingual_direction_fixed">%1$s → %2$s</string>
-    <string name="bilingual_direction_hint">Choose a fixed direction for one-way speech. Automatic mode detects the spoken language before translating.</string>
+    <string name="bilingual_direction_auto">Automatic detection</string>
+    <string name="bilingual_direction_manual">Specify manually</string>
+    <string name="bilingual_direction_hint">Automatic mode detects either spoken language. Manual mode translates from the left language to the right; choose the languages below.</string>
     <string name="bilingual_display_mode">Display mode</string>
     <string name="bilingual_language_pair">%1$s ⇄ %2$s</string>
     <string name="bilingual_settings_locked">End translation to change languages or text saving.</string>
