@@ -21,17 +21,19 @@ class BilingualTranslationTest {
     @Test fun fixedDirectionIsPassedToAoqAndLockedUntilTheSessionStops() {
         val f = Fixture(cloud = false)
         try {
-            main { f.controller.fixedSource("en"); f.controller.start() }
+            main { f.controller.fixedSource("en"); f.controller.voice("Ethan"); f.controller.start() }
             waitFor { f.wire != null }; f.wire!!.ready()
             waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+            assertEquals("Ethan", f.selectedVoice)
             assertEquals("en", f.fixedSource)
             assertEquals(AssistantTranslationPair("en", "zh"), f.controller.state.value.pair)
-            main { f.controller.fixedSource("zh") }
+            main { f.controller.fixedSource("zh"); f.controller.voice("Tina") }
             assertEquals("en", f.controller.state.value.fixedSource)
             main { f.controller.stop(); f.controller.directAoq(false) }
             assertEquals("en", f.controller.state.value.fixedSource)
             main { f.controller.start() }
             waitFor { f.webRtcOpened && f.wire != null && !f.wire!!.closed.get() }
+            assertEquals("Ethan", f.selectedVoice)
             assertEquals("en", f.fixedSource)
             main { f.controller.stop(); f.controller.selectLanguage(true, "ja") }
             assertEquals("ja", f.controller.state.value.fixedSource)
@@ -42,6 +44,27 @@ class BilingualTranslationTest {
             assertNull(f.controller.state.value.fixedSource)
         } finally { main { f.controller.close() } }
     }
+    @Test fun backendVoiceChangesReachWireAndRetainActiveSessionSelection() {
+        val f = Fixture(cloud = false)
+        try {
+            val config = com.we.meet.data.api.TranslationVoiceConfig("qwen3.8-livetranslate-flash-realtime", "FutureVoice",
+                listOf(com.we.meet.data.api.TranslationVoice("FutureVoice", "New voice")))
+            main { f.api.config = config; f.controller.refreshVoices() }
+            waitFor { f.controller.state.value.voice == "FutureVoice" }
+            main { f.controller.start() }
+            waitFor { f.wire != null }
+            assertEquals("FutureVoice", f.selectedVoice)
+            main { f.api.config = config.copy(defaultVoice = null, voices = emptyList()); f.controller.refreshVoices() }
+            waitFor { f.controller.state.value.voiceConfig?.voices?.isEmpty() == true }
+            assertEquals("FutureVoice", f.controller.state.value.voice)
+            main { f.controller.stop(); f.controller.start() }
+            assertFalse(f.controller.state.value.active)
+            assertEquals("", f.controller.state.value.voice)
+            main { f.api.config = null; f.controller.refreshVoices() }
+            assertTrue(f.controller.state.value.voiceConfig!!.voices.isEmpty())
+        } finally { main { f.controller.close() } }
+    }
+
     @Test fun defaultTranslationUsesAoqWithoutRequestingACloudTicket() {
         val f = Fixture(cloud = false)
         try {
@@ -194,6 +217,8 @@ class BilingualTranslationTest {
         fun ready() { listener.opened(); listener.message("{\"type\":\"ready\"}") }
     }
     private class Api : AssistantTranslationApi {
+        var config: com.we.meet.data.api.TranslationVoiceConfig? = null
+        override suspend fun voiceConfig() = config ?: error("offline")
         var selected: AssistantTranslationPair? = null
         var wait: CompletableDeferred<Unit>? = null
         var timeout = false
@@ -236,6 +261,7 @@ class BilingualTranslationTest {
         @Volatile var wire: Wire? = null
         @Volatile var aoqOpened = false
         @Volatile var webRtcOpened = false
+        @Volatile var selectedVoice = ""
         @Volatile var fixedSource: String? = null
         @Volatile var selectedPair: AssistantTranslationPair? = null
         var opened = false
@@ -263,7 +289,7 @@ class BilingualTranslationTest {
                         override fun close() = delegate.close()
                     }
                 }
-            }, { pair, source, listener -> selectedPair = pair; fixedSource = source; Wire(listener).also { webRtcOpened = true; wire = it } },
+            }, { pair, source, voice, listener -> selectedPair = pair; fixedSource = source; selectedVoice = voice; Wire(listener).also { webRtcOpened = true; wire = it } },
             openForeground = { stopped ->
                 if (realBackground) com.we.meet.feature.assistant.background.AssistantForegroundSession.start(
                     InstrumentationRegistry.getInstrumentation().targetContext,
@@ -273,7 +299,7 @@ class BilingualTranslationTest {
                     override fun close() = Unit
                 }
             },
-            openAoqWire = { _, source, listener -> fixedSource = source; Wire(listener).also { aoqOpened = true; wire = it } },
+            openAoqWire = { _, source, voice, listener -> fixedSource = source; selectedVoice = voice; Wire(listener).also { aoqOpened = true; wire = it } },
         ).also { if (cloud) it.directAoq(false) }
     }
 

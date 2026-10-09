@@ -62,6 +62,7 @@ class AoqBilingualLiveTest {
                         authorized = { true }, openMicrophone = { microphone })
                     assertTrue(controller!!.state.value.directAoq)
                     controller!!.fixedSource(fixedSource)
+                    controller!!.voice(InstrumentationRegistry.getArguments().getString("translationVoice") ?: BilingualVoices.DEFAULT)
                     controller!!.start()
                 }
                 withTimeout(50_000) { while (controller!!.state.value.phase != BilingualPhase.LISTENING) {

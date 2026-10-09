@@ -37,6 +37,7 @@ internal fun BilingualTranslationSettingsScreen(
     onSelectScene: (String?) -> Unit,
     onDirectAoqChange: (Boolean) -> Unit = {},
     onFixedSourceChange: (String?) -> Unit = {},
+    onVoiceChange: (String) -> Unit = {},
 ) {
     Scaffold(topBar = {
         WeMeetTopBar(title = stringResource(R.string.bilingual_settings_title), onBack = onBack)
@@ -80,6 +81,16 @@ internal fun BilingualTranslationSettingsScreen(
                     onSelect = { onFacingChange(it == 0) }, enabled = true,
                     modifier = dropdownPadding.testTag("bilingual-display-picker"),
                     optionTag = { if (it == 0) "bilingual-mode-facing" else "bilingual-mode-side-by-side" })
+            }
+            SettingsGroupHeader(stringResource(AssistantR.string.assistant_section_voice))
+            SettingsGroup {
+                val voices = state.voiceConfig?.voices?.map { it.value } ?: BilingualVoices.labels.keys.toList()
+                val labels = state.voiceConfig?.voices?.map { it.label } ?: voices.map { stringResource(BilingualVoices.label(it)) }
+                CallSettingsDropdown(labels.getOrNull(voices.indexOf(state.voice)) ?: "—",
+                    labels,
+                    onSelect = { onVoiceChange(voices[it]) }, enabled = !state.active && voices.isNotEmpty(),
+                    modifier = dropdownPadding.testTag("bilingual-voice-picker"),
+                    optionTag = { "bilingual-voice-${voices[it]}" })
             }
             Spacer(Modifier.height(Dimens.SpaceL))
             SettingsGroup {

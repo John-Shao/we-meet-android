@@ -1,6 +1,10 @@
 package com.we.meet.ui.ai
 
 import android.content.Context
+import com.we.meet.data.api.TranslationVoiceConfig
+import com.we.meet.data.api.TranslationVoice
+import org.json.JSONObject
+import org.json.JSONArray
 import com.we.meet.data.api.AssistantTranslationPair
 import com.we.meet.feature.assistant.scenes.TranslationScene
 import java.security.MessageDigest
@@ -24,13 +28,33 @@ internal class BilingualPreferences(context: Context, account: String) {
         val fixed = prefs.getString("fixed-source", null)?.takeIf { it in setOf(pair.source, pair.target) }
         // Preserve legacy reverse directions by placing the chosen source on the left.
         val orderedPair = if (fixed == pair.target) AssistantTranslationPair(pair.target, pair.source) else pair
-        return BilingualState(pair = orderedPair, sound = sound, sceneId = scene?.id, directAoq = direct, fixedSource = fixed)
+        val catalog = loadVoiceConfig()
+        return BilingualState(pair = orderedPair, sound = sound, sceneId = scene?.id, directAoq = direct, fixedSource = fixed,
+            voice = BilingualVoices.resolve(prefs.getString("voice", null), catalog), voiceConfig = catalog)
+    }
+
+    private fun loadVoiceConfig(): TranslationVoiceConfig? = runCatching {
+        val json = JSONObject(prefs.getString("voice-config", null) ?: return null)
+        val voices = json.getJSONArray("voices")
+        TranslationVoiceConfig(json.getString("model"),
+            if (json.isNull("default_voice")) null else json.getString("default_voice"),
+            List(voices.length()) { index -> voices.getJSONObject(index).let { TranslationVoice(it.getString("value"), it.getString("label")) } })
+            .takeIf(BilingualVoices::valid)
+    }.getOrNull()
+
+    fun cacheVoiceConfig(config: TranslationVoiceConfig) {
+        require(BilingualVoices.valid(config))
+        val voices = JSONArray()
+        config.voices.forEach { voices.put(JSONObject().put("value", it.value).put("label", it.label)) }
+        prefs.edit().putString("voice-config", JSONObject().put("model", config.model)
+            .put("default_voice", config.defaultVoice ?: JSONObject.NULL).put("voices", voices).toString()).apply()
     }
 
     fun save(state: BilingualState) {
         prefs.edit().putString("source", state.pair.source).putString("target", state.pair.target)
             .putBoolean("aoq_default_v1", true)
             .putString("fixed-source", state.fixedSource)
+            .putString("voice", BilingualVoices.resolve(state.voice, state.voiceConfig))
             .putBoolean("direct-aoq", state.directAoq).putBoolean("sound", state.sound).putString("scene", state.sceneId).apply()
     }
 }

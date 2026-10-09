@@ -71,7 +71,32 @@ class AoqDefaultPreferencesTest {
     @Test fun newTranslationDefaultsToAoq() {
         assertTrue(BilingualState().directAoq)
         assertTrue(BilingualPreferences(context, "new").load().directAoq)
+        assertEquals("Tina", BilingualPreferences(context, "new").load().voice)
     }
+    @Test fun translationVoicePersistsIndependentlyAndRejectsOmniOnlyVoice() {
+        val prefs = BilingualPreferences(context, "voice")
+        prefs.save(prefs.load().copy(voice = "Ethan", directAoq = false))
+        assertEquals("Ethan", BilingualPreferences(context, "voice").load().voice)
+        assertEquals("Tina", BilingualPreferences(context, "other").load().voice)
+        prefs.save(prefs.load().copy(directAoq = true))
+        assertEquals("Ethan", prefs.load().voice)
+        translationStore("voice").edit().putString("voice", "Zane").commit()
+        assertEquals("Tina", prefs.load().voice)
+    }
+    @Test fun remoteVoiceCatalogSurvivesRestartAndIsAccountScoped() {
+        val prefs = BilingualPreferences(context, "remote")
+        val config = com.we.meet.data.api.TranslationVoiceConfig("qwen3.8-livetranslate-flash-realtime", "FutureVoice",
+            listOf(com.we.meet.data.api.TranslationVoice("FutureVoice", "New voice")))
+        prefs.cacheVoiceConfig(config)
+        prefs.save(prefs.load().copy(voice = "FutureVoice"))
+        assertEquals("FutureVoice", BilingualPreferences(context, "remote").load().voice)
+        assertEquals(config, BilingualPreferences(context, "remote").load().voiceConfig)
+        assertNull(BilingualPreferences(context, "another").load().voiceConfig)
+        prefs.cacheVoiceConfig(config.copy(defaultVoice = null, voices = emptyList()))
+        assertEquals("", prefs.load().voice)
+        assertTrue(prefs.load().voiceConfig!!.voices.isEmpty())
+    }
+
     @Test fun explicitDirectionPersistsForBothDirectTransportsAndValidLanguages() {
         val prefs = BilingualPreferences(context, "direction")
         prefs.save(prefs.load().copy(fixedSource = "en"))

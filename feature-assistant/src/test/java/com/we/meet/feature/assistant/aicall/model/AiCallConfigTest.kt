@@ -5,17 +5,11 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class AiCallConfigTest {
-    @Test fun sceneUsesItsPromptAndPreservesTransportAndVoice() {
-        val answer = AiCallAnswer("sdp-answer", "Tina", "catalog-prompt")
-        val preset = com.we.meet.feature.assistant.scenes.AssistantScene.PRACTICE
-        assertEquals(answer.copy(instructions = preset.instructions), answer.forScene(preset.id))
-        assertEquals(answer, answer.forScene(null))
-        assertEquals(answer, answer.forScene("removed"))
-    }
-    @Test fun sceneSurvivesCatalogResolutionAndUnknownSceneFallsBack() {
-        val selection = AiCallSelection(voiceId = "ryan-id", sceneId = "practice")
-        assertEquals(selection, config.resolveSelection(selection))
-        assertNull(config.resolveSelection(selection.copy(sceneId = "removed")).sceneId)
+    @Test fun legacySceneResolvesToServerPromptIdAndRemovedSceneFallsBack() {
+        val migrated = config.resolveSelection(AiCallSelection(voiceId = "ryan-id", sceneId = "practice"))
+        assertEquals(AiCallSelection(voiceId = "ryan-id", promptId = "practice-id"), migrated)
+        assertNull(config.resolveSelection(migrated.copy(sceneId = "removed", promptId = null)).promptId)
+        assertNull(migrated.sceneId)
     }
     private val qwen = AiProfileDto(
         code = "custom-qwen-profile",
@@ -30,7 +24,7 @@ class AiCallConfigTest {
             AiProfileDto("qwen-old", model_code = "aliyun/qwen3-omni-flash-realtime"),
             qwen,
         ),
-        prompts = listOf(AiPromptDto("prompt-id", "Guide")),
+        prompts = listOf(AiPromptDto("prompt-id", "Guide"), AiPromptDto("practice-id", "Server practice", code = "call.scene.practice")),
     )
 
     @Test

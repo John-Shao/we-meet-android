@@ -13,7 +13,7 @@ import com.we.meet.feature.assistant.aicall.model.AiCallSelection
 import com.we.meet.feature.assistant.scenes.AssistantScene
 import com.we.meet.ui.theme.Dimens
 
-/** One choice across built-in scenarios and the existing server prompt catalog. */
+/** Scene choices and instructions come from the server catalog. */
 @Composable
 fun AiCallScenePicker(
     config: AiAgentConfigResponse?,
@@ -23,12 +23,12 @@ fun AiCallScenePicker(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    val scene = AssistantScene.find(selection.sceneId)
     val prompts = config?.prompts.orEmpty()
     val prompt = prompts.firstOrNull { it.id == selection.promptId }
+    val scene = AssistantScene.find(prompt?.code?.removePrefix("call.scene."))
     val title = stringResource(R.string.assistant_call_scene_title)
     val defaultLabel = stringResource(R.string.assistant_call_scene_general)
-    val label = scene?.let { stringResource(it.label) } ?: prompt?.label ?: defaultLabel
+    val label = prompt?.label ?: defaultLabel
     val hint = when {
         scene != null -> stringResource(scene.description)
         prompt != null -> stringResource(R.string.assistant_call_scene_catalog_hint, prompt.label)
@@ -40,13 +40,9 @@ fun AiCallScenePicker(
             modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS))
         CallSettingsDropdown(
             value = label,
-            options = listOf(defaultLabel) + AssistantScene.entries.map { stringResource(it.label) } + prompts.map { it.label },
+            options = listOf(defaultLabel) + prompts.map { it.label },
             onSelect = { index ->
-                when {
-                    index == 0 -> onSelectPrompt(null)
-                    index <= AssistantScene.entries.size -> onSelectScene(AssistantScene.entries[index - 1].id)
-                    else -> onSelectPrompt(prompts[index - AssistantScene.entries.size - 1].id)
-                }
+                onSelectPrompt(if (index == 0) null else prompts[index - 1].id)
             },
             enabled = enabled,
             modifier = Modifier.testTag("call-scene-picker"),

@@ -55,6 +55,8 @@ internal data class BilingualState(
     val sceneId: String? = null,
     val directAoq: Boolean = true,
     val fixedSource: String? = null,
+    val voice: String = BilingualVoices.DEFAULT,
+    val voiceConfig: com.we.meet.data.api.TranslationVoiceConfig? = null,
 ) {
     val active get() = phase in setOf(BilingualPhase.CONNECTING, BilingualPhase.LISTENING, BilingualPhase.SPEAKING, BilingualPhase.FINISHING)
     override fun toString() = "BilingualState(<private>)"
@@ -87,16 +89,16 @@ internal class BilingualTranslationController(
             override fun close() = delegate.close()
         }
     },
-    private val openWebRtcWire: (AssistantTranslationPair, String?, CaptureTranslationWire.Listener) -> CaptureTranslationWire = { pair, source, listener ->
-        DirectBilingualWire(context.applicationContext, api, pair, listener, source, webRtc = true)
+    private val openWebRtcWire: (AssistantTranslationPair, String?, String, CaptureTranslationWire.Listener) -> CaptureTranslationWire = { pair, source, voice, listener ->
+        DirectBilingualWire(context.applicationContext, api, pair, listener, source, webRtc = true, voice = voice)
     },
     private val openForeground: suspend (() -> Unit) -> AssistantSessionLease = { stopped ->
         AssistantForegroundSession.start(context, AssistantSessionKind.TRANSLATION, camera = false, stopped = stopped)
     },
     val history: com.we.meet.feature.assistant.history.AssistantHistoryStore? = null,
     private val preferences: BilingualPreferences? = null,
-    private val openAoqWire: (AssistantTranslationPair, String?, CaptureTranslationWire.Listener) -> CaptureTranslationWire = { pair, source, listener ->
-        DirectBilingualWire(context.applicationContext, api, pair, listener, source)
+    private val openAoqWire: (AssistantTranslationPair, String?, String, CaptureTranslationWire.Listener) -> CaptureTranslationWire = { pair, source, voice, listener ->
+        DirectBilingualWire(context.applicationContext, api, pair, listener, source, voice = voice)
     },
 ) : Closeable {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -106,6 +108,28 @@ internal class BilingualTranslationController(
     private val replayCache = BilingualReplayCache()
     private var replayJob: Job? = null
     private var replayOutput: BilingualAudioOutput? = null
+
+    private var voiceConfigJob: Job? = null
+
+    init { refreshVoices() }
+
+    fun refreshVoices() {
+        voiceConfigJob?.cancel()
+        voiceConfigJob = scope.launch {
+            try {
+                if (!authorized()) return@launch
+                val config = withTimeout(10000) { api.voiceConfig() }
+                if (!authorized() || !BilingualVoices.valid(config)) return@launch
+                preferences?.cacheVoiceConfig(config)
+                mutable.update { it.copy(voiceConfig = config,
+                    voice = if (it.active) it.voice else BilingualVoices.resolve(it.voice, config)) }
+                if (active == null) preferences?.save(mutable.value)
+            } catch (error: Exception) {
+                if (error is CancellationException && error !is TimeoutCancellationException) throw error
+                // Retain the last valid account-scoped catalog during network failures.
+            }
+        }
+    }
 
     fun replay(id: String) {
         if (!authorized() || mutable.value.replaying) return
@@ -155,6 +179,8 @@ internal class BilingualTranslationController(
 
     fun start() {
         if (active != null || !authorized()) return
+        mutable.update { it.copy(voice = BilingualVoices.resolve(it.voice, it.voiceConfig)) }
+        if (mutable.value.voice.isEmpty()) return
         stopReplay()
         val session = Session(mutable.value.pair)
         active = session
@@ -180,7 +206,7 @@ internal class BilingualTranslationController(
         val session = active
         active = null
         session?.release()
-        mutable.update { it.copy(phase = phase, unknownLanguage = false) }
+        mutable.update { it.copy(phase = phase, unknownLanguage = false, voice = BilingualVoices.resolve(it.voice, it.voiceConfig)) }
     }
 
     fun sound(enabled: Boolean) {
@@ -199,6 +225,11 @@ internal class BilingualTranslationController(
             it.copy(pair = pair, unknownLanguage = false,
                 fixedSource = if (it.fixedSource == null) null else pair.source)
         }
+        preferences?.save(mutable.value)
+    }
+    fun voice(value: String) {
+        if (active != null || BilingualVoices.resolve(value, mutable.value.voiceConfig) != value) return
+        mutable.update { it.copy(voice = value) }
         preferences?.save(mutable.value)
     }
     fun directAoq(enabled: Boolean) {
@@ -297,8 +328,8 @@ internal class BilingualTranslationController(
                 }
             }
             stage = if (direct) "aoq_transport" else "webrtc_transport"
-            wire = if (direct) openAoqWire(pair, mutable.value.fixedSource, listener)
-                else openWebRtcWire(pair, mutable.value.fixedSource, listener)
+            wire = if (direct) openAoqWire(pair, mutable.value.fixedSource, mutable.value.voice, listener)
+                else openWebRtcWire(pair, mutable.value.fixedSource, mutable.value.voice, listener)
             launch(Dispatchers.Default) {
                 for (raw in events) {
                     if (closed.get()) break

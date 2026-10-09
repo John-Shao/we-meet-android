@@ -139,7 +139,7 @@ class AiCallViewModel(
                     }
                     if (rtcClient !== client) { lease?.close(); throw CancellationException("Call was stopped") }
                     modelLease = lease
-                    answer.forScene(selection.sceneId)
+                    answer
                 }
                 if (_state.value.mode == AiCallMode.Video) withTimeout(10_000) { client.setCameraEnabled(true) }
                 if (_state.value.mode == AiCallMode.Video) client.publishCameraState()

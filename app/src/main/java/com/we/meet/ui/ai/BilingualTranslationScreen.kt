@@ -61,6 +61,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
     LaunchedEffect(state.rows.lastOrNull()?.id, facing, showSettings) {
         if (!showSettings && !facing && state.rows.isNotEmpty()) listState.animateScrollToItem(state.rows.lastIndex)
     }
+    LaunchedEffect(showSettings) { if (showSettings) controller.refreshVoices() }
     if (showSettings) {
         BilingualTranslationSettingsScreen(
             state = state,
@@ -70,6 +71,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
             onSelectScene = controller::selectScene,
             onDirectAoqChange = controller::directAoq,
             onFixedSourceChange = controller::fixedSource,
+            onVoiceChange = controller::voice,
             onFacingChange = { facing = it },
             onSoundChange = controller::sound,
             onBack = { showSettings = false },
@@ -172,7 +174,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                             if (needed.isEmpty()) controller.start() else permission.launch(needed.toTypedArray())
                         }
                     },
-                    enabled = state.phase != BilingualPhase.FINISHING,
+                    enabled = state.phase != BilingualPhase.FINISHING && (state.active || state.voiceConfig?.voices?.isEmpty() != true),
                     modifier = Modifier.weight(1f).height(Dimens.ButtonHeight),
                 ) { Text(stringResource(if (state.active) R.string.bilingual_stop else R.string.bilingual_start)) }
             }

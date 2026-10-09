@@ -1,0 +1,49 @@
+<resources>
+    <string name="bilingual_voice_tina" translatable="false">Tina（甜甜）</string>
+    <string name="bilingual_voice_cindy" translatable="false">Cindy（林欣宜）</string>
+    <string name="bilingual_voice_liora_mira" translatable="false">Liora Mira（清欢）</string>
+    <string name="bilingual_voice_sunnybobi" translatable="false">Sunnybobi（知芝）</string>
+    <string name="bilingual_voice_raymond" translatable="false">Raymond（林川野）</string>
+    <string name="bilingual_voice_ethan" translatable="false">Ethan（晨煦）</string>
+    <string name="bilingual_voice_theo_calm" translatable="false">Theo Calm（予安）</string>
+    <string name="bilingual_voice_serena" translatable="false">Serena（苏瑶）</string>
+    <string name="bilingual_voice_harvey" translatable="false">Harvey（厚）</string>
+    <string name="bilingual_voice_maia" translatable="false">Maia（四月）</string>
+    <string name="bilingual_voice_evan" translatable="false">Evan（江晨）</string>
+    <string name="bilingual_voice_qiao" translatable="false">Qiao（小乔妹）</string>
+    <string name="bilingual_voice_momo" translatable="false">Momo（茉兔）</string>
+    <string name="bilingual_voice_wil" translatable="false">Wil（伟伦）</string>
+    <string name="bilingual_voice_angel" translatable="false">Angel（台普 - 安琪）</string>
+    <string name="bilingual_voice_li_cassian" translatable="false">Li Cassian（东厂 - 李公公）</string>
+    <string name="bilingual_voice_mia" translatable="false">Mia（温柔生活博主 - 舒然）</string>
+    <string name="bilingual_voice_joyner" translatable="false">Joyner（喜剧担当 - 阿逗）</string>
+    <string name="bilingual_voice_gold" translatable="false">Gold（金爷）</string>
+    <string name="bilingual_voice_katerina" translatable="false">Katerina（卡捷琳娜）</string>
+    <string name="bilingual_voice_ryan" translatable="false">Ryan（甜茶）</string>
+    <string name="bilingual_voice_jennifer" translatable="false">Jennifer（詹妮弗）</string>
+    <string name="bilingual_voice_aiden" translatable="false">Aiden（艾登）</string>
+    <string name="bilingual_voice_mione" translatable="false">Mione（敏儿）</string>
+    <string name="bilingual_voice_sohee" translatable="false">Sohee（素熙）</string>
+    <string name="bilingual_voice_lenn" translatable="false">Lenn（莱恩）</string>
+    <string name="bilingual_voice_ono_anna" translatable="false">Ono Anna（小野杏）</string>
+    <string name="bilingual_voice_sonrisa" translatable="false">Sonrisa（索尼莎）</string>
+    <string name="bilingual_voice_bodega" translatable="false">Bodega（博德加）</string>
+    <string name="bilingual_voice_emilien" translatable="false">Emilien（埃米尔安）</string>
+    <string name="bilingual_voice_andre" translatable="false">Andre（安德雷）</string>
+    <string name="bilingual_voice_radio_gol" translatable="false">Radio Gol（拉迪奥·戈尔）</string>
+    <string name="bilingual_voice_alek" translatable="false">Alek（阿列克）</string>
+    <string name="bilingual_voice_rizky" translatable="false">Rizky（阿力）</string>
+    <string name="bilingual_voice_roya" translatable="false">Roya（萝雅）</string>
+    <string name="bilingual_voice_arda" translatable="false">Arda（阿尔达）</string>
+    <string name="bilingual_voice_hana" translatable="false">Hana（阿幸）</string>
+    <string name="bilingual_voice_dolce" translatable="false">Dolce（多尔切）</string>
+    <string name="bilingual_voice_jakub" translatable="false">Jakub（雅克）</string>
+    <string name="bilingual_voice_griet" translatable="false">Griet（海娜）</string>
+    <string name="bilingual_voice_eliska" translatable="false">Eliška（艾莉卡）</string>
+    <string name="bilingual_voice_marina" translatable="false">Marina（玛丽娜）</string>
+    <string name="bilingual_voice_siiri" translatable="false">Siiri（西芮）</string>
+    <string name="bilingual_voice_ingrid" translatable="false">Ingrid（林恩）</string>
+    <string name="bilingual_voice_sigga" translatable="false">Sigga（海娜）</string>
+    <string name="bilingual_voice_bea" translatable="false">Bea（雅娜）</string>
+    <string name="bilingual_voice_chloe" translatable="false">Chloe（思怡）</string>
+</resources>

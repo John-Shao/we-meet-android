@@ -9,6 +9,23 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OmniCallToolsTest {
+    @Test fun serverRulesAndToolDescriptionsAreUsedForInitialAndStateUpdates() = runTest {
+        val sent = mutableListOf<JSONObject>()
+        val tools = OmniCallTools(backgroundScope, CameraToolHandler { result }, sent::add, {}, {}, { result }, endCall = {})
+        val rules = mapOf("camera" to "backend camera", "end_call" to "backend hangup",
+            "camera_state" to "backend state: {camera_state}",
+            "set_camera_enabled_description" to "backend set", "get_camera_state_description" to "backend query",
+            "end_call_description" to "backend end")
+        tools.configureInstructions(rules)
+        assertEquals("server scene\nbackend camera\nbackend hangup", tools.instructions("server scene"))
+        assertEquals("backend set", tools.definitions().getJSONObject(0).getJSONObject("function").getString("description"))
+        assertEquals("backend end", tools.definitions().getJSONObject(2).getJSONObject("function").getString("description"))
+        tools.publishState("server scene", true)
+        assertEquals("server scene\nbackend camera\nbackend hangup\nbackend state: true",
+            sent.single().getJSONObject("session").getString("instructions"))
+        tools.close()
+    }
+
     @Test fun stateSyncFailureHasNoToolResultAndCannotReuseAnEarlierSuccess() = runTest {
         val failures = mutableListOf<CameraFeedbackFailure>(); val sent = mutableListOf<JSONObject>()
         val tools = OmniCallTools(backgroundScope, CameraToolHandler { result }, sent::add, {}, failures::add, { result })
@@ -158,9 +175,9 @@ class OmniCallToolsTest {
         assertEquals(listOf("end_call"), names(false, true))
         assertEquals(listOf("set_camera_enabled", "get_camera_state"), names(true, false))
         assertEquals(3, names(true, true).size); assertTrue(names(false, false).isEmpty())
-        val text = OmniCallTools.instructions("scene", false, true)
-        assertTrue(text.startsWith("scene")); assertTrue(text.contains("结束对话")); assertTrue(text.contains("停止对话"))
-        assertTrue(text.contains("不要结束对话")); assertFalse(text.contains("set_camera_enabled(enabled=true)"))
+        val text = OmniCallTools.instructions("scene", false, true, mapOf("camera" to "camera rule", "end_call" to "server hangup rule"))
+        assertEquals("scene\nserver hangup rule", text)
+        assertFalse(text.contains("camera rule"))
         assertEquals("scene", OmniCallTools.instructions("scene", false, false))
     }
 

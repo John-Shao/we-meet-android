@@ -179,6 +179,7 @@ class OmniAoqClient(
         withTimeout(60_000) {
             Log.i("OmniAoq", "Requesting connection allocation")
             answer = exchange("")
+            tools?.configureInstructions(answer!!.tool_instructions)
             check(!closed)
             val credentials = checkNotNull(answer!!.aoq) { "AOQ allocation missing" }
             synchronized(ownership) {

@@ -30,6 +30,37 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationUiTest {
+    @Test fun translationVoiceCanBeSelectedAndIsLockedDuringSession() {
+        val state = mutableStateOf(BilingualState())
+        compose.setContent { WeMeetTheme(darkTheme = false) {
+            BilingualTranslationSettingsScreen(state.value, true, null, { _, _ -> }, {}, {}, {}, {},
+                onVoiceChange = { state.value = state.value.copy(voice = it) })
+        } }
+        compose.onNodeWithTag("bilingual-voice-picker").performScrollTo().performClick()
+        compose.onNodeWithTag("bilingual-voice-Zane").assertDoesNotExist()
+        compose.onNodeWithTag("bilingual-voice-Ethan").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals("Ethan", state.value.voice) }
+        screenshot("bilingual-voice-settings.png")
+        compose.runOnIdle { state.value = state.value.copy(phase = BilingualPhase.LISTENING) }
+        compose.onNodeWithTag("bilingual-voice-picker").performClick()
+        compose.onNodeWithTag("bilingual-voice-Tina").assertDoesNotExist()
+        compose.runOnIdle { assertEquals("Ethan", state.value.voice) }
+    }
+    @Test fun remoteCatalogUsesServerLabelsAndDisablesEmptyChoices() {
+        val config = com.we.meet.data.api.TranslationVoiceConfig("qwen3.8-livetranslate-flash-realtime", "FutureVoice",
+            listOf(com.we.meet.data.api.TranslationVoice("FutureVoice", "Backend display name")))
+        val state = mutableStateOf(BilingualState(voice = "FutureVoice", voiceConfig = config))
+        compose.setContent { WeMeetTheme(darkTheme = false) {
+            BilingualTranslationSettingsScreen(state.value, true, null, { _, _ -> }, {}, {}, {}, {},
+                onVoiceChange = { state.value = state.value.copy(voice = it) })
+        } }
+        compose.onNodeWithTag("bilingual-voice-picker").performScrollTo().performClick()
+        compose.onNodeWithTag("bilingual-voice-FutureVoice").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Backend display name").assertIsDisplayed()
+        compose.runOnIdle { state.value = state.value.copy(voice = "", voiceConfig = config.copy(defaultVoice = null, voices = emptyList())) }
+        compose.onNodeWithTag("bilingual-voice-picker").assertIsNotEnabled()
+    }
+
     @Test fun fixedDirectionCanBeSelectedAndIsLockedDuringTranslation() {
         val state = mutableStateOf(BilingualState())
         compose.setContent { WeMeetTheme(darkTheme = false) {

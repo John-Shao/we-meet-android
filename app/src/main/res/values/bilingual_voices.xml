@@ -1,0 +1,49 @@
+<resources>
+    <string name="bilingual_voice_tina" translatable="false">Tina</string>
+    <string name="bilingual_voice_cindy" translatable="false">Cindy</string>
+    <string name="bilingual_voice_liora_mira" translatable="false">Liora Mira</string>
+    <string name="bilingual_voice_sunnybobi" translatable="false">Sunnybobi</string>
+    <string name="bilingual_voice_raymond" translatable="false">Raymond</string>
+    <string name="bilingual_voice_ethan" translatable="false">Ethan</string>
+    <string name="bilingual_voice_theo_calm" translatable="false">Theo Calm</string>
+    <string name="bilingual_voice_serena" translatable="false">Serena</string>
+    <string name="bilingual_voice_harvey" translatable="false">Harvey</string>
+    <string name="bilingual_voice_maia" translatable="false">Maia</string>
+    <string name="bilingual_voice_evan" translatable="false">Evan</string>
+    <string name="bilingual_voice_qiao" translatable="false">Qiao</string>
+    <string name="bilingual_voice_momo" translatable="false">Momo</string>
+    <string name="bilingual_voice_wil" translatable="false">Wil</string>
+    <string name="bilingual_voice_angel" translatable="false">Angel</string>
+    <string name="bilingual_voice_li_cassian" translatable="false">Li Cassian</string>
+    <string name="bilingual_voice_mia" translatable="false">Mia</string>
+    <string name="bilingual_voice_joyner" translatable="false">Joyner</string>
+    <string name="bilingual_voice_gold" translatable="false">Gold</string>
+    <string name="bilingual_voice_katerina" translatable="false">Katerina</string>
+    <string name="bilingual_voice_ryan" translatable="false">Ryan</string>
+    <string name="bilingual_voice_jennifer" translatable="false">Jennifer</string>
+    <string name="bilingual_voice_aiden" translatable="false">Aiden</string>
+    <string name="bilingual_voice_mione" translatable="false">Mione</string>
+    <string name="bilingual_voice_sohee" translatable="false">Sohee</string>
+    <string name="bilingual_voice_lenn" translatable="false">Lenn</string>
+    <string name="bilingual_voice_ono_anna" translatable="false">Ono Anna</string>
+    <string name="bilingual_voice_sonrisa" translatable="false">Sonrisa</string>
+    <string name="bilingual_voice_bodega" translatable="false">Bodega</string>
+    <string name="bilingual_voice_emilien" translatable="false">Emilien</string>
+    <string name="bilingual_voice_andre" translatable="false">Andre</string>
+    <string name="bilingual_voice_radio_gol" translatable="false">Radio Gol</string>
+    <string name="bilingual_voice_alek" translatable="false">Alek</string>
+    <string name="bilingual_voice_rizky" translatable="false">Rizky</string>
+    <string name="bilingual_voice_roya" translatable="false">Roya</string>
+    <string name="bilingual_voice_arda" translatable="false">Arda</string>
+    <string name="bilingual_voice_hana" translatable="false">Hana</string>
+    <string name="bilingual_voice_dolce" translatable="false">Dolce</string>
+    <string name="bilingual_voice_jakub" translatable="false">Jakub</string>
+    <string name="bilingual_voice_griet" translatable="false">Griet</string>
+    <string name="bilingual_voice_eliska" translatable="false">Eliška</string>
+    <string name="bilingual_voice_marina" translatable="false">Marina</string>
+    <string name="bilingual_voice_siiri" translatable="false">Siiri</string>
+    <string name="bilingual_voice_ingrid" translatable="false">Ingrid</string>
+    <string name="bilingual_voice_sigga" translatable="false">Sigga</string>
+    <string name="bilingual_voice_bea" translatable="false">Bea</string>
+    <string name="bilingual_voice_chloe" translatable="false">Chloe</string>
+</resources>

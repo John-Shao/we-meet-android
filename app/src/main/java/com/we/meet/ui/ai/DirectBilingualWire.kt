@@ -19,8 +19,10 @@ internal class DirectBilingualWire(
     private val pair: AssistantTranslationPair, private val listener: CaptureTranslationWire.Listener,
     fixedSource: String? = null,
     private val webRtc: Boolean = false,
+    private val voice: String = BilingualVoices.DEFAULT,
 ) : CaptureTranslationWire {
     private val plan = BilingualSessionPlan(pair, fixedSource)
+    private var detectionInstructions: String? = null
     private val leases = mutableListOf<com.we.meet.feature.assistant.aicall.data.DirectAILease>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private fun connection(detection: Boolean, reverse: Boolean = false): BilingualModelConnection =
@@ -68,6 +70,10 @@ internal class DirectBilingualWire(
                 if (purpose == "reverse") pair.source else plan.outputLanguage,
                 if (purpose == "reverse") "translation" else purpose,
                 if (webRtc) "webrtc" else "aoq", offer)).also {
+                if (purpose == "language_detection") {
+                    detectionInstructions = it.instructions?.takeIf(String::isNotBlank)
+                    check(detectionInstructions != null) { "Language detection instructions are unavailable" }
+                }
                 it.sessionLease?.let { info ->
                     val lease = com.we.meet.feature.assistant.aicall.data.DirectAILease(info, api::sessionLease,
                         { scope.launch { if (!closed) listener.failed() } })
@@ -86,7 +92,7 @@ internal class DirectBilingualWire(
         detector.send(JSONObject().put("type", "session.update").put("session", JSONObject()
             .put("modalities", JSONArray(listOf("text"))).put("turn_detection", JSONObject.NULL)
             .put("audio", JSONObject().put("input", JSONObject().put("format", JSONObject().put("type", "pcm").put("sample_rate", 16000))))
-            .put("instructions", "判断本次音频主要使用的语言，只输出 ${pair.source} 或 ${pair.target}。无法确定或没有有效语音时输出 unknown。不要翻译或回复音频内容。短词、问候和简短回答也是有效语音。"))) // i18n-exempt: Model classification prompt, independent of UI locale.
+            .put("instructions", checkNotNull(detectionInstructions))))
         withTimeout(25_000) {
             while (true) {
                 val event = detector.events.receive()
@@ -206,7 +212,7 @@ internal class DirectBilingualWire(
             .put("audio", JSONObject()
                 .put("input", JSONObject().put("format", JSONObject().put("type", "pcm").put("sample_rate", 16000))
                     .put("turn_detection", JSONObject().put("type", "server_vad").put("threshold", 0.2).put("silence_duration_ms", 1000)))
-                .put("output", JSONObject().put("format", JSONObject().put("type", "pcm").put("sample_rate", 24000)).put("voice", "Tina")))
+                .put("output", JSONObject().put("format", JSONObject().put("type", "pcm").put("sample_rate", 24000)).put("voice", voice)))
             .put("translation", JSONObject().put("language", language))))
         withTimeout(25_000) { updates.getValue(connection).receive() }
     }

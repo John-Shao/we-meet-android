@@ -2,6 +2,7 @@ package com.we.meet.data.api
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
+import retrofit2.http.GET
 import retrofit2.http.Body
 import retrofit2.http.Headers
 import retrofit2.http.POST
@@ -20,7 +21,21 @@ data class AssistantTranslationTicket(val url: String, val ticket: String) {
     override fun toString() = "AssistantTranslationTicket(<private>)"
 }
 
+@JsonClass(generateAdapter = true)
+data class TranslationVoice(val value: String, val label: String)
+
+@JsonClass(generateAdapter = true)
+data class TranslationVoiceConfig(
+    val model: String,
+    @Json(name = "default_voice") val defaultVoice: String?,
+    val voices: List<TranslationVoice>,
+)
+
 interface AssistantTranslationApi {
+    @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/assistant-translation/config/")
+    suspend fun voiceConfig(): TranslationVoiceConfig = error("Voice config is unavailable")
+
     @POST("api/v1.0/direct-ai/sessions/{id}/")
     suspend fun sessionLease(@Path("id") id: String, @Body operation: DirectAILeaseOperation) = Unit
     @Headers("Cache-Control: no-store")
@@ -47,6 +62,7 @@ data class AssistantTranslationDirectSession(
     val aoq: com.we.meet.feature.assistant.aicall.model.AoqCredentials? = null,
     @Json(name = "session_lease") val sessionLease: DirectAILeaseInfo? = null,
     val sdp: String? = null,
+    val instructions: String? = null,
 ) {
     override fun toString() = "AssistantTranslationDirectSession(<private>)"
 }

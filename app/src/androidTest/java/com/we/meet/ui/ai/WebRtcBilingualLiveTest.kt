@@ -78,7 +78,9 @@ class WebRtcBilingualLiveTest {
                                 override fun close() = player.close()
                             }
                         })
-                    controller!!.directAoq(false); controller!!.fixedSource(fixed); controller!!.start()
+                    controller!!.directAoq(false); controller!!.fixedSource(fixed)
+                    controller!!.voice(args.getString("translationVoice") ?: BilingualVoices.DEFAULT)
+                    controller!!.start()
                 }
                 withTimeout(60_000) { while (controller!!.state.value.phase != BilingualPhase.LISTENING) {
                     check(controller!!.state.value.phase != BilingualPhase.ERROR); delay(50)

@@ -106,6 +106,7 @@ class OmniWebRtcClient(
             setDescription(pc, offer, local = true)
             withTimeout(15_000) { iceComplete.await() }
             answer = exchange(checkNotNull(pc.localDescription).description)
+            tools?.configureInstructions(answer!!.tool_instructions)
             check(!closed)
             setDescription(pc, SessionDescription(SessionDescription.Type.ANSWER, answer!!.sdp), local = false)
             withTimeout(25_000) { ready.await() }

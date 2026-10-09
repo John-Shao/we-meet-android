@@ -31,6 +31,7 @@ data class AiPromptDto(
     val id: String,
     val label: String,
     val content: String? = null,
+    val code: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -50,8 +51,9 @@ data class AiAgentConfigResponse(
             voiceId = selection.voiceId?.takeIf { id -> voices.any { it.id == id } }
                 ?: profile?.default_voice_id?.takeIf { id -> voices.any { it.id == id } }
                 ?: voices.firstOrNull()?.id,
-            promptId = selection.promptId?.takeIf { id -> prompts.any { it.id == id } },
-            sceneId = com.we.meet.feature.assistant.scenes.AssistantScene.find(selection.sceneId)?.id,
+            promptId = selection.promptId?.takeIf { id -> prompts.any { it.id == id } }
+                ?: selection.sceneId?.let { legacy -> prompts.firstOrNull { it.code == "call.scene.$legacy" }?.id },
+            sceneId = null,
         )
     }
 }
@@ -73,10 +75,8 @@ data class AiCallAnswer(
     val instructions: String,
     val aoq: AoqCredentials? = null,
     val session_lease: com.we.meet.feature.assistant.aicall.data.DirectAILeaseInfo? = null,
-) {
-    fun forScene(id: String?): AiCallAnswer =
-        com.we.meet.feature.assistant.scenes.AssistantScene.find(id)?.let { copy(instructions = it.instructions) } ?: this
-}
+    val tool_instructions: Map<String, String> = emptyMap(),
+)
 
 @JsonClass(generateAdapter = true)
 data class AoqRelay(val endpoint: String, val port: Int, val route_index: Int? = null)
