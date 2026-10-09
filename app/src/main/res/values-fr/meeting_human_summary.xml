@@ -2,19 +2,19 @@
 <resources>
     <string name="human_summary_title">Compte rendu révisé</string>
     <string name="human_summary_empty">Aucune révision humaine pour le moment. Le compte rendu IA reste disponible ci-dessous.</string>
-    <string name="human_summary_read_error">Le compte rendu révisé est indisponible. Actualisez pour vérifier l\'accès.</string>
+    <string name="human_summary_read_error">Le compte rendu révisé est indisponible. Actualisez pour vérifier l’accès.</string>
     <string name="human_summary_edit">Modifier le compte rendu révisé</string>
     <string name="human_summary_history">Historique des révisions</string>
-    <string name="human_summary_history_read_only">Il s\'agit d\'une révision enregistrée. Elle est en lecture seule et ne change pas lorsque le compte rendu actuel est modifié.</string>
+    <string name="human_summary_history_read_only">Il s’agit d’une révision enregistrée. Elle est en lecture seule et ne change pas lorsque le compte rendu actuel est modifié.</string>
     <string name="human_summary_version">Révision humaine %1$d</string>
     <string name="human_summary_save">Enregistrer une nouvelle révision</string>
-    <string name="human_summary_save_error">Impossible de confirmer l\'enregistrement. Conservez votre brouillon, vérifiez le texte obligatoire et la limite de 64 Ko, puis actualisez ou vérifiez la demande en attente.</string>
-    <string name="human_summary_unknown">Le dernier enregistrement a un résultat inconnu. Vérifiez cette demande d\'origine avant d\'enregistrer une autre révision.</string>
-    <string name="human_summary_conflict">Une révision humaine plus récente existe. Votre brouillon est conservé ici ; fermez et modifiez la révision actuelle avant d\'enregistrer.</string>
+    <string name="human_summary_save_error">Impossible de confirmer l’enregistrement. Conservez votre brouillon, vérifiez le texte obligatoire et la limite de 64 Ko, puis actualisez ou vérifiez la demande en attente.</string>
+    <string name="human_summary_unknown">Le dernier enregistrement a un résultat inconnu. Vérifiez cette demande d’origine avant d’enregistrer une autre révision.</string>
+    <string name="human_summary_conflict">Une révision humaine plus récente existe. Votre brouillon est conservé ici ; fermez et modifiez la révision actuelle avant d’enregistrer.</string>
     <string name="human_summary_replace">Utiliser cette version IA</string>
-    <string name="human_summary_replace_notice">Créer un brouillon à partir de la version IA affichée ? L\'enregistrement crée une nouvelle révision humaine. Les révisions précédentes restent dans l\'historique.</string>
+    <string name="human_summary_replace_notice">Créer un brouillon à partir de la version IA affichée ? L’enregistrement crée une nouvelle révision humaine. Les révisions précédentes restent dans l’historique.</string>
     <string name="human_summary_continue">Créer le brouillon</string>
-    <string name="human_summary_edit_notice">Les modifications conservent les références sources existantes. Les points ajoutés n\'ont pas de citation source. L\'enregistrement ne crée pas de tâches ; les responsables sont confirmés séparément.</string>
+    <string name="human_summary_edit_notice">Les modifications conservent les références sources existantes. Les points ajoutés n’ont pas de citation source. L’enregistrement ne crée pas de tâches ; les responsables sont confirmés séparément.</string>
     <string name="human_summary_overview">Aperçu</string>
     <string name="human_summary_decisions">Décisions</string>
     <string name="human_summary_chapters">Sujets</string>

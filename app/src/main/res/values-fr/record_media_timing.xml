@@ -3,6 +3,6 @@
     <string name="records_media_duration">Durée du média</string>
     <string name="records_media_duration_unknown">Inconnue ; les fichiers importés peuvent indiquer leur durée une fois la lecture préparée.</string>
     <string name="records_saved_audio">Audio enregistré</string>
-    <string name="records_media_partial">La transmission audio est incomplète ou comporte des lacunes ; la durée complète n\'est pas affichée.</string>
+    <string name="records_media_partial">La transmission audio est incomplète ou comporte des lacunes ; la durée complète n’est pas affichée.</string>
     <string name="records_media_ruler">Chronologie du média : 0:00 – %1$s</string>
 </resources>

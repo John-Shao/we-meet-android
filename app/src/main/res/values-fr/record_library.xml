@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="records_filter_speaker">Filtrer par intervenant</string>
-    <string name="records_info">Informations sur l\'enregistrement</string>
+    <string name="records_info">Informations sur l’enregistrement</string>
     <string name="records_start_time">Début</string>
     <string name="records_retention">Conservation</string>
-    <string name="records_retention_media">Conserver l\'audio ou la vidéo</string>
+    <string name="records_retention_media">Conserver l’audio ou la vidéo</string>
     <string name="records_retention_text">Texte uniquement</string>
     <string name="records_retention_unknown">Non enregistré</string>
     <string name="records_skip_back">Reculer de 15 secondes</string>
@@ -19,31 +19,31 @@
     <string name="records_minutes_ready">Compte rendu disponible</string>
     <string name="records_start_recording">Enregistrer</string>
     <string name="records_upload">Importer</string>
-    <string name="record_upload_title">Confirmer l\'import</string>
-    <string name="record_upload_hint">Choisissez un fichier audio ou vidéo, jusqu\'à %1$d Mo. La transcription se lance automatiquement après l\'import.</string>
+    <string name="record_upload_title">Confirmer l’import</string>
+    <string name="record_upload_hint">Choisissez un fichier audio ou vidéo, jusqu’à %1$d Mo. La transcription se lance automatiquement après l’import.</string>
     <string name="record_upload_choose">Choisir un fichier</string>
     <string name="record_upload_advanced">Améliorer la reconnaissance (facultatif)</string>
     <string name="record_upload_context">Contexte de la réunion (400 caractères maximum)</string>
     <string name="record_upload_hotwords">Mots-clés personnels (un par ligne, 40 caractères maximum chacun)</string>
-    <string name="record_upload_consent">Assurez-vous d\'être autorisé à importer et à transcrire cet enregistrement.</string>
+    <string name="record_upload_consent">Assurez-vous d’être autorisé à importer et à transcrire cet enregistrement.</string>
     <!-- A GB-scale import takes minutes, so it reports real progress and can be stopped. -->
     <string name="record_upload_progress">%1$d %% envoyé</string>
-    <string name="record_upload_cancel">Annuler l\'envoi</string>
+    <string name="record_upload_cancel">Annuler l’envoi</string>
     <string name="record_upload_cancelled">Envoi annulé. Les parties déjà transmises sont conservées : un nouvel essai reprend à partir de là.</string>
-    <string name="record_upload_wait">Import en cours… Gardez cet écran ouvert jusqu\'à la fin de l\'import.</string>
-    <string name="record_upload_confirming">Fichier envoyé. En attente du résultat de l\'import…</string>
+    <string name="record_upload_wait">Import en cours… Gardez cet écran ouvert jusqu’à la fin de l’import.</string>
+    <string name="record_upload_confirming">Fichier envoyé. En attente du résultat de l’import…</string>
     <string name="record_upload_diarization">Distinguer les intervenants</string>
     <string name="record_upload_diarization_hint">Pour les enregistrements à plusieurs intervenants. Les voix sont séparées automatiquement ; les noms peuvent être attribués après la transcription.</string>
-    <string name="record_upload_stopped">Demande d\'envoi arrêtée. Le serveur a peut-être reçu le fichier. Réessayez avec le même fichier et les mêmes paramètres pour confirmer le résultat.</string>
-    <string name="record_upload_error">Échec de l\'import. Vérifiez le format et la taille du fichier ainsi que la connexion, puis réessayez.</string>
-    <string name="record_upload_unconfirmed">L\'import n\'a pas pu être confirmé ; le fichier a peut-être déjà été reçu. Réessayez ici avec le même fichier et les mêmes paramètres, ou fermez et consultez l\'historique des enregistrements.</string>
+    <string name="record_upload_stopped">Demande d’envoi arrêtée. Le serveur a peut-être reçu le fichier. Réessayez avec le même fichier et les mêmes paramètres pour confirmer le résultat.</string>
+    <string name="record_upload_error">Échec de l’import. Vérifiez le format et la taille du fichier ainsi que la connexion, puis réessayez.</string>
+    <string name="record_upload_unconfirmed">L’import n’a pas pu être confirmé ; le fichier a peut-être déjà été reçu. Réessayez ici avec le même fichier et les mêmes paramètres, ou fermez et consultez l’historique des enregistrements.</string>
     <string name="record_upload_submit">Importer et transcrire</string>
     <string name="record_upload_queued">En attente de transcription. Vous pouvez quitter cette page.</string>
     <string name="record_upload_transcribing">Transcription en cours… Vous pouvez quitter cette page et revenir plus tard.</string>
     <string name="record_upload_failed">Échec de la transcription</string>
     <string name="record_upload_retry">Relancer la transcription</string>
     <string name="records_sort">Trier par date de création</string>
-    <string name="records_more">Plus d\'actions</string>
+    <string name="records_more">Plus d’actions</string>
     <string name="records_newest">Du plus récent au plus ancien</string>
     <string name="records_oldest">Du plus ancien au plus récent</string>
 </resources>

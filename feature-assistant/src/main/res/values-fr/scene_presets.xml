@@ -11,11 +11,11 @@
     <string name="assistant_scene_travel_ja">Voyage (japonais)</string>
     <string name="assistant_scene_business">Communication professionnelle</string>
     <string name="assistant_scene_practice">Entraînement à la conversation en anglais</string>
-    <string name="assistant_scene_travel_hint">Explications en chinois et expressions anglaises utiles pour demander votre chemin, à l\'hôtel et au restaurant.</string>
+    <string name="assistant_scene_travel_hint">Explications en chinois et expressions anglaises utiles pour demander votre chemin, à l’hôtel et au restaurant.</string>
     <string name="assistant_scene_travel_ja_hint">Explications en chinois et expressions japonaises polies pour un voyage au Japon.</string>
     <string name="assistant_scene_business_hint">Communication professionnelle chinois-anglais, avec des chiffres, des dates et des engagements exacts.</string>
     <string name="assistant_scene_practice_hint">Conversation en anglais avec un accompagnement en chinois, une question à la fois et des corrections de grammaire en douceur.</string>
-    <string name="assistant_scene_translation_hint">Le scénario, les langues et la lecture vocale sont enregistrés séparément. Le scénario ne consigne pour l\'instant que votre préférence et n\'affecte pas les résultats de traduction.</string>
+    <string name="assistant_scene_translation_hint">Le scénario, les langues et la lecture vocale sont enregistrés séparément. Le scénario ne consigne pour l’instant que votre préférence et n’affecte pas les résultats de traduction.</string>
     <string name="assistant_translation_scene_general">Conversation générale</string>
     <string name="assistant_translation_scene_travel">Voyage</string>
     <string name="assistant_scene_pair_en">Chinois ⇄ anglais · Lecture vocale activée</string>

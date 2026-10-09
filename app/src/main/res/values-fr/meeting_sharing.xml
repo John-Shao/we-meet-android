@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="record_share_title">Autorisations de partage</string>
-    <string name="record_share_read_error">Impossible de lire les autorisations de partage ou l\'aperçu.</string>
-    <string name="record_share_scope">Le partage porte sur toutes les versions du compte rendu de cet enregistrement, y compris les futures. Les droits sur les originaux, les médias et les documents distincts restent inchangés. Aucun message n\'est envoyé.</string>
+    <string name="record_share_read_error">Impossible de lire les autorisations de partage ou l’aperçu.</string>
+    <string name="record_share_scope">Le partage porte sur toutes les versions du compte rendu de cet enregistrement, y compris les futures. Les droits sur les originaux, les médias et les documents distincts restent inchangés. Aucun message n’est envoyé.</string>
     <string name="record_share_unavailable">Les modifications de partage sont indisponibles.</string>
-    <string name="record_share_unknown">Le résultat de la modification des autorisations est inconnu. Vérifiez la demande d\'origine avant d\'en effectuer une autre.</string>
+    <string name="record_share_unknown">Le résultat de la modification des autorisations est inconnu. Vérifiez la demande d’origine avant d’en effectuer une autre.</string>
     <string name="record_share_choose">Choisir les personnes avec qui partager</string>
     <string name="record_share_accepted">Demande confirmée. Les autorisations explicites actuelles figurent ci-dessous.</string>
     <string name="record_share_empty">Aucun partage explicite sur cette page.</string>
     <string name="record_share_explicit_yes">Compte rendu partagé explicitement</string>
     <string name="record_share_explicit_no">Aucun accès explicite au compte rendu</string>
     <string name="record_share_inactive">Compte inactif</string>
-    <string name="record_share_revoke">Examiner le retrait de l\'accès au compte rendu</string>
-    <string name="record_share_error">Impossible de confirmer la modification. Consultez le dernier aperçu ou vérifiez la demande d\'origine.</string>
+    <string name="record_share_revoke">Examiner le retrait de l’accès au compte rendu</string>
+    <string name="record_share_error">Impossible de confirmer la modification. Consultez le dernier aperçu ou vérifiez la demande d’origine.</string>
     <string name="record_share_preview">Vérifier les autorisations du compte rendu</string>
     <string name="record_share_after_yes">Pourra lire le compte rendu</string>
     <string name="record_share_after_no">Ne pourra plus lire le compte rendu</string>
-    <string name="record_share_inherited">L\'accès hérité de la propriété ou des rôles de la réunion reste valable.</string>
-    <string name="record_share_original_unchanged">L\'accès existant aux originaux reste inchangé.</string>
+    <string name="record_share_inherited">L’accès hérité de la propriété ou des rôles de la réunion reste valable.</string>
+    <string name="record_share_original_unchanged">L’accès existant aux originaux reste inchangé.</string>
     <string name="record_share_confirm">Confirmer le partage du compte rendu</string>
-    <string name="record_share_confirm_revoke">Retirer l\'accès explicite au compte rendu</string>
+    <string name="record_share_confirm_revoke">Retirer l’accès explicite au compte rendu</string>
     <string name="record_share_directory">Annuaire</string>
     <string name="record_share_participants">Participants</string>
     <string name="record_share_search">Rechercher des personnes</string>
@@ -27,6 +27,6 @@
     <string name="record_share_clear">Effacer la sélection</string>
     <string name="record_share_no_candidates">Aucune personne éligible sur cette page.</string>
     <string name="record_share_review_selection">Prévisualiser les personnes sélectionnées</string>
-    <string name="record_share_copy_link">Copier le lien de l\'enregistrement</string>
-    <string name="record_share_copied">Lien copié. Les destinataires doivent toujours disposer d\'un accès en lecture.</string>
+    <string name="record_share_copy_link">Copier le lien de l’enregistrement</string>
+    <string name="record_share_copied">Lien copié. Les destinataires doivent toujours disposer d’un accès en lecture.</string>
 </resources>

@@ -3,8 +3,8 @@
     <string name="records_info_owner">Propriétaire</string>
     <string name="records_info_created">Créé le</string>
     <string name="record_documents_title">Mes documents de compte rendu</string>
-    <string name="record_documents_hint">Vos exports de cet enregistrement, du plus récent au plus ancien. Utilisez la pagination pour consulter les anciennes copies. Chaque document dispose de ses propres autorisations d\'accès.</string>
-    <string name="record_documents_empty">Vous n\'avez pas encore exporté de document.</string>
-    <string name="record_documents_create_hint">Vous pouvez créer un document à partir d\'une version du compte rendu.</string>
+    <string name="record_documents_hint">Vos exports de cet enregistrement, du plus récent au plus ancien. Utilisez la pagination pour consulter les anciennes copies. Chaque document dispose de ses propres autorisations d’accès.</string>
+    <string name="record_documents_empty">Vous n’avez pas encore exporté de document.</string>
+    <string name="record_documents_create_hint">Vous pouvez créer un document à partir d’une version du compte rendu.</string>
     <string name="record_documents_source">Voir la version source du compte rendu</string>
 </resources>

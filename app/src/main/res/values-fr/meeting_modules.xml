@@ -3,7 +3,7 @@
     <string name="home_no_upcoming">Aucune réunion à venir</string>
     <string name="meeting_materials_title">Après la réunion</string>
     <string name="meeting_materials_hint">Retrouvez les enregistrements et les transcriptions dans les archives de réunion. Générez et partagez des comptes rendus et suivez les tâches dans les comptes rendus IA.</string>
-    <string name="capture_acquisition_hint">Enregistrez une discussion ou un entretien en présentiel. Après l\'enregistrement, ouvrez les archives de réunion pour la lecture et la transcription, et les comptes rendus IA pour les synthèses et le suivi.</string>
+    <string name="capture_acquisition_hint">Enregistrez une discussion ou un entretien en présentiel. Après l’enregistrement, ouvrez les archives de réunion pour la lecture et la transcription, et les comptes rendus IA pour les synthèses et le suivi.</string>
     <string name="capture_saved_destination">Enregistrement sauvegardé. La lecture et la transcription se trouvent dans les archives de réunion ; la génération, le partage et le suivi des tâches dans les comptes rendus IA.</string>
     <string name="capture_open_summary">Voir les comptes rendus IA</string>
     <string name="records_transcription_manage">Gérer la transcription</string>

@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="capture_text_only">Conserver le texte uniquement</string>
-    <string name="capture_text_consent">L\'audio est conservé temporairement pour la transcription, sans lecture ni téléchargement. Il est nettoyé après une transcription réussie. Lancez ou relancez la transcription dans les 30 minutes suivant la fin ; l\'audio expire dans les 24 heures suivant le début. L\'audio non téléversé reste en mémoire et ne peut pas être récupéré si le service d\'enregistrement se termine. La transcription se lance séparément et consomme du quota IA.</string>
-    <string name="capture_text_unavailable">Le mode texte uniquement est actuellement indisponible. Choisissez la conservation de l\'audio ou réessayez plus tard.</string>
+    <string name="capture_text_consent">L’audio est conservé temporairement pour la transcription, sans lecture ni téléchargement. Il est nettoyé après une transcription réussie. Lancez ou relancez la transcription dans les 30 minutes suivant la fin ; l’audio expire dans les 24 heures suivant le début. L’audio non téléversé reste en mémoire et ne peut pas être récupéré si le service d’enregistrement se termine. La transcription se lance séparément et consomme du quota IA.</string>
+    <string name="capture_text_unavailable">Le mode texte uniquement est actuellement indisponible. Choisissez la conservation de l’audio ou réessayez plus tard.</string>
     <string name="capture_text_saved">Enregistrement terminé</string>
-    <string name="capture_text_interrupted_hint">L\'enregistrement a été interrompu. L\'audio temporaire peut être incomplet. Reprenez avant l\'expiration, ou terminez en utilisant uniquement l\'audio déjà reçu par le serveur.</string>
-    <string name="capture_text_local_hint">Seul le texte est conservé. L\'audio téléversé suit la durée de conservation du serveur ; l\'audio non téléversé est temporaire et ne peut pas être récupéré après la fin du processus d\'enregistrement.</string>
-    <string name="capture_text_expired">L\'audio temporaire a expiré. L\'enregistrement s\'est arrêté ; terminez l\'enregistrement pour finir de traiter le texte disponible.</string>
-    <string name="capture_text_finish_hint">Arrêtez l\'enregistrement et terminez le téléversement de l\'audio disponible. Vérifiez ensuite la transcription et l\'état du nettoyage de l\'audio temporaire.</string>
+    <string name="capture_text_interrupted_hint">L’enregistrement a été interrompu. L’audio temporaire peut être incomplet. Reprenez avant l’expiration, ou terminez en utilisant uniquement l’audio déjà reçu par le serveur.</string>
+    <string name="capture_text_local_hint">Seul le texte est conservé. L’audio téléversé suit la durée de conservation du serveur ; l’audio non téléversé est temporaire et ne peut pas être récupéré après la fin du processus d’enregistrement.</string>
+    <string name="capture_text_expired">L’audio temporaire a expiré. L’enregistrement s’est arrêté ; terminez l’enregistrement pour finir de traiter le texte disponible.</string>
+    <string name="capture_text_finish_hint">Arrêtez l’enregistrement et terminez le téléversement de l’audio disponible. Vérifiez ensuite la transcription et l’état du nettoyage de l’audio temporaire.</string>
     <string name="capture_text_finish_incomplete">Terminer avec un audio incomplet</string>
-    <string name="capture_text_incomplete_hint">Terminez cet enregistrement en utilisant uniquement l\'audio déjà reçu par le serveur. L\'audio local restant sera supprimé et les parties manquantes ne pourront pas être récupérées. Le résultat sera marqué comme incomplet.</string>
-    <string name="capture_text_confirm_incomplete">Ignorer l\'audio manquant et terminer</string>
+    <string name="capture_text_incomplete_hint">Terminez cet enregistrement en utilisant uniquement l’audio déjà reçu par le serveur. L’audio local restant sera supprimé et les parties manquantes ne pourront pas être récupérées. Le résultat sera marqué comme incomplet.</string>
+    <string name="capture_text_confirm_incomplete">Ignorer l’audio manquant et terminer</string>
     <string name="capture_text_retention_title">Audio temporaire</string>
-    <string name="capture_text_retention_error">L\'état de conservation de l\'audio ne peut pas être confirmé. Actualisez avant de continuer.</string>
-    <string name="capture_text_cleanup_not_started">L\'audio est conservé temporairement pour la transcription. Le nettoyage n\'a pas commencé.</string>
-    <string name="capture_text_cleanup_pending">Le nettoyage de l\'audio temporaire est en cours. Le texte et le compte rendu existant sont conservés.</string>
-    <string name="capture_text_cleanup_failed">Le nettoyage de l\'audio temporaire n\'est pas terminé. Le système réessaiera.</string>
-    <string name="capture_text_cleanup_complete">L\'audio temporaire a été supprimé. Le texte et le compte rendu existant sont conservés.</string>
-    <string name="capture_text_access_until">Fin de l\'accès à l\'audio : %1$s. La transcription ne peut pas se poursuivre après l\'expiration ; la progression de la suppression est indiquée ci-dessus.</string>
+    <string name="capture_text_retention_error">L’état de conservation de l’audio ne peut pas être confirmé. Actualisez avant de continuer.</string>
+    <string name="capture_text_cleanup_not_started">L’audio est conservé temporairement pour la transcription. Le nettoyage n’a pas commencé.</string>
+    <string name="capture_text_cleanup_pending">Le nettoyage de l’audio temporaire est en cours. Le texte et le compte rendu existant sont conservés.</string>
+    <string name="capture_text_cleanup_failed">Le nettoyage de l’audio temporaire n’est pas terminé. Le système réessaiera.</string>
+    <string name="capture_text_cleanup_complete">L’audio temporaire a été supprimé. Le texte et le compte rendu existant sont conservés.</string>
+    <string name="capture_text_access_until">Fin de l’accès à l’audio : %1$s. La transcription ne peut pas se poursuivre après l’expiration ; la progression de la suppression est indiquée ci-dessus.</string>
     <string name="capture_text_retry_until">Lancez ou relancez la transcription avant : %1$s.</string>
-    <string name="capture_text_retry_closed">Aucune nouvelle transcription n\'est possible. Les résultats des demandes existantes restent consultables.</string>
+    <string name="capture_text_retry_closed">Aucune nouvelle transcription n’est possible. Les résultats des demandes existantes restent consultables.</string>
 </resources>

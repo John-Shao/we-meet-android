@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="batch_correction_title">Rechercher et remplacer</string>
-    <string name="batch_correction_hint">Remplacement littéral et sensible à la casse dans la transcription enregistrée de ce compte rendu, autres pages incluses. Jusqu\'à 100 segments par lot. Un remplacement vide supprime le texte. Les brouillons non enregistrés et les comptes rendus existants restent inchangés.</string>
+    <string name="batch_correction_hint">Remplacement littéral et sensible à la casse dans la transcription enregistrée de ce compte rendu, autres pages incluses. Jusqu’à 100 segments par lot. Un remplacement vide supprime le texte. Les brouillons non enregistrés et les comptes rendus existants restent inchangés.</string>
     <string name="batch_correction_find">Texte à rechercher</string>
     <string name="batch_correction_replacement">Remplacer par</string>
     <string name="batch_correction_preview">Prévisualiser les modifications</string>
@@ -9,19 +9,19 @@
     <string name="batch_correction_before">Avant</string>
     <string name="batch_correction_after">Après</string>
     <string name="batch_correction_confirm">Confirmer toutes les modifications</string>
-    <string name="batch_correction_pending">Le résultat n\'est pas confirmé. Réessayez la même requête avant toute autre modification.</string>
+    <string name="batch_correction_pending">Le résultat n’est pas confirmé. Réessayez la même requête avant toute autre modification.</string>
     <string name="batch_correction_retry">Réessayer la même requête</string>
     <string name="batch_correction_applied">Modifications enregistrées. Vérifiez la transcription avant de générer un nouveau compte rendu.</string>
     <string name="batch_correction_undone">Remplacement annulé</string>
-    <string name="batch_correction_conflict">La transcription a changé. Rien n\'a été écrasé. Relancez la prévisualisation ; l\'annulation ne peut pas écraser les corrections ultérieures.</string>
+    <string name="batch_correction_conflict">La transcription a changé. Rien n’a été écrasé. Relancez la prévisualisation ; l’annulation ne peut pas écraser les corrections ultérieures.</string>
     <string name="batch_correction_invalid">Remplacement impossible : vérifiez le texte, les résultats vides ainsi que les limites de 100 segments et de taille de texte.</string>
     <string name="batch_correction_error">La requête a échoué ou son résultat est inconnu. Réessayez ; ne lancez pas de remplacement en double.</string>
     <string name="batch_correction_storage_error">Stockage de récupération indisponible. Aucune nouvelle modification ne peut être envoyée.</string>
     <string name="batch_correction_history">10 derniers remplacements</string>
     <string name="batch_correction_deleted">(supprimé)</string>
     <string name="batch_correction_undo">Annuler ce remplacement</string>
-    <string name="batch_correction_undo_hint">Restaurer tous les segments concernés dans leur texte d\'avant ce lot ? Toute correction ultérieure de ces segments empêche l\'annulation complète.</string>
-    <string name="batch_correction_confirm_undo">Confirmer l\'annulation</string>
+    <string name="batch_correction_undo_hint">Restaurer tous les segments concernés dans leur texte d’avant ce lot ? Toute correction ultérieure de ces segments empêche l’annulation complète.</string>
+    <string name="batch_correction_confirm_undo">Confirmer l’annulation</string>
     <string name="batch_correction_close">Fermer</string>
-    <string name="batch_correction_cancel_undo">Annuler l\'annulation</string>
+    <string name="batch_correction_cancel_undo">Annuler l’annulation</string>
 </resources>

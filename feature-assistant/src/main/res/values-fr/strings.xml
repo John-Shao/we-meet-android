@@ -6,7 +6,7 @@
   下也只显示中文。本次一并归位,与 app / core-directory 的做法对齐。
 -->
 <resources>
-    <string name="assistant_background_channel">Sessions de l\'assistant IA</string>
+    <string name="assistant_background_channel">Sessions de l’assistant IA</string>
     <string name="assistant_background_call">Appel IA en cours</string>
     <string name="assistant_background_translation">Traduction bilingue en cours</string>
     <string name="assistant_background_return">Touchez pour revenir à la conversation</string>
@@ -23,21 +23,21 @@
     <string name="assistant_title">Assistant IA</string>
     <string name="assistant_ai_generated">Généré par AI</string>
     <string name="assistant_need_mic_camera">Les autorisations du microphone et de la caméra sont requises</string>
-    <string name="assistant_need_camera">L\'autorisation de la caméra est requise</string>
+    <string name="assistant_need_camera">L’autorisation de la caméra est requise</string>
     <string name="assistant_tap_to_start_voice">Touchez pour démarrer un appel vocal</string>
     <string name="assistant_tap_to_start_video">Touchez pour démarrer un appel vidéo</string>
     <string name="assistant_speak_or_interrupt">Parlez, ou touchez pour interrompre</string>
-    <string name="assistant_listening">À l\'écoute</string>
+    <string name="assistant_listening">À l’écoute</string>
     <string name="assistant_call_ended">Appel terminé</string>
-    <string name="assistant_disconnected_ended">Déconnecté — l\'appel est terminé</string>
+    <string name="assistant_disconnected_ended">Déconnecté — l’appel est terminé</string>
     <string name="assistant_config_loading">Les paramètres AI sont encore en cours de chargement. Veuillez réessayer dans un instant.</string>
 
     <!-- 连接进度 -->
     <string name="assistant_step_creating_room">Création de la salle</string>
     <string name="assistant_step_joining">Connexion</string>
-    <string name="assistant_step_publishing">Préparation de l\'audio et de la vidéo</string>
-    <string name="assistant_step_starting_agent">Démarrage de l\'assistant AI</string>
-    <string name="assistant_step_waiting_agent">En attente de l\'arrivée de l\'AI</string>
+    <string name="assistant_step_publishing">Préparation de l’audio et de la vidéo</string>
+    <string name="assistant_step_starting_agent">Démarrage de l’assistant AI</string>
+    <string name="assistant_step_waiting_agent">En attente de l’arrivée de l’AI</string>
     <string name="assistant_step_switching_mode">Changement de mode</string>
 
     <!-- 设置面板 -->
@@ -56,7 +56,7 @@
     <string name="assistant_cd_mute">Couper le micro</string>
     <string name="assistant_cd_unmute">Réactiver le micro</string>
     <string name="assistant_cd_hang_up">Raccrocher</string>
-    <string name="assistant_cd_start_call">Démarrer l\'appel</string>
+    <string name="assistant_cd_start_call">Démarrer l’appel</string>
     <string name="assistant_cd_toggle_video">Basculer le mode vidéo</string>
     <string name="assistant_mic_action_failed">Impossible de mettre à jour le microphone. Réessayez.</string>
     <string name="assistant_camera_switch_failed">Impossible de changer de caméra. Réessayez.</string>
@@ -78,18 +78,18 @@
     <string name="assistant_history_copied">Copié</string>
     <string name="assistant_history_copy_large">Impossible de copier tout le texte. Partagez plutôt la conversation complète.</string>
     <string name="assistant_history_share">Partager le texte</string>
-    <string name="assistant_history_share_failed">Impossible d\'ouvrir le partage</string>
+    <string name="assistant_history_share_failed">Impossible d’ouvrir le partage</string>
     <string name="assistant_history_save">Enregistrer le texte des conversations sur cet appareil</string>
-    <string name="assistant_history_error">Une partie de l\'historique des conversations n\'a pas pu être enregistrée ni chargée.</string>
+    <string name="assistant_history_error">Une partie de l’historique des conversations n’a pas pu être enregistrée ni chargée.</string>
     <string name="assistant_history_back">Retour</string>
-    <string name="assistant_history_clear">Effacer l\'historique</string>
+    <string name="assistant_history_clear">Effacer l’historique</string>
     <string name="assistant_history_delete">Supprimer la conversation</string>
-    <string name="assistant_history_delete_hint">L\'historique local sélectionné sera définitivement supprimé.</string>
-    <string name="assistant_history_local_hint">Texte uniquement, pour ce compte sur cet appareil. Conserve les 200 dernières conversations. L\'enregistrement se règle séparément dans les paramètres d\'appel et de traduction. Les modifications s\'appliquent aux nouvelles sessions.</string>
+    <string name="assistant_history_delete_hint">L’historique local sélectionné sera définitivement supprimé.</string>
+    <string name="assistant_history_local_hint">Texte uniquement, pour ce compte sur cet appareil. Conserve les 200 dernières conversations. L’enregistrement se règle séparément dans les paramètres d’appel et de traduction. Les modifications s’appliquent aux nouvelles sessions.</string>
     <string name="assistant_history_search">Rechercher dans le texte des conversations</string>
     <string name="assistant_history_close_search">Fermer la recherche</string>
     <string name="assistant_history_empty">Aucune conversation correspondante</string>
-    <string name="assistant_history_replay_hint">La réécoute utilise l\'audio récent mis en cache sur cette page. L\'audio n\'est pas enregistré dans l\'historique.</string>
+    <string name="assistant_history_replay_hint">La réécoute utilise l’audio récent mis en cache sur cette page. L’audio n’est pas enregistré dans l’historique.</string>
     <string name="assistant_history_replay_error">Impossible de réécouter cette phrase. Veuillez réessayer.</string>
     <string name="assistant_facing_mode">Face à face</string>
     <string name="assistant_side_by_side_mode">Côte à côte</string>
@@ -105,11 +105,11 @@
     <string name="assistant_summary_title">Résumé et tâches</string>
     <string name="assistant_summary_decisions">Décisions</string>
     <string name="assistant_summary_todos">Tâches sur cet appareil</string>
-    <string name="assistant_summary_no_tasks">Aucune tâche explicite n\'a été trouvée.</string>
+    <string name="assistant_summary_no_tasks">Aucune tâche explicite n’a été trouvée.</string>
     <string name="assistant_summary_sources">Voir le texte source</string>
     <string name="assistant_summary_end_first">Disponible une fois la conversation terminée.</string>
     <string name="assistant_summary_hint">La génération envoie le texte de cette conversation au service IA. Les résultats et les cases cochées des tâches sont enregistrés sur cet appareil. Vérifiez-les par rapport au texte source.</string>
-    <string name="assistant_summary_error">Le résumé n\'a pas pu être généré ni enregistré. Veuillez réessayer.</string>
+    <string name="assistant_summary_error">Le résumé n’a pas pu être généré ni enregistré. Veuillez réessayer.</string>
     <string name="assistant_summary_too_long">Cette conversation est trop longue pour être résumée intégralement.</string>
     <string name="assistant_summary_working">Génération…</string>
     <string name="assistant_summary_generate">Générer le résumé et les tâches</string>
@@ -122,16 +122,16 @@
     <string name="assistant_camera_closed">La caméra est maintenant désactivée.</string>
     <string name="assistant_camera_already_open">La caméra est déjà activée.</string>
     <string name="assistant_camera_already_closed">La caméra est déjà désactivée.</string>
-    <string name="assistant_camera_permission_denied">L\'autorisation de la caméra n\'a pas été accordée. Impossible de l\'activer.</string>
-    <string name="assistant_camera_foreground_required">Revenez à l\'écran d\'appel pour activer la caméra.</string>
-    <string name="assistant_camera_timeout">Le délai de l\'opération sur la caméra a expiré. Veuillez réessayer.</string>
-    <string name="assistant_camera_device_error">L\'opération sur la caméra a échoué.</string>
-    <string name="assistant_camera_invalid_tool">Demande de caméra non valide. La caméra n\'a pas été modifiée.</string>
-    <string name="assistant_call_invalid_tool">Demande d\'appel non valide. Aucune action n\'a été effectuée.</string>
+    <string name="assistant_camera_permission_denied">L’autorisation de la caméra n’a pas été accordée. Impossible de l’activer.</string>
+    <string name="assistant_camera_foreground_required">Revenez à l’écran d’appel pour activer la caméra.</string>
+    <string name="assistant_camera_timeout">Le délai de l’opération sur la caméra a expiré. Veuillez réessayer.</string>
+    <string name="assistant_camera_device_error">L’opération sur la caméra a échoué.</string>
+    <string name="assistant_camera_invalid_tool">Demande de caméra non valide. La caméra n’a pas été modifiée.</string>
+    <string name="assistant_call_invalid_tool">Demande d’appel non valide. Aucune action n’a été effectuée.</string>
     <string name="assistant_camera_cancelled">La demande de caméra a été annulée.</string>
     <string name="assistant_camera_feedback_failed">La confirmation vocale est indisponible.</string>
-    <string name="assistant_camera_result_unconfirmed">L\'opération sur la caméra n\'a pas été confirmée. Vérifiez son état ou réessayez avec le bouton de la caméra.</string>
-    <string name="assistant_camera_state_sync_failed">La synchronisation de l\'état de la caméra a échoué. Relancez la commande vocale ou utilisez le bouton de la caméra.</string>
+    <string name="assistant_camera_result_unconfirmed">L’opération sur la caméra n’a pas été confirmée. Vérifiez son état ou réessayez avec le bouton de la caméra.</string>
+    <string name="assistant_camera_state_sync_failed">La synchronisation de l’état de la caméra a échoué. Relancez la commande vocale ou utilisez le bouton de la caméra.</string>
     <string name="assistant_camera_working">Commutation de la caméra…</string>
     <string name="assistant_camera_video_unavailable">La vidéo est indisponible sur cet appareil avec WebRTC. Utilisez AOQ ou un téléphone compatible.</string>
 </resources>

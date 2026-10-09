@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="online_capture_title">Enregistrement IA de la réunion</string>
-    <string name="online_capture_description">Transcrivez cette réunion dans les archives de réunion pour générer le compte rendu. L\'enregistrement cloud dispose de commandes distinctes.</string>
-    <string name="online_capture_guest">Connectez-vous avec un compte de gestionnaire de salle pour contrôler l\'enregistrement IA.</string>
-    <string name="online_capture_unavailable">Les commandes d\'enregistrement IA ne sont pas disponibles pour cette réunion.</string>
-    <string name="online_capture_coverage">La réception de la transcription ne garantit pas une couverture audio complète. Vérifiez les passages manquants avant d\'utiliser le compte rendu.</string>
+    <string name="online_capture_description">Transcrivez cette réunion dans les archives de réunion pour générer le compte rendu. L’enregistrement cloud dispose de commandes distinctes.</string>
+    <string name="online_capture_guest">Connectez-vous avec un compte de gestionnaire de salle pour contrôler l’enregistrement IA.</string>
+    <string name="online_capture_unavailable">Les commandes d’enregistrement IA ne sont pas disponibles pour cette réunion.</string>
+    <string name="online_capture_coverage">La réception de la transcription ne garantit pas une couverture audio complète. Vérifiez les passages manquants avant d’utiliser le compte rendu.</string>
     <string name="online_capture_open">Ouvrir les archives de cette réunion</string>
-    <string name="online_capture_unknown">Le résultat de la commande est inconnu. Vérifiez la demande d\'origine avant toute autre action.</string>
-    <string name="online_capture_start">Démarrer l\'enregistrement IA</string>
-    <string name="online_capture_stop">Arrêter l\'enregistrement IA</string>
-    <string name="online_capture_manager">Seuls les gestionnaires actuels de la salle peuvent démarrer ou arrêter l\'enregistrement IA.</string>
-    <string name="online_capture_error">Impossible de confirmer l\'opération. Actualisez ou vérifiez la demande d\'origine.</string>
-    <string name="online_capture_start_effect">Cela lance le traitement de la parole et enregistre la transcription dans les archives de cette réunion. Le traitement peut consommer du quota IA. Les participants voient l\'état de l\'enregistrement.</string>
-    <string name="online_capture_stop_effect">Cela arrête la collecte de la parole pour l\'enregistrement et attend le dernier texte reçu. La réunion se poursuit.</string>
+    <string name="online_capture_unknown">Le résultat de la commande est inconnu. Vérifiez la demande d’origine avant toute autre action.</string>
+    <string name="online_capture_start">Démarrer l’enregistrement IA</string>
+    <string name="online_capture_stop">Arrêter l’enregistrement IA</string>
+    <string name="online_capture_manager">Seuls les gestionnaires actuels de la salle peuvent démarrer ou arrêter l’enregistrement IA.</string>
+    <string name="online_capture_error">Impossible de confirmer l’opération. Actualisez ou vérifiez la demande d’origine.</string>
+    <string name="online_capture_start_effect">Cela lance le traitement de la parole et enregistre la transcription dans les archives de cette réunion. Le traitement peut consommer du quota IA. Les participants voient l’état de l’enregistrement.</string>
+    <string name="online_capture_stop_effect">Cela arrête la collecte de la parole pour l’enregistrement et attend le dernier texte reçu. La réunion se poursuit.</string>
     <string name="online_capture_confirm">Confirmer</string>
     <string name="online_capture_unknown_state">État non confirmé</string>
     <string name="online_capture_starting">Démarrage</string>

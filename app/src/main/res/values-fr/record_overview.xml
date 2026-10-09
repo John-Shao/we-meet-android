@@ -3,6 +3,6 @@
     <string name="record_overview_title">Compte rendu de réunion</string>
     <string name="record_overview_open_minutes">Ouvrir le compte rendu IA</string>
     <string name="record_overview_empty">Aucun compte rendu de réunion. Générez-le à partir de la transcription.</string>
-    <string name="record_overview_back">Voir l\'enregistrement et l\'aperçu</string>
+    <string name="record_overview_back">Voir l’enregistrement et l’aperçu</string>
     <string name="record_overview_synopsis_title">Aperçu</string>
 </resources>

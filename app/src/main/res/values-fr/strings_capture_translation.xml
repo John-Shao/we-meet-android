@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="capture_translation_title">Traduction de l\'enregistrement</string>
-    <string name="capture_translation_scope">Utilise le microphone de l\'enregistrement en cours. La transcription d\'origine et la traduction sont traitées séparément. Une fois la traduction terminée, l\'enregistrement se poursuit.</string>
+    <string name="capture_translation_title">Traduction de l’enregistrement</string>
+    <string name="capture_translation_scope">Utilise le microphone de l’enregistrement en cours. La transcription d’origine et la traduction sont traitées séparément. Une fois la traduction terminée, l’enregistrement se poursuit.</string>
     <string name="capture_translation_simultaneous">Interprétation simultanée</string>
     <string name="capture_translation_speech">Traduction vocale bidirectionnelle</string>
     <string name="capture_translation_zh_en">Chinois → anglais</string>
@@ -16,16 +16,16 @@
     <string name="capture_translation_speak">Commencer à parler %1$s</string>
     <string name="capture_translation_end_turn">Terminer la prise de parole et traduire</string>
     <string name="capture_translation_pending">Une opération de traduction est en attente de vérification. La vérification ne reconnecte pas le microphone automatiquement.</string>
-    <string name="capture_translation_recover">Vérifier l\'opération précédente</string>
-    <string name="capture_translation_error">Le résultat de la traduction n\'a pas pu être confirmé. Vérifiez les opérations en attente avant de continuer.</string>
-    <string name="capture_translation_storage_error">Impossible de lire ou d\'enregistrer les opérations en attente. La traduction est indisponible.</string>
-    <string name="capture_translation_detached">Une traduction est toujours active pour cet enregistrement, mais cette page n\'y est pas connectée. Terminez-la avant d\'en démarrer une nouvelle.</string>
+    <string name="capture_translation_recover">Vérifier l’opération précédente</string>
+    <string name="capture_translation_error">Le résultat de la traduction n’a pas pu être confirmé. Vérifiez les opérations en attente avant de continuer.</string>
+    <string name="capture_translation_storage_error">Impossible de lire ou d’enregistrer les opérations en attente. La traduction est indisponible.</string>
+    <string name="capture_translation_detached">Une traduction est toujours active pour cet enregistrement, mais cette page n’y est pas connectée. Terminez-la avant d’en démarrer une nouvelle.</string>
     <string name="capture_translation_connecting">Connexion de la traduction…</string>
     <string name="capture_translation_ready">Traduction prête</string>
     <string name="capture_translation_listening">Réception de la parole…</string>
     <string name="capture_translation_awaiting">Génération de la traduction…</string>
     <string name="capture_translation_finishing">Fin de la traduction…</string>
     <string name="capture_translation_stopped">Traduction terminée</string>
-    <string name="capture_translation_interrupted">Traduction interrompue ; l\'enregistrement d\'origine n\'est pas affecté</string>
+    <string name="capture_translation_interrupted">Traduction interrompue ; l’enregistrement d’origine n’est pas affecté</string>
     <string name="capture_translation_unknown">Connexion perdue ; le résultat de la traduction doit être vérifié</string>
 </resources>

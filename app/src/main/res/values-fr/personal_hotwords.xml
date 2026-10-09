@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="personal_hotwords_title">Mots-clés personnels</string>
-    <string name="personal_hotwords_hint">Privés et synchronisés entre vos appareils. Un mot par ligne ; jusqu\'à 100 mots, 40 caractères par mot, 4000 au total. Enregistrez un texte vide pour effacer la liste. L\'enregistrement ne modifie ni cet import ni les tâches déjà envoyées ; fusionnez explicitement avant de téléverser.</string>
+    <string name="personal_hotwords_hint">Privés et synchronisés entre vos appareils. Un mot par ligne ; jusqu’à 100 mots, 40 caractères par mot, 4000 au total. Enregistrez un texte vide pour effacer la liste. L’enregistrement ne modifie ni cet import ni les tâches déjà envoyées ; fusionnez explicitement avant de téléverser.</string>
     <string name="personal_hotwords_editor">Modifier le vocabulaire personnel</string>
-    <string name="personal_hotwords_copy_current">Copier les mots de cet import dans l\'éditeur</string>
+    <string name="personal_hotwords_copy_current">Copier les mots de cet import dans l’éditeur</string>
     <string name="personal_hotwords_save">Enregistrer le vocabulaire personnel</string>
     <string name="personal_hotwords_apply">Fusionner dans cet import</string>
     <string name="personal_hotwords_saved">Vocabulaire enregistré. Les options de cet import restent inchangées.</string>
     <string name="personal_hotwords_applied">Fusion effectuée et doublons supprimés. Les mots de cet import restent modifiables.</string>
     <string name="personal_hotwords_conflict">Le vocabulaire a été modifié sur un autre appareil. Votre brouillon est conservé ; abandonnez les modifications et rechargez pour vérifier.</string>
-    <string name="personal_hotwords_limit">Trop de mots ou de caractères. Aucun texte n\'a été tronqué ni fusionné ; réduisez la liste.</string>
+    <string name="personal_hotwords_limit">Trop de mots ou de caractères. Aucun texte n’a été tronqué ni fusionné ; réduisez la liste.</string>
     <string name="personal_hotwords_error">Échec de la requête. Réessayez ; les modifications non enregistrées doivent encore être confirmées.</string>
     <string name="personal_hotwords_reload">Abandonner les modifications et recharger</string>
     <string name="personal_hotwords_close">Fermer le vocabulaire</string>

@@ -10,6 +10,6 @@
     <string name="video_material_unavailable">Aucune ressource accessible pour le moment</string>
     <string name="video_record_hint">Ouvrir les enregistrements et la transcription de cette session</string>
     <string name="video_summary_pending">Aucun compte rendu généré pour le moment</string>
-    <string name="video_view_record">Voir l\'enregistrement</string>
+    <string name="video_view_record">Voir l’enregistrement</string>
     <string name="video_view_summary">Voir le compte rendu</string>
 </resources>

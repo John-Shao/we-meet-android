@@ -12,14 +12,14 @@
     <string name="translation_text_only">Texte traduit uniquement</string>
     <string name="translation_save">Enregistrer les traductions confirmées dans les archives de la réunion</string>
     <string name="translation_no_save">Ne pas enregistrer les traductions après la session</string>
-    <string name="translation_unknown">L\'opération n\'a pas pu être confirmée. Vérifiez la demande d\'origine avant toute autre action.</string>
+    <string name="translation_unknown">L’opération n’a pas pu être confirmée. Vérifiez la demande d’origine avant toute autre action.</string>
     <string name="translation_start">Démarrer la traduction</string>
     <string name="translation_stop">Arrêter la traduction</string>
-    <string name="translation_start_effect">Cette action traite le microphone de votre réunion et peut consommer du quota IA. Vérifiez la langue, le mode et le choix d\'enregistrement ci-dessous. Activez la voix traduite séparément lorsqu\'elle est prête.</string>
-    <string name="translation_stop_effect">Met fin à cette session de traduction personnelle et à sa réponse en attente. La réunion et les canaux d\'interprétation des autres participants continuent.</string>
+    <string name="translation_start_effect">Cette action traite le microphone de votre réunion et peut consommer du quota IA. Vérifiez la langue, le mode et le choix d’enregistrement ci-dessous. Activez la voix traduite séparément lorsqu’elle est prête.</string>
+    <string name="translation_stop_effect">Met fin à cette session de traduction personnelle et à sa réponse en attente. La réunion et les canaux d’interprétation des autres participants continuent.</string>
     <string name="translation_other_connection">Cet appareil a besoin de sa propre connexion active à la réunion. Une traduction démarrée sur une autre connexion peut être arrêtée ici.</string>
-    <string name="translation_mic_off">Votre microphone de réunion est coupé. Activez-le dans la barre d\'outils de la réunion pour traduire la parole.</string>
-    <string name="translation_command_failed">La commande vocale n\'a pas pu être confirmée. Arrêtez cette traduction avant de démarrer une nouvelle session.</string>
+    <string name="translation_mic_off">Votre microphone de réunion est coupé. Activez-le dans la barre d’outils de la réunion pour traduire la parole.</string>
+    <string name="translation_command_failed">La commande vocale n’a pas pu être confirmée. Arrêtez cette traduction avant de démarrer une nouvelle session.</string>
     <string name="translation_wait_ready">En attente de la disponibilité de la traduction…</string>
     <string name="translation_listen">Écouter la voix traduite</string>
     <string name="translation_mute">Couper la voix traduite</string>
@@ -36,6 +36,6 @@
     <string name="translation_running">Traduction en cours</string>
     <string name="translation_stopping">Fin de la traduction</string>
     <string name="translation_stopped">Traduction arrêtée</string>
-    <string name="translation_incomplete">La traduction s\'est terminée de façon incomplète</string>
+    <string name="translation_incomplete">La traduction s’est terminée de façon incomplète</string>
     <string name="translation_off">Traduction désactivée</string>
 </resources>

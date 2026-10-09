@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="capture_audio_settings">Paramètres audio</string>
-    <string name="capture_keep_audio">Conserver l\'audio</string>
-    <string name="capture_keep_audio_hint">Enregistrer l\'audio pour la lecture et le téléchargement</string>
-    <string name="capture_text_only_hint">Utiliser l\'audio temporairement pour la transcription, sans lecture</string>
+    <string name="capture_keep_audio">Conserver l’audio</string>
+    <string name="capture_keep_audio_hint">Enregistrer l’audio pour la lecture et le téléchargement</string>
+    <string name="capture_text_only_hint">Utiliser l’audio temporairement pour la transcription, sans lecture</string>
     <string name="capture_audio_settings_hint">Choisissez le mode de sauvegarde de cet enregistrement</string>
     <string name="capture_audio_settings_locked">Le mode de stockage est fixé pour cet enregistrement. Choisissez à nouveau avant votre prochain enregistrement.</string>
     <string name="capture_settings_done">Terminé</string>
     <string name="capture_live_summary">Synthèse en direct</string>
     <string name="capture_document_empty_title">Gardez une trace de chaque parole</string>
-    <string name="capture_document_empty_hint">Démarrez l\'enregistrement, puis activez la transcription en direct. Votre transcription apparaîtra ici.</string>
+    <string name="capture_document_empty_hint">Démarrez l’enregistrement, puis activez la transcription en direct. Votre transcription apparaîtra ici.</string>
     <string name="capture_summary_empty_title">Concentrez-vous sur la discussion</string>
-    <string name="capture_summary_empty_hint">Une fois l\'enregistrement et la transcription lancés, activez les synthèses pour revoir les points clés et les tâches.</string>
+    <string name="capture_summary_empty_hint">Une fois l’enregistrement et la transcription lancés, activez les synthèses pour revoir les points clés et les tâches.</string>
     <string name="capture_document_preparing">Préparation de votre enregistrement. Les fonctions IA seront disponibles une fois la connexion établie.</string>
     <string name="capture_next_title">Titre du prochain enregistrement (facultatif)</string>
     <string name="capture_tool_interpret">Interpréter</string>

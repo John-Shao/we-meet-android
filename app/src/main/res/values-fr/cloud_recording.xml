@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="cloud_recording_title">Enregistrement cloud</string>
-    <string name="cloud_recording_description">Enregistre l\'audio et la vidéo de la réunion. Le compte rendu IA peut être activé séparément via l\'enregistrement IA.</string>
-    <string name="cloud_recording_guest">Connectez-vous en tant qu\'hôte ou administrateur de la réunion pour gérer les enregistrements cloud.</string>
-    <string name="cloud_recording_unavailable">Impossible de vérifier les droits de contrôle de l\'enregistrement. Vérifiez que vous êtes connecté avec des droits d\'hôte ou d\'administrateur à jour, puis actualisez.</string>
-    <string name="cloud_recording_start">Démarrer l\'enregistrement cloud</string>
-    <string name="cloud_recording_stop">Arrêter l\'enregistrement cloud</string>
+    <string name="cloud_recording_description">Enregistre l’audio et la vidéo de la réunion. Le compte rendu IA peut être activé séparément via l’enregistrement IA.</string>
+    <string name="cloud_recording_guest">Connectez-vous en tant qu’hôte ou administrateur de la réunion pour gérer les enregistrements cloud.</string>
+    <string name="cloud_recording_unavailable">Impossible de vérifier les droits de contrôle de l’enregistrement. Vérifiez que vous êtes connecté avec des droits d’hôte ou d’administrateur à jour, puis actualisez.</string>
+    <string name="cloud_recording_start">Démarrer l’enregistrement cloud</string>
+    <string name="cloud_recording_stop">Arrêter l’enregistrement cloud</string>
     <string name="cloud_recording_confirm">Confirmer</string>
-    <string name="cloud_recording_reconcile">Vérifier la demande d\'enregistrement cloud</string>
-    <string name="cloud_recording_storage_error">Impossible de charger les demandes d\'enregistrement enregistrées sur cet appareil. Réessayez avant de modifier l\'enregistrement.</string>
-    <string name="cloud_recording_start_effect">Enregistre l\'audio et la vidéo de cette réunion dans le cloud. Les participants verront un indicateur d\'enregistrement. Assurez-vous que tout le monde sait que l\'enregistrement commence.</string>
-    <string name="cloud_recording_stop_effect">Arrête cet enregistrement cloud. La réunion et tout enregistrement IA distinct se poursuivent. L\'enregistrement du fichier peut prendre un moment.</string>
-    <string name="cloud_recording_unknown">La demande précédente n\'a pas de réponse vérifiée. Vérifiez cette même demande avant de lancer une autre opération.</string>
-    <string name="cloud_recording_worker_unknown">Le service d\'enregistrement n\'a pas confirmé le résultat. L\'état s\'actualisera ici ; ne lancez pas un autre enregistrement.</string>
-    <string name="cloud_recording_processing">Demande acceptée. En attente de la confirmation du service d\'enregistrement…</string>
-    <string name="cloud_recording_blocked">Un autre enregistrement est en cours de traitement. Actualisez une fois qu\'il est terminé.</string>
+    <string name="cloud_recording_reconcile">Vérifier la demande d’enregistrement cloud</string>
+    <string name="cloud_recording_storage_error">Impossible de charger les demandes d’enregistrement enregistrées sur cet appareil. Réessayez avant de modifier l’enregistrement.</string>
+    <string name="cloud_recording_start_effect">Enregistre l’audio et la vidéo de cette réunion dans le cloud. Les participants verront un indicateur d’enregistrement. Assurez-vous que tout le monde sait que l’enregistrement commence.</string>
+    <string name="cloud_recording_stop_effect">Arrête cet enregistrement cloud. La réunion et tout enregistrement IA distinct se poursuivent. L’enregistrement du fichier peut prendre un moment.</string>
+    <string name="cloud_recording_unknown">La demande précédente n’a pas de réponse vérifiée. Vérifiez cette même demande avant de lancer une autre opération.</string>
+    <string name="cloud_recording_worker_unknown">Le service d’enregistrement n’a pas confirmé le résultat. L’état s’actualisera ici ; ne lancez pas un autre enregistrement.</string>
+    <string name="cloud_recording_processing">Demande acceptée. En attente de la confirmation du service d’enregistrement…</string>
+    <string name="cloud_recording_blocked">Un autre enregistrement est en cours de traitement. Actualisez une fois qu’il est terminé.</string>
     <string name="cloud_recording_disabled">Les nouveaux enregistrements cloud sont indisponibles pour le moment.</string>
-    <string name="cloud_recording_error">La demande n\'a pas pu être confirmée. Actualisez l\'état ou vérifiez la demande précédente.</string>
-    <string name="cloud_recording_starting">Préparation de l\'enregistrement cloud</string>
+    <string name="cloud_recording_error">La demande n’a pas pu être confirmée. Actualisez l’état ou vérifiez la demande précédente.</string>
+    <string name="cloud_recording_starting">Préparation de l’enregistrement cloud</string>
     <string name="cloud_recording_active">Enregistrement cloud en cours</string>
     <string name="cloud_recording_saving">Enregistrement terminé · préparation du fichier</string>
     <string name="cloud_recording_saved">Enregistrement cloud sauvegardé</string>
-    <string name="cloud_recording_failed">L\'enregistrement cloud n\'a pas abouti</string>
-    <string name="cloud_recording_off">L\'enregistrement cloud est désactivé</string>
-    <string name="cloud_recording_status_unknown">État de l\'enregistrement en attente de confirmation</string>
+    <string name="cloud_recording_failed">L’enregistrement cloud n’a pas abouti</string>
+    <string name="cloud_recording_off">L’enregistrement cloud est désactivé</string>
+    <string name="cloud_recording_status_unknown">État de l’enregistrement en attente de confirmation</string>
 </resources>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="records_created_from">Créé à partir du</string>
-    <string name="records_created_through">Créé jusqu\'au</string>
+    <string name="records_created_through">Créé jusqu’au</string>
     <string name="records_clear_dates">Effacer les dates</string>
     <string name="records_date_hint">Format YYYY-MM-DD ; laissez vide pour ne fixer aucune limite. Fuseau horaire local, date de fin incluse.</string>
     <string name="records_date_error">Saisissez des dates valides : la date de début ne peut pas être postérieure à la date de fin.</string>

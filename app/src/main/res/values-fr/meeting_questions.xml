@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="record_question_title">Questions sur la réunion</string>
-    <string name="record_question_scope">Choisissez une version d\'origine de la transcription. L\'IA répond uniquement à partir de cette source et consomme du quota IA. Vos questions restent privées.</string>
-    <string name="record_question_read_error">Les questions sont indisponibles. Actualisez pour vérifier l\'accès à la source d\'origine.</string>
-    <string name="record_question_unknown">La dernière question a un résultat inconnu. Vérifiez sa demande d\'origine avant de poser une autre question.</string>
-    <string name="record_question_error">La question n\'a pas pu être confirmée. Vérifiez l\'état actuel ou la demande en attente.</string>
+    <string name="record_question_scope">Choisissez une version d’origine de la transcription. L’IA répond uniquement à partir de cette source et consomme du quota IA. Vos questions restent privées.</string>
+    <string name="record_question_read_error">Les questions sont indisponibles. Actualisez pour vérifier l’accès à la source d’origine.</string>
+    <string name="record_question_unknown">La dernière question a un résultat inconnu. Vérifiez sa demande d’origine avant de poser une autre question.</string>
+    <string name="record_question_error">La question n’a pas pu être confirmée. Vérifiez l’état actuel ou la demande en attente.</string>
     <string name="record_question_choose">Choisir une version de la transcription</string>
     <string name="record_question_source">Transcription révisée %1$d · compte rendu du %2$s</string>
     <string name="record_question_historical_source">Version de transcription sélectionnée précédemment</string>
     <string name="record_question_input">Votre question</string>
-    <string name="record_question_ask">Demander à l\'IA</string>
+    <string name="record_question_ask">Demander à l’IA</string>
     <string name="record_question_disabled">Les nouvelles questions sont indisponibles pour le moment.</string>
     <string name="record_question_recent">Mes questions récentes</string>
     <string name="record_question_running">Réponse en cours</string>
@@ -17,5 +17,5 @@
     <string name="record_question_failed">Échec de la réponse ; aucune nouvelle tentative automatique.</string>
     <string name="record_question_incomplete">Résultat de la réponse incomplet ; aucune nouvelle tentative automatique.</string>
     <string name="record_question_canceled">Question annulée</string>
-    <string name="record_question_no_answer">La transcription sélectionnée ne contient pas assez d\'informations pour répondre.</string>
+    <string name="record_question_no_answer">La transcription sélectionnée ne contient pas assez d’informations pour répondre.</string>
 </resources>

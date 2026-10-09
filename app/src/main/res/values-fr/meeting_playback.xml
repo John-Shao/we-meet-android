@@ -3,10 +3,10 @@
     <string name="capture_playback_mute">Couper le son</string>
     <string name="capture_playback_unmute">Réactiver le son</string>
     <string name="capture_playback_video_controls">Afficher les commandes de lecture</string>
-    <string name="capture_playback_title">Lecture de l\'enregistrement</string>
+    <string name="capture_playback_title">Lecture de l’enregistrement</string>
     <string name="capture_playback_position">Position de lecture</string>
-    <string name="capture_playback_error">La lecture s\'est arrêtée ou est indisponible. Rechargez pour vérifier l\'accès et réessayez.</string>
-    <string name="capture_playback_incomplete">Une partie de l\'audio est manquante. La lecture s\'arrête aux coupures.</string>
+    <string name="capture_playback_error">La lecture s’est arrêtée ou est indisponible. Rechargez pour vérifier l’accès et réessayez.</string>
+    <string name="capture_playback_incomplete">Une partie de l’audio est manquante. La lecture s’arrête aux coupures.</string>
     <string name="capture_playback_empty">Aucun audio enregistré</string>
     <string name="capture_playback_gap">Aucun audio à cette position. Choisissez un segment enregistré pour continuer.</string>
     <string name="capture_playback_pause">Suspendre la lecture</string>

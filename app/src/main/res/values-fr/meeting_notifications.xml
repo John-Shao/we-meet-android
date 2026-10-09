@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="record_notice_title">Notifications de l\'assistant de compte rendu</string>
+    <string name="record_notice_title">Notifications de l’assistant de compte rendu</string>
     <string name="record_notice_read_error">Impossible de lire votre état de livraison.</string>
-    <string name="record_notice_owner">Les notifications de fin d\'enregistrement sont envoyées au propriétaire.</string>
-    <string name="record_notice_online">Les notifications de fin de réunion sont envoyées aux propriétaires et aux initiateurs disposant des droits d\'accès.</string>
+    <string name="record_notice_owner">Les notifications de fin d’enregistrement sont envoyées au propriétaire.</string>
+    <string name="record_notice_online">Les notifications de fin de réunion sont envoyées aux propriétaires et aux initiateurs disposant des droits d’accès.</string>
     <string name="record_notice_policy">Les destinataires sont figés à la finalisation de chaque version finale. La liste ci-dessous ne contient que vos notifications. Les notifications de réunion existantes restent inchangées.</string>
-    <string name="record_notice_future">Destinataires d\'une prochaine version finale : %1$s</string>
+    <string name="record_notice_future">Destinataires d’une prochaine version finale : %1$s</string>
     <string name="record_notice_no_recipients">Aucun</string>
     <string name="record_notice_policy_error">Impossible de déterminer les destinataires à venir.</string>
-    <string name="record_notice_unavailable">L\'envoi des notifications est indisponible.</string>
-    <string name="record_notice_unknown">Le résultat de la nouvelle tentative est inconnu. Vérifiez la demande d\'origine avant de relancer une autre notification.</string>
+    <string name="record_notice_unavailable">L’envoi des notifications est indisponible.</string>
+    <string name="record_notice_unknown">Le résultat de la nouvelle tentative est inconnu. Vérifiez la demande d’origine avant de relancer une autre notification.</string>
     <string name="record_notice_empty">Aucune notification de fin ne vous a encore été envoyée.</string>
-    <string name="record_notice_attempt">Tentative d\'envoi %1$d</string>
+    <string name="record_notice_attempt">Tentative d’envoi %1$d</string>
     <string name="record_notice_open_summary">Voir cette version du compte rendu</string>
     <string name="record_notice_retry">Consulter la nouvelle tentative de notification</string>
-    <string name="record_notice_confirm">Relancer la notification d\'origine</string>
-    <string name="record_notice_retry_effect">Cette opération peut envoyer la carte du compte rendu d\'origine dans votre conversation avec l\'assistant. Elle conserve le destinataire et la version d\'origine et n\'accorde aucun nouveau droit d\'accès.</string>
-    <string name="record_notice_changed">L\'état de livraison a changé. Fermez et consultez le dernier état.</string>
-    <string name="record_notice_error">Impossible de confirmer le résultat de la nouvelle tentative. Actualisez l\'état ou vérifiez la demande d\'origine.</string>
-    <string name="record_notice_queued">Notification en file d\'envoi</string>
+    <string name="record_notice_confirm">Relancer la notification d’origine</string>
+    <string name="record_notice_retry_effect">Cette opération peut envoyer la carte du compte rendu d’origine dans votre conversation avec l’assistant. Elle conserve le destinataire et la version d’origine et n’accorde aucun nouveau droit d’accès.</string>
+    <string name="record_notice_changed">L’état de livraison a changé. Fermez et consultez le dernier état.</string>
+    <string name="record_notice_error">Impossible de confirmer le résultat de la nouvelle tentative. Actualisez l’état ou vérifiez la demande d’origine.</string>
+    <string name="record_notice_queued">Notification en file d’envoi</string>
     <string name="record_notice_running">Envoi de la notification</string>
     <string name="record_notice_delivered">Notification délivrée</string>
     <string name="record_notice_uncertain">Résultat de la livraison inconnu</string>
-    <string name="record_notice_failed">Échec de l\'envoi de la notification</string>
+    <string name="record_notice_failed">Échec de l’envoi de la notification</string>
     <string name="record_notice_canceled">Envoi de la notification annulé</string>
 </resources>
