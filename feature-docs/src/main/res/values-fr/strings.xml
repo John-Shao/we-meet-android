@@ -174,6 +174,15 @@
     <string name="docs_share_to_chat_help">Envoie une carte du document et tente de donner un accès en lecture aux membres du chat.</string>
     <string name="docs_link_share">Partage par lien</string>
     <string name="docs_save_copy_link">Enregistrer et copier le lien</string>
+    <string name="docs_share_picker_help">Confirmez pour accorder l\'accès aux personnes sélectionnées. Aucun e-mail ni acceptation d\'invitation n\'est nécessaire.</string>
+    <string name="docs_share_batch_result">Ajoutés : %1$d · Déjà présents : %2$d</string>
+    <string name="docs_share_batch_failed">%d personnes n\'ont pas pu être traitées. Relancez l\'opération pour la sélection restante.</string>
+    <string name="docs_access_requests">Demandes d\'accès en attente</string>
+    <string name="docs_requests_load_error">Impossible de charger les demandes d\'accès. Veuillez réessayer.</string>
+    <string name="docs_request_role">Accès demandé : %1$s</string>
+    <string name="docs_request_accept">Approuver</string>
+    <string name="docs_request_reject">Refuser</string>
+    <string name="docs_request_reject_message">Refuser la demande de %1$s ? Cette personne pourra demander à nouveau l\'accès.</string>
     <string name="docs_directory_count">Répertoire · %1$d</string>
     <string name="docs_directory">Arborescence des documents</string>
     <string name="docs_current_document">En cours</string>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_overview_title">Meeting-Zusammenfassung</string>
+    <string name="record_overview_open_minutes">KI-Zusammenfassung öffnen</string>
+    <string name="record_overview_empty">Noch keine Zusammenfassung. Erstellen Sie sie aus dem Transkript.</string>
+    <string name="record_overview_back">Aufnahme und Übersicht anzeigen</string>
+    <string name="record_overview_synopsis_title">Übersicht</string>
+</resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_trash_title">Prullenbak</string>
+    <string name="record_trash_remove">Naar prullenbak verplaatsen</string>
+    <string name="record_trash_confirm_remove">Naar prullenbak verplaatsen bevestigen</string>
+    <string name="record_trash_restore">Herstellen</string>
+    <string name="record_trash_confirm_restore">Opname herstellen</string>
+    <string name="record_trash_cancel">Annuleren</string>
+    <string name="record_trash_empty">Geen opnamen in de prullenbak.</string>
+    <string name="record_trash_remove_hint">De opname en de inhoud ervan worden verborgen. Delen en automatische notulen worden uitgeschakeld. Al geëxporteerde documenten blijven aparte kopieën.</string>
+    <string name="record_trash_restore_hint">Herstel de opname en de bewaarde inhoud. Delen en automatische notulen worden niet opnieuw ingeschakeld.</string>
+    <string name="record_trash_retention_hint">Opnamen kunnen hier worden hersteld. Definitief verwijderen is nog niet beschikbaar. De bestaande bewaarregels voor audio blijven van toepassing.</string>
+    <string name="record_trash_conflict">De opname is gewijzigd, je toegang is verlopen of er wordt nog verwerkt. Ga terug, vernieuw en probeer het opnieuw.</string>
+    <string name="record_trash_uncertain">Het resultaat kon niet worden bevestigd. Je kunt dezelfde actie opnieuw proberen of teruggaan en vernieuwen om het te controleren.</string>
+    <string name="record_trash_unavailable">De prullenbak is niet beschikbaar. Vernieuw om je toegang te controleren.</string>
+</resources>

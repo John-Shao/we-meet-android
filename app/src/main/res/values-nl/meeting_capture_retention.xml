@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_text_only">Alleen tekst bewaren</string>
+    <string name="capture_text_consent">Audio wordt tijdelijk bewaard voor transcriptie, zonder afspelen of downloaden. Na een geslaagde transcriptie wordt het opgeruimd. Start of hervat de transcriptie binnen 30 minuten na het beëindigen; de audio verloopt uiterlijk 24 uur na de start. Niet-geüploade audio blijft in het geheugen en kan niet worden hersteld als de opnamedienst stopt. Start transcriptie apart; dit verbruikt AI-quota.</string>
+    <string name="capture_text_unavailable">Opnemen met alleen tekst is nu niet beschikbaar. Kies audio bewaren of probeer het later opnieuw.</string>
+    <string name="capture_text_saved">Opname beëindigd</string>
+    <string name="capture_text_interrupted_hint">De opname is onderbroken. Tijdelijke audio kan ontbreken. Hervat vóór het verlopen, of beëindig bewust met de audio die de server al heeft ontvangen.</string>
+    <string name="capture_text_local_hint">Alleen tekst wordt bewaard. Geüploade audio volgt de bewaartermijn van de server; niet-geüploade audio is tijdelijk en kan niet worden hersteld nadat het opnameproces stopt.</string>
+    <string name="capture_text_expired">De tijdelijke audio is verlopen. De opname is gestopt; beëindig de opname om de beschikbare tekst te verwerken.</string>
+    <string name="capture_text_finish_hint">Stop de opname en rond de upload van de beschikbare audio af. Controleer daarna de status van de transcriptie en het opruimen van tijdelijke audio.</string>
+    <string name="capture_text_finish_incomplete">Beëindigen met onvolledige audio</string>
+    <string name="capture_text_incomplete_hint">Beëindig deze opname met alleen de audio die de server al heeft ontvangen. De resterende lokale audio wordt weggegooid en ontbrekende delen kunnen niet worden hersteld. Het resultaat wordt als onvolledig gemarkeerd.</string>
+    <string name="capture_text_confirm_incomplete">Ontbrekende audio weggooien en beëindigen</string>
+    <string name="capture_text_retention_title">Tijdelijke audio</string>
+    <string name="capture_text_retention_error">De bewaarstatus van de audio kan niet worden bevestigd. Vernieuw voordat je doorgaat.</string>
+    <string name="capture_text_cleanup_not_started">Audio wordt tijdelijk bewaard voor transcriptie. Het opruimen is nog niet begonnen.</string>
+    <string name="capture_text_cleanup_pending">Tijdelijke audio wordt opgeruimd. Tekst en bestaande notulen blijven behouden.</string>
+    <string name="capture_text_cleanup_failed">Het opruimen van tijdelijke audio is nog niet voltooid. Het systeem probeert het opnieuw.</string>
+    <string name="capture_text_cleanup_complete">Tijdelijke audio is verwijderd. Tekst en bestaande notulen blijven behouden.</string>
+    <string name="capture_text_access_until">Toegang tot audio eindigt: %1$s. Daarna kan de transcriptie niet doorgaan; de verwijderingsvoortgang staat hierboven.</string>
+    <string name="capture_text_retry_until">Transcriptie starten of hervatten uiterlijk: %1$s.</string>
+    <string name="capture_text_retry_closed">Nieuwe transcriptiepogingen zijn niet meer mogelijk. Resultaten van bestaande aanvragen kun je nog wel bekijken.</string>
+</resources>

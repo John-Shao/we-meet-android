@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="capture_direct_asr_title">Transcription en direct</string>
+    <string name="capture_direct_asr_hint">Le texte est reconnu dès l\'activation ; après une pause, reprenez l\'enregistrement pour continuer la transcription. Terminer l\'enregistrement écrit le texte ; après l\'arrêt et l\'enregistrement, la transcription de cet enregistrement prend fin. N\'activez pas la transcription et la traduction en direct en même temps.</string>
+    <string name="capture_direct_asr_start">Démarrer la transcription</string>
+    <string name="capture_direct_asr_stop">Arrêter et enregistrer la transcription</string>
+    <string name="capture_direct_asr_connecting">Connexion…</string>
+    <string name="capture_direct_asr_listening">Transcription en cours…</string>
+    <string name="capture_direct_asr_finishing">Réception de la dernière phrase…</string>
+    <string name="capture_direct_asr_finished">Transcription enregistrée dans l\'enregistrement</string>
+    <string name="capture_direct_asr_empty">Aucune parole reconnue. Votre enregistrement est conservé.</string>
+    <string name="capture_direct_asr_failed">La connexion de transcription a été interrompue, l\'enregistrement continue. Le texte reconnu reste sur cet appareil ; reprenez la transcription ou enregistrez le texte existant.</string>
+    <string name="capture_direct_asr_save">Enregistrer la transcription existante</string>
+    <string name="capture_direct_asr_paused">Transcription en pause. Reprenez l\'enregistrement pour continuer la reconnaissance.</string>
+    <string name="capture_direct_asr_save_failed">Le texte n\'est pas encore enregistré. Reconnectez-vous et réessayez l\'enregistrement.</string>
+    <string name="capture_direct_asr_gap">La transcription ne couvre que l\'audio pendant son activation. Pour obtenir le texte complet, utilisez la transcription de l\'enregistrement entier une fois celui-ci terminé.</string>
+    <string name="bilingual_transport">Mode de connexion</string>
+    <string name="bilingual_transport_aoq">Connexion directe du client AOQ</string>
+    <string name="bilingual_transport_webrtc">Connexion directe du client WebRTC</string>
     <string name="app_name">We Meet</string>
 
     <!-- Login screen -->
@@ -17,6 +34,7 @@
     <string name="home_create_meeting">Réunion instantanée</string>
     <string name="home_join_meeting">Rejoindre une réunion</string>
     <string name="home_create_later_meeting">Planifier une réunion</string>
+    <string name="home_ai_recording">Enregistrement IA</string>
 
     <!-- QR scan / web sign-in confirmation -->
     <string name="qr_scan_confirm_title">Se connecter sur le web</string>
@@ -190,7 +208,7 @@
     <!-- Meeting detail -->
     <string name="meeting_detail_title">Détails de la réunion</string>
     <string name="meeting_detail_tab_info">Infos</string>
-    <string name="meeting_detail_tab_summary">Résumé</string>
+    <string name="meeting_detail_tab_summary">Compte rendu</string>
     <string name="meeting_detail_tab_action_items">Actions</string>
     <string name="meeting_detail_tab_transcript">Transcription</string>
     <string name="meeting_detail_info_name">Nom</string>
@@ -212,7 +230,7 @@
     <string name="tab_messages">Messages</string>
     <string name="tab_calendar">Calendrier</string>
     <string name="tab_contacts">Contacts</string>
-    <string name="tab_docs">Docs</string>
+    <string name="tab_docs">Documents</string>
     <string name="tab_tasks">Tâches</string>
     <string name="task_title">Tâches</string>
     <string name="task_demo_owner">Moi</string>
@@ -481,9 +499,9 @@
     <string name="calendar_retry">Réessayer</string>
     <!-- P8: calendar view modes + agenda view -->
     <string name="calendar_view_agenda">Liste</string>
-    <string name="calendar_view_day">Day</string>
-    <string name="calendar_view_week">Week</string>
-    <string name="calendar_view_month">Month</string>
+    <string name="calendar_view_day">Jour</string>
+    <string name="calendar_view_week">Semaine</string>
+    <string name="calendar_view_month">Mois</string>
     <string name="calendar_agenda_empty_today">Aucun événement</string>
     <!-- P8: free/busy compare screen -->
     <string name="freebusy_title">Agenda</string>
@@ -701,7 +719,7 @@
     </plurals>
     <string name="approval_urge">Relancer</string>
     <string name="approval_urged">Relance envoyée — l\'approbateur actuel a été rappelé.</string>
-    <string name="approval_needs_assignment_hint">\"L\'approbateur n\'a pas pu être résolu automatiquement. Demandez à un admin de corriger la structure.\"</string>
+    <string name="approval_needs_assignment_hint">L\'approbateur n\'a pas pu être résolu automatiquement. Demandez à un administrateur de corriger la structure de l\'organisation, puis réessayez.</string>
     <string name="approval_comment_hint">Commentaire (facultatif)</string>
     <string name="approval_act_approve">Approuver</string>
     <string name="approval_act_reject">Rejeter</string>
@@ -764,6 +782,8 @@
     <string name="meeting_room_picker_tab_all">Toutes les salles</string>
     <string name="meeting_room_picker_search_hint">Rechercher une salle ou un niveau</string>
     <string name="meeting_room_filter_level_all">Tous les niveaux</string>
+    <string name="meeting_room_filter_capacity_any">Toutes capacités</string>
+    <string name="meeting_room_filter_capacity_at_least">Au moins %1$d personnes</string>
     <string name="meeting_room_unavailable">Occupée sur ce créneau</string>
     <string name="meeting_room_unavailable_range">%1$s–%2$s déjà réservé</string>
     <string name="meeting_room_empty">Aucune salle ne correspond à ces filtres</string>
@@ -1060,7 +1080,7 @@
     <string name="waiting_no_token">L’hôte a approuvé votre demande, mais les informations de connexion sont manquantes. Veuillez réessayer.</string>
     <string name="web_login_network_error">Erreur réseau</string>
     <string name="web_login_invalid_callback">Rappel de connexion invalide</string>
-    <string name="docs_editor_save_failed">Saving was not confirmed. Check your connection and retry. This page will stay open.</string>
+    <string name="docs_editor_save_failed">L\'enregistrement n\'a pas été confirmé. Vérifiez votre connexion et réessayez. Cette page restera ouverte.</string>
     <string name="docs_editor_incompatible">Impossible d’ouvrir l’éditeur. Réessayez plus tard ou revenez au document pour continuer la lecture.</string>
     <string name="docs_editor_pending_work">Toutes les modifications ne sont pas encore confirmées. Vérifiez la connexion, le titre, les pièces jointes et les commentaires non publiés, puis réessayez.</string>
     <string name="docs_editor_reloaded">L’éditeur a été rechargé. Seul le contenu enregistré sur le serveur peut être confirmé. Vérifiez vos dernières modifications.</string>
@@ -1080,4 +1100,63 @@
     <string name="docs_chat_share_existing_access">Envoyer uniquement la carte. Les destinataires conservent leurs droits existants.</string>
     <string name="docs_chat_share_send">Envoyer</string>
     <string name="docs_chat_share_back">Retour</string>
+    <string name="minutes_all">Tous les comptes rendus intelligents</string>
+    <string name="minutes_owned">Mes contenus</string>
+    <string name="minutes_participated">J\'ai participé</string>
+    <string name="minutes_shared">Partagés avec moi</string>
+    <string name="minutes_recorded_at">Heure de la réunion : %1$s</string>
+    <string name="minutes_generated_at">Généré le : %1$s</string>
+    <string name="minutes_empty">Aucun compte rendu intelligent pour le moment</string>
+    <string name="minutes_empty_hint">Essayez une autre catégorie ou un autre terme de recherche, ou générez un compte rendu depuis un enregistrement de réunion.</string>
+    <string name="minutes_overview">Aperçu</string>
+    <string name="minutes_ask">Demander à l\'IA</string>
+    <string name="minutes_manage">Gérer les comptes rendus</string>
+    <string name="minutes_history">Historique des versions</string>
+    <string name="minutes_source_info">Détails de génération</string>
+    <string name="minutes_close_tools">Masquer les outils</string>
+    <string name="room_ai_prompt_summary">Résume la discussion jusqu\'à maintenant</string>
+    <string name="room_ai_prompt_decisions">Quelles décisions ont été prises ?</string>
+    <string name="room_ai_prompt_actions">Liste les tâches et leurs responsables</string>
+    <string name="meeting_ai_search">Rechercher des réunions avec l\'IA</string>
+    <string name="cd_records_ai_search">Rechercher des réunions avec l\'IA</string>
+    <string name="cd_records_search">Rechercher des titres</string>
+    <string name="cd_records_clear_search">Effacer la recherche</string>
+    <string name="cd_records_more">Plus d\'actions</string>
+    <string name="cd_records_list_view">Passer à la vue en liste</string>
+    <string name="cd_records_grid_view">Passer à la vue en grille</string>
+    <string name="cd_records_skip_back">Reculer de 15 secondes</string>
+    <string name="cd_records_skip_forward">Avancer de 15 secondes</string>
+    <string name="cd_records_play">Lire</string>
+    <string name="cd_records_pause">Suspendre la lecture</string>
+    <string name="cd_records_close">Fermer</string>
+    <string name="work_title">Travail</string>
+    <string name="work_refresh">Actualiser</string>
+    <string name="work_request_failed">La demande n\'a pas abouti. Actualisez la tâche d\'origine ou réessayez la même demande.</string>
+    <string name="work_back_list">Retour à mon travail</string>
+    <string name="work_execution_workspace">Espace de travail : %1$s</string>
+    <string name="work_cancel">Annuler la tâche d\'origine</string>
+    <string name="work_local_results">Les résultats restent sur le bureau. Sélectionnez et synchronisez les fichiers sur le bureau pour les afficher ici.</string>
+    <string name="work_view_file">Voir %1$s</string>
+    <string name="work_dispatch_title">Demander un travail sur le bureau</string>
+    <string name="work_dispatch_help">Choisissez un espace de travail autorisé sur le bureau. Les demandes arrivent dans la liste de tâches du bureau ; l\'acceptation de la tâche et l\'approbation de chaque opération se font sur cet ordinateur.</string>
+    <string name="work_remote_disabled">La distribution à distance des tâches n\'est pas activée sur le serveur. Les travaux existants restent consultables.</string>
+    <string name="work_device_state">%1$s · %2$s</string>
+    <string name="work_online">En ligne</string>
+    <string name="work_offline">Hors ligne, en attente du retour au bureau</string>
+    <string name="work_no_workspace">Sélectionnez d\'abord un dossier sur le bureau et autorisez la réception des tâches à distance.</string>
+    <string name="work_goal">Objectif du travail</string>
+    <string name="work_dispatch_unknown">L\'envoi attend une confirmation. Le numéro de la demande d\'origine est conservé ; les tâches ne sont jamais répétées automatiquement.</string>
+    <string name="work_confirm_request">Confirmer la demande d\'origine</string>
+    <string name="work_dispatch">Envoyer vers les tâches du bureau</string>
+    <string name="work_my_tasks">Mon travail</string>
+    <string name="work_more">Charger plus</string>
+    <string name="work_status_desktop_queued">En attente de prise en charge sur le bureau</string>
+    <string name="work_status_queued">En attente de traitement</string>
+    <string name="work_status_desktop_running">Traitement sur le bureau (une approbation peut être requise)</string>
+    <string name="work_status_running">Traitement en cours</string>
+    <string name="work_status_disconnected">Connexion au bureau interrompue, vérification de la tâche d\'origine en attente</string>
+    <string name="work_status_succeeded">Résultats terminés</string>
+    <string name="work_status_canceled">Annulée</string>
+    <string name="work_status_failed">Échec du traitement</string>
+    <string name="work_status_unknown">Statut en attente de confirmation</string>
 </resources>

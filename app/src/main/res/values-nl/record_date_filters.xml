@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_created_from">Aangemaakt op of na</string>
+    <string name="records_created_through">Aangemaakt op of vóór</string>
+    <string name="records_clear_dates">Datums wissen</string>
+    <string name="records_date_hint">Gebruik YYYY-MM-DD; laat leeg voor geen limiet. Lokale tijdzone, waarbij de einddatum meetelt.</string>
+    <string name="records_date_error">Voer geldige datums in, waarbij de startdatum niet later is dan de einddatum.</string>
+    <string name="records_date_active">Aangemaakt: %1$s — %2$s</string>
+</resources>

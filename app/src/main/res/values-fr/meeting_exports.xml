@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_export_title">Documents de compte rendu</string>
+    <string name="record_export_read_error">Impossible de lire l\'aperçu du document ou son état de livraison.</string>
+    <string name="record_export_unavailable">La création de documents est indisponible.</string>
+    <string name="record_export_choose">Choisir une version à prévisualiser</string>
+    <string name="record_export_language_hint">Choisissez la langue des titres du document. Cette option ne traduit pas le compte rendu.</string>
+    <string name="record_export_zh">Chinois</string>
+    <string name="record_export_en">Anglais</string>
+    <string name="record_export_unknown">Le résultat est inconnu. Vérifiez la demande d\'origine avant de créer ou de relancer un autre document.</string>
+    <string name="record_export_reconcile_create">Vérifier la demande de création d\'origine</string>
+    <string name="record_export_reconcile_retry">Vérifier la nouvelle tentative du document d\'origine</string>
+    <string name="record_export_accepted">Demande confirmée. L\'état de livraison du document figure ci-dessous.</string>
+    <string name="record_export_empty">Aucun document créé par vous pour le moment.</string>
+    <string name="record_export_human">Version du compte rendu manuel enregistrée</string>
+    <string name="record_export_ai">Version du compte rendu IA enregistrée</string>
+    <string name="record_export_details">%1$s · %2$s · tentative %3$d</string>
+    <string name="record_export_open">Ouvrir le document</string>
+    <string name="record_export_retry_preview">Consulter la nouvelle tentative du document d\'origine</string>
+    <string name="record_export_error">Impossible de confirmer la demande de document. Actualisez son état ou vérifiez la demande d\'origine.</string>
+    <string name="record_export_preview">Consulter la copie du document</string>
+    <string name="record_export_effect">La confirmation crée une copie privée du document sous votre compte. Elle n\'est pas partagée avec les participants et ne suit pas les modifications ultérieures du compte rendu.</string>
+    <string name="record_export_frozen">Cette nouvelle tentative utilise la copie gelée et la demande d\'origine.</string>
+    <string name="record_export_changed">L\'état de livraison a changé. Fermez et consultez le dernier état.</string>
+    <string name="record_export_confirm">Créer ce document</string>
+    <string name="record_export_confirm_retry">Relancer le document d\'origine</string>
+    <string name="record_export_queued">Document en file de création</string>
+    <string name="record_export_running">Création du document</string>
+    <string name="record_export_ready">Document prêt</string>
+    <string name="record_export_uncertain">Résultat de création du document inconnu</string>
+    <string name="record_export_failed">Échec de la création du document</string>
+    <string name="record_export_canceled">Création du document annulée</string>
+</resources>

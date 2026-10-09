@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_overview_chapters_empty">Aucune note de chapitre disponible.</string>
+    <string name="record_overview_more_sources">Autres références à la source (%1$d)</string>
+    <string name="record_overview_hide_sources">Réduire les références</string>
+    <string name="record_overview_generate">Générer le compte rendu de réunion</string>
+    <string name="record_overview_regenerate">Régénérer le compte rendu de réunion</string>
+    <string name="record_overview_generating">Génération en cours…</string>
+    <string name="record_overview_failed">La génération de l\'aperçu a échoué. Veuillez réessayer.</string>
+    <string name="record_overview_accepted">Génération de l\'aperçu demandée.</string>
+    <string name="record_overview_uncertain">Impossible de confirmer le résultat pour le moment. Veuillez réessayer.</string>
+    <string name="record_overview_conflict">La transcription ou la tâche d\'aperçu a changé. Actualisez, puis réessayez.</string>
+    <string name="record_overview_rate_limited">Trop de demandes d\'aperçu. Réessayez plus tard.</string>
+    <string name="record_overview_wait_source">Terminez d\'abord l\'enregistrement et la transcription. Les transcriptions trop volumineuses ne peuvent pas encore être traitées.</string>
+    <string name="record_overview_source_changed">La transcription a changé. Voici l\'aperçu et les chapitres précédents.</string>
+    <string name="record_overview_unavailable">La génération de l\'aperçu est actuellement indisponible.</string>
+    <string name="record_overview_storage_error">Impossible d\'enregistrer la demande d\'aperçu. Autorisez le stockage de session, puis réessayez.</string>
+    <string name="record_overview_failed_preserved">La génération a échoué. Votre aperçu et vos chapitres précédents ont été conservés. Veuillez réessayer.</string>
+    <string name="record_overview_language">Langue de génération</string>
+    <string name="record_overview_follow_source">Suivre la transcription</string>
+    <string name="record_overview_language_hint">S\'applique à l\'aperçu et aux thèmes lors de la prochaine génération. Le contenu existant est conservé jusqu\'à la réussite de la génération.</string>
+    <string name="record_overview_language_save_failed">Impossible de confirmer la langue. Actualisez, puis réessayez.</string>
+    <string name="record_overview_language_save">Enregistrer</string>
+    <string name="record_overview_language_cancel">Annuler</string>
+    <string-array name="record_overview_languages">
+        <item>@string/record_overview_follow_source</item>
+        <item>中文</item><item>English</item><item>Français</item><item>Deutsch</item>
+        <item>Nederlands</item><item>日本語</item><item>한국어</item><item>Español</item>
+        <item>Italiano</item><item>Português</item><item>Русский</item><item>العربية</item>
+    </string-array>
+</resources>

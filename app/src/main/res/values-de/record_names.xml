@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_default_title_prefix">Neue Aufnahme-</string>
+    <string name="record_rename">Umbenennen</string>
+    <string name="record_name">Name der Aufnahme</string>
+    <string name="record_rename_save">Speichern</string>
+    <string name="record_renaming">Wird gespeichert…</string>
+    <string name="record_rename_error">Der Name konnte nicht gespeichert werden. Schließen Sie diesen Dialog und aktualisieren Sie die Aufnahme, bevor Sie es erneut versuchen.</string>
+</resources>

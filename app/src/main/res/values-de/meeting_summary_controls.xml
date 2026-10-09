@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="summary_controls_title">KI-Zusammenfassung</string>
+    <string name="summary_controls_usage">Das Erstellen oder erneute Erzeugen von Zusammenfassungen nutzt den KI-Dienst. Prüfen Sie die Inhalte und ihre Quellenangaben, bevor Sie sie verwenden.</string>
+    <string name="summary_controls_storage_error">Die vorherige Anfrage kann nicht gelesen werden. Bitte erneut versuchen, bevor Sie eine neue Anfrage starten.</string>
+    <string name="summary_controls_read_error">Die Zusammenfassung ist nicht verfügbar. Aktualisieren Sie, um Zugriff und Fortschritt zu prüfen.</string>
+    <string name="summary_controls_dispatch">Warten auf den Verarbeitungsdienst</string>
+    <string name="summary_controls_chunks">%1$d von %2$d Abschnitten verarbeitet</string>
+    <string name="summary_controls_unknown">Die vorherige Zusammenfassungsanfrage ist nicht bestätigt. Prüfen Sie diese Anfrage, bevor Sie eine neue Version erstellen.</string>
+    <string name="summary_controls_reconcile">Zusammenfassungsanfrage prüfen</string>
+    <string name="summary_controls_retry">Zusammenfassung erneut erstellen</string>
+    <string name="summary_controls_blocked">Die Quelle kann derzeit nicht verarbeitet werden. Prüfen Sie die Aufnahme und versuchen Sie es später erneut.</string>
+    <string name="summary_controls_waiting">Es wird auf genügend bestätigten Text gewartet, um die nächste Zusammenfassung zu erstellen.</string>
+    <string name="summary_controls_next">Nächste Aktualisierung verfügbar: %1$s</string>
+    <string name="summary_controls_operation_error">Der Vorgang konnte nicht bestätigt werden. Aktualisieren Sie den Status, bevor Sie es erneut versuchen.</string>
+    <string name="summary_controls_realtime">Live-Zusammenfassung aktualisieren</string>
+    <string name="summary_controls_quick">Kurze Zusammenfassung erstellen</string>
+    <string name="summary_controls_final">Vollständige Zusammenfassung erstellen</string>
+    <string name="summary_controls_all_versions">Alle Zusammenfassungen anzeigen</string>
+    <string name="summary_job_queued">Warten auf Erstellung</string>
+    <string name="summary_job_running">Zusammenfassung wird erstellt</string>
+    <string name="summary_job_succeeded">Zusammenfassung erstellt</string>
+    <string name="summary_job_partial">Zusammenfassung teilweise erstellt</string>
+    <string name="summary_job_canceled">Erstellung abgebrochen</string>
+    <string name="summary_job_failed">Erstellung fehlgeschlagen</string>
+    <string name="summary_automation_title">Automatische Zusammenfassung</string>
+    <string name="summary_automation_usage">Wenn aktiviert, aktualisiert die KI die Live-Zusammenfassung und erstellt mit fortschreitender Aufnahme eine kurze und eine vollständige Zusammenfassung. Dabei wird Modellkontingent verbraucht. Sie können die automatische Erstellung jederzeit stoppen.</string>
+    <string name="summary_automation_read_error">Der Status der automatischen Zusammenfassung ist nicht verfügbar. Aktualisieren Sie, um ihn zu prüfen.</string>
+    <string name="summary_automation_unknown">Eine Änderung der automatischen Zusammenfassung ist nicht bestätigt. Prüfen Sie die ursprüngliche Änderung, bevor Sie diese Einstellung erneut ändern.</string>
+    <string name="summary_automation_reconcile">Anfrage zur automatischen Zusammenfassung prüfen</string>
+    <string name="summary_automation_start">Automatische Zusammenfassung aktivieren</string>
+    <string name="summary_automation_stop">Automatische Zusammenfassung stoppen</string>
+    <string name="summary_automation_off">Nicht aktiviert</string>
+    <string name="summary_automation_waiting">Warten auf die nächste Zusammenfassung</string>
+    <string name="summary_automation_generating">Zusammenfassung wird automatisch erstellt</string>
+    <string name="summary_controls_blocked_budget">Die Quelle überschreitet das aktuelle Verarbeitungslimit, oder eine einzelne Äußerung ist zu lang. Der Quelltext bleibt erhalten; passen Sie das Material an, bevor Sie die Zusammenfassung erstellen.</string>
+    <string name="summary_controls_waiting_source">Nach dem Ende des Meetings und sobald ein Transkript verfügbar ist, kann die Zusammenfassung erstellt werden.</string>
+    <string name="summary_controls_rate_limited">Zu viele Anfragen. Bitte warten Sie, bevor Sie dieselbe Anfrage erneut senden.</string>
+    <string name="summary_automation_completed">Vollständige Zusammenfassung bereit</string>
+    <string name="summary_automation_attention">Automatische Erstellung erfordert Aufmerksamkeit</string>
+</resources>

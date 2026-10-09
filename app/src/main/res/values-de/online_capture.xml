@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="online_capture_title">KI-Meeting-Aufzeichnung</string>
+    <string name="online_capture_description">Dieses Meeting als Aufzeichnung für die Zusammenfassung transkribieren. Die Cloud-Videoaufzeichnung wird separat gesteuert.</string>
+    <string name="online_capture_guest">Melden Sie sich mit einem Managerkonto des Meetingraums an, um die KI-Aufnahme zu steuern.</string>
+    <string name="online_capture_unavailable">Die Steuerung der KI-Aufnahme ist für dieses Meeting nicht verfügbar.</string>
+    <string name="online_capture_coverage">Die Übermittlung des Transkripts belegt keine vollständige Audioabdeckung. Prüfen Sie fehlende Redebeiträge, bevor Sie die Zusammenfassung verwenden.</string>
+    <string name="online_capture_open">Diese Meeting-Aufzeichnung öffnen</string>
+    <string name="online_capture_unknown">Das Ergebnis der Steuerung ist unbekannt. Prüfen Sie die ursprüngliche Anfrage, bevor Sie eine weitere Aktion ausführen.</string>
+    <string name="online_capture_start">KI-Aufnahme starten</string>
+    <string name="online_capture_stop">KI-Aufnahme stoppen</string>
+    <string name="online_capture_manager">Nur aktuelle Manager des Meetingraums können die KI-Aufnahme starten oder stoppen.</string>
+    <string name="online_capture_error">Der Vorgang konnte nicht bestätigt werden. Aktualisieren Sie oder prüfen Sie die ursprüngliche Anfrage.</string>
+    <string name="online_capture_start_effect">Dadurch beginnt die Sprachverarbeitung und das Transkript wird in dieser Meeting-Aufzeichnung gespeichert. Die Verarbeitung kann KI-Kontingent verbrauchen. Teilnehmer sehen den Aufnahmestatus.</string>
+    <string name="online_capture_stop_effect">Dadurch wird die Spracherfassung für die Aufzeichnung gestoppt und auf den zuletzt empfangenen Text gewartet. Das Meeting läuft weiter.</string>
+    <string name="online_capture_confirm">Bestätigen</string>
+    <string name="online_capture_unknown_state">Status unbestätigt</string>
+    <string name="online_capture_starting">Wird gestartet</string>
+    <string name="online_capture_recording">Sprache wird aufgezeichnet</string>
+    <string name="online_capture_stopping">Transkript wird vervollständigt</string>
+    <string name="online_capture_stopped">Aufzeichnung gestoppt</string>
+    <string name="online_capture_incomplete">Aufzeichnung unvollständig beendet</string>
+    <string name="online_capture_off">Keine Aufzeichnung</string>
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recording_history">Enregistrements récents</string>
+    <string name="recording_history_empty">Aucun enregistrement. Lancez un enregistrement ou importez un fichier audio ou vidéo.</string>
+    <string name="record_import_audio">Audio importé</string>
+    <string name="record_import_video">Vidéo importée</string>
+    <string name="record_import_all">Enregistrements et imports</string>
+    <string name="record_import_video_hint">Conserve la vidéo d\'origine et transcrit uniquement la parole, pour la transcription et le compte rendu.</string>
+    <string name="record_import_invalid">Format ou taille de fichier non pris en charge. Choisissez un autre fichier.</string>
+    <string name="record_import_size_unknown">Taille inconnue</string>
+    <string name="record_import_pending">En attente de transcription</string>
+    <string name="record_import_processing">Transcription en cours</string>
+    <string name="record_import_ready">Transcription terminée</string>
+    <string name="recording_detail">Détails de l\'enregistrement</string>
+</resources>

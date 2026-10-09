@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_export_title">Zusammenfassungsdokumente</string>
+    <string name="record_export_read_error">Die Dokumentvorschau oder der Zustellstatus konnte nicht gelesen werden.</string>
+    <string name="record_export_unavailable">Die Dokumenterstellung ist nicht verfügbar.</string>
+    <string name="record_export_choose">Version für die Vorschau wählen</string>
+    <string name="record_export_language_hint">Wählen Sie die Sprache der Dokument- und Kapitelüberschriften. Der Text der Zusammenfassung wird nicht übersetzt.</string>
+    <string name="record_export_zh">Chinesisch</string>
+    <string name="record_export_en">Englisch</string>
+    <string name="record_export_unknown">Das Ergebnis ist unbekannt. Prüfen Sie die ursprüngliche Anfrage, bevor Sie ein weiteres Dokument erstellen oder erneut versuchen.</string>
+    <string name="record_export_reconcile_create">Ursprüngliche Dokumenterstellungsanfrage prüfen</string>
+    <string name="record_export_reconcile_retry">Ursprüngliche Dokumentwiederholung prüfen</string>
+    <string name="record_export_accepted">Anfrage bestätigt. Der Zustellstatus des Dokuments wird unten angezeigt.</string>
+    <string name="record_export_empty">Noch keine von Ihnen erstellten Dokumente.</string>
+    <string name="record_export_human">Gespeicherte manuelle Zusammenfassung</string>
+    <string name="record_export_ai">Gespeicherte KI-Zusammenfassung</string>
+    <string name="record_export_details">%1$s · %2$s · Versuch %3$d</string>
+    <string name="record_export_open">Dokument öffnen</string>
+    <string name="record_export_retry_preview">Vorschau der ursprünglichen Dokumentwiederholung ansehen</string>
+    <string name="record_export_error">Die Dokumentanfrage konnte nicht bestätigt werden. Aktualisieren Sie den Status oder prüfen Sie die ursprüngliche Anfrage.</string>
+    <string name="record_export_preview">Dokumentkopie prüfen</string>
+    <string name="record_export_effect">Mit der Bestätigung wird eine private Dokumentkopie unter Ihrem Konto erstellt. Sie wird nicht für Teilnehmer freigegeben und nicht durch spätere Änderungen der Zusammenfassung aktualisiert.</string>
+    <string name="record_export_frozen">Diese Wiederholung verwendet die ursprünglich eingefrorene Dokumentkopie und Anfrage.</string>
+    <string name="record_export_changed">Der Zustellstatus hat sich geändert. Schließen Sie den Dialog und prüfen Sie den aktuellen Status.</string>
+    <string name="record_export_confirm">Dieses Dokument erstellen</string>
+    <string name="record_export_confirm_retry">Ursprüngliches Dokument erneut versuchen</string>
+    <string name="record_export_queued">Dokument in Warteschlange</string>
+    <string name="record_export_running">Dokument wird erstellt</string>
+    <string name="record_export_ready">Dokument bereit</string>
+    <string name="record_export_uncertain">Dokumentergebnis unbekannt</string>
+    <string name="record_export_failed">Dokumenterstellung fehlgeschlagen</string>
+    <string name="record_export_canceled">Dokumenterstellung abgebrochen</string>
+</resources>

@@ -276,7 +276,7 @@
     <string name="im_view_calendar">Agenda</string>
     <string name="im_group_apps">Applications</string>
     <string name="im_group_calendar">Agenda</string>
-    <string name="im_preview_event">[Event]</string>
+    <string name="im_preview_event">[Événement]</string>
     <plurals name="im_event_card_meta">
         <item quantity="one">%1$d participant · Organisateur %2$s</item>
         <item quantity="other">%1$d participants · Organisateur %2$s</item>
@@ -439,4 +439,10 @@ Limites : 100 requêtes par minute et 5 par seconde par robot, corps limités à
     <string name="im_doc_access_retry">Réessayer</string>
     <string name="im_doc_access_save">Enregistrer</string>
     <string name="im_doc_access_close">Fermer</string>
+    <string name="im_search_meeting_ai">Interroger les réunions</string>
+    <string name="im_search_ai_scope_all">Tout le contenu accessible</string>
+    <string name="im_search_ai_scope_meetings">Réunions et enregistrements</string>
+    <string name="im_search_ai_date_from">Du (facultatif)</string>
+    <string name="im_search_ai_date_to">Au (facultatif)</string>
+    <string name="im_search_ai_dates_invalid">Utilisez le format AAAA-MM-JJ ; la date de fin doit être identique ou postérieure à la date de début.</string>
 </resources>

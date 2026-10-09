@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="work_review_title">Resultaatcontrole</string>
+    <string name="work_review_help">Controles bekijken geselecteerde resultaten en geautoriseerd materiaal van taken. Ze wijzigen geen bestanden en voeren geen commando\'s uit. Verifieer de bevindingen voordat je ze gebruikt.</string>
+    <string name="work_review_disabled">De controlefunctie is niet ingeschakeld. Bestaande geautoriseerde records blijven beschikbaar.</string>
+    <string name="work_review_empty">Nog geen controles. Start een controle vanaf de resultatenpagina op je computer nadat je bestanden hebt geselecteerd en gesynchroniseerd.</string>
+    <string name="work_review_unavailable">De toegang tot de controle kon niet worden bevestigd. Eerdere inhoud is verborgen; vernieuw om de toegang opnieuw te controleren.</string>
+    <string name="work_review_queued">Controle in de wachtrij</string>
+    <string name="work_review_running">Controle loopt</string>
+    <string name="work_review_succeeded">Controle voltooid</string>
+    <string name="work_review_failed">Controle mislukt</string>
+    <string name="work_review_canceled">Controle geannuleerd</string>
+    <string name="work_review_unknown">Wachten op bevestiging van de controlestatus</string>
+    <string name="work_review_selection">Geselecteerde resultaten: %1$s</string>
+    <string name="work_review_reserved">%1$d tokens gereserveerd; werkelijk gebruik wacht op bevestiging</string>
+    <string name="work_review_usage">Werkelijke invoer %1$d / uitvoer %2$d tokens</string>
+    <string name="work_review_delivery_failed">Er is geen volledige controle geleverd. Bekijk de oorspronkelijke controle op je computer.</string>
+    <string name="work_review_no_issues">Geen problemen gevonden in het aangeleverde materiaal</string>
+    <string name="work_review_needs_changes">Problemen vragen om aandacht</string>
+    <string name="work_review_inconclusive">Er is meer informatie nodig</string>
+    <string name="work_review_verdict_unknown">De conclusie van de controle moet nog worden bevestigd</string>
+    <string name="work_review_issue">Probleem: %1$s</string>
+    <string name="work_review_warning">Let op: %1$s</string>
+    <string name="work_review_evidence">%1$s · SHA-256 %2$s</string>
+    <string name="work_review_missing">Ontbrekende informatie</string>
+</resources>

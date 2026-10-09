@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="human_summary_title">Beoordeelde notulen</string>
+    <string name="human_summary_empty">Nog geen handmatige versie. De AI-notulen blijven hieronder beschikbaar.</string>
+    <string name="human_summary_read_error">Beoordeelde notulen zijn niet beschikbaar. Vernieuw om de toegang te controleren.</string>
+    <string name="human_summary_edit">Beoordeelde notulen bewerken</string>
+    <string name="human_summary_history">Versiegeschiedenis</string>
+    <string name="human_summary_history_read_only">Dit is een opgeslagen versie. Deze is alleen-lezen en verandert niet wanneer de huidige notulen worden bewerkt.</string>
+    <string name="human_summary_version">Handmatige versie %1$d</string>
+    <string name="human_summary_save">Nieuwe versie opslaan</string>
+    <string name="human_summary_save_error">Het opslaan kon niet worden bevestigd. Bewaar je concept, controleer de verplichte tekst en de limiet van 64 KB en vernieuw of controleer daarna het openstaande verzoek.</string>
+    <string name="human_summary_unknown">Het resultaat van de laatste opslag is onbekend. Controleer dat oorspronkelijke verzoek voordat je een nieuwe versie opslaat.</string>
+    <string name="human_summary_conflict">Er bestaat een nieuwere handmatige versie. Je concept blijft hier bewaard; sluit dit venster en bewerk de huidige versie voordat je opslaat.</string>
+    <string name="human_summary_replace">Deze AI-versie gebruiken</string>
+    <string name="human_summary_replace_notice">Een concept starten op basis van de getoonde AI-versie? Bij opslaan ontstaat een nieuwe handmatige versie. Eerdere versies blijven in de geschiedenis staan.</string>
+    <string name="human_summary_continue">Concept starten</string>
+    <string name="human_summary_edit_notice">Bij bewerken blijven bestaande bronverwijzingen behouden. Toegevoegde punten hebben geen bronvermelding. Opslaan maakt geen taken aan; toewijzingen worden apart bevestigd.</string>
+    <string name="human_summary_overview">Overzicht</string>
+    <string name="human_summary_decisions">Besluiten</string>
+    <string name="human_summary_chapters">Onderwerpen</string>
+    <string name="human_summary_actions">Actiepunten</string>
+    <string name="human_summary_questions">Openstaande vragen</string>
+    <string name="human_summary_owner_hint">Voorgestelde verantwoordelijke (alleen tekst)</string>
+    <string name="human_summary_due_hint">Voorgestelde datum (alleen tekst)</string>
+    <string name="human_summary_remove">Punt verwijderen</string>
+    <string name="human_summary_add">Punt toevoegen</string>
+</resources>

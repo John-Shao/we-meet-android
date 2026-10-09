@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_panel_actions">Weitere Panel-Aktionen</string>
+    <string name="records_translation_language">Übersetzungssprache</string>
+    <string name="records_export_translation">Übersetzung exportieren (%1$s)</string>
+</resources>

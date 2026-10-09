@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_read_start">Lire depuis le début</string>
+    <string name="records_load_more">Charger plus</string>
+    <string name="records_load_retry">Échec du chargement. Touchez pour réessayer</string>
+    <string name="records_load_end">Tout le contenu est chargé</string>
+</resources>

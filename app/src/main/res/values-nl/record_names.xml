@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_default_title_prefix">Nieuwe opname-</string>
+    <string name="record_rename">Hernoemen</string>
+    <string name="record_name">Opnamenaam</string>
+    <string name="record_rename_save">Opslaan</string>
+    <string name="record_renaming">Opslaan…</string>
+    <string name="record_rename_error">De naam kon niet worden opgeslagen. Sluit dit venster en vernieuw de opname voordat je het opnieuw probeert.</string>
+</resources>

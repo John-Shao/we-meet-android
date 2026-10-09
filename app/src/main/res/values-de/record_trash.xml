@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_trash_title">Papierkorb</string>
+    <string name="record_trash_remove">In den Papierkorb verschieben</string>
+    <string name="record_trash_confirm_remove">Verschieben in den Papierkorb bestätigen</string>
+    <string name="record_trash_restore">Wiederherstellen</string>
+    <string name="record_trash_confirm_restore">Aufnahme wiederherstellen</string>
+    <string name="record_trash_cancel">Abbrechen</string>
+    <string name="record_trash_empty">Keine Aufnahmen im Papierkorb.</string>
+    <string name="record_trash_remove_hint">Die Aufnahme und ihre Inhalte werden ausgeblendet. Freigaben und automatische Zusammenfassungen werden deaktiviert. Bereits exportierte Dokumente bleiben eigenständige Kopien.</string>
+    <string name="record_trash_restore_hint">Die Aufnahme und die gespeicherten Inhalte werden wiederhergestellt. Frühere Freigaben und automatische Zusammenfassungen bleiben deaktiviert.</string>
+    <string name="record_trash_retention_hint">Aufnahmen können hier wiederhergestellt werden. Endgültiges Löschen ist noch nicht verfügbar. Für Audio gelten weiterhin die bestehenden Aufbewahrungsregeln.</string>
+    <string name="record_trash_conflict">Die Aufnahme hat sich geändert, der Zugriff ist verloren gegangen oder die Verarbeitung läuft noch. Kehren Sie zurück, aktualisieren Sie die Ansicht und versuchen Sie es erneut.</string>
+    <string name="record_trash_uncertain">Das Ergebnis konnte nicht bestätigt werden. Sie können dieselbe Aktion wiederholen oder zurückkehren, aktualisieren und nachsehen.</string>
+    <string name="record_trash_unavailable">Der Papierkorb ist nicht verfügbar. Aktualisieren Sie die Ansicht, um den Zugriff zu prüfen.</string>
+</resources>

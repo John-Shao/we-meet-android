@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="archives_title">Vertalingen</string>
+    <string name="archives_description">Opgeslagen bevestigde vertalingen staan los van de originele transcripties en notulen.</string>
+    <string name="archives_unavailable">Deze vertalingen zijn niet beschikbaar of je hebt er geen toegang meer toe.</string>
+    <string name="archives_empty">Geen opgeslagen vertalingen</string>
+    <string name="archives_no_segments">Geen bevestigde vertalingen op deze pagina</string>
+    <string name="archives_private">Persoonlijke spraakvertaling</string>
+    <string name="archives_shared">Gedeelde simultaanvertaling</string>
+    <string name="archives_count">%1$d bevestigde segmenten</string>
+    <string name="archives_back">Terug naar de vertaallijst</string>
+    <string name="archives_timing">De tijden geven aan wanneer vertalingen zijn ontvangen. Het zijn geen tijdstempels van de originele spraak en geen afspeelposities.</string>
+    <string name="archives_private_scope">Alleen de eigenaar kan dit persoonlijke vertaalarchief lezen.</string>
+    <string name="archives_incomplete_hint">Het opslaan is beëindigd voordat elke vertaling kon worden bevestigd. Mogelijk ontbreekt er vertaalde inhoud.</string>
+    <string name="archives_zh">Chinees</string>
+    <string name="archives_en">Engels</string>
+    <string name="archives_capturing">Vertalingen worden opgeslagen</string>
+    <string name="archives_complete">Opgeslagen</string>
+    <string name="archives_incomplete">Gedeeltelijk opgeslagen</string>
+</resources>

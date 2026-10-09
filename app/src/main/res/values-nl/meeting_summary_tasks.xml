@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="summary_tasks_title">Vervolgtaken</string>
+    <string name="summary_tasks_read_error">Details over taakconversie zijn niet beschikbaar. Vernieuw om de toegang te controleren.</string>
+    <string name="summary_tasks_conflict">De beoordeelde actiepunten zijn gewijzigd. Vernieuw de notulen voordat je een taak aanmaakt.</string>
+    <string name="summary_tasks_unknown">Een taakverzoek heeft een onbekend resultaat. Controleer het oorspronkelijke verzoek voordat je een nieuwe taak aanmaakt.</string>
+    <string name="summary_tasks_error">Het aanmaken van de taak kon niet worden bevestigd. Controleer de velden en de huidige toegang, of controleer het openstaande verzoek.</string>
+    <string name="summary_tasks_deleted">De gekoppelde taak is verwijderd. Deze wordt niet automatisch opnieuw aangemaakt.</string>
+    <string name="summary_tasks_converted">Al omgezet</string>
+    <string name="summary_tasks_completed">Taak voltooid</string>
+    <string name="summary_tasks_todo">Taak te doen</string>
+    <string name="summary_tasks_open">Taak openen</string>
+    <string name="summary_tasks_convert">Taak maken van dit actiepunt</string>
+    <string name="summary_tasks_confirm">Taakdetails bevestigen</string>
+    <string name="summary_tasks_task_title">Taaktitel</string>
+    <string name="summary_tasks_hints">Aanwijzingen in de notulen: verantwoordelijke %1$s; datum %2$s. Kies hieronder de werkelijke verantwoordelijke en datum.</string>
+    <string name="summary_tasks_search">Verantwoordelijken zoeken</string>
+    <string name="summary_tasks_assignee">Verantwoordelijke: %1$s</string>
+    <string name="summary_tasks_choose">Kies een persoon</string>
+    <string name="summary_tasks_no_assignees">Geen overeenkomende verantwoordelijken</string>
+    <string name="summary_tasks_date">Vervaldatum: %1$s</string>
+    <string name="summary_tasks_no_date">Niet ingesteld</string>
+    <string name="summary_tasks_clear_date">Vervaldatum wissen</string>
+    <string name="summary_tasks_set_date">Datum instellen</string>
+    <string name="summary_tasks_notice">Na bevestiging wordt een taak aangemaakt en krijgt de verantwoordelijke een melding. De taaktitel is voor die persoon zichtbaar; de toegang tot deze notulen wordt apart beheerd.</string>
+    <string name="summary_tasks_create">Bevestigen en taak aanmaken</string>
+</resources>

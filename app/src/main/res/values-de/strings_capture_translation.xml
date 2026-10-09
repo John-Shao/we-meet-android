@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_translation_title">Aufnahmeübersetzung</string>
+    <string name="capture_translation_scope">Verwendet das Mikrofon der aktuellen Aufnahme. Originaltranskription und Übersetzung sind getrennt. Das Beenden der Übersetzung lässt die Aufnahme weiterlaufen.</string>
+    <string name="capture_translation_simultaneous">Simultanverdolmetschung</string>
+    <string name="capture_translation_speech">Beidseitige Sprachübersetzung</string>
+    <string name="capture_translation_zh_en">Chinesisch → Englisch</string>
+    <string name="capture_translation_en_zh">Englisch → Chinesisch</string>
+    <string name="capture_translation_audio">Übersetzte Sprache abspielen</string>
+    <string name="capture_translation_headphones">Verwenden Sie Kopfhörer, damit die übersetzte Sprache nicht vom Mikrofon aufgenommen wird.</string>
+    <string name="capture_translation_save">Übersetzten Text für später speichern</string>
+    <string name="capture_translation_start">Übersetzung starten</string>
+    <string name="capture_translation_stop">Übersetzung beenden</string>
+    <string name="capture_translation_mute">Übersetzung stummschalten</string>
+    <string name="capture_translation_unmute">Stummschaltung der Übersetzung aufheben</string>
+    <string name="capture_translation_speak">Beginnen Sie, %1$s zu sprechen</string>
+    <string name="capture_translation_end_turn">Beitrag beenden und übersetzen</string>
+    <string name="capture_translation_pending">Ein früherer Vorgang muss geprüft werden. Die Prüfung verbindet das Mikrofon nie erneut.</string>
+    <string name="capture_translation_recover">Früheren Vorgang prüfen</string>
+    <string name="capture_translation_error">Das Übersetzungsergebnis konnte nicht bestätigt werden. Prüfen Sie ausstehende Vorgänge, bevor Sie fortfahren.</string>
+    <string name="capture_translation_storage_error">Ausstehende Vorgänge konnten nicht geladen oder gespeichert werden. Die Übersetzung ist nicht verfügbar.</string>
+    <string name="capture_translation_detached">Zu dieser Aufnahme läuft eine Übersetzung, aber diese Seite ist getrennt. Beenden Sie sie, bevor Sie erneut starten.</string>
+    <string name="capture_translation_connecting">Übersetzung wird verbunden…</string>
+    <string name="capture_translation_ready">Übersetzung bereit</string>
+    <string name="capture_translation_listening">Wird empfangen…</string>
+    <string name="capture_translation_awaiting">Übersetzung wird erstellt…</string>
+    <string name="capture_translation_finishing">Übersetzung wird beendet…</string>
+    <string name="capture_translation_stopped">Übersetzung beendet</string>
+    <string name="capture_translation_interrupted">Übersetzung unterbrochen; die Originalaufnahme ist nicht betroffen</string>
+    <string name="capture_translation_unknown">Getrennt; das Übersetzungsergebnis muss geprüft werden</string>
+</resources>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="interpretation_title">Simultanverdolmetschung</string>
+    <string name="interpretation_description">Wählen Sie eine Hörsprache für dieses Meeting. Hosts des Meetings öffnen oder schließen gemeinsam genutzte Kanäle. Das Verlassen eines Kanals betrifft nur Ihr eigenes Zuhören; der übersetzte Text bleibt vom Original getrennt.</string>
+    <string name="interpretation_guest">Melden Sie sich an, um einen Verdolmetschungskanal zu wählen.</string>
+    <string name="interpretation_unavailable">Für dieses Meeting ist die Simultanverdolmetschung nicht verfügbar.</string>
+    <string name="interpretation_unknown">Prüfen Sie zuerst die ursprüngliche Anfrage, bevor Sie den Kanal oder das Zuhören ändern.</string>
+    <string name="interpretation_retry_channel">Kanalanfrage prüfen</string>
+    <string name="interpretation_retry_listen">Zuhöranfrage prüfen</string>
+    <string name="interpretation_zh">Chinesischer Kanal</string>
+    <string name="interpretation_en">Englischer Kanal</string>
+    <string name="interpretation_listen_zh">Auf Chinesisch hören</string>
+    <string name="interpretation_listen_en">Auf Englisch hören</string>
+    <string name="interpretation_start_zh">Chinesischen Kanal öffnen</string>
+    <string name="interpretation_start_en">Englischen Kanal öffnen</string>
+    <string name="interpretation_stop_zh">Chinesischen Kanal schließen</string>
+    <string name="interpretation_stop_en">Englischen Kanal schließen</string>
+    <string name="interpretation_leave">Diesen Kanal verlassen</string>
+    <string name="interpretation_connection">Warten Sie, bis die Meeting-Verbindung dieses Geräts bestätigt ist, bevor Sie zuhören.</string>
+    <string name="interpretation_wait_ready">Warten auf das Übersetzungsaudio…</string>
+    <string name="interpretation_error">Der Vorgang oder der Zuhörstatus ist nicht bestätigt. Aktualisieren Sie die Ansicht oder prüfen Sie die ursprüngliche Anfrage und wählen Sie dann den Kanal erneut.</string>
+    <string name="interpretation_start_effect">Dieser Vorgang öffnet den gemeinsam genutzten Sprachkanal für diese Sprache. Die Übersetzung beginnt erst, wenn jemand zuhören möchte, und kann KI-Kontingent verbrauchen. Das Öffnen des Kanals aktiviert Ihr Zuhören nicht automatisch.</string>
+    <string name="interpretation_stop_effect">Dieser Vorgang schließt den Sprachkanal für alle, die gerade zuhören. Sie erhalten keine verdolmetschte Stimme mehr aus diesem Kanal. Das Meeting läuft weiter.</string>
+    <string name="interpretation_speaker">Sprecher</string>
+    <string name="interpretation_paused">Zuhören pausiert</string>
+    <string name="interpretation_prepared">Warten auf Zuhörer</string>
+    <string name="interpretation_off">Kanal nicht geöffnet</string>
+</resources>

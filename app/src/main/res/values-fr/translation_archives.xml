@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="archives_title">Traductions</string>
+    <string name="archives_description">Les traductions confirmées enregistrées sont séparées des transcriptions originales et des comptes rendus.</string>
+    <string name="archives_unavailable">Ces traductions sont indisponibles ou vous n\'y avez plus accès.</string>
+    <string name="archives_empty">Aucune traduction enregistrée</string>
+    <string name="archives_no_segments">Aucune traduction confirmée sur cette page</string>
+    <string name="archives_private">Traduction vocale personnelle</string>
+    <string name="archives_shared">Interprétation partagée</string>
+    <string name="archives_count">%1$d segments confirmés</string>
+    <string name="archives_back">Retour à la liste des traductions</string>
+    <string name="archives_timing">Les horaires indiquent la réception des traductions. Ils ne correspondent pas aux horodatages de la parole originale ni aux positions de lecture.</string>
+    <string name="archives_private_scope">Seul le propriétaire peut consulter cette archive de traduction personnelle.</string>
+    <string name="archives_incomplete_hint">L\'enregistrement s\'est terminé avant que toutes les traductions puissent être confirmées. Une partie du contenu traduit peut manquer.</string>
+    <string name="archives_zh">Chinois</string>
+    <string name="archives_en">Anglais</string>
+    <string name="archives_capturing">Enregistrement des traductions</string>
+    <string name="archives_complete">Enregistré</string>
+    <string name="archives_incomplete">Partiellement enregistré</string>
+</resources>

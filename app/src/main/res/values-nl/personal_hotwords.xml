@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="personal_hotwords_title">Persoonlijke hotwords</string>
+    <string name="personal_hotwords_hint">Alleen voor jou zichtbaar en gesynchroniseerd tussen je apparaten. Eén woord per regel; maximaal 100 woorden van elk 40 tekens, 4000 in totaal. Sla lege tekst op om te wissen. Opslaan wijzigt deze upload of al ingediende uploads niet; voeg expliciet samen vóór het uploaden.</string>
+    <string name="personal_hotwords_editor">Persoonlijke hotwords bewerken</string>
+    <string name="personal_hotwords_copy_current">Hotwords van deze upload naar de editor kopiëren</string>
+    <string name="personal_hotwords_save">Persoonlijke hotwords opslaan</string>
+    <string name="personal_hotwords_apply">Samenvoegen met deze upload</string>
+    <string name="personal_hotwords_saved">Hotwords opgeslagen. De opties van deze upload zijn ongewijzigd.</string>
+    <string name="personal_hotwords_applied">Samengevoegd en ontdubbeld. Je kunt de hotwords van deze upload nog bewerken.</string>
+    <string name="personal_hotwords_conflict">De hotwords zijn op een ander apparaat gewijzigd. Je concept blijft bewaard; verwerp je wijzigingen en laad opnieuw om te controleren.</string>
+    <string name="personal_hotwords_limit">Te veel woorden of tekens. Er is niets afgekapt of samengevoegd; verklein de lijst.</string>
+    <string name="personal_hotwords_error">Verzoek mislukt. Probeer opnieuw; niet-opgeslagen wijzigingen moeten nog worden bevestigd.</string>
+    <string name="personal_hotwords_reload">Wijzigingen verwerpen en opnieuw laden</string>
+    <string name="personal_hotwords_close">Hotwords sluiten</string>
+</resources>

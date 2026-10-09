@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_filter_speaker">Nach Sprecher filtern</string>
+    <string name="records_info">Aufnahmeinfo</string>
+    <string name="records_start_time">Beginn</string>
+    <string name="records_retention">Aufbewahrung</string>
+    <string name="records_retention_media">Audio oder Video aufbewahrt</string>
+    <string name="records_retention_text">Nur Text</string>
+    <string name="records_retention_unknown">Nicht aufgezeichnet</string>
+    <string name="records_skip_back">15 Sekunden zurück</string>
+    <string name="records_skip_forward">15 Sekunden vor</string>
+    <string name="records_filters">Filter</string>
+    <string name="records_source_filter">Quelle</string>
+    <string name="records_filters_done">Filter anwenden</string>
+    <string name="records_reset_filters">Filter löschen</string>
+    <string name="records_clear_search">Suche schließen</string>
+    <string name="records_grid_view">Zur Rasteransicht wechseln</string>
+    <string name="records_list_view">Zur Listenansicht wechseln</string>
+    <string name="records_minutes_ready">Zusammenfassung verfügbar</string>
+    <string name="records_start_recording">Aufnehmen</string>
+    <string name="records_upload">Importieren</string>
+    <string name="record_upload_title">Import bestätigen</string>
+    <string name="record_upload_hint">Wählen Sie eine Audio- oder Videodatei, maximal %1$d MB. Nach dem Import wird automatisch transkribiert.</string>
+    <string name="record_upload_choose">Datei auswählen</string>
+    <string name="record_upload_advanced">Erkennung verbessern (optional)</string>
+    <string name="record_upload_context">Meeting-Kontext (maximal 400 Zeichen)</string>
+    <string name="record_upload_hotwords">Hotwords (eines pro Zeile, jeweils maximal 40 Zeichen)</string>
+    <string name="record_upload_consent">Bitte stellen Sie sicher, dass Sie diese Aufnahme importieren und transkribieren dürfen.</string>
+    <!-- A GB-scale import takes minutes, so it reports real progress and can be stopped. -->
+    <string name="record_upload_progress">%1$d%% hochgeladen</string>
+    <string name="record_upload_cancel">Upload abbrechen</string>
+    <string name="record_upload_cancelled">Upload abgebrochen. Bereits gesendete Teile bleiben erhalten; beim erneuten Start wird dort fortgesetzt.</string>
+    <string name="record_upload_wait">Import läuft… Lassen Sie diesen Bildschirm geöffnet, bis der Import abgeschlossen ist.</string>
+    <string name="record_upload_confirming">Daten gesendet. Warten auf das Import-Ergebnis…</string>
+    <string name="record_upload_diarization">Sprecher unterscheiden</string>
+    <string name="record_upload_diarization_hint">Für Aufnahmen mit mehreren Sprechern. Stimmen werden automatisch getrennt; Namen können nach der Transkription zugewiesen werden.</string>
+    <string name="record_upload_stopped">Upload-Anfrage gestoppt. Der Server hat die Datei möglicherweise erhalten. Wiederholen Sie den Vorgang mit derselben Datei und denselben Einstellungen, um das Ergebnis zu bestätigen.</string>
+    <string name="record_upload_error">Import fehlgeschlagen. Prüfen Sie Dateiformat, Größe und Verbindung und versuchen Sie es dann erneut.</string>
+    <string name="record_upload_unconfirmed">Der Import konnte nicht bestätigt werden; die Datei wurde möglicherweise bereits empfangen. Wiederholen Sie ihn hier mit derselben Datei und denselben Einstellungen, oder schließen Sie den Dialog und prüfen Sie den Aufnahmeverlauf.</string>
+    <string name="record_upload_submit">Importieren und transkribieren</string>
+    <string name="record_upload_queued">Warten auf Transkription. Sie können diese Seite verlassen.</string>
+    <string name="record_upload_transcribing">Transkription läuft… Sie können diese Seite verlassen und später zurückkehren.</string>
+    <string name="record_upload_failed">Transkription fehlgeschlagen</string>
+    <string name="record_upload_retry">Transkription wiederholen</string>
+    <string name="records_sort">Nach Erstellungszeit sortieren</string>
+    <string name="records_more">Weitere Aktionen</string>
+    <string name="records_newest">Neueste zuerst</string>
+    <string name="records_oldest">Älteste zuerst</string>
+</resources>

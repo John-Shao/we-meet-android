@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="work_review_title">Revue des résultats</string>
+    <string name="work_review_help">La revue vérifie uniquement les résultats sélectionnés et les documents autorisés de la tâche. Elle ne modifie pas les fichiers et n\'exécute aucune commande. Vérifiez les conclusions avant de les utiliser.</string>
+    <string name="work_review_disabled">La revue n\'est pas activée. Les enregistrements autorisés existants restent disponibles.</string>
+    <string name="work_review_empty">Aucune revue pour le moment. Lancez une revue depuis la page du résultat sur ordinateur, après avoir sélectionné et synchronisé les fichiers.</string>
+    <string name="work_review_unavailable">L\'accès à la revue n\'a pas pu être confirmé. Le contenu précédent est masqué ; actualisez pour vérifier à nouveau l\'accès.</string>
+    <string name="work_review_queued">Revue en attente</string>
+    <string name="work_review_running">Revue en cours</string>
+    <string name="work_review_succeeded">Revue terminée</string>
+    <string name="work_review_failed">Échec de la revue</string>
+    <string name="work_review_canceled">Revue annulée</string>
+    <string name="work_review_unknown">En attente de confirmation du statut de la revue</string>
+    <string name="work_review_selection">Résultats sélectionnés : %1$s</string>
+    <string name="work_review_reserved">%1$d tokens réservés ; l\'utilisation réelle reste à confirmer</string>
+    <string name="work_review_usage">Entrée réelle %1$d / sortie %2$d tokens</string>
+    <string name="work_review_delivery_failed">Une revue complète n\'a pas été livrée. Consultez la revue d\'origine sur ordinateur.</string>
+    <string name="work_review_no_issues">Aucun problème détecté dans les documents fournis</string>
+    <string name="work_review_needs_changes">Des problèmes nécessitent votre attention</string>
+    <string name="work_review_inconclusive">Des informations supplémentaires sont nécessaires</string>
+    <string name="work_review_verdict_unknown">La conclusion de la revue doit être confirmée</string>
+    <string name="work_review_issue">Problème : %1$s</string>
+    <string name="work_review_warning">Rappel : %1$s</string>
+    <string name="work_review_evidence">%1$s · SHA-256 %2$s</string>
+    <string name="work_review_missing">Informations manquantes</string>
+</resources>

@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="capture_direct_asr_title">Live-Transkription</string>
+    <string name="capture_direct_asr_hint">Ab dem Start wird Text erkannt. Pausieren Sie und setzen Sie die Aufnahme fort, um die Transkription fortzusetzen. Beim Beenden der Aufnahme wird der Text übernommen; nach dem Stoppen und Speichern endet die Transkription für diese Aufnahme. Transkription und Live-Übersetzung bitte nur einzeln verwenden.</string>
+    <string name="capture_direct_asr_start">Transkription starten</string>
+    <string name="capture_direct_asr_stop">Transkription stoppen und speichern</string>
+    <string name="capture_direct_asr_connecting">Verbindung wird hergestellt…</string>
+    <string name="capture_direct_asr_listening">Wird transkribiert…</string>
+    <string name="capture_direct_asr_finishing">Letzter Satz wird empfangen…</string>
+    <string name="capture_direct_asr_finished">Transkription in der Aufzeichnung gespeichert</string>
+    <string name="capture_direct_asr_empty">Keine Sprache erkannt. Ihre Aufnahme bleibt erhalten.</string>
+    <string name="capture_direct_asr_failed">Die Transkriptionsverbindung wurde unterbrochen, die Aufnahme läuft weiter. Erkannter Text bleibt auf diesem Gerät. Setzen Sie die Transkription fort oder speichern Sie den vorhandenen Text.</string>
+    <string name="capture_direct_asr_save">Vorhandene Transkription speichern</string>
+    <string name="capture_direct_asr_paused">Transkription pausiert. Setzen Sie die Aufnahme fort, um weiter zu erkennen.</string>
+    <string name="capture_direct_asr_save_failed">Der Text wartet auf Zustellung. Stellen Sie die Verbindung wieder her und versuchen Sie das Speichern erneut.</string>
+    <string name="capture_direct_asr_gap">Die Transkription umfasst nur das Audio während der Aktivierung. Für den vollständigen Text verwenden Sie nach dem Ende der Aufnahme die Transkription der gesamten Aufnahme.</string>
+    <string name="bilingual_transport">Verbindung</string>
+    <string name="bilingual_transport_aoq">AOQ-Direktverbindung</string>
+    <string name="bilingual_transport_webrtc">WebRTC-Client direkt</string>
     <string name="app_name">We Meet</string>
 
     <!-- Login screen -->
@@ -17,6 +34,7 @@
     <string name="home_create_meeting">Sofortmeeting</string>
     <string name="home_join_meeting">Meeting beitreten</string>
     <string name="home_create_later_meeting">Meeting planen</string>
+    <string name="home_ai_recording">KI-Aufnahme</string>
 
     <!-- QR scan / web sign-in confirmation -->
     <string name="qr_scan_confirm_title">Im Web anmelden</string>
@@ -249,7 +267,7 @@
     <string name="task_summary_priority_all">Alle</string>
     <string name="task_summary_group_none">Keine</string>
     <string name="task_summary_group_custom">Eigene</string>
-    <string name="task_summary_sort_smart">Smart</string>
+    <string name="task_summary_sort_smart">Intelligent</string>
     <string name="task_time_filter">Datum</string>
     <string name="task_time_all">Alle Daten</string>
     <string name="task_time_starting_today">Beginnt heute</string>
@@ -478,9 +496,9 @@
     <string name="calendar_retry">Erneut versuchen</string>
     <!-- P8: calendar view modes + agenda view -->
     <string name="calendar_view_agenda">Liste</string>
-    <string name="calendar_view_day">Day</string>
-    <string name="calendar_view_week">Week</string>
-    <string name="calendar_view_month">Month</string>
+    <string name="calendar_view_day">Tag</string>
+    <string name="calendar_view_week">Woche</string>
+    <string name="calendar_view_month">Monat</string>
     <string name="calendar_agenda_empty_today">Keine Termine</string>
     <!-- P8: free/busy compare screen -->
     <string name="freebusy_title">Kalender</string>
@@ -691,7 +709,7 @@
     </plurals>
     <string name="approval_urge">Erinnern</string>
     <string name="approval_urged">Erinnerung gesendet — der aktuelle Genehmiger wurde benachrichtigt.</string>
-    <string name="approval_needs_assignment_hint">Der Genehmiger konnte nicht automatisch ermittelt werden. Bitte einen Admin die Organisationsstruktur korrigieren lassen.</string>
+    <string name="approval_needs_assignment_hint">Der Genehmiger konnte nicht automatisch ermittelt werden. Lassen Sie einen Administrator die Organisationsstruktur korrigieren und versuchen Sie es erneut.</string>
     <string name="approval_comment_hint">Kommentar (optional)</string>
     <string name="approval_act_approve">Genehmigen</string>
     <string name="approval_act_reject">Ablehnen</string>
@@ -753,6 +771,8 @@
     <string name="meeting_room_picker_tab_all">Alle Räume</string>
     <string name="meeting_room_picker_search_hint">Räume oder Ebenen suchen</string>
     <string name="meeting_room_filter_level_all">Alle Ebenen</string>
+    <string name="meeting_room_filter_capacity_any">Beliebige Kapazität</string>
+    <string name="meeting_room_filter_capacity_at_least">Mindestens %1$d Personen</string>
     <string name="meeting_room_unavailable">In diesem Zeitraum belegt</string>
     <string name="meeting_room_unavailable_range">%1$s–%2$s bereits belegt</string>
     <string name="meeting_room_empty">Keine Räume passen zu diesen Filtern</string>
@@ -1043,7 +1063,7 @@
     <string name="waiting_no_token">Der Host hat deine Anfrage genehmigt, aber die Verbindungsdaten fehlen. Bitte versuche es erneut.</string>
     <string name="web_login_network_error">Netzwerkfehler</string>
     <string name="web_login_invalid_callback">Ungültiger Anmelde-Callback</string>
-    <string name="docs_editor_save_failed">Saving was not confirmed. Check your connection and retry. This page will stay open.</string>
+    <string name="docs_editor_save_failed">Das Speichern wurde nicht bestätigt. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut. Diese Seite bleibt geöffnet.</string>
     <string name="docs_editor_incompatible">Der Editor konnte nicht geöffnet werden. Versuchen Sie es später erneut oder gehen Sie zum Lesen zurück.</string>
     <string name="docs_editor_pending_work">Noch sind nicht alle Änderungen bestätigt. Prüfen Sie Verbindung, Titel, Anhänge und unveröffentlichte Kommentare und versuchen Sie es erneut.</string>
     <string name="docs_editor_reloaded">Der Editor wurde neu geladen. Nur auf dem Server gespeicherte Inhalte können bestätigt werden. Bitte prüfen Sie Ihre letzten Änderungen.</string>
@@ -1063,4 +1083,63 @@
     <string name="docs_chat_share_existing_access">Nur die Karte senden. Vorhandene Zugriffsrechte bleiben bestehen.</string>
     <string name="docs_chat_share_send">Senden</string>
     <string name="docs_chat_share_back">Zurück</string>
+    <string name="minutes_all">Alle intelligenten Zusammenfassungen</string>
+    <string name="minutes_owned">Von mir</string>
+    <string name="minutes_participated">Teilgenommen</string>
+    <string name="minutes_shared">Mit mir geteilt</string>
+    <string name="minutes_recorded_at">Besprechungszeit: %1$s</string>
+    <string name="minutes_generated_at">Erstellt: %1$s</string>
+    <string name="minutes_empty">Noch keine intelligenten Zusammenfassungen</string>
+    <string name="minutes_empty_hint">Versuchen Sie eine andere Kategorie oder Suche, oder erstellen Sie eine Zusammenfassung aus einer Besprechungsaufzeichnung.</string>
+    <string name="minutes_overview">Übersicht</string>
+    <string name="minutes_ask">KI fragen</string>
+    <string name="minutes_manage">Zusammenfassungen verwalten</string>
+    <string name="minutes_history">Versionsverlauf</string>
+    <string name="minutes_source_info">Erstellungsdetails</string>
+    <string name="minutes_close_tools">Werkzeuge schließen</string>
+    <string name="room_ai_prompt_summary">Bisherige Diskussion zusammenfassen</string>
+    <string name="room_ai_prompt_decisions">Welche Entscheidungen wurden getroffen?</string>
+    <string name="room_ai_prompt_actions">Aufgaben und Verantwortliche auflisten</string>
+    <string name="meeting_ai_search">Besprechungen mit KI durchsuchen</string>
+    <string name="cd_records_ai_search">Besprechungen mit KI durchsuchen</string>
+    <string name="cd_records_search">Titel durchsuchen</string>
+    <string name="cd_records_clear_search">Suche leeren</string>
+    <string name="cd_records_more">Weitere Aktionen</string>
+    <string name="cd_records_list_view">Zur Listenansicht wechseln</string>
+    <string name="cd_records_grid_view">Zur Rasteransicht wechseln</string>
+    <string name="cd_records_skip_back">15 Sekunden zurück</string>
+    <string name="cd_records_skip_forward">15 Sekunden vor</string>
+    <string name="cd_records_play">Wiedergeben</string>
+    <string name="cd_records_pause">Pausieren</string>
+    <string name="cd_records_close">Schließen</string>
+    <string name="work_title">Arbeit</string>
+    <string name="work_refresh">Aktualisieren</string>
+    <string name="work_request_failed">Die Anfrage wurde nicht abgeschlossen. Aktualisieren Sie die ursprüngliche Aufgabe oder wiederholen Sie dieselbe Anfrage.</string>
+    <string name="work_back_list">Zurück zu meiner Arbeit</string>
+    <string name="work_execution_workspace">Ausführungsarbeitsbereich: %1$s</string>
+    <string name="work_cancel">Ursprüngliche Aufgabe abbrechen</string>
+    <string name="work_local_results">Die Ergebnisse bleiben auf dem Desktop. Wählen Sie die Dateien auf dem Desktop aus und synchronisieren Sie sie, um sie hier anzuzeigen.</string>
+    <string name="work_view_file">%1$s anzeigen</string>
+    <string name="work_dispatch_title">Desktop-Arbeit anfordern</string>
+    <string name="work_dispatch_help">Wählen Sie einen autorisierten Desktop-Arbeitsbereich. Anfragen gelangen in den Desktop-Posteingang; die Annahme der Aufgabe und jede Freigabe eines Vorgangs erfolgen auf diesem Computer.</string>
+    <string name="work_remote_disabled">Die Remote-Auftragsverteilung ist auf dem Server nicht aktiviert. Vorhandene Arbeit bleibt verfügbar.</string>
+    <string name="work_device_state">%1$s · %2$s</string>
+    <string name="work_online">Online</string>
+    <string name="work_offline">Offline, wartet auf die Rückkehr zum Desktop</string>
+    <string name="work_no_workspace">Wählen Sie zuerst einen Ordner auf dem Desktop und erlauben Sie den Empfang von Remote-Aufgaben.</string>
+    <string name="work_goal">Arbeitsziel</string>
+    <string name="work_dispatch_unknown">Die Übermittlung wartet auf Bestätigung. Die ursprüngliche Anfrage-ID bleibt erhalten; Aufgaben werden nie automatisch wiederholt.</string>
+    <string name="work_confirm_request">Ursprüngliche Anfrage bestätigen</string>
+    <string name="work_dispatch">An Desktop-Posteingang senden</string>
+    <string name="work_my_tasks">Meine Arbeit</string>
+    <string name="work_more">Mehr laden</string>
+    <string name="work_status_desktop_queued">Wartet auf Annahme am Desktop</string>
+    <string name="work_status_queued">In Warteschlange</string>
+    <string name="work_status_desktop_running">Verarbeitung am Desktop (Vorgang wartet ggf. auf Freigabe)</string>
+    <string name="work_status_running">Wird verarbeitet</string>
+    <string name="work_status_disconnected">Desktop-Verbindung getrennt, ursprüngliche Aufgabe wird abgeglichen</string>
+    <string name="work_status_succeeded">Ergebnisse bereit</string>
+    <string name="work_status_canceled">Abgebrochen</string>
+    <string name="work_status_failed">Verarbeitung fehlgeschlagen</string>
+    <string name="work_status_unknown">Status wird noch bestätigt</string>
 </resources>

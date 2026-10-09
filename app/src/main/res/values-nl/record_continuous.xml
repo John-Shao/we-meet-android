@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_read_start">Vanaf het begin lezen</string>
+    <string name="records_load_more">Meer laden</string>
+    <string name="records_load_retry">Laden mislukt. Tik om het opnieuw te proberen</string>
+    <string name="records_load_end">Alle inhoud geladen</string>
+</resources>

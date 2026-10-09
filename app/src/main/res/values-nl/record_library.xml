@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_filter_speaker">Filteren op spreker</string>
+    <string name="records_info">Opname-info</string>
+    <string name="records_start_time">Gestart</string>
+    <string name="records_retention">Bewaring</string>
+    <string name="records_retention_media">Audio of video bewaard</string>
+    <string name="records_retention_text">Alleen tekst</string>
+    <string name="records_retention_unknown">Niet vastgelegd</string>
+    <string name="records_skip_back">15 seconden terug</string>
+    <string name="records_skip_forward">15 seconden vooruit</string>
+    <string name="records_filters">Filters</string>
+    <string name="records_source_filter">Bron</string>
+    <string name="records_filters_done">Filters toepassen</string>
+    <string name="records_reset_filters">Filters wissen</string>
+    <string name="records_clear_search">Zoeken sluiten</string>
+    <string name="records_grid_view">Overschakelen naar rasterweergave</string>
+    <string name="records_list_view">Overschakelen naar lijstweergave</string>
+    <string name="records_minutes_ready">Notulen beschikbaar</string>
+    <string name="records_start_recording">Opnemen</string>
+    <string name="records_upload">Importeren</string>
+    <string name="record_upload_title">Import bevestigen</string>
+    <string name="record_upload_hint">Kies een audio- of videobestand van maximaal %1$d MB. Na de import wordt de transcriptie voortgezet.</string>
+    <string name="record_upload_choose">Bestand kiezen</string>
+    <string name="record_upload_advanced">Herkenning verbeteren (optioneel)</string>
+    <string name="record_upload_context">Vergadercontext (maximaal 400 tekens)</string>
+    <string name="record_upload_hotwords">Trefwoorden (één per regel, maximaal 40 tekens per stuk)</string>
+    <string name="record_upload_consent">Zorg dat je toestemming hebt om deze opname te importeren en te transcriberen.</string>
+    <!-- A GB-scale import takes minutes, so it reports real progress and can be stopped. -->
+    <string name="record_upload_progress">%1$d%% geüpload</string>
+    <string name="record_upload_cancel">Upload annuleren</string>
+    <string name="record_upload_cancelled">Upload geannuleerd. Al verzonden onderdelen blijven bewaard, dus als je opnieuw start, gaat het daar verder.</string>
+    <string name="record_upload_wait">Importeren… Houd dit scherm open tot de import is voltooid.</string>
+    <string name="record_upload_confirming">Bytes verzonden. Wachten op het importresultaat…</string>
+    <string name="record_upload_diarization">Sprekers onderscheiden</string>
+    <string name="record_upload_diarization_hint">Voor opnamen met meerdere sprekers. Stemmen worden automatisch gescheiden; namen kun je na de transcriptie toewijzen.</string>
+    <string name="record_upload_stopped">Het uploadverzoek is gestopt. De server heeft het bestand mogelijk ontvangen. Probeer het opnieuw met hetzelfde bestand en dezelfde instellingen om het resultaat te bevestigen.</string>
+    <string name="record_upload_error">Import mislukt. Controleer het bestandsformaat, de grootte en je verbinding en probeer het daarna opnieuw.</string>
+    <string name="record_upload_unconfirmed">De import kon niet worden bevestigd; het bestand is mogelijk al ontvangen. Probeer het hier opnieuw met hetzelfde bestand en dezelfde instellingen, of sluit dit en bekijk de opnamegeschiedenis.</string>
+    <string name="record_upload_submit">Importeren en transcriberen</string>
+    <string name="record_upload_queued">Wachten op transcriptie. Je kunt deze pagina verlaten.</string>
+    <string name="record_upload_transcribing">Transcriberen… Je kunt deze pagina verlaten en later terugkomen.</string>
+    <string name="record_upload_failed">Transcriptie mislukt</string>
+    <string name="record_upload_retry">Transcriptie opnieuw proberen</string>
+    <string name="records_sort">Sorteren op aanmaaktijd</string>
+    <string name="records_more">Meer acties</string>
+    <string name="records_newest">Nieuwste eerst</string>
+    <string name="records_oldest">Oudste eerst</string>
+</resources>

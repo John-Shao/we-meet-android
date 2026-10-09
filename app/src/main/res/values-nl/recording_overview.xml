@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recording_history">Recente opnamen</string>
+    <string name="recording_history_empty">Nog geen opnamen. Neem iets op of importeer audio en video.</string>
+    <string name="record_import_audio">Geïmporteerde audio</string>
+    <string name="record_import_video">Geïmporteerde video</string>
+    <string name="record_import_all">Opnamen en imports</string>
+    <string name="record_import_video_hint">De originele video blijft bewaard; alleen de spraak erin wordt getranscribeerd voor de transcriptie en de notulen.</string>
+    <string name="record_import_invalid">Bestandsformaat of bestandsgrootte wordt niet ondersteund. Kies een ander bestand.</string>
+    <string name="record_import_size_unknown">Grootte onbekend</string>
+    <string name="record_import_pending">Wachten op transcriptie</string>
+    <string name="record_import_processing">Transcriberen</string>
+    <string name="record_import_ready">Transcriptie voltooid</string>
+    <string name="recording_detail">Opnamedetails</string>
+</resources>

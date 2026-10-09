@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="im_material_record">Vergaderopname</string>
+    <string name="im_material_minutes">Slimme notulen</string>
+    <string name="im_material_reader">Je kunt lezen</string>
+    <string name="im_material_editor">Je kunt bewerken</string>
+    <string name="im_material_manager">Je kunt beheren</string>
+    <string name="im_material_unavailable">Geen toegang of inhoud niet beschikbaar</string>
+    <string name="im_material_loading">Laden…</string>
+</resources>

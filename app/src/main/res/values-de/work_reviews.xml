@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="work_review_title">Ergebnisprüfung</string>
+    <string name="work_review_help">Die Prüfung untersucht ausgewählte Ergebnisse und autorisierte Aufgabenmaterialien. Sie ändert keine Dateien und führt keine Befehle aus. Prüfen Sie die Feststellungen, bevor Sie sie verwenden.</string>
+    <string name="work_review_disabled">Die Prüfung ist nicht aktiviert. Vorhandene autorisierte Einträge bleiben verfügbar.</string>
+    <string name="work_review_empty">Noch keine Prüfungen. Starten Sie eine Prüfung auf der Ergebnisseite am Desktop, nachdem Sie Dateien ausgewählt und synchronisiert haben.</string>
+    <string name="work_review_unavailable">Der Zugriff auf die Prüfung konnte nicht bestätigt werden. Frühere Inhalte sind ausgeblendet; aktualisieren Sie, um den Zugriff erneut zu prüfen.</string>
+    <string name="work_review_queued">Warten auf Prüfung</string>
+    <string name="work_review_running">Prüfung läuft</string>
+    <string name="work_review_succeeded">Prüfung abgeschlossen</string>
+    <string name="work_review_failed">Prüfung fehlgeschlagen</string>
+    <string name="work_review_canceled">Prüfung abgebrochen</string>
+    <string name="work_review_unknown">Warten auf Bestätigung des Prüfstatus</string>
+    <string name="work_review_selection">Ausgewählte Ergebnisse: %1$s</string>
+    <string name="work_review_reserved">%1$d Token reserviert; die tatsächliche Nutzung wird noch bestätigt</string>
+    <string name="work_review_usage">Tatsächliche Eingabe %1$d / Ausgabe %2$d Token</string>
+    <string name="work_review_delivery_failed">Es wurde keine vollständige Prüfung übermittelt. Sehen Sie sich die ursprüngliche Prüfung am Desktop an.</string>
+    <string name="work_review_no_issues">In den bereitgestellten Materialien wurden keine Probleme gefunden</string>
+    <string name="work_review_needs_changes">Probleme müssen behandelt werden</string>
+    <string name="work_review_inconclusive">Weitere Informationen sind erforderlich</string>
+    <string name="work_review_verdict_unknown">Die Prüfschlussfolgerung muss noch bestätigt werden</string>
+    <string name="work_review_issue">Problem: %1$s</string>
+    <string name="work_review_warning">Hinweis: %1$s</string>
+    <string name="work_review_evidence">%1$s · SHA-256 %2$s</string>
+    <string name="work_review_missing">Fehlende Informationen</string>
+</resources>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_overview_chapters_empty">Geen hoofdstuknotities beschikbaar.</string>
+    <string name="record_overview_more_sources">Andere bronverwijzingen (%1$d)</string>
+    <string name="record_overview_hide_sources">Verwijzingen samenvouwen</string>
+    <string name="record_overview_generate">Notulen genereren</string>
+    <string name="record_overview_regenerate">Notulen opnieuw genereren</string>
+    <string name="record_overview_generating">Genereren…</string>
+    <string name="record_overview_failed">Het genereren van het overzicht is mislukt. Probeer het opnieuw.</string>
+    <string name="record_overview_accepted">Het genereren van het overzicht is aangevraagd.</string>
+    <string name="record_overview_uncertain">Het resultaat kan nu niet worden bevestigd. Probeer het opnieuw.</string>
+    <string name="record_overview_conflict">De transcriptie of de overzichtstaak is gewijzigd. Vernieuw en probeer het opnieuw.</string>
+    <string name="record_overview_rate_limited">Te veel overzichtsverzoeken. Probeer het later opnieuw.</string>
+    <string name="record_overview_wait_source">Rond eerst de opname en de transcriptie af. Te lange transcripties kunnen nog niet worden verwerkt.</string>
+    <string name="record_overview_source_changed">De transcriptie is gewijzigd. Dit zijn het vorige overzicht en de vorige hoofdstukken.</string>
+    <string name="record_overview_unavailable">Het genereren van een overzicht is momenteel niet beschikbaar.</string>
+    <string name="record_overview_storage_error">Het overzichtsverzoek kan niet worden opgeslagen. Sta sessieopslag toe en probeer het opnieuw.</string>
+    <string name="record_overview_failed_preserved">Genereren mislukt. Je vorige overzicht en hoofdstukken zijn bewaard. Probeer het opnieuw.</string>
+    <string name="record_overview_language">Generatietaal</string>
+    <string name="record_overview_follow_source">Transcriptie volgen</string>
+    <string name="record_overview_language_hint">Geldt voor het overzicht en de onderwerpen bij de volgende generatie. Bestaande inhoud blijft bewaard tot het genereren lukt.</string>
+    <string name="record_overview_language_save_failed">De taalinstelling kon niet worden bevestigd. Vernieuw en probeer het opnieuw.</string>
+    <string name="record_overview_language_save">Opslaan</string>
+    <string name="record_overview_language_cancel">Annuleren</string>
+    <string-array name="record_overview_languages">
+        <item>@string/record_overview_follow_source</item>
+        <item>中文</item><item>English</item><item>Français</item><item>Deutsch</item>
+        <item>Nederlands</item><item>日本語</item><item>한국어</item><item>Español</item>
+        <item>Italiano</item><item>Português</item><item>Русский</item><item>العربية</item>
+    </string-array>
+</resources>

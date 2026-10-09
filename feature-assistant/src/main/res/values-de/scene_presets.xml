@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="assistant_call_scene_title">Gesprächsszenario</string>
+    <string name="assistant_call_scene_selection">Gesprächsszenario: %1$s</string>
+    <string name="assistant_call_scene_general">Allgemeiner Assistent</string>
+    <string name="assistant_call_scene_general_hint">Alltägliche Fragen und Gespräche per Sprache oder Video.</string>
+    <string name="assistant_call_scene_catalog_hint">Sprach- oder Videogespräch nach der Vorgabe „%1$s“.</string>
+    <string name="assistant_scene_title">Szenario-Voreinstellung</string>
+    <string name="assistant_scene_custom">Benutzerdefiniert / Standard</string>
+    <string name="assistant_scene_travel">Reise (Englisch)</string>
+    <string name="assistant_scene_travel_ja">Reise (Japanisch)</string>
+    <string name="assistant_scene_business">Geschäftskommunikation</string>
+    <string name="assistant_scene_practice">Englisch-Konversationstraining</string>
+    <string name="assistant_scene_travel_hint">Chinesische Erklärungen und nützliche englische Wendungen für Wegbeschreibungen, Hotels und Restaurants.</string>
+    <string name="assistant_scene_travel_ja_hint">Chinesische Erklärungen und höfliche japanische Wendungen für Reisen in Japan.</string>
+    <string name="assistant_scene_business_hint">Professionelle chinesisch-englische Kommunikation mit präzisen Zahlen, Daten und Zusagen.</string>
+    <string name="assistant_scene_practice_hint">Englische Konversation mit chinesischer Unterstützung, jeweils eine Frage und sanfte Grammatikkorrekturen.</string>
+    <string name="assistant_scene_translation_hint">Szenario, Sprachen und Sprachwiedergabe werden getrennt gespeichert. Das Szenario erfasst derzeit nur Ihre Vorliebe und beeinflusst die Übersetzungsergebnisse nicht.</string>
+    <string name="assistant_translation_scene_general">Allgemeine Unterhaltung</string>
+    <string name="assistant_translation_scene_travel">Reise</string>
+    <string name="assistant_scene_pair_en">Chinesisch ⇄ Englisch · Sprachwiedergabe aktiviert</string>
+    <string name="assistant_scene_pair_ja">Chinesisch ⇄ Japanisch · Sprachwiedergabe aktiviert</string>
+</resources>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="summary_tasks_title">Tâches de suivi</string>
+    <string name="summary_tasks_read_error">Les détails de conversion en tâche sont indisponibles. Actualisez pour vérifier l\'accès.</string>
+    <string name="summary_tasks_conflict">Les tâches examinées ont changé. Actualisez le compte rendu avant de créer une tâche.</string>
+    <string name="summary_tasks_unknown">Une demande de tâche a un résultat inconnu. Vérifiez la demande d\'origine avant de créer une autre tâche.</string>
+    <string name="summary_tasks_error">Impossible de confirmer la création de la tâche. Vérifiez les champs et l\'accès actuel, ou vérifiez la demande en attente.</string>
+    <string name="summary_tasks_deleted">La tâche associée a été supprimée. Elle ne sera pas recréée automatiquement.</string>
+    <string name="summary_tasks_converted">Déjà convertie</string>
+    <string name="summary_tasks_completed">Tâche terminée</string>
+    <string name="summary_tasks_todo">Tâche à faire</string>
+    <string name="summary_tasks_open">Ouvrir la tâche</string>
+    <string name="summary_tasks_convert">Créer une tâche à partir de cette action</string>
+    <string name="summary_tasks_confirm">Confirmer les détails de la tâche</string>
+    <string name="summary_tasks_task_title">Titre de la tâche</string>
+    <string name="summary_tasks_hints">Indications textuelles du compte rendu : responsable %1$s ; date %2$s. Choisissez ci-dessous le responsable et la date réels.</string>
+    <string name="summary_tasks_search">Rechercher des responsables</string>
+    <string name="summary_tasks_assignee">Responsable : %1$s</string>
+    <string name="summary_tasks_choose">Choisir une personne</string>
+    <string name="summary_tasks_no_assignees">Aucun responsable correspondant</string>
+    <string name="summary_tasks_date">Échéance : %1$s</string>
+    <string name="summary_tasks_no_date">Non définie</string>
+    <string name="summary_tasks_clear_date">Effacer la date d\'échéance</string>
+    <string name="summary_tasks_set_date">Définir la date</string>
+    <string name="summary_tasks_notice">La confirmation crée une tâche et notifie le responsable. Le titre de la tâche lui est communiqué ; l\'accès à ce compte rendu est géré séparément.</string>
+    <string name="summary_tasks_create">Confirmer et créer la tâche</string>
+</resources>

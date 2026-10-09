@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="summary_tasks_title">Folgeaufgaben</string>
+    <string name="summary_tasks_read_error">Details zur Aufgabenumwandlung sind nicht verfügbar. Aktualisieren Sie, um den Zugriff zu prüfen.</string>
+    <string name="summary_tasks_conflict">Die geprüften Maßnahmen haben sich geändert. Aktualisieren Sie die Zusammenfassung, bevor Sie eine Aufgabe erstellen.</string>
+    <string name="summary_tasks_unknown">Das Ergebnis einer Aufgabenanfrage ist unbekannt. Prüfen Sie die ursprüngliche Anfrage, bevor Sie eine weitere Aufgabe erstellen.</string>
+    <string name="summary_tasks_error">Die Aufgabenerstellung konnte nicht bestätigt werden. Prüfen Sie die Angaben und den aktuellen Zugriff oder gleichen Sie die ausstehende Anfrage ab.</string>
+    <string name="summary_tasks_deleted">Die verknüpfte Aufgabe wurde gelöscht. Sie wird nicht automatisch neu erstellt.</string>
+    <string name="summary_tasks_converted">Bereits in eine Aufgabe umgewandelt</string>
+    <string name="summary_tasks_completed">Aufgabe erledigt</string>
+    <string name="summary_tasks_todo">Aufgabe offen</string>
+    <string name="summary_tasks_open">Aufgabe öffnen</string>
+    <string name="summary_tasks_convert">Aufgabe aus dieser Maßnahme erstellen</string>
+    <string name="summary_tasks_confirm">Aufgabendetails bestätigen</string>
+    <string name="summary_tasks_task_title">Aufgabentitel</string>
+    <string name="summary_tasks_hints">Hinweise im Text der Zusammenfassung: verantwortlich %1$s; Datum %2$s. Wählen Sie unten die tatsächliche verantwortliche Person und das Datum aus.</string>
+    <string name="summary_tasks_search">Verantwortliche suchen</string>
+    <string name="summary_tasks_assignee">Verantwortlich: %1$s</string>
+    <string name="summary_tasks_choose">Person auswählen</string>
+    <string name="summary_tasks_no_assignees">Keine passenden verantwortlichen Personen</string>
+    <string name="summary_tasks_date">Fälligkeitsdatum: %1$s</string>
+    <string name="summary_tasks_no_date">Nicht festgelegt</string>
+    <string name="summary_tasks_clear_date">Fälligkeitsdatum löschen</string>
+    <string name="summary_tasks_set_date">Datum festlegen</string>
+    <string name="summary_tasks_notice">Nach der Bestätigung wird eine Aufgabe erstellt und die verantwortliche Person benachrichtigt. Der Aufgabentitel ist für sie sichtbar; der Zugriff auf diese Zusammenfassung wird separat verwaltet.</string>
+    <string name="summary_tasks_create">Bestätigen und Aufgabe erstellen</string>
+</resources>

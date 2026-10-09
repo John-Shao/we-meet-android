@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="meeting_video">Visioconférences</string>
+    <string name="meeting_navigation">Ouvrir la navigation des réunions</string>
+    <string name="meeting_navigation_close">Fermer la navigation des réunions</string>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_question_title">Vragen over de vergadering</string>
+    <string name="record_question_scope">Kies een versie van de oorspronkelijke transcriptie. De AI antwoordt alleen op basis van die bron en verbruikt AI-gebruik. Je vragen zijn privé.</string>
+    <string name="record_question_read_error">Vragen zijn niet beschikbaar. Vernieuw om de toegang tot de bron te controleren.</string>
+    <string name="record_question_unknown">Het resultaat van de laatste vraag is onbekend. Controleer het oorspronkelijke verzoek voordat je een nieuwe vraag stelt.</string>
+    <string name="record_question_error">De vraag kon niet worden bevestigd. Controleer de huidige status of controleer het openstaande verzoek.</string>
+    <string name="record_question_choose">Transcriptieversie kiezen</string>
+    <string name="record_question_source">Transcriptieversie %1$d · notulen van %2$s</string>
+    <string name="record_question_historical_source">Eerder gekozen transcriptieversie</string>
+    <string name="record_question_input">Je vraag</string>
+    <string name="record_question_ask">Vraag aan AI</string>
+    <string name="record_question_disabled">Nieuwe vragen zijn momenteel niet beschikbaar.</string>
+    <string name="record_question_recent">Mijn recente vragen</string>
+    <string name="record_question_running">Antwoord wordt gegenereerd</string>
+    <string name="record_question_succeeded">Antwoord</string>
+    <string name="record_question_failed">Antwoorden mislukt; er wordt niet automatisch opnieuw geprobeerd.</string>
+    <string name="record_question_incomplete">Het antwoord is onvolledig; er wordt niet automatisch opnieuw geprobeerd.</string>
+    <string name="record_question_canceled">Vraag geannuleerd</string>
+    <string name="record_question_no_answer">De gekozen transcriptie bevat te weinig informatie om deze vraag te beantwoorden.</string>
+</resources>

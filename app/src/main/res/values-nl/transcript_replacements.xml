@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="batch_correction_title">Zoeken en vervangen</string>
+    <string name="batch_correction_hint">Hoofdlettergevoelig letterlijk vervangen in de opgeslagen transcriptie van dit record, inclusief andere pagina\'s. Maximaal 100 segmenten per keer. Een lege vervanging verwijdert tekst. Niet-opgeslagen concepten en bestaande notulen blijven ongewijzigd.</string>
+    <string name="batch_correction_find">Tekst zoeken</string>
+    <string name="batch_correction_replacement">Vervangen door</string>
+    <string name="batch_correction_preview">Wijzigingen bekijken</string>
+    <string name="batch_correction_count">%1$d segmenten · %2$d treffers</string>
+    <string name="batch_correction_before">Voor</string>
+    <string name="batch_correction_after">Na</string>
+    <string name="batch_correction_confirm">Alle wijzigingen bevestigen</string>
+    <string name="batch_correction_pending">Het resultaat is niet bevestigd. Probeer hetzelfde verzoek opnieuw voordat je iets anders wijzigt.</string>
+    <string name="batch_correction_retry">Hetzelfde verzoek opnieuw proberen</string>
+    <string name="batch_correction_applied">Wijzigingen opgeslagen. Controleer de transcriptie voordat je nieuwe notulen genereert.</string>
+    <string name="batch_correction_undone">Vervanging ongedaan gemaakt</string>
+    <string name="batch_correction_conflict">De transcriptie is gewijzigd. Er is niets overschreven. Bekijk het voorbeeld opnieuw; ongedaan maken kan latere correcties niet overschrijven.</string>
+    <string name="batch_correction_invalid">Vervangen lukt niet: controleer de tekst, lege resultaten en de limieten van 100 segmenten en de tekstlengte.</string>
+    <string name="batch_correction_error">Het verzoek is mislukt of het resultaat is onbekend. Probeer opnieuw; start geen dubbele vervanging.</string>
+    <string name="batch_correction_storage_error">Herstelopslag is niet beschikbaar. Er kunnen geen nieuwe wijzigingen worden ingediend.</string>
+    <string name="batch_correction_history">Recente 10 vervangingen</string>
+    <string name="batch_correction_deleted">(verwijderd)</string>
+    <string name="batch_correction_undo">Deze vervanging ongedaan maken</string>
+    <string name="batch_correction_undo_hint">Alle betrokken segmenten terugzetten naar hun tekst van vóór deze vervanging? Elke latere correctie in deze segmenten verhindert dat de hele actie ongedaan wordt gemaakt.</string>
+    <string name="batch_correction_confirm_undo">Ongedaan maken bevestigen</string>
+    <string name="batch_correction_close">Sluiten</string>
+    <string name="batch_correction_cancel_undo">Ongedaan maken annuleren</string>
+</resources>

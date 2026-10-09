@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="upload_translation_description">Traduit la transcription complète corrigée. Les lecteurs ayant accès au texte original peuvent consulter les traductions. La génération peut consommer du quota IA ; les nouvelles tentatives sont manuelles.</string>
+    <string name="upload_translation_generate">Traduire la transcription complète</string>
+    <string name="upload_translation_regenerate">Traduire à nouveau</string>
+    <string name="upload_translation_check">Vérifier la demande précédente</string>
+    <string name="upload_translation_empty">Aucune traduction dans cette langue.</string>
+    <string name="upload_translation_stale">L\'original a changé. Cette traduction utilise une version plus ancienne ; traduisez à nouveau avant d\'exporter.</string>
+    <string name="upload_translation_uncertain">Le résultat est inconnu. Vérifiez la même demande avant de lancer une autre traduction.</string>
+    <string name="upload_translation_conflict">La source, les droits ou la tâche ont changé. Actualisez, puis réessayez.</string>
+    <string name="upload_translation_budget">Cette transcription dépasse la limite de traduction. Aucun texte n\'a été tronqué ni envoyé.</string>
+    <string name="upload_translation_play">Écouter ce segment</string>
+    <string name="upload_translation_queued">En attente de traduction</string>
+    <string name="upload_translation_running">Traduction en cours</string>
+    <string name="upload_translation_succeeded">Traduction terminée</string>
+    <string name="upload_translation_failed">La traduction a échoué. Vous pouvez lancer une nouvelle tentative.</string>
+    <string name="upload_translation_canceled">La source ou les droits ont changé. Actualisez avant de traduire à nouveau.</string>
+    <string name="upload_translation_original">Original : %1$s</string>
+    <string name="upload_translation_show_original">Afficher l\'original</string>
+    <string name="upload_translation_info">À propos de la traduction</string>
+    <string name="upload_translation_generation_hint">La génération des traductions peut consommer du quota IA. Les tâches échouées peuvent être relancées manuellement.</string>
+    <string name="upload_translation_current_segment">Segment actuel</string>
+    <string name="upload_translation_unknown_speaker">Intervenant inconnu</string>
+</resources>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_title">Sprachübersetzung</string>
+    <string name="translation_description">Übersetzt Ihr aktuelles Meeting-Mikrofon. Die Originalrede wird weiterhin gemäß den Meeting-Einstellungen gesendet; übersetzter Text und übersetzte Stimme sind nur für diese Verbindung sichtbar und hörbar.</string>
+    <string name="translation_guest">Melden Sie sich mit einem Managerkonto des Meetingraums an, um die persönliche Übersetzung zu nutzen.</string>
+    <string name="translation_unavailable">Die persönliche Übersetzung ist nicht verfügbar. Sie erfordert derzeit ein Managerkonto des Meetingraums.</string>
+    <string name="translation_zh_en">Chinesisch → Englisch</string>
+    <string name="translation_en_zh">Englisch → Chinesisch</string>
+    <string name="translation_simultaneous">Fortlaufende Übersetzung</string>
+    <string name="translation_manual">Beidseitige Sprachübersetzung</string>
+    <string name="translation_audio">Übersetzte Stimme erzeugen</string>
+    <string name="translation_text_only">Nur übersetzter Text</string>
+    <string name="translation_save">Bestätigte Übersetzungen in der Meeting-Aufzeichnung speichern</string>
+    <string name="translation_no_save">Übersetzungen nach der Sitzung nicht speichern</string>
+    <string name="translation_unknown">Der Vorgang konnte nicht bestätigt werden. Prüfen Sie die ursprüngliche Anfrage, bevor Sie einen weiteren Vorgang ausführen.</string>
+    <string name="translation_start">Übersetzung starten</string>
+    <string name="translation_stop">Übersetzung beenden</string>
+    <string name="translation_start_effect">Dadurch wird Ihr Meeting-Mikrofon verarbeitet und es kann KI-Kontingent verbraucht werden. Prüfen Sie unten Sprache, Modus und Speicherauswahl. Schalten Sie die übersetzte Stimme separat ein, wenn Sie bereit sind.</string>
+    <string name="translation_stop_effect">Dieser Vorgang beendet die persönliche Übersetzungssitzung und wartet die ausstehende Übersetzung ab. Das Meeting und die Verdolmetschungskanäle der anderen Teilnehmenden laufen weiter.</string>
+    <string name="translation_other_connection">Dieses Gerät benötigt eine eigene aktive Meeting-Verbindung. Eine auf einer anderen Verbindung gestartete Übersetzung kann hier beendet werden.</string>
+    <string name="translation_mic_off">Ihr Meeting-Mikrofon ist ausgeschaltet. Aktivieren Sie es in der Meeting-Steuerleiste, um Sprache zu übersetzen.</string>
+    <string name="translation_command_failed">Der Sprachbefehl konnte nicht bestätigt werden. Beenden Sie diese Übersetzung, bevor Sie eine neue Sitzung starten.</string>
+    <string name="translation_wait_ready">Warten, bis die Übersetzung bereit ist…</string>
+    <string name="translation_listen">Übersetzte Stimme anhören</string>
+    <string name="translation_mute">Übersetzte Stimme stummschalten</string>
+    <string name="translation_wait_turn">Warten, bis die vorherige Übersetzung abgeschlossen ist…</string>
+    <string name="translation_speak_zh">Beginnen Sie, Chinesisch zu sprechen</string>
+    <string name="translation_speak_en">Beginnen Sie, Englisch zu sprechen</string>
+    <string name="translation_end_turn">Diesen Beitrag beenden</string>
+    <string name="translation_open_archive">Verknüpfte Meeting-Aufzeichnung öffnen</string>
+    <string name="translation_text">Übersetzter Text · getrennt von den Originalen</string>
+    <string name="translation_confirmed">Bestätigte Übersetzung</string>
+    <string name="translation_candidate">Vorläufige Übersetzung</string>
+    <string name="translation_controls">Steuerung</string>
+    <string name="translation_starting">Wird gestartet</string>
+    <string name="translation_running">Übersetzung läuft</string>
+    <string name="translation_stopping">Übersetzung wird beendet</string>
+    <string name="translation_stopped">Übersetzung beendet</string>
+    <string name="translation_incomplete">Übersetzung unvollständig beendet</string>
+    <string name="translation_off">Keine Übersetzung aktiv</string>
+</resources>

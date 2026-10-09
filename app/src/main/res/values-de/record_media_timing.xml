@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_media_duration">Mediendauer</string>
+    <string name="records_media_duration_unknown">Unbekannt; bei importierten Dateien ist die Dauer verfügbar, sobald die Wiedergabe vorbereitet ist.</string>
+    <string name="records_saved_audio">Gespeichertes Audio</string>
+    <string name="records_media_partial">Die Audioübertragung ist unvollständig oder weist Lücken auf; eine vollständige Dauer wird nicht angegeben.</string>
+    <string name="records_media_ruler">Medien-Zeitleiste: 0:00 – %1$s</string>
+</resources>

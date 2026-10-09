@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_no_upcoming">Geen aanstaande vergaderingen</string>
+    <string name="meeting_materials_title">Na de vergadering</string>
+    <string name="meeting_materials_hint">Vind opnamen en transcripties in het vergaderverslag. Genereer en deel notulen en volg actiepunten op in slimme notulen.</string>
+    <string name="capture_acquisition_hint">Neem een persoonlijk gesprek of interview op. Open na het opslaan het verslag voor afspelen en transcriptie, en slimme notulen voor notulen en vervolgstappen.</string>
+    <string name="capture_saved_destination">Opname opgeslagen. Afspelen en transcriptie staan in het vergaderverslag; genereren, delen en actiepunten staan in slimme notulen.</string>
+    <string name="capture_open_summary">Slimme notulen bekijken</string>
+    <string name="records_transcription_manage">Transcriptie beheren</string>
+</resources>

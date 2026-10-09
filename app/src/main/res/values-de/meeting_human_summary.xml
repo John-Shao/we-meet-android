@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="human_summary_title">Manuelle Zusammenfassung</string>
+    <string name="human_summary_empty">Noch keine manuelle Überarbeitung. Die KI-Zusammenfassung bleibt unten verfügbar.</string>
+    <string name="human_summary_read_error">Die manuelle Zusammenfassung ist nicht verfügbar. Aktualisieren Sie, um den Zugriff zu prüfen.</string>
+    <string name="human_summary_edit">Manuelle Zusammenfassung bearbeiten</string>
+    <string name="human_summary_history">Versionsverlauf</string>
+    <string name="human_summary_history_read_only">Dies ist eine gespeicherte Version. Sie ist schreibgeschützt und ändert sich nicht, wenn die aktuelle Zusammenfassung bearbeitet wird.</string>
+    <string name="human_summary_version">Manuelle Überarbeitung %1$d</string>
+    <string name="human_summary_save">Neue Überarbeitung speichern</string>
+    <string name="human_summary_save_error">Das Speichern konnte nicht bestätigt werden. Behalten Sie Ihren Entwurf, prüfen Sie die Pflichttexte und die Grenze von 64 KB und aktualisieren Sie oder gleichen Sie die ausstehende Anfrage ab.</string>
+    <string name="human_summary_unknown">Das Ergebnis des letzten Speicherns ist unbestätigt. Prüfen Sie die ursprüngliche Anfrage, bevor Sie eine weitere Überarbeitung speichern.</string>
+    <string name="human_summary_conflict">Es gibt eine neuere manuelle Überarbeitung. Ihr Entwurf bleibt hier erhalten; schließen Sie den Dialog und bearbeiten Sie die aktuelle Überarbeitung, bevor Sie speichern.</string>
+    <string name="human_summary_replace">Diese KI-Version verwenden</string>
+    <string name="human_summary_replace_notice">Entwurf auf Basis der angezeigten KI-Version starten? Beim Speichern entsteht eine neue manuelle Überarbeitung. Frühere Versionen bleiben im Verlauf erhalten.</string>
+    <string name="human_summary_continue">Entwurf starten</string>
+    <string name="human_summary_edit_notice">Bearbeitungen behalten vorhandene Quellenverweise bei. Hinzugefügte Punkte haben keine Quellenangabe. Beim Speichern werden keine Aufgaben erstellt; Zuständigkeiten werden separat bestätigt.</string>
+    <string name="human_summary_overview">Übersicht</string>
+    <string name="human_summary_decisions">Entscheidungen</string>
+    <string name="human_summary_chapters">Themen</string>
+    <string name="human_summary_actions">Aufgaben</string>
+    <string name="human_summary_questions">Offene Fragen</string>
+    <string name="human_summary_owner_hint">Vorgeschlagene verantwortliche Person (nur Text)</string>
+    <string name="human_summary_due_hint">Vorgeschlagenes Datum (nur Text)</string>
+    <string name="human_summary_remove">Eintrag entfernen</string>
+    <string name="human_summary_add">Eintrag hinzufügen</string>
+</resources>

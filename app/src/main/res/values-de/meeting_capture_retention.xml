@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_text_only">Nur Text behalten</string>
+    <string name="capture_text_consent">Audio wird vorübergehend für die Transkription vorgehalten, ohne Wiedergabe oder Download. Nach erfolgreicher Transkription wird es bereinigt. Starten oder wiederholen Sie die Transkription innerhalb von 30 Minuten nach dem Ende; das Audio läuft spätestens 24 Stunden nach dem Start ab. Nicht hochgeladenes Audio bleibt im Arbeitsspeicher und kann nicht wiederhergestellt werden, wenn der Aufnahmedienst endet. Starten Sie die Transkription separat; sie verbraucht KI-Kontingent.</string>
+    <string name="capture_text_unavailable">Die Aufnahme mit reiner Textspeicherung ist derzeit nicht verfügbar. Wählen Sie die Audioaufbewahrung oder versuchen Sie es später erneut.</string>
+    <string name="capture_text_saved">Aufnahme beendet</string>
+    <string name="capture_text_interrupted_hint">Die Aufnahme wurde unterbrochen. Temporäres Audio kann fehlen. Setzen Sie sie vor dem Ablauf fort oder beenden Sie sie ausdrücklich mit dem Audio, das der Server bereits empfangen hat.</string>
+    <string name="capture_text_local_hint">Es wird nur Text behalten. Hochgeladenes Audio folgt der Aufbewahrungsfrist des Servers; nicht hochgeladenes Audio ist temporär und kann nach dem Ende des Aufnahmeprozesses nicht wiederhergestellt werden.</string>
+    <string name="capture_text_expired">Das temporäre Audio ist abgelaufen. Die Aufnahme wurde gestoppt; beenden Sie die Aufnahme, um die Verarbeitung des verfügbaren Textes abzuschließen.</string>
+    <string name="capture_text_finish_hint">Stoppen Sie die Aufnahme und schließen Sie den Upload des verfügbaren Audios ab. Prüfen Sie anschließend den Status von Transkription und Bereinigung des temporären Audios.</string>
+    <string name="capture_text_finish_incomplete">Mit unvollständigem Audio beenden</string>
+    <string name="capture_text_incomplete_hint">Beenden Sie diese Aufnahme nur mit dem Audio, das der Server bereits empfangen hat. Das verbleibende lokale Audio wird verworfen und fehlende Teile können nicht wiederhergestellt werden. Das Ergebnis wird als unvollständig markiert.</string>
+    <string name="capture_text_confirm_incomplete">Fehlendes Audio verwerfen und beenden</string>
+    <string name="capture_text_retention_title">Temporäres Audio</string>
+    <string name="capture_text_retention_error">Der Aufbewahrungsstatus des Audios kann nicht bestätigt werden. Aktualisieren Sie, bevor Sie fortfahren.</string>
+    <string name="capture_text_cleanup_not_started">Audio wird vorübergehend für die Transkription vorgehalten. Die Bereinigung hat noch nicht begonnen.</string>
+    <string name="capture_text_cleanup_pending">Die Bereinigung des temporären Audios läuft. Text und vorhandene Zusammenfassungen bleiben erhalten.</string>
+    <string name="capture_text_cleanup_failed">Die Bereinigung des temporären Audios ist nicht abgeschlossen. Das System versucht es erneut.</string>
+    <string name="capture_text_cleanup_complete">Das temporäre Audio wurde gelöscht. Text und vorhandene Zusammenfassungen bleiben erhalten.</string>
+    <string name="capture_text_access_until">Audiozugriff endet: %1$s. Danach kann die Transkription nicht fortgesetzt werden; der Löschfortschritt wird oben angezeigt.</string>
+    <string name="capture_text_retry_until">Transkription starten oder wiederholen bis: %1$s.</string>
+    <string name="capture_text_retry_closed">Neue Transkriptionsversuche sind nicht mehr möglich. Ergebnisse vorhandener Anfragen können weiterhin geprüft werden.</string>
+</resources>

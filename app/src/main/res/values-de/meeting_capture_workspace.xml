@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_audio_settings">Audioeinstellungen</string>
+    <string name="capture_keep_audio">Audio behalten</string>
+    <string name="capture_keep_audio_hint">Die Aufnahme für Wiedergabe und Download speichern</string>
+    <string name="capture_text_only_hint">Audio nur vorübergehend für die Transkription verwenden; keine Wiedergabe</string>
+    <string name="capture_audio_settings_hint">Wählen Sie, wie diese Aufnahme gespeichert wird</string>
+    <string name="capture_audio_settings_locked">Der Speichermodus ist für diese Aufnahme festgelegt. Wählen Sie ihn vor Ihrer nächsten Aufnahme erneut.</string>
+    <string name="capture_settings_done">Fertig</string>
+    <string name="capture_live_summary">Live-Zusammenfassung</string>
+    <string name="capture_document_empty_title">Jedes Wort im Blick behalten</string>
+    <string name="capture_document_empty_hint">Starten Sie die Aufnahme und aktivieren Sie dann die Live-Transkription. Ihr Transkript erscheint hier.</string>
+    <string name="capture_summary_empty_title">Konzentrieren Sie sich auf das Gespräch</string>
+    <string name="capture_summary_empty_hint">Sobald Aufnahme und Transkription beginnen, aktivieren Sie Zusammenfassungen, um Kernpunkte und Aufgaben zu prüfen.</string>
+    <string name="capture_document_preparing">Ihre Aufnahme wird vorbereitet. KI-Funktionen sind nach dem Verbinden verfügbar.</string>
+    <string name="capture_next_title">Titel der nächsten Aufnahme (optional)</string>
+    <string name="capture_tool_interpret">Verdolmetschen</string>
+    <string name="capture_tool_translate">Übersetzen</string>
+    <string name="capture_interpret_title">KI-Verdolmetschung</string>
+    <string name="capture_language_title">KI-Übersetzung</string>
+    <string name="capture_translation_direction">Gesprochene Sprache → Übersetzungssprache</string>
+    <string name="capture_translation_active_badge">Übersetzung aktiv</string>
+</resources>

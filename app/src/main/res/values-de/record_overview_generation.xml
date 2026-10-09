@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_overview_chapters_empty">Keine Kapitelnotizen verfügbar.</string>
+    <string name="record_overview_more_sources">Weitere Quellenverweise (%1$d)</string>
+    <string name="record_overview_hide_sources">Verweise ausblenden</string>
+    <string name="record_overview_generate">Meeting-Zusammenfassung erstellen</string>
+    <string name="record_overview_regenerate">Meeting-Zusammenfassung neu erstellen</string>
+    <string name="record_overview_generating">Wird erstellt…</string>
+    <string name="record_overview_failed">Erstellung der Übersicht fehlgeschlagen. Bitte erneut versuchen.</string>
+    <string name="record_overview_accepted">Erstellung der Übersicht angefordert.</string>
+    <string name="record_overview_uncertain">Das Ergebnis kann derzeit nicht bestätigt werden. Bitte erneut versuchen.</string>
+    <string name="record_overview_conflict">Das Transkript oder der Übersichtsauftrag hat sich geändert. Aktualisieren Sie die Ansicht und versuchen Sie es erneut.</string>
+    <string name="record_overview_rate_limited">Zu viele Übersichtsanfragen. Bitte später erneut versuchen.</string>
+    <string name="record_overview_wait_source">Schließen Sie zuerst Aufnahme und Transkription ab. Zu umfangreiche Transkripte können noch nicht verarbeitet werden.</string>
+    <string name="record_overview_source_changed">Das Transkript hat sich geändert. Dies sind die vorherige Übersicht und die vorherigen Kapitel.</string>
+    <string name="record_overview_unavailable">Die Erstellung der Übersicht ist derzeit nicht verfügbar.</string>
+    <string name="record_overview_storage_error">Die Übersichtsanfrage kann nicht gespeichert werden. Erlauben Sie den Sitzungsspeicher und versuchen Sie es erneut.</string>
+    <string name="record_overview_failed_preserved">Erstellung fehlgeschlagen. Ihre vorherige Übersicht und die Kapitel wurden beibehalten. Bitte erneut versuchen.</string>
+    <string name="record_overview_language">Sprache der Erstellung</string>
+    <string name="record_overview_follow_source">Dem Transkript folgen</string>
+    <string name="record_overview_language_hint">Gilt für die Übersicht und die Kapitel bei der nächsten Erstellung. Bestehende Inhalte bleiben erhalten, bis die Erstellung erfolgreich ist.</string>
+    <string name="record_overview_language_save_failed">Die Spracheinstellung konnte nicht bestätigt werden. Aktualisieren Sie die Ansicht und versuchen Sie es erneut.</string>
+    <string name="record_overview_language_save">Speichern</string>
+    <string name="record_overview_language_cancel">Abbrechen</string>
+    <string-array name="record_overview_languages">
+        <item>@string/record_overview_follow_source</item>
+        <item>中文</item><item>English</item><item>Français</item><item>Deutsch</item>
+        <item>Nederlands</item><item>日本語</item><item>한국어</item><item>Español</item>
+        <item>Italiano</item><item>Português</item><item>Русский</item><item>العربية</item>
+    </string-array>
+</resources>

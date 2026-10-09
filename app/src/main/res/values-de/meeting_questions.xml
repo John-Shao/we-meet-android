@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_question_title">Fragen zum Meeting</string>
+    <string name="record_question_scope">Wählen Sie eine Transkriptversion. Die KI antwortet nur auf Basis dieser Quelle und verbraucht KI-Kontingent. Ihre Fragen sind privat.</string>
+    <string name="record_question_read_error">Fragen sind nicht verfügbar. Aktualisieren Sie, um den Zugriff auf die Quelle zu prüfen.</string>
+    <string name="record_question_unknown">Das Ergebnis der letzten Frage ist unbestätigt. Prüfen Sie die ursprüngliche Anfrage, bevor Sie eine weitere Frage stellen.</string>
+    <string name="record_question_error">Die Frage konnte nicht bestätigt werden. Prüfen Sie den aktuellen Status oder gleichen Sie die ausstehende Anfrage ab.</string>
+    <string name="record_question_choose">Transkriptversion wählen</string>
+    <string name="record_question_source">Transkriptrevision %1$d · Zusammenfassung von %2$s</string>
+    <string name="record_question_historical_source">Zuvor ausgewählte Transkriptversion</string>
+    <string name="record_question_input">Ihre Frage</string>
+    <string name="record_question_ask">KI fragen</string>
+    <string name="record_question_disabled">Derzeit können keine neuen Fragen gestellt werden.</string>
+    <string name="record_question_recent">Meine letzten Fragen</string>
+    <string name="record_question_running">Antwort wird erstellt</string>
+    <string name="record_question_succeeded">Antwort</string>
+    <string name="record_question_failed">Antwort fehlgeschlagen; es wird nicht automatisch erneut versucht.</string>
+    <string name="record_question_incomplete">Das Antwortergebnis ist unvollständig; es wird nicht automatisch erneut versucht.</string>
+    <string name="record_question_canceled">Frage abgebrochen</string>
+    <string name="record_question_no_answer">Das gewählte Transkript enthält nicht genügend Informationen, um die Frage zu beantworten.</string>
+</resources>

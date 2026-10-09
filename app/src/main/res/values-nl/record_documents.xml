@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_info_owner">Eigenaar</string>
+    <string name="records_info_created">Aangemaakt</string>
+    <string name="record_documents_title">Mijn notulendocumenten</string>
+    <string name="record_documents_hint">Je exports uit deze opname, nieuwste eerst. Gebruik de paginering voor oudere kopieën. Elk document heeft eigen toegangsrechten.</string>
+    <string name="record_documents_empty">Je hebt nog geen notulendocumenten geëxporteerd.</string>
+    <string name="record_documents_create_hint">Je kunt een document maken op basis van een notulenversie.</string>
+    <string name="record_documents_source">Bekijk de bronversie van de notulen</string>
+</resources>

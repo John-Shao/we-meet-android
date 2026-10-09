@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="upload_translation_description">Vertaal de gecorrigeerde volledige transcriptie. Lezers met toegang tot de originele tekst kunnen de vertalingen bekijken. Het genereren kan AI-gebruik met zich meebrengen; opnieuw proberen gebeurt handmatig.</string>
+    <string name="upload_translation_generate">Volledige transcriptie vertalen</string>
+    <string name="upload_translation_regenerate">Opnieuw vertalen</string>
+    <string name="upload_translation_check">Vorig verzoek controleren</string>
+    <string name="upload_translation_empty">Geen vertaling in deze taal.</string>
+    <string name="upload_translation_stale">Het origineel is gewijzigd. Deze vertaling gebruikt een oudere versie; vertaal opnieuw voordat je exporteert.</string>
+    <string name="upload_translation_uncertain">Het resultaat is onbekend. Controleer hetzelfde verzoek voordat je een nieuwe vertaling start.</string>
+    <string name="upload_translation_conflict">De bron, machtiging of taak is gewijzigd. Vernieuw en probeer het opnieuw.</string>
+    <string name="upload_translation_budget">Deze transcriptie overschrijdt de vertaallimiet. Er is geen tekst afgekapt of verzonden.</string>
+    <string name="upload_translation_play">Dit segment afspelen</string>
+    <string name="upload_translation_queued">Wacht op vertaling</string>
+    <string name="upload_translation_running">Wordt vertaald</string>
+    <string name="upload_translation_succeeded">Vertaling voltooid</string>
+    <string name="upload_translation_failed">Vertaling mislukt. Je kunt een nieuwe poging starten.</string>
+    <string name="upload_translation_canceled">De bron of toegang is gewijzigd. Vernieuw voordat je opnieuw vertaalt.</string>
+    <string name="upload_translation_original">Origineel: %1$s</string>
+    <string name="upload_translation_show_original">Origineel tonen</string>
+    <string name="upload_translation_info">Over vertaling</string>
+    <string name="upload_translation_generation_hint">Het genereren van vertalingen kan AI-gebruik met zich meebrengen. Mislukte taken kun je handmatig opnieuw proberen.</string>
+    <string name="upload_translation_current_segment">Huidig segment</string>
+    <string name="upload_translation_unknown_speaker">Onbekende spreker</string>
+</resources>

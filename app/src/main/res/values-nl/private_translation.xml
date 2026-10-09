@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_title">Spraakvertaling</string>
+    <string name="translation_description">Vertaal de microfoon van je huidige vergadering. De originele spraak wordt nog steeds verzonden volgens de vergaderinstellingen; de vertaalde tekst en het vertaalde geluid zijn alleen op deze verbinding zichtbaar en hoorbaar.</string>
+    <string name="translation_guest">Meld je aan met het account van een vergaderbeheerder om persoonlijke vertaling te gebruiken.</string>
+    <string name="translation_unavailable">Persoonlijke vertaling is niet beschikbaar. Hiervoor is momenteel een account van een vergaderbeheerder nodig.</string>
+    <string name="translation_zh_en">Chinees → Engels</string>
+    <string name="translation_en_zh">Engels → Chinees</string>
+    <string name="translation_simultaneous">Doorlopende vertaling</string>
+    <string name="translation_manual">Tweerichtings-spraakvertaling</string>
+    <string name="translation_audio">Vertaalde spraak genereren</string>
+    <string name="translation_text_only">Alleen vertaalde tekst</string>
+    <string name="translation_save">Bevestigde vertalingen opslaan in het vergaderrecord</string>
+    <string name="translation_no_save">Vertalingen niet opslaan na de sessie</string>
+    <string name="translation_unknown">De bewerking kon niet worden bevestigd. Controleer het oorspronkelijke verzoek voordat je iets anders doet.</string>
+    <string name="translation_start">Vertaling starten</string>
+    <string name="translation_stop">Vertaling beëindigen</string>
+    <string name="translation_start_effect">Dit verwerkt de microfoon van je vergadering en kan AI-gebruik met zich meebrengen. Controleer hieronder de taal, modus en de opslagkeuze. Schakel de vertaalde spraak apart in wanneer je klaar bent.</string>
+    <string name="translation_stop_effect">Beëindig deze persoonlijke vertaalsessie en het nog openstaande antwoord. De vergadering en de tolkkanalen van andere deelnemers lopen door.</string>
+    <string name="translation_other_connection">Dit apparaat heeft zijn eigen actieve vergaderverbinding nodig. Een vertaling die op een andere verbinding is gestart, kun je hier beëindigen.</string>
+    <string name="translation_mic_off">Je vergadermicrofoon staat uit. Zet hem aan in de werkbalk van de vergadering om spraak te vertalen.</string>
+    <string name="translation_command_failed">Het spraakcommando kon niet worden bevestigd. Beëindig deze vertaling voordat je een nieuwe sessie start.</string>
+    <string name="translation_wait_ready">Wachten tot de vertaling gereed is…</string>
+    <string name="translation_listen">Vertaalde spraak beluisteren</string>
+    <string name="translation_mute">Vertaalde spraak dempen</string>
+    <string name="translation_wait_turn">Wachten tot de vorige vertaling klaar is…</string>
+    <string name="translation_speak_zh">Begin Chinees te spreken</string>
+    <string name="translation_speak_en">Begin Engels te spreken</string>
+    <string name="translation_end_turn">Deze beurt afronden</string>
+    <string name="translation_open_archive">Gekoppeld vergaderrecord openen</string>
+    <string name="translation_text">Vertaalde tekst · gescheiden van de originelen</string>
+    <string name="translation_confirmed">Bevestigde vertaling</string>
+    <string name="translation_candidate">Conceptvertaling</string>
+    <string name="translation_controls">Bediening</string>
+    <string name="translation_starting">Wordt gestart</string>
+    <string name="translation_running">Wordt vertaald</string>
+    <string name="translation_stopping">Wordt beëindigd</string>
+    <string name="translation_stopped">Vertaling beëindigd</string>
+    <string name="translation_incomplete">Vertaling onvolledig beëindigd</string>
+    <string name="translation_off">Geen vertaling actief</string>
+</resources>

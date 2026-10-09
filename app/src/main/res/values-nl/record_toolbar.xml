@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_panel_actions">Meer paneelacties</string>
+    <string name="records_translation_language">Vertaaltaal</string>
+    <string name="records_export_translation">Vertaling exporteren (%1$s)</string>
+</resources>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="interpretation_title">Tolkvertaling</string>
+    <string name="interpretation_description">Kies een luistertaal voor deze vergadering. Vergaderbeheerders openen of sluiten gedeelde kanalen. Een kanaal verlaten verandert alleen wat jij hoort; vertaalde tekst blijft gescheiden van het origineel.</string>
+    <string name="interpretation_guest">Meld je aan om een kanaal voor tolkvertaling te kiezen.</string>
+    <string name="interpretation_unavailable">Tolkvertaling is niet beschikbaar voor deze vergadering.</string>
+    <string name="interpretation_unknown">Controleer eerst de oorspronkelijke aanvraag voordat je het kanaal of je luisterkeuze wijzigt.</string>
+    <string name="interpretation_retry_channel">Kanaalaanvraag controleren</string>
+    <string name="interpretation_retry_listen">Luisteraanvraag controleren</string>
+    <string name="interpretation_zh">Chinees kanaal</string>
+    <string name="interpretation_en">Engels kanaal</string>
+    <string name="interpretation_listen_zh">Luisteren in het Chinees</string>
+    <string name="interpretation_listen_en">Luisteren in het Engels</string>
+    <string name="interpretation_start_zh">Chinees kanaal openen</string>
+    <string name="interpretation_start_en">Engels kanaal openen</string>
+    <string name="interpretation_stop_zh">Chinees kanaal sluiten</string>
+    <string name="interpretation_stop_en">Engels kanaal sluiten</string>
+    <string name="interpretation_leave">Dit kanaal verlaten</string>
+    <string name="interpretation_connection">Wacht tot de vergaderverbinding van dit apparaat is bevestigd voordat je gaat luisteren.</string>
+    <string name="interpretation_wait_ready">Wachten op tolkgeluid…</string>
+    <string name="interpretation_error">De bewerking of luisterstatus is niet bevestigd. Vernieuw of controleer de oorspronkelijke aanvraag en kies daarna opnieuw een kanaal.</string>
+    <string name="interpretation_start_effect">Hiermee open je dit gedeelde taalkanaal. De vertaling begint pas wanneer iemand kiest om te luisteren en kan AI-tegoed verbruiken. Het openen van het kanaal schakelt jouw luisteren niet automatisch in.</string>
+    <string name="interpretation_stop_effect">Hiermee sluit je dit taalkanaal voor iedereen die nu luistert. Zij ontvangen geen tolkgeluid meer uit dit kanaal. De vergadering gaat door.</string>
+    <string name="interpretation_speaker">Spreker</string>
+    <string name="interpretation_paused">Luisteren gepauzeerd</string>
+    <string name="interpretation_prepared">Klaar voor luisteraars</string>
+    <string name="interpretation_off">Kanaal niet geopend</string>
+</resources>

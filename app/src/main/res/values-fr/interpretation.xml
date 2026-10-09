@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="interpretation_title">Interprétation simultanée</string>
+    <string name="interpretation_description">Choisissez une langue d\'écoute pour cette réunion. Les gestionnaires de la salle ouvrent ou ferment les canaux partagés. Quitter un canal ne modifie que votre écoute ; le texte traduit reste séparé des originaux.</string>
+    <string name="interpretation_guest">Connectez-vous pour choisir un canal d\'interprétation.</string>
+    <string name="interpretation_unavailable">L\'interprétation n\'est pas disponible pour cette réunion.</string>
+    <string name="interpretation_unknown">Vérifiez la demande d\'origine avant de changer de canal ou d\'écoute.</string>
+    <string name="interpretation_retry_channel">Vérifier la demande de canal</string>
+    <string name="interpretation_retry_listen">Vérifier la demande d\'écoute</string>
+    <string name="interpretation_zh">Canal chinois</string>
+    <string name="interpretation_en">Canal anglais</string>
+    <string name="interpretation_listen_zh">Écouter en chinois</string>
+    <string name="interpretation_listen_en">Écouter en anglais</string>
+    <string name="interpretation_start_zh">Ouvrir le canal chinois</string>
+    <string name="interpretation_start_en">Ouvrir le canal anglais</string>
+    <string name="interpretation_stop_zh">Fermer le canal chinois</string>
+    <string name="interpretation_stop_en">Fermer le canal anglais</string>
+    <string name="interpretation_leave">Quitter ce canal</string>
+    <string name="interpretation_connection">Attendez que la connexion de cet appareil à la réunion soit confirmée avant d\'écouter.</string>
+    <string name="interpretation_wait_ready">En attente de la voix traduite…</string>
+    <string name="interpretation_error">L\'opération ou l\'état d\'écoute n\'est pas confirmé. Actualisez ou vérifiez la demande d\'origine, puis choisissez à nouveau un canal.</string>
+    <string name="interpretation_start_effect">Ouvre le canal partagé de cette langue. La traduction commence lorsqu\'un participant choisit d\'écouter et peut consommer du quota d\'IA. L\'ouverture du canal n\'active pas automatiquement votre écoute.</string>
+    <string name="interpretation_stop_effect">Ferme le canal de cette langue pour tous les participants qui l\'écoutent actuellement. Ils cesseront de recevoir la voix traduite de ce canal. La réunion continue.</string>
+    <string name="interpretation_speaker">Intervenant</string>
+    <string name="interpretation_paused">Écoute en pause</string>
+    <string name="interpretation_prepared">En attente d\'auditeurs</string>
+    <string name="interpretation_off">Canal non ouvert</string>
+</resources>

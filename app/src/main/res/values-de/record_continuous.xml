@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_read_start">Von Anfang an lesen</string>
+    <string name="records_load_more">Mehr laden</string>
+    <string name="records_load_retry">Laden fehlgeschlagen. Zum Wiederholen tippen.</string>
+    <string name="records_load_end">Alle Inhalte geladen</string>
+</resources>

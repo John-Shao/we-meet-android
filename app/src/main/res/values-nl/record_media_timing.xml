@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_media_duration">Mediaduur</string>
+    <string name="records_media_duration_unknown">Onbekend; bij geïmporteerde bestanden wordt de duur doorgegeven zodra het afspelen is voorbereid.</string>
+    <string name="records_saved_audio">Opgeslagen audio</string>
+    <string name="records_media_partial">De audio is onvolledig geleverd of bevat hiaten; er wordt geen volledige duur weergegeven.</string>
+    <string name="records_media_ruler">Mediatijdlijn: 0:00 – %1$s</string>
+</resources>

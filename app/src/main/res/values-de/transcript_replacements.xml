@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="batch_correction_title">Suchen und ersetzen</string>
+    <string name="batch_correction_hint">Beachtet Groß-/Kleinschreibung und ersetzt Text wörtlich im gesamten gespeicherten Transkript dieser Aufzeichnung, einschließlich anderer Seiten. Höchstens 100 Segmente pro Stapel. Leerer Ersatztext löscht Text. Nicht gespeicherte Entwürfe und vorhandene Zusammenfassungen bleiben unverändert.</string>
+    <string name="batch_correction_find">Suchtext</string>
+    <string name="batch_correction_replacement">Ersetzen durch</string>
+    <string name="batch_correction_preview">Änderungen prüfen</string>
+    <string name="batch_correction_count">%1$d Segmente · %2$d Treffer</string>
+    <string name="batch_correction_before">Vorher</string>
+    <string name="batch_correction_after">Nachher</string>
+    <string name="batch_correction_confirm">Alle Änderungen bestätigen</string>
+    <string name="batch_correction_pending">Das Ergebnis ist nicht bestätigt. Wiederholen Sie dieselbe Anfrage, bevor Sie weitere Änderungen vornehmen.</string>
+    <string name="batch_correction_retry">Dieselbe Anfrage wiederholen</string>
+    <string name="batch_correction_applied">Änderungen gespeichert. Prüfen Sie das Transkript, bevor Sie eine neue Zusammenfassung erstellen.</string>
+    <string name="batch_correction_undone">Ersetzung rückgängig gemacht</string>
+    <string name="batch_correction_conflict">Das Transkript wurde geändert. Es wurde nichts überschrieben. Prüfen Sie die Vorschau erneut; das Rückgängigmachen kann spätere Korrekturen nicht überschreiben.</string>
+    <string name="batch_correction_invalid">Ersetzen nicht möglich: Prüfen Sie den Text, leere Ergebnisse sowie die Grenzen von 100 Segmenten und der Textlänge.</string>
+    <string name="batch_correction_error">Die Anfrage ist fehlgeschlagen oder ihr Ergebnis ist unbekannt. Wiederholen Sie sie; starten Sie keine doppelte Ersetzung.</string>
+    <string name="batch_correction_storage_error">Der Wiederherstellungsspeicher ist nicht verfügbar. Es können keine neuen Änderungen übermittelt werden.</string>
+    <string name="batch_correction_history">Letzte 10 Ersetzungen</string>
+    <string name="batch_correction_deleted">(gelöscht)</string>
+    <string name="batch_correction_undo">Diese Ersetzung rückgängig machen</string>
+    <string name="batch_correction_undo_hint">Alle betroffenen Segmente auf ihren Text vor diesem Stapel zurücksetzen? Jede spätere Korrektur an diesen Segmenten verhindert das gesamte Rückgängigmachen.</string>
+    <string name="batch_correction_confirm_undo">Rückgängigmachen bestätigen</string>
+    <string name="batch_correction_close">Schließen</string>
+    <string name="batch_correction_cancel_undo">Rückgängigmachen abbrechen</string>
+</resources>

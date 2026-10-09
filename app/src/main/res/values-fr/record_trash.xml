@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_trash_title">Corbeille</string>
+    <string name="record_trash_remove">Mettre à la corbeille</string>
+    <string name="record_trash_confirm_remove">Confirmer le déplacement vers la corbeille</string>
+    <string name="record_trash_restore">Restaurer</string>
+    <string name="record_trash_confirm_restore">Restaurer l\'enregistrement</string>
+    <string name="record_trash_cancel">Annuler</string>
+    <string name="record_trash_empty">Aucun enregistrement dans la corbeille.</string>
+    <string name="record_trash_remove_hint">L\'enregistrement et son contenu seront masqués. Le partage et les comptes rendus automatiques seront désactivés. Les documents déjà exportés restent des copies indépendantes.</string>
+    <string name="record_trash_restore_hint">Restaurez l\'enregistrement et le contenu conservé. Le partage précédent et les comptes rendus automatiques resteront désactivés.</string>
+    <string name="record_trash_retention_hint">Les enregistrements peuvent être restaurés ici. La suppression définitive n\'est pas encore disponible. Les règles de conservation audio existantes s\'appliquent toujours.</string>
+    <string name="record_trash_conflict">L\'enregistrement a changé, l\'accès a été perdu ou le traitement est toujours en cours. Revenez, actualisez, puis réessayez.</string>
+    <string name="record_trash_uncertain">Le résultat n\'a pas pu être confirmé. Vous pouvez réessayer la même action, ou revenir et actualiser pour vérifier.</string>
+    <string name="record_trash_unavailable">La corbeille est indisponible. Actualisez pour vérifier l\'accès.</string>
+</resources>

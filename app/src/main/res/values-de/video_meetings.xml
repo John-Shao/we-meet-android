@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="video_history_empty">Keine vergangenen oder laufenden Video-Meetings</string>
+    <string name="video_active">Läuft</string>
+    <string name="video_ended">Beendet</string>
+    <string name="video_more">Mehr</string>
+    <string name="video_show_all">Alle anzeigen (%1$d)</string>
+    <string name="video_collapse">Einklappen</string>
+    <string name="video_material_loading">Meeting-Material wird geladen…</string>
+    <string name="video_material_unavailable">Noch kein zugängliches Material</string>
+    <string name="video_record_hint">Aufnahmen und Transkript dieser Sitzung öffnen</string>
+    <string name="video_summary_pending">Noch keine Zusammenfassung erstellt</string>
+    <string name="video_view_record">Aufnahme anzeigen</string>
+    <string name="video_view_summary">Zusammenfassung anzeigen</string>
+</resources>

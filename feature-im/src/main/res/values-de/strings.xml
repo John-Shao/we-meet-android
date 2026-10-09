@@ -276,7 +276,7 @@
     <string name="im_view_calendar">Kalender</string>
     <string name="im_group_apps">Apps</string>
     <string name="im_group_calendar">Kalender</string>
-    <string name="im_preview_event">[Event]</string>
+    <string name="im_preview_event">[Termin]</string>
     <plurals name="im_event_card_meta">
         <item quantity="one">%1$d Teilnehmer · Organisator %2$s</item>
         <item quantity="other">%1$d Teilnehmer · Organisator %2$s</item>
@@ -439,4 +439,10 @@ Grenzwerte: 100 Anfragen pro Minute und 5 pro Sekunde pro Bot, Nachrichtenkörpe
     <string name="im_doc_access_retry">Erneut versuchen</string>
     <string name="im_doc_access_save">Speichern</string>
     <string name="im_doc_access_close">Schließen</string>
+    <string name="im_search_meeting_ai">Meeting-KI fragen</string>
+    <string name="im_search_ai_scope_all">Alle zugänglichen Inhalte</string>
+    <string name="im_search_ai_scope_meetings">Meetings und Aufnahmen</string>
+    <string name="im_search_ai_date_from">Startdatum (optional)</string>
+    <string name="im_search_ai_date_to">Enddatum (optional)</string>
+    <string name="im_search_ai_dates_invalid">Format YYYY-MM-DD verwenden; das Enddatum darf nicht vor dem Startdatum liegen.</string>
 </resources>

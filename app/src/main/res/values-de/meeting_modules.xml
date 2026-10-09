@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_no_upcoming">Keine anstehenden Meetings</string>
+    <string name="meeting_materials_title">Nach dem Meeting</string>
+    <string name="meeting_materials_hint">Aufnahmen und Transkripte finden Sie in den Meeting-Aufzeichnungen. Dort erstellen und teilen Sie Zusammenfassungen und verfolgen Aufgaben nach.</string>
+    <string name="capture_acquisition_hint">Nehmen Sie eine Präsenzbesprechung oder ein Interview auf. Öffnen Sie nach dem Speichern die Meeting-Aufzeichnung für Wiedergabe und Transkription sowie die intelligenten Zusammenfassungen, um dort Zusammenfassungen zu erstellen und Aufgaben nachzuverfolgen.</string>
+    <string name="capture_saved_destination">Aufnahme gespeichert. Wiedergabe und Transkription finden Sie in den Meeting-Aufzeichnungen; Erstellung, Freigabe und Aufgaben in den intelligenten Zusammenfassungen.</string>
+    <string name="capture_open_summary">Intelligente Zusammenfassungen anzeigen</string>
+    <string name="records_transcription_manage">Transkription verwalten</string>
+</resources>

@@ -174,6 +174,15 @@
     <string name="docs_share_to_chat_help">Sendet eine Dokumentkarte und versucht, Chatmitgliedern Lesezugriff zu geben.</string>
     <string name="docs_link_share">Link teilen</string>
     <string name="docs_save_copy_link">Speichern und Link kopieren</string>
+    <string name="docs_share_picker_help">Nach der Bestätigung erhalten die ausgewählten Personen Zugriff. Eine E-Mail oder das Annehmen der Einladung ist nicht erforderlich.</string>
+    <string name="docs_share_batch_result">Hinzugefügt: %1$d · Bereits enthalten: %2$d</string>
+    <string name="docs_share_batch_failed">%d Personen konnten nicht verarbeitet werden. Wiederholen Sie die verbleibende Auswahl.</string>
+    <string name="docs_access_requests">Ausstehende Zugriffsanfragen</string>
+    <string name="docs_requests_load_error">Zugriffsanfragen konnten nicht geladen werden. Bitte erneut versuchen.</string>
+    <string name="docs_request_role">Angeforderter Zugriff: %1$s</string>
+    <string name="docs_request_accept">Genehmigen</string>
+    <string name="docs_request_reject">Ablehnen</string>
+    <string name="docs_request_reject_message">Anfrage von %1$s ablehnen? Die Person kann erneut Zugriff anfordern.</string>
     <string name="docs_directory_count">Verzeichnis · %1$d</string>
     <string name="docs_directory">Dokumentbaum</string>
     <string name="docs_current_document">Aktuell</string>

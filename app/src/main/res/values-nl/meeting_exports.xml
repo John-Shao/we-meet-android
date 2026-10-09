@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_export_title">Notulendocumenten</string>
+    <string name="record_export_read_error">De documentvoorbeeldweergave of de leveringsstatus kon niet worden gelezen.</string>
+    <string name="record_export_unavailable">Documenten maken is niet beschikbaar.</string>
+    <string name="record_export_choose">Kies een versie voor de voorbeeldweergave</string>
+    <string name="record_export_language_hint">Kies de taal van de documentkop. Dit vertaalt de notulen niet.</string>
+    <string name="record_export_zh">Chinees</string>
+    <string name="record_export_en">Engels</string>
+    <string name="record_export_unknown">Het resultaat is onbekend. Controleer het oorspronkelijke verzoek voordat je een ander document maakt of opnieuw probeert.</string>
+    <string name="record_export_reconcile_create">Oorspronkelijk documentverzoek controleren</string>
+    <string name="record_export_reconcile_retry">Oorspronkelijke documentpoging controleren</string>
+    <string name="record_export_accepted">Verzoek bevestigd. De leveringsstatus van het document staat hieronder.</string>
+    <string name="record_export_empty">Je hebt nog geen documenten gemaakt.</string>
+    <string name="record_export_human">Opgeslagen handmatige notulenversie</string>
+    <string name="record_export_ai">Opgeslagen AI-notulenversie</string>
+    <string name="record_export_details">%1$s · %2$s · poging %3$d</string>
+    <string name="record_export_open">Document openen</string>
+    <string name="record_export_retry_preview">Oorspronkelijke documentpoging bekijken</string>
+    <string name="record_export_error">Het documentverzoek kon niet worden bevestigd. Vernieuw de status of controleer het oorspronkelijke verzoek.</string>
+    <string name="record_export_preview">Documentkopie controleren</string>
+    <string name="record_export_effect">Bevestigen maakt een privédocumentkopie onder je account. Deze wordt niet gedeeld met deelnemers en wordt niet bijgewerkt met latere wijzigingen in de notulen.</string>
+    <string name="record_export_frozen">Deze nieuwe poging gebruikt de oorspronkelijke bevroren kopie en het oorspronkelijke documentverzoek.</string>
+    <string name="record_export_changed">De leveringsstatus is gewijzigd. Sluit dit venster en bekijk de nieuwste status.</string>
+    <string name="record_export_confirm">Dit document maken</string>
+    <string name="record_export_confirm_retry">Oorspronkelijk document opnieuw proberen</string>
+    <string name="record_export_queued">Document in wachtrij</string>
+    <string name="record_export_running">Document wordt gemaakt</string>
+    <string name="record_export_ready">Document gereed</string>
+    <string name="record_export_uncertain">Resultaat van document onbekend</string>
+    <string name="record_export_failed">Document maken mislukt</string>
+    <string name="record_export_canceled">Document maken geannuleerd</string>
+</resources>

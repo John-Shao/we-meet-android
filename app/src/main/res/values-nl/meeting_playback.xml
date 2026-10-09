@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_playback_mute">Dempen</string>
+    <string name="capture_playback_unmute">Dempen opheffen</string>
+    <string name="capture_playback_video_controls">Afspeelbediening tonen</string>
+    <string name="capture_playback_title">Opname afspelen</string>
+    <string name="capture_playback_position">Afspeelpositie in opname</string>
+    <string name="capture_playback_error">Afspelen is gestopt of niet beschikbaar. Laad opnieuw om de toegang te controleren en probeer het daarna weer.</string>
+    <string name="capture_playback_incomplete">Een deel van de audio ontbreekt. Het afspelen stopt bij hiaten.</string>
+    <string name="capture_playback_empty">Geen opgeslagen audio</string>
+    <string name="capture_playback_gap">Geen audio op deze positie. Kies een opgeslagen fragment om verder te gaan.</string>
+    <string name="capture_playback_pause">Afspelen pauzeren</string>
+    <string name="capture_playback_play">Afspelen</string>
+    <string name="capture_playback_rate">%1$s×</string>
+    <string name="capture_playback_skip">Volgend opgeslagen fragment</string>
+    <string name="capture_playback_speed">Afspeelsnelheid</string>
+    <string name="capture_playback_source">Luister op %1$s</string>
+    <string name="capture_playback_clock">%1$s / %2$s</string>
+    <string name="capture_playback_follow">Volgen</string>
+    <string name="capture_playback_video_preview">Videovoorbeeld</string>
+    <string name="capture_playback_show_video">Video tonen</string>
+    <string name="capture_playback_hide_video">Video verbergen</string>
+    <string name="capture_playback_fullscreen">Volledig scherm</string>
+    <string name="capture_playback_exit_fullscreen">Volledig scherm sluiten</string>
+</resources>

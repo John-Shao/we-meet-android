@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="capture_direct_asr_title">Live-transcriptie</string>
+    <string name="capture_direct_asr_hint">Vanaf het inschakelen wordt tekst herkend. Pauzeer en hervat de opname om de transcriptie voort te zetten. Bij het beëindigen van de opname wordt de tekst overgenomen; na stoppen en opslaan eindigt de transcriptie voor deze opname. Gebruik transcriptie en live-vertaling één tegelijk.</string>
+    <string name="capture_direct_asr_start">Transcriptie starten</string>
+    <string name="capture_direct_asr_stop">Transcriptie stoppen en opslaan</string>
+    <string name="capture_direct_asr_connecting">Verbinden…</string>
+    <string name="capture_direct_asr_listening">Bezig met transcriberen…</string>
+    <string name="capture_direct_asr_finishing">Laatste zin wordt ontvangen…</string>
+    <string name="capture_direct_asr_finished">Transcriptie opgeslagen in het vergaderrecord</string>
+    <string name="capture_direct_asr_empty">Geen spraak herkend. Je opname blijft bewaard.</string>
+    <string name="capture_direct_asr_failed">De transcriptie is onderbroken. De opname gaat door en bevestigde tekst blijft op dit apparaat. Hervat de transcriptie of sla de bestaande tekst op.</string>
+    <string name="capture_direct_asr_save">Bestaande transcriptie opslaan</string>
+    <string name="capture_direct_asr_paused">Transcriptie gepauzeerd. Hervat de opname om verder te gaan.</string>
+    <string name="capture_direct_asr_save_failed">De tekst wacht op verzending. Herstel de verbinding en probeer het opslaan opnieuw.</string>
+    <string name="capture_direct_asr_gap">De transcriptie dekt alleen de audio tijdens het inschakelen. Gebruik voor de volledige tekst de transcriptie van de hele opname nadat de opname is beëindigd.</string>
+    <string name="bilingual_transport">Verbinding</string>
+    <string name="bilingual_transport_aoq">AOQ-directverbinding</string>
+    <string name="bilingual_transport_webrtc">WebRTC-client direct</string>
     <string name="app_name">We Meet</string>
 
     <!-- Login screen -->
@@ -17,6 +34,7 @@
     <string name="home_create_meeting">Directe vergadering</string>
     <string name="home_join_meeting">Deelnemen aan vergadering</string>
     <string name="home_create_later_meeting">Vergadering plannen</string>
+    <string name="home_ai_recording">AI-opname</string>
 
     <!-- QR scan / web sign-in confirmation -->
     <string name="qr_scan_confirm_title">Aanmelden op het web</string>
@@ -189,7 +207,7 @@
     <!-- Meeting detail -->
     <string name="meeting_detail_title">Vergaderdetail</string>
     <string name="meeting_detail_tab_info">Info</string>
-    <string name="meeting_detail_tab_summary">Samenvatting</string>
+    <string name="meeting_detail_tab_summary">Notulen</string>
     <string name="meeting_detail_tab_action_items">Acties</string>
     <string name="meeting_detail_tab_transcript">Transcriptie</string>
     <string name="meeting_detail_info_name">Naam</string>
@@ -478,9 +496,9 @@
     <string name="calendar_retry">Opnieuw proberen</string>
     <!-- P8: calendar view modes + agenda view -->
     <string name="calendar_view_agenda">Lijst</string>
-    <string name="calendar_view_day">Day</string>
+    <string name="calendar_view_day">Dag</string>
     <string name="calendar_view_week">Week</string>
-    <string name="calendar_view_month">Month</string>
+    <string name="calendar_view_month">Maand</string>
     <string name="calendar_agenda_empty_today">Geen afspraken</string>
     <!-- P8: free/busy compare screen -->
     <string name="freebusy_title">Agenda</string>
@@ -691,7 +709,7 @@
     </plurals>
     <string name="approval_urge">Herinneren</string>
     <string name="approval_urged">Herinnering verstuurd — de huidige fiatteur is op de hoogte gebracht.</string>
-    <string name="approval_needs_assignment_hint">De fiatteur kon niet automatisch worden bepaald. Vraag een beheerder de organisatiestructuur te corrigeren.</string>
+    <string name="approval_needs_assignment_hint">De fiatteur kon niet automatisch worden bepaald. Vraag een beheerder de organisatiestructuur te corrigeren en probeer het opnieuw.</string>
     <string name="approval_comment_hint">Opmerking (optioneel)</string>
     <string name="approval_act_approve">Goedkeuren</string>
     <string name="approval_act_reject">Afwijzen</string>
@@ -726,7 +744,7 @@
 
     <!-- 纪要闭环 M3 智能章节 -->
     <string name="meeting_detail_tab_chapters">Hoofdstukken</string>
-    <string name="meeting_detail_chapters_empty">Nog geen hoofdstukken — gegenereerd met de samenvatting.</string>
+    <string name="meeting_detail_chapters_empty">Nog geen hoofdstukken — gegenereerd met de notulen.</string>
     <string name="docs_viewer_title">Document</string>
     <string name="docs_editor_title">Bewerken</string>
     <string name="docs_editor_title_hint">Documenttitel</string>
@@ -753,6 +771,8 @@
     <string name="meeting_room_picker_tab_all">Alle ruimtes</string>
     <string name="meeting_room_picker_search_hint">Zoek ruimtes of niveaus</string>
     <string name="meeting_room_filter_level_all">Alle niveaus</string>
+    <string name="meeting_room_filter_capacity_any">Onbeperkte capaciteit</string>
+    <string name="meeting_room_filter_capacity_at_least">Minimaal %1$d personen</string>
     <string name="meeting_room_unavailable">Bezet op dit tijdstip</string>
     <string name="meeting_room_unavailable_range">%1$s–%2$s al gereserveerd</string>
     <string name="meeting_room_empty">Geen ruimtes gevonden</string>
@@ -1043,7 +1063,7 @@
     <string name="waiting_no_token">De host heeft je verzoek goedgekeurd, maar de verbindingsgegevens ontbreken. Probeer het opnieuw.</string>
     <string name="web_login_network_error">Netwerkfout</string>
     <string name="web_login_invalid_callback">Ongeldige aanmeld-callback</string>
-    <string name="docs_editor_save_failed">Saving was not confirmed. Check your connection and retry. This page will stay open.</string>
+    <string name="docs_editor_save_failed">Het opslaan is niet bevestigd. Controleer je verbinding en probeer het opnieuw. Deze pagina blijft open.</string>
     <string name="docs_editor_incompatible">De editor kan niet worden geopend. Probeer het later opnieuw of ga terug om verder te lezen.</string>
     <string name="docs_editor_pending_work">Nog niet alle wijzigingen zijn bevestigd. Controleer de verbinding, titel, bijlagen en niet-gepubliceerde reacties en probeer opnieuw.</string>
     <string name="docs_editor_reloaded">De editor is opnieuw geladen. Alleen op de server opgeslagen inhoud kan worden bevestigd. Controleer uw laatste wijzigingen.</string>
@@ -1063,4 +1083,63 @@
     <string name="docs_chat_share_existing_access">Alleen de kaart verzenden. Ontvangers behouden hun bestaande toegangsrechten.</string>
     <string name="docs_chat_share_send">Verzenden</string>
     <string name="docs_chat_share_back">Terug</string>
+    <string name="minutes_all">Alle AI-notulen</string>
+    <string name="minutes_owned">Mijn notulen</string>
+    <string name="minutes_participated">Waar ik aan deelnam</string>
+    <string name="minutes_shared">Met mij gedeeld</string>
+    <string name="minutes_recorded_at">Vergadertijd: %1$s</string>
+    <string name="minutes_generated_at">Gegenereerd: %1$s</string>
+    <string name="minutes_empty">Nog geen AI-notulen</string>
+    <string name="minutes_empty_hint">Probeer een andere categorie of zoekterm, of genereer notulen vanuit een vergaderrecord.</string>
+    <string name="minutes_overview">Overzicht</string>
+    <string name="minutes_ask">Vraag AI</string>
+    <string name="minutes_manage">Notulen beheren</string>
+    <string name="minutes_history">Versiegeschiedenis</string>
+    <string name="minutes_source_info">Generatiegegevens</string>
+    <string name="minutes_close_tools">Gereedschap sluiten</string>
+    <string name="room_ai_prompt_summary">Vat de bespreking tot nu toe samen</string>
+    <string name="room_ai_prompt_decisions">Welke besluiten zijn genomen?</string>
+    <string name="room_ai_prompt_actions">Actiepunten en verantwoordelijken op een rij</string>
+    <string name="meeting_ai_search">Vergaderingen doorzoeken met AI</string>
+    <string name="cd_records_ai_search">Vergaderingen doorzoeken met AI</string>
+    <string name="cd_records_search">Titels doorzoeken</string>
+    <string name="cd_records_clear_search">Zoekopdracht wissen</string>
+    <string name="cd_records_more">Meer acties</string>
+    <string name="cd_records_list_view">Overschakelen naar lijstweergave</string>
+    <string name="cd_records_grid_view">Overschakelen naar rasterweergave</string>
+    <string name="cd_records_skip_back">15 seconden terug</string>
+    <string name="cd_records_skip_forward">15 seconden vooruit</string>
+    <string name="cd_records_play">Afspelen</string>
+    <string name="cd_records_pause">Pauzeren</string>
+    <string name="cd_records_close">Sluiten</string>
+    <string name="work_title">Werk</string>
+    <string name="work_refresh">Vernieuwen</string>
+    <string name="work_request_failed">Het verzoek is niet afgerond. Vernieuw de oorspronkelijke taak of probeer hetzelfde verzoek opnieuw.</string>
+    <string name="work_back_list">Terug naar mijn werk</string>
+    <string name="work_execution_workspace">Werkruimte: %1$s</string>
+    <string name="work_cancel">Oorspronkelijke taak annuleren</string>
+    <string name="work_local_results">De resultaten staan nog op de desktop. Selecteer en synchroniseer de bestanden op de desktop om ze hier te bekijken.</string>
+    <string name="work_view_file">%1$s bekijken</string>
+    <string name="work_dispatch_title">Werk op de desktop aanvragen</string>
+    <string name="work_dispatch_help">Kies een gemachtigde werkruimte op de desktop. Verzoeken komen in de desktoppostbus; het aannemen van de taak en elke goedkeuring van een handeling gebeuren op die computer.</string>
+    <string name="work_remote_disabled">Het verzenden van taken op afstand is niet ingeschakeld op de server. Bestaand werk blijft beschikbaar.</string>
+    <string name="work_device_state">%1$s · %2$s</string>
+    <string name="work_online">Online</string>
+    <string name="work_offline">Offline, wacht op terugkeer naar de desktop</string>
+    <string name="work_no_workspace">Kies eerst een map op de desktop en sta het ontvangen van taken op afstand toe.</string>
+    <string name="work_goal">Werkdoel</string>
+    <string name="work_dispatch_unknown">De inzending wacht op bevestiging. Het oorspronkelijke verzoek-ID blijft behouden; taken worden nooit automatisch herhaald.</string>
+    <string name="work_confirm_request">Oorspronkelijk verzoek bevestigen</string>
+    <string name="work_dispatch">Naar de desktoppostbus sturen</string>
+    <string name="work_my_tasks">Mijn werk</string>
+    <string name="work_more">Meer laden</string>
+    <string name="work_status_desktop_queued">Wacht op aanname op de desktop</string>
+    <string name="work_status_queued">In wachtrij</string>
+    <string name="work_status_desktop_running">Wordt verwerkt op de desktop (handeling wacht mogelijk op goedkeuring)</string>
+    <string name="work_status_running">Wordt verwerkt</string>
+    <string name="work_status_disconnected">Desktopverbinding verbroken; wacht op afstemming van de oorspronkelijke taak</string>
+    <string name="work_status_succeeded">Resultaten voltooid</string>
+    <string name="work_status_canceled">Geannuleerd</string>
+    <string name="work_status_failed">Verwerking mislukt</string>
+    <string name="work_status_unknown">Wacht op bevestiging van de status</string>
 </resources>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_playback_mute">Stummschalten</string>
+    <string name="capture_playback_unmute">Stummschaltung aufheben</string>
+    <string name="capture_playback_video_controls">Wiedergabesteuerung anzeigen</string>
+    <string name="capture_playback_title">Aufnahmewiedergabe</string>
+    <string name="capture_playback_position">Wiedergabeposition</string>
+    <string name="capture_playback_error">Die Wiedergabe wurde unterbrochen oder ist nicht verfügbar. Laden Sie neu, prüfen Sie den Zugriff und versuchen Sie es erneut.</string>
+    <string name="capture_playback_incomplete">Ein Teil des Audios fehlt. Die Wiedergabe stoppt an Lücken.</string>
+    <string name="capture_playback_empty">Kein gespeichertes Audio</string>
+    <string name="capture_playback_gap">An dieser Position ist kein Audio vorhanden. Wählen Sie einen gespeicherten Abschnitt zum Fortsetzen.</string>
+    <string name="capture_playback_pause">Wiedergabe pausieren</string>
+    <string name="capture_playback_play">Abspielen</string>
+    <string name="capture_playback_rate">%1$s×</string>
+    <string name="capture_playback_skip">Nächster gespeicherter Abschnitt</string>
+    <string name="capture_playback_speed">Wiedergabegeschwindigkeit</string>
+    <string name="capture_playback_source">Originalton bei %1$s anhören</string>
+    <string name="capture_playback_clock">%1$s / %2$s</string>
+    <string name="capture_playback_follow">Folgen</string>
+    <string name="capture_playback_video_preview">Videovorschau</string>
+    <string name="capture_playback_show_video">Video anzeigen</string>
+    <string name="capture_playback_hide_video">Video ausblenden</string>
+    <string name="capture_playback_fullscreen">Vollbild</string>
+    <string name="capture_playback_exit_fullscreen">Vollbild verlassen</string>
+</resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="archives_title">Übersetzungen</string>
+    <string name="archives_description">Gespeicherte bestätigte Übersetzungen sind von den Originaltranskripten und Zusammenfassungen getrennt.</string>
+    <string name="archives_unavailable">Diese Übersetzungen sind nicht verfügbar oder Sie haben keinen Zugriff mehr.</string>
+    <string name="archives_empty">Keine gespeicherten Übersetzungen</string>
+    <string name="archives_no_segments">Auf dieser Seite gibt es keine bestätigten Übersetzungen</string>
+    <string name="archives_private">Persönliche Sprachübersetzung</string>
+    <string name="archives_shared">Gemeinsam genutzte Verdolmetschung</string>
+    <string name="archives_count">%1$d bestätigte Segmente</string>
+    <string name="archives_back">Zurück zur Übersetzungsliste</string>
+    <string name="archives_timing">Die Zeiten zeigen, wann die Übersetzungen empfangen wurden. Sie sind keine Zeitstempel der Originalrede und keine Wiedergabepositionen.</string>
+    <string name="archives_private_scope">Nur der Eigentümer kann dieses persönliche Übersetzungsarchiv lesen.</string>
+    <string name="archives_incomplete_hint">Das Speichern wurde beendet, bevor alle Übersetzungen bestätigt werden konnten. Einige übersetzte Inhalte fehlen möglicherweise.</string>
+    <string name="archives_zh">Chinesisch</string>
+    <string name="archives_en">Englisch</string>
+    <string name="archives_capturing">Übersetzungen werden gespeichert</string>
+    <string name="archives_complete">Gespeichert</string>
+    <string name="archives_incomplete">Teilweise gespeichert</string>
+</resources>

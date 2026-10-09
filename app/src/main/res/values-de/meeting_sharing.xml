@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_share_title">Freigabeberechtigungen</string>
+    <string name="record_share_read_error">Freigabeberechtigungen oder Vorschau konnten nicht gelesen werden.</string>
+    <string name="record_share_scope">Die Freigabe gilt für alle Zusammenfassungsversionen dieser Aufzeichnung, einschließlich künftiger Versionen. Sie gewährt keinen Zugriff auf Originale, Medien oder separate Dokumente und sendet keine Nachrichten.</string>
+    <string name="record_share_unavailable">Änderungen an der Freigabe sind nicht verfügbar.</string>
+    <string name="record_share_unknown">Das Ergebnis der Berechtigungsänderung ist unbekannt. Prüfen Sie die ursprüngliche Anfrage, bevor Sie eine weitere Änderung vornehmen.</string>
+    <string name="record_share_choose">Personen zum Teilen auswählen</string>
+    <string name="record_share_accepted">Anfrage bestätigt. Die aktuellen ausdrücklichen Berechtigungen finden Sie in der Liste unten.</string>
+    <string name="record_share_empty">Auf dieser Seite gibt es keine ausdrücklichen Freigaben.</string>
+    <string name="record_share_explicit_yes">Zusammenfassung ausdrücklich geteilt</string>
+    <string name="record_share_explicit_no">Kein ausdrücklicher Zugriff auf die Zusammenfassung</string>
+    <string name="record_share_inactive">Konto inaktiv</string>
+    <string name="record_share_revoke">Entfernung des Zusammenfassungszugriffs prüfen</string>
+    <string name="record_share_error">Die Änderung konnte nicht bestätigt werden. Prüfen Sie die neueste Vorschau oder die ursprüngliche Anfrage.</string>
+    <string name="record_share_preview">Berechtigungen für die Zusammenfassung prüfen</string>
+    <string name="record_share_after_yes">Kann die Zusammenfassung anschließend lesen</string>
+    <string name="record_share_after_no">Kann die Zusammenfassung anschließend nicht mehr lesen</string>
+    <string name="record_share_inherited">Über Eigentümerschaft oder Meeting-Rollen geerbter Zugriff bleibt bestehen.</string>
+    <string name="record_share_original_unchanged">Bestehender Zugriff auf Originale bleibt unverändert.</string>
+    <string name="record_share_confirm">Freigabe der Zusammenfassung bestätigen</string>
+    <string name="record_share_confirm_revoke">Ausdrücklichen Zugriff auf die Zusammenfassung entfernen</string>
+    <string name="record_share_directory">Verzeichnis</string>
+    <string name="record_share_participants">Teilnehmer</string>
+    <string name="record_share_search">Personen suchen</string>
+    <string name="record_share_selected">%1$d / 50 ausgewählt</string>
+    <string name="record_share_clear">Auswahl aufheben</string>
+    <string name="record_share_no_candidates">Auf dieser Seite gibt es keine geeigneten Personen.</string>
+    <string name="record_share_review_selection">Vorschau der ausgewählten Personen</string>
+    <string name="record_share_copy_link">Link zur Aufzeichnung kopieren</string>
+    <string name="record_share_copied">Link kopiert. Empfänger benötigen weiterhin Lesezugriff.</string>
+</resources>

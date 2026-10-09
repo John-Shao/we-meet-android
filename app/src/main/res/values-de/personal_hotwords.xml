@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="personal_hotwords_title">Persönliche Hotwords</string>
+    <string name="personal_hotwords_hint">Nur für Sie sichtbar und geräteübergreifend synchronisiert. Ein Wort pro Zeile; höchstens 100 Wörter mit je 40 Zeichen, insgesamt 4000 Zeichen. Leer speichern löscht die Liste. Speichern ändert weder diese Liste noch übermittelte Aufträge; vor dem Hochladen ausdrücklich zusammenführen.</string>
+    <string name="personal_hotwords_editor">Persönliche Hotwords bearbeiten</string>
+    <string name="personal_hotwords_copy_current">Die Hotwords dieses Uploads in den Editor kopieren</string>
+    <string name="personal_hotwords_save">Persönliche Hotwords speichern</string>
+    <string name="personal_hotwords_apply">Mit diesem Upload zusammenführen</string>
+    <string name="personal_hotwords_saved">Hotwords gespeichert. Die Optionen dieses Uploads sind unverändert.</string>
+    <string name="personal_hotwords_applied">Zusammengeführt und Duplikate entfernt. Sie können die Hotwords dieses Uploads weiterhin bearbeiten.</string>
+    <string name="personal_hotwords_conflict">Die Hotwords wurden auf einem anderen Gerät geändert. Ihr Entwurf bleibt erhalten; verwerfen Sie die Änderungen und laden Sie neu, um sie zu prüfen.</string>
+    <string name="personal_hotwords_limit">Zu viele Wörter oder Zeichen. Es wurde nichts gekürzt oder zusammengeführt; reduzieren Sie die Liste.</string>
+    <string name="personal_hotwords_error">Anfrage fehlgeschlagen. Bitte erneut versuchen; nicht gespeicherte Änderungen müssen noch bestätigt werden.</string>
+    <string name="personal_hotwords_reload">Änderungen verwerfen und neu laden</string>
+    <string name="personal_hotwords_close">Hotwords schließen</string>
+</resources>

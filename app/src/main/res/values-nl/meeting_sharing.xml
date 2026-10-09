@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_share_title">Deelrechten</string>
+    <string name="record_share_read_error">De deelrechten of de voorbeeldweergave konden niet worden gelezen.</string>
+    <string name="record_share_scope">Delen geldt voor alle versies van de notulen in dit verslag, ook voor toekomstige versies. Het geeft geen toegang tot originelen, media of afzonderlijke documenten en verstuurt geen berichten.</string>
+    <string name="record_share_unavailable">Deelrechten wijzigen is niet beschikbaar.</string>
+    <string name="record_share_unknown">Het resultaat van de rechtenwijziging is onbekend. Controleer het oorspronkelijke verzoek voordat je iets anders wijzigt.</string>
+    <string name="record_share_choose">Kies met wie je wilt delen</string>
+    <string name="record_share_accepted">Verzoek bevestigd. De huidige expliciete rechten staan hieronder.</string>
+    <string name="record_share_empty">Geen expliciete deelrechten op deze pagina.</string>
+    <string name="record_share_explicit_yes">Notulen expliciet gedeeld</string>
+    <string name="record_share_explicit_no">Geen expliciete toegang tot notulen</string>
+    <string name="record_share_inactive">Account niet actief</string>
+    <string name="record_share_revoke">Verwijderen van toegang tot notulen bekijken</string>
+    <string name="record_share_error">De wijziging kon niet worden bevestigd. Bekijk de nieuwste voorbeeldweergave of controleer het oorspronkelijke verzoek.</string>
+    <string name="record_share_preview">Rechten voor notulen controleren</string>
+    <string name="record_share_after_yes">Kan de notulen daarna lezen</string>
+    <string name="record_share_after_no">Kan de notulen daarna niet meer lezen</string>
+    <string name="record_share_inherited">Toegang die is geërfd via eigenaarschap of vergaderrollen blijft bestaan.</string>
+    <string name="record_share_original_unchanged">Bestaande toegang tot originelen blijft ongewijzigd.</string>
+    <string name="record_share_confirm">Delen van notulen bevestigen</string>
+    <string name="record_share_confirm_revoke">Expliciete toegang tot notulen verwijderen</string>
+    <string name="record_share_directory">Organisatiegids</string>
+    <string name="record_share_participants">Deelnemers</string>
+    <string name="record_share_search">Personen zoeken</string>
+    <string name="record_share_selected">%1$d / 50 geselecteerd</string>
+    <string name="record_share_clear">Selectie wissen</string>
+    <string name="record_share_no_candidates">Geen geschikte personen op deze pagina.</string>
+    <string name="record_share_review_selection">Rechten van geselecteerde personen bekijken</string>
+    <string name="record_share_copy_link">Link naar verslag kopiëren</string>
+    <string name="record_share_copied">Link gekopieerd. Ontvangers hebben nog steeds leesrechten nodig.</string>
+</resources>

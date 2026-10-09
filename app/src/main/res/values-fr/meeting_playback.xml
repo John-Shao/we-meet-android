@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_playback_mute">Couper le son</string>
+    <string name="capture_playback_unmute">Réactiver le son</string>
+    <string name="capture_playback_video_controls">Afficher les commandes de lecture</string>
+    <string name="capture_playback_title">Lecture de l\'enregistrement</string>
+    <string name="capture_playback_position">Position de lecture</string>
+    <string name="capture_playback_error">La lecture s\'est arrêtée ou est indisponible. Rechargez pour vérifier l\'accès et réessayez.</string>
+    <string name="capture_playback_incomplete">Une partie de l\'audio est manquante. La lecture s\'arrête aux interruptions.</string>
+    <string name="capture_playback_empty">Aucun audio enregistré</string>
+    <string name="capture_playback_gap">Aucun audio à cette position. Choisissez un segment enregistré pour continuer.</string>
+    <string name="capture_playback_pause">Suspendre la lecture</string>
+    <string name="capture_playback_play">Lire</string>
+    <string name="capture_playback_rate">%1$s×</string>
+    <string name="capture_playback_skip">Segment enregistré suivant</string>
+    <string name="capture_playback_speed">Vitesse de lecture</string>
+    <string name="capture_playback_source">Écouter à %1$s</string>
+    <string name="capture_playback_clock">%1$s / %2$s</string>
+    <string name="capture_playback_follow">Suivre</string>
+    <string name="capture_playback_video_preview">Aperçu vidéo</string>
+    <string name="capture_playback_show_video">Afficher la vidéo</string>
+    <string name="capture_playback_hide_video">Masquer la vidéo</string>
+    <string name="capture_playback_fullscreen">Plein écran</string>
+    <string name="capture_playback_exit_fullscreen">Quitter le plein écran</string>
+</resources>

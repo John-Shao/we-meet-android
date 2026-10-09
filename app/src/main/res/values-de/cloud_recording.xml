@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cloud_recording_title">Cloud-Aufzeichnung</string>
+    <string name="cloud_recording_description">Zeichnet Audio und Video des Meetings auf. Die KI-Zusammenfassung lässt sich separat über die KI-Aufzeichnung aktivieren.</string>
+    <string name="cloud_recording_guest">Melden Sie sich als Host oder Administrator an, um Cloud-Aufzeichnungen zu verwalten.</string>
+    <string name="cloud_recording_unavailable">Die Aufzeichnungssteuerung konnte nicht überprüft werden. Prüfen Sie, ob Sie mit aktuellen Host- oder Administratorrechten angemeldet sind, und aktualisieren Sie dann.</string>
+    <string name="cloud_recording_start">Cloud-Aufzeichnung starten</string>
+    <string name="cloud_recording_stop">Cloud-Aufzeichnung beenden</string>
+    <string name="cloud_recording_confirm">Bestätigen</string>
+    <string name="cloud_recording_reconcile">Cloud-Aufzeichnungsanfrage prüfen</string>
+    <string name="cloud_recording_storage_error">Gespeicherte Aufzeichnungsanfragen konnten auf diesem Gerät nicht geladen werden. Versuchen Sie es erneut, bevor Sie die Aufzeichnung ändern.</string>
+    <string name="cloud_recording_start_effect">Zeichnet Audio und Video dieses Meetings in der Cloud auf. Die Teilnehmer sehen einen Aufnahmehinweis. Stellen Sie sicher, dass alle wissen, dass die Aufzeichnung beginnt.</string>
+    <string name="cloud_recording_stop_effect">Beendet diese Cloud-Aufzeichnung. Das Meeting und eine separat gestartete KI-Aufzeichnung laufen weiter. Das Speichern kann einen Moment dauern.</string>
+    <string name="cloud_recording_unknown">Für die vorherige Anfrage liegt keine bestätigte Antwort vor. Prüfen Sie dieselbe Anfrage, bevor Sie einen weiteren Vorgang starten.</string>
+    <string name="cloud_recording_worker_unknown">Der Aufzeichnungsdienst hat das Ergebnis noch nicht bestätigt. Der Status wird hier aktualisiert; starten Sie keine weitere Aufzeichnung.</string>
+    <string name="cloud_recording_processing">Anfrage angenommen. Warten auf die Bestätigung des Aufzeichnungsdienstes…</string>
+    <string name="cloud_recording_blocked">Eine weitere Aufzeichnung wird verarbeitet. Aktualisieren Sie nach deren Ende.</string>
+    <string name="cloud_recording_disabled">Neue Cloud-Aufzeichnungen sind derzeit nicht verfügbar.</string>
+    <string name="cloud_recording_error">Die Anfrage konnte nicht bestätigt werden. Aktualisieren Sie den Status oder prüfen Sie die vorherige Anfrage.</string>
+    <string name="cloud_recording_starting">Cloud-Aufzeichnung wird vorbereitet</string>
+    <string name="cloud_recording_active">Cloud-Aufzeichnung läuft</string>
+    <string name="cloud_recording_saving">Aufzeichnung beendet · Datei wird vorbereitet</string>
+    <string name="cloud_recording_saved">Cloud-Aufzeichnung gespeichert</string>
+    <string name="cloud_recording_failed">Cloud-Aufzeichnung wurde nicht abgeschlossen</string>
+    <string name="cloud_recording_off">Cloud-Aufzeichnung ist nicht aktiv</string>
+    <string name="cloud_recording_status_unknown">Aufzeichnungsstatus wird noch bestätigt</string>
+</resources>

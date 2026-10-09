@@ -276,7 +276,7 @@
     <string name="im_view_calendar">Agenda</string>
     <string name="im_group_apps">Apps</string>
     <string name="im_group_calendar">Agenda</string>
-    <string name="im_preview_event">[Event]</string>
+    <string name="im_preview_event">[Afspraak]</string>
     <plurals name="im_event_card_meta">
         <item quantity="one">%1$d deelnemer · Organisator %2$s</item>
         <item quantity="other">%1$d deelnemers · Organisator %2$s</item>
@@ -439,4 +439,10 @@ Limieten: 100 verzoeken per minuut en 5 per seconde per bot, hoofdteksten tot 20
     <string name="im_doc_access_retry">Opnieuw proberen</string>
     <string name="im_doc_access_save">Opslaan</string>
     <string name="im_doc_access_close">Sluiten</string>
+    <string name="im_search_meeting_ai">Vraag over vergaderingen</string>
+    <string name="im_search_ai_scope_all">Alle toegankelijke inhoud</string>
+    <string name="im_search_ai_scope_meetings">Vergaderingen en opnamen</string>
+    <string name="im_search_ai_date_from">Vanaf (optioneel)</string>
+    <string name="im_search_ai_date_to">Tot (optioneel)</string>
+    <string name="im_search_ai_dates_invalid">Gebruik YYYY-MM-DD; de einddatum mag niet vóór de begindatum liggen.</string>
 </resources>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cloud_recording_title">Cloudopname</string>
+    <string name="cloud_recording_description">Neem de audio en video van de vergadering op. AI-notulen kun je apart inschakelen via AI-opname.</string>
+    <string name="cloud_recording_guest">Meld je aan als gastheer of beheerder om cloudopnamen te beheren.</string>
+    <string name="cloud_recording_unavailable">De opnamebediening kan niet worden geverifieerd. Controleer of je bent aangemeld met actuele gastheer- of beheerdersrechten en vernieuw daarna.</string>
+    <string name="cloud_recording_start">Cloudopname starten</string>
+    <string name="cloud_recording_stop">Cloudopname stoppen</string>
+    <string name="cloud_recording_confirm">Bevestigen</string>
+    <string name="cloud_recording_reconcile">Cloudopnameverzoek controleren</string>
+    <string name="cloud_recording_storage_error">Opgeslagen opnameverzoeken kunnen niet worden geladen op dit apparaat. Probeer het opnieuw voordat je de opname wijzigt.</string>
+    <string name="cloud_recording_start_effect">Neem de audio en video van deze vergadering op in de cloudopslag. Deelnemers zien een opname-indicator. Zorg dat iedereen weet dat de opname begint.</string>
+    <string name="cloud_recording_stop_effect">Stop deze cloudopname. De vergadering en een aparte AI-opname gaan door. Het opslaan kan even duren.</string>
+    <string name="cloud_recording_unknown">Het vorige verzoek heeft geen bevestigd antwoord. Controleer datzelfde verzoek voordat je een andere actie start.</string>
+    <string name="cloud_recording_worker_unknown">De opnameservice heeft de uitkomst nog niet bevestigd. De status wordt hier vernieuwd; start geen nieuwe opname.</string>
+    <string name="cloud_recording_processing">Verzoek geaccepteerd. Wachten tot de opnameservice het resultaat bevestigt…</string>
+    <string name="cloud_recording_blocked">Er wordt nog een opname verwerkt. Vernieuw nadat die is afgerond.</string>
+    <string name="cloud_recording_disabled">Nieuwe cloudopnamen zijn momenteel niet beschikbaar.</string>
+    <string name="cloud_recording_error">Het verzoek kon niet worden bevestigd. Vernieuw de status of controleer het vorige verzoek.</string>
+    <string name="cloud_recording_starting">Cloudopname voorbereiden</string>
+    <string name="cloud_recording_active">Cloudopname loopt</string>
+    <string name="cloud_recording_saving">Opname beëindigd · bestand wordt voorbereid</string>
+    <string name="cloud_recording_saved">Cloudopname opgeslagen</string>
+    <string name="cloud_recording_failed">Cloudopname is niet voltooid</string>
+    <string name="cloud_recording_off">Cloudopname staat uit</string>
+    <string name="cloud_recording_status_unknown">Opnamestatus wacht op bevestiging</string>
+</resources>

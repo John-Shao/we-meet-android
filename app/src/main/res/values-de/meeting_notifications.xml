@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_notice_title">Benachrichtigungen des Zusammenfassungs-Assistenten</string>
+    <string name="record_notice_read_error">Ihr Zustellstatus konnte nicht gelesen werden.</string>
+    <string name="record_notice_owner">Benachrichtigungen über abgeschlossene Aufnahmen gehen an den Eigentümer.</string>
+    <string name="record_notice_online">Benachrichtigungen über abgeschlossene Meetings gehen an Eigentümer und Initiatoren mit Zugriff.</string>
+    <string name="record_notice_policy">Die Empfänger werden festgelegt, sobald eine finale Version fertig ist. Die Liste unten enthält nur Ihre Benachrichtigungen. Bestehende Meeting-Benachrichtigungen bleiben unverändert.</string>
+    <string name="record_notice_future">Empfänger einer künftigen finalen Version: %1$s</string>
+    <string name="record_notice_no_recipients">Keine</string>
+    <string name="record_notice_policy_error">Die Empfänger künftiger Benachrichtigungen konnten nicht ermittelt werden.</string>
+    <string name="record_notice_unavailable">Der Benachrichtigungsversand ist nicht verfügbar.</string>
+    <string name="record_notice_unknown">Das Ergebnis des erneuten Versuchs ist unbestätigt. Prüfen Sie die ursprüngliche Anfrage, bevor Sie eine weitere Benachrichtigung senden.</string>
+    <string name="record_notice_empty">Noch keine Abschlussbenachrichtigungen für Sie.</string>
+    <string name="record_notice_attempt">Versandversuch %1$d</string>
+    <string name="record_notice_open_summary">Diese Zusammenfassung ansehen</string>
+    <string name="record_notice_retry">Benachrichtigungswiederholung prüfen</string>
+    <string name="record_notice_confirm">Ursprüngliche Benachrichtigung erneut senden</string>
+    <string name="record_notice_retry_effect">Dabei kann die ursprüngliche Zusammenfassungskarte an Ihre Assistenten-Unterhaltung gesendet werden. Empfänger und Version bleiben unverändert; es werden keine neuen Zugriffsrechte erteilt.</string>
+    <string name="record_notice_changed">Der Zustellstatus hat sich geändert. Schließen Sie den Dialog und prüfen Sie den aktuellen Status.</string>
+    <string name="record_notice_error">Das Ergebnis des erneuten Versuchs konnte nicht bestätigt werden. Aktualisieren Sie den Status oder prüfen Sie die ursprüngliche Anfrage.</string>
+    <string name="record_notice_queued">Benachrichtigung in Warteschlange</string>
+    <string name="record_notice_running">Benachrichtigung wird gesendet</string>
+    <string name="record_notice_delivered">Benachrichtigung zugestellt</string>
+    <string name="record_notice_uncertain">Zustellergebnis unbestätigt</string>
+    <string name="record_notice_failed">Benachrichtigungsversand fehlgeschlagen</string>
+    <string name="record_notice_canceled">Benachrichtigungsversand abgebrochen</string>
+</resources>

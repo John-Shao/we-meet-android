@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="video_history_empty">Geen eerdere of lopende videovergaderingen</string>
+    <string name="video_active">Bezig</string>
+    <string name="video_ended">Afgelopen</string>
+    <string name="video_more">Meer</string>
+    <string name="video_show_all">Alles tonen (%1$d)</string>
+    <string name="video_collapse">Samenvouwen</string>
+    <string name="video_material_loading">Vergadermateriaal laden…</string>
+    <string name="video_material_unavailable">Nog geen toegankelijk materiaal</string>
+    <string name="video_record_hint">Opname en transcriptie van deze vergadering openen</string>
+    <string name="video_summary_pending">Nog geen notulen gegenereerd</string>
+    <string name="video_view_record">Opname bekijken</string>
+    <string name="video_view_summary">Notulen bekijken</string>
+</resources>

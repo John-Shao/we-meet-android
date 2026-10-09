@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="assistant_call_scene_title">Gespreksscenario</string>
+    <string name="assistant_call_scene_selection">Gespreksscenario: %1$s</string>
+    <string name="assistant_call_scene_general">Algemene assistent</string>
+    <string name="assistant_call_scene_general_hint">Alledaagse vragen en gesprekken via spraak of video.</string>
+    <string name="assistant_call_scene_catalog_hint">Spraak- of videogesprek met de configuratie “%1$s”.</string>
+    <string name="assistant_scene_title">Scenariovoorinstelling</string>
+    <string name="assistant_scene_custom">Aangepast / standaard</string>
+    <string name="assistant_scene_travel">Reizen (Engels)</string>
+    <string name="assistant_scene_travel_ja">Reizen (Japans)</string>
+    <string name="assistant_scene_business">Zakelijke communicatie</string>
+    <string name="assistant_scene_practice">Engels gespreksoefening</string>
+    <string name="assistant_scene_travel_hint">Chinese uitleg en nuttige Engelse zinnen voor routevragen, hotels en restaurants.</string>
+    <string name="assistant_scene_travel_ja_hint">Chinese uitleg en beleefde Japanse zinnen voor reizen in Japan.</string>
+    <string name="assistant_scene_business_hint">Professionele Chinees-Engelse communicatie met nauwkeurige cijfers, datums en toezeggingen.</string>
+    <string name="assistant_scene_practice_hint">Engels gesprek met Chinese ondersteuning, één vraag per keer en vriendelijke grammaticacorrecties.</string>
+    <string name="assistant_scene_translation_hint">Scenario, talen en spraakweergave worden apart opgeslagen. Het scenario legt alleen je voorkeur vast en beïnvloedt de vertaalresultaten nog niet.</string>
+    <string name="assistant_translation_scene_general">Algemeen gesprek</string>
+    <string name="assistant_translation_scene_travel">Reizen</string>
+    <string name="assistant_scene_pair_en">Chinees ⇄ Engels · spraakweergave aan</string>
+    <string name="assistant_scene_pair_ja">Chinees ⇄ Japans · spraakweergave aan</string>
+</resources>

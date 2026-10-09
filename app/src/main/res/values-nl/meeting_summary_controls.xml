@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="summary_controls_title">AI-notulen</string>
+    <string name="summary_controls_usage">Het genereren of opnieuw proberen van notulen gebruikt de AI-service. Controleer de uitvoer en de bronnen voordat je deze gebruikt.</string>
+    <string name="summary_controls_storage_error">Het vorige verzoek kan niet worden gelezen. Probeer het opnieuw voordat je een nieuw verzoek start.</string>
+    <string name="summary_controls_read_error">Notulen zijn niet beschikbaar. Vernieuw om toegang en voortgang te controleren.</string>
+    <string name="summary_controls_dispatch">Wachten op de verwerkingsservice</string>
+    <string name="summary_controls_chunks">%1$d van %2$d secties verwerkt</string>
+    <string name="summary_controls_unknown">Het vorige notulenverzoek is niet bevestigd. Controleer dat verzoek voordat je een nieuwe versie genereert.</string>
+    <string name="summary_controls_reconcile">Notulenverzoek controleren</string>
+    <string name="summary_controls_retry">Notulen opnieuw genereren</string>
+    <string name="summary_controls_blocked">De bron kan momenteel niet worden verwerkt. Controleer de opname en probeer het later opnieuw.</string>
+    <string name="summary_controls_waiting">Wachten op voldoende bevestigde tekst om de volgende samenvatting te genereren.</string>
+    <string name="summary_controls_next">Volgende update beschikbaar: %1$s</string>
+    <string name="summary_controls_operation_error">De actie kon niet worden bevestigd. Vernieuw de status voordat je het opnieuw probeert.</string>
+    <string name="summary_controls_realtime">Live-samenvatting bijwerken</string>
+    <string name="summary_controls_quick">Snelle notulen genereren</string>
+    <string name="summary_controls_final">Volledige notulen genereren</string>
+    <string name="summary_controls_all_versions">Alle notulen bekijken</string>
+    <string name="summary_job_queued">Wachten om te genereren</string>
+    <string name="summary_job_running">Notulen worden gegenereerd</string>
+    <string name="summary_job_succeeded">Notulen gegenereerd</string>
+    <string name="summary_job_partial">Notulen gedeeltelijk gegenereerd</string>
+    <string name="summary_job_canceled">Genereren geannuleerd</string>
+    <string name="summary_job_failed">Genereren mislukt</string>
+    <string name="summary_automation_title">Automatische notulen</string>
+    <string name="summary_automation_usage">Indien ingeschakeld werkt de AI de live-samenvatting bij en genereert snelle en volledige notulen zodra de opname gereed is. Dit gebruikt modelquota. Je kunt het automatisch genereren op elk moment stoppen.</string>
+    <string name="summary_automation_read_error">De status van automatische notulen is niet beschikbaar. Vernieuw om deze te controleren.</string>
+    <string name="summary_automation_unknown">Een wijziging in automatische notulen is niet bevestigd. Controleer de oorspronkelijke wijziging voordat je deze instelling opnieuw wijzigt.</string>
+    <string name="summary_automation_reconcile">Verzoek voor automatische notulen controleren</string>
+    <string name="summary_automation_start">Automatische notulen inschakelen</string>
+    <string name="summary_automation_stop">Automatische notulen stoppen</string>
+    <string name="summary_automation_off">Niet ingeschakeld</string>
+    <string name="summary_automation_waiting">Wachten op de volgende samenvatting</string>
+    <string name="summary_automation_generating">Notulen worden automatisch gegenereerd</string>
+    <string name="summary_controls_blocked_budget">De bron overschrijdt het huidige verwerkingsbudget of één uiting is te lang. De brontekst is bewaard; pas het materiaal aan voordat je genereert.</string>
+    <string name="summary_controls_waiting_source">Notulen kunnen worden gegenereerd nadat de vergadering is afgelopen en er een transcriptie beschikbaar is.</string>
+    <string name="summary_controls_rate_limited">Te veel verzoeken. Wacht voordat je hetzelfde verzoek opnieuw verstuurt.</string>
+    <string name="summary_automation_completed">Volledige notulen gereed</string>
+    <string name="summary_automation_attention">Automatisch genereren vraagt aandacht</string>
+</resources>

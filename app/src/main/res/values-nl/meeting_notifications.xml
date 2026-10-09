@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="record_notice_title">Levering door de notulenassistent</string>
+    <string name="record_notice_read_error">Je leveringsstatus kon niet worden gelezen.</string>
+    <string name="record_notice_owner">Meldingen over een voltooide opname gaan naar de eigenaar.</string>
+    <string name="record_notice_online">Meldingen over een voltooide vergadering gaan naar eigenaren en initiatiefnemers met toegang.</string>
+    <string name="record_notice_policy">De ontvangers worden bepaald zodra elke definitieve versie gereed is. De lijst hieronder bevat alleen jouw meldingen. Bestaande vergaderingsmeldingen blijven ongewijzigd.</string>
+    <string name="record_notice_future">Ontvangers van een toekomstige definitieve versie: %1$s</string>
+    <string name="record_notice_no_recipients">Geen</string>
+    <string name="record_notice_policy_error">De ontvangers van toekomstige meldingen konden niet worden bepaald.</string>
+    <string name="record_notice_unavailable">Meldingen versturen is niet beschikbaar.</string>
+    <string name="record_notice_unknown">Het resultaat van de nieuwe poging is onbekend. Controleer het oorspronkelijke verzoek voordat je nog een melding probeert te versturen.</string>
+    <string name="record_notice_empty">Je hebt nog geen meldingen over voltooide notulen ontvangen.</string>
+    <string name="record_notice_attempt">Verzendpoging %1$d</string>
+    <string name="record_notice_open_summary">Deze notulenversie bekijken</string>
+    <string name="record_notice_retry">Nieuwe poging voor melding bekijken</string>
+    <string name="record_notice_confirm">Oorspronkelijke melding opnieuw proberen</string>
+    <string name="record_notice_retry_effect">Hiermee kan de oorspronkelijke notulenkaart naar je assistentgesprek worden gestuurd. De oorspronkelijke ontvanger en versie blijven behouden en er wordt geen nieuwe toegang verleend.</string>
+    <string name="record_notice_changed">De leveringsstatus is gewijzigd. Sluit dit venster en bekijk de nieuwste status.</string>
+    <string name="record_notice_error">Het resultaat van de nieuwe poging kon niet worden bevestigd. Vernieuw de status of controleer het oorspronkelijke verzoek.</string>
+    <string name="record_notice_queued">Melding in wachtrij</string>
+    <string name="record_notice_running">Melding wordt verstuurd</string>
+    <string name="record_notice_delivered">Melding bezorgd</string>
+    <string name="record_notice_uncertain">Bezorgresultaat onbekend</string>
+    <string name="record_notice_failed">Melding versturen mislukt</string>
+    <string name="record_notice_canceled">Melding versturen geannuleerd</string>
+</resources>

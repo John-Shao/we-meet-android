@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_translation_title">Opnamevertaling</string>
+    <string name="capture_translation_scope">Gebruikt de microfoon van de huidige opname. Oorspronkelijke transcriptie en vertaling staan los van elkaar. Als je de vertaling beëindigt, loopt de opname door.</string>
+    <string name="capture_translation_simultaneous">Simultaan tolken</string>
+    <string name="capture_translation_speech">Tweerichtingsspraak</string>
+    <string name="capture_translation_zh_en">Chinees → Engels</string>
+    <string name="capture_translation_en_zh">Engels → Chinees</string>
+    <string name="capture_translation_audio">Vertaalde spraak afspelen</string>
+    <string name="capture_translation_headphones">Gebruik een koptelefoon zodat de vertaalde spraak niet door de microfoon wordt opgevangen.</string>
+    <string name="capture_translation_save">Vertaalde tekst bewaren voor later</string>
+    <string name="capture_translation_start">Vertaling starten</string>
+    <string name="capture_translation_stop">Vertaling beëindigen</string>
+    <string name="capture_translation_mute">Vertaling dempen</string>
+    <string name="capture_translation_unmute">Vertaling dempen opheffen</string>
+    <string name="capture_translation_speak">Begin in het %1$s te spreken</string>
+    <string name="capture_translation_end_turn">Spraak beëindigen en vertalen</string>
+    <string name="capture_translation_pending">Een eerdere bewerking moet worden gecontroleerd. Controleren maakt nooit opnieuw verbinding met de microfoon.</string>
+    <string name="capture_translation_recover">Eerdere bewerking controleren</string>
+    <string name="capture_translation_error">Het vertaalresultaat kon niet worden bevestigd. Controleer openstaande bewerkingen voordat je doorgaat.</string>
+    <string name="capture_translation_storage_error">Openstaande bewerkingen konden niet worden geladen of opgeslagen. Vertaling is niet beschikbaar.</string>
+    <string name="capture_translation_detached">Bij deze opname loopt nog een vertaling, maar deze pagina is niet verbonden. Beëindig die voordat je opnieuw begint.</string>
+    <string name="capture_translation_connecting">Vertaling verbinden…</string>
+    <string name="capture_translation_ready">Vertaling gereed</string>
+    <string name="capture_translation_listening">Spraak wordt ontvangen…</string>
+    <string name="capture_translation_awaiting">Vertaling wordt gegenereerd…</string>
+    <string name="capture_translation_finishing">Vertaling wordt beëindigd…</string>
+    <string name="capture_translation_stopped">Vertaling beëindigd</string>
+    <string name="capture_translation_interrupted">Vertaling onderbroken; de originele opname blijft ongewijzigd</string>
+    <string name="capture_translation_unknown">Verbinding verbroken; het vertaalresultaat moet worden gecontroleerd</string>
+</resources>

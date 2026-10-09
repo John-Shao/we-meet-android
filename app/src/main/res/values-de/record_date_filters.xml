@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="records_created_from">Erstellt ab</string>
+    <string name="records_created_through">Erstellt bis</string>
+    <string name="records_clear_dates">Datumsfilter löschen</string>
+    <string name="records_date_hint">Format YYYY-MM-DD; leer lassen für keine Begrenzung. Lokale Zeitzone, Enddatum eingeschlossen.</string>
+    <string name="records_date_error">Bitte gültige Daten eingeben; das Startdatum darf nicht nach dem Enddatum liegen.</string>
+    <string name="records_date_active">Erstellt: %1$s — %2$s</string>
+</resources>
