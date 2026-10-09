@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speaker_identity_mark">Spreker benoemen</string>
+    <string name="speaker_identity_current">Huidige naam: %1$s</string>
+    <string name="speaker_identity_manual_hint">De naam geldt voor deze spreker in deze opname. Er wordt geen stemprofiel aangemaakt en geen toestemming gegeven.</string>
+    <string name="speaker_identity_listen">Luisteren vanaf %1$s</string>
+    <string name="speaker_identity_contacts">Contacten</string>
+    <string name="speaker_identity_label">Eigen label</string>
+    <string name="speaker_identity_label_hint">1–64 tekens op één regel. De naam is zichtbaar voor lezers van deze opname.</string>
+    <string name="speaker_identity_all">Alle contacten</string>
+    <string name="speaker_identity_members">Leden</string>
+    <string name="speaker_identity_external">Externe contacten</string>
+    <string name="speaker_identity_departments">Afdelingen</string>
+    <string name="speaker_identity_department">Afdeling: %1$s</string>
+    <string name="speaker_identity_selected">Gekozen: %1$s</string>
+    <string name="speaker_identity_external_hint">Opslaan deelt de naam met lezers van de opname. Telefoon, e-mail en privénotities blijven privé. Dit bevestigt de identiteit niet via de stem.</string>
+    <string name="speaker_identity_retry">Opnieuw proberen</string>
+    <string name="speaker_identity_conflict">De opname is gewijzigd. Je concept is bewaard. Kopieer het zo nodig en laad de opname opnieuw voordat je een naam kiest.</string>
+    <string name="speaker_identity_access">De opname of het bewerkingsrecht is niet beschikbaar. Laad opnieuw om de huidige toegang te controleren.</string>
+    <string name="speaker_identity_reload">Opname opnieuw laden</string>
+</resources>

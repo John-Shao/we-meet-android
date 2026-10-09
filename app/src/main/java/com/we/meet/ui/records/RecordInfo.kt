@@ -155,6 +155,7 @@ internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String,
                         revision = record.revision,
                         speaker = speaker,
                         onAttributed = { if (onRecordChanged != null) onRecordChanged() else refresh++ },
+                        onSource = onSource,
                     )
                     SpeakerActivity(speaker.activity, onSource, fullDuration)
                 }

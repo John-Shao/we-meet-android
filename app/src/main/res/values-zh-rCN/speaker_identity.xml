@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speaker_identity_mark">标记说话人</string>
+    <string name="speaker_identity_current">当前名称：%1$s</string>
+    <string name="speaker_identity_manual_hint">标记仅作用于当前记录的这个说话人，不登记声纹，也不授予声纹权限。</string>
+    <string name="speaker_identity_listen">从 %1$s 试听</string>
+    <string name="speaker_identity_contacts">通讯录</string>
+    <string name="speaker_identity_label">自定义标签</string>
+    <string name="speaker_identity_label_hint">1～64 个字符，单行。名称会向当前记录的读者展示。</string>
+    <string name="speaker_identity_all">全部联系人</string>
+    <string name="speaker_identity_members">成员</string>
+    <string name="speaker_identity_external">外部联系人</string>
+    <string name="speaker_identity_departments">部门</string>
+    <string name="speaker_identity_department">部门：%1$s</string>
+    <string name="speaker_identity_selected">已选择：%1$s</string>
+    <string name="speaker_identity_external_hint">保存后，联系人姓名会向记录读者展示。电话、邮箱和私人备注不会共享。这不代表声纹核验。</string>
+    <string name="speaker_identity_retry">重试</string>
+    <string name="speaker_identity_conflict">记录已更新，草稿已保留。请按需复制草稿，再重新加载记录后标记。</string>
+    <string name="speaker_identity_access">记录或编辑权限已不可用，请重新加载以检查当前权限。</string>
+    <string name="speaker_identity_reload">重新加载记录</string>
+</resources>
