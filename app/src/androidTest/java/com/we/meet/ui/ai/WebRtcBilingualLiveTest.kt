@@ -34,6 +34,7 @@ class WebRtcBilingualLiveTest {
                 Moshi.Builder().add(KotlinJsonAdapterFactory()).build())).build().create(AssistantTranslationApi::class.java)
         val allocations = mutableListOf<AssistantTranslationDirectRequest>()
         val api = object : AssistantTranslationApi {
+            override suspend fun voiceConfig() = delegate.voiceConfig()
             override suspend fun ticket(pair: AssistantTranslationPair) = error("Gateway must not be used")
             override suspend fun directSession(request: AssistantTranslationDirectRequest): AssistantTranslationDirectSession {
                 allocations += request
@@ -62,7 +63,7 @@ class WebRtcBilingualLiveTest {
             }
         }
         val played = AtomicLong()
-        androidx.test.core.app.ActivityScenario.launch(androidx.activity.ComponentActivity::class.java).use {
+        androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use {
             var controller: BilingualTranslationController? = null
             try {
                 withContext(Dispatchers.Main) {

@@ -34,7 +34,8 @@ class OmniEndCallLiveTest {
         val app = context.applicationContext as WeMeetApp
         val network = context.getSystemService(ConnectivityManager::class.java)
         network.bindProcessToNetwork(network.activeNetwork)
-        for (permission in listOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.POST_NOTIFICATIONS))
+        for (permission in listOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA) +
+            if (android.os.Build.VERSION.SDK_INT >= 33) listOf(Manifest.permission.POST_NOTIFICATIONS) else emptyList())
             instrumentation.uiAutomation.grantRuntimePermission(context.packageName, permission)
         val delegate = retrofit2.Retrofit.Builder().baseUrl(app.baseUrl).client(app.authedOkHttp)
             .addConverterFactory(retrofit2.converter.moshi.MoshiConverterFactory.create(

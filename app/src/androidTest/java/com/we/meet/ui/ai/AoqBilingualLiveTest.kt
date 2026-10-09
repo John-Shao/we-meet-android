@@ -24,6 +24,7 @@ class AoqBilingualLiveTest {
         val delegate = ApiClient(com.we.meet.data.auth.TokenStore(context)).assistantTranslationApi
         val allocations = mutableListOf<AssistantTranslationDirectRequest>()
         val api = object : AssistantTranslationApi {
+            override suspend fun voiceConfig() = delegate.voiceConfig()
             override suspend fun ticket(pair: AssistantTranslationPair) = error("Cloud gateway must not be used")
             override suspend fun directSession(request: AssistantTranslationDirectRequest): AssistantTranslationDirectSession {
                 allocations += request
@@ -53,7 +54,7 @@ class AoqBilingualLiveTest {
                 return buffer.size
             }
         }
-        androidx.test.core.app.ActivityScenario.launch(androidx.activity.ComponentActivity::class.java).use {
+        androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use {
             var controller: BilingualTranslationController? = null
             try {
                 withContext(Dispatchers.Main) {
