@@ -11,8 +11,10 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -128,6 +130,7 @@ class SpeakerIdentityEditorTest {
         assertEquals("""{"action":"select_contact","expected_revision":3,"contact_ref":"external:$memberId"}""", fixture.posts.single())
     }
 
+    @OptIn(ExperimentalTestApi::class)
     @Test fun conflictPreservesDraftAndDisablesSaveAndClear() {
         val fixture = Fixture(conflict = true)
         compose.setContent { WeMeetTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
@@ -140,6 +143,12 @@ class SpeakerIdentityEditorTest {
         compose.waitUntil(10000) { compose.onAllNodesWithText(text(R.string.speaker_identity_conflict)).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText(text(R.string.speaker_identity_conflict)).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Guest").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Guest").performTextInputSelection(TextRange(0, 5))
+        compose.onNodeWithText("Guest").performSemanticsAction(SemanticsActions.CopyText)
+        compose.runOnIdle {
+            val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
+            assertEquals("Guest", clipboard.primaryClip?.getItemAt(0)?.text?.toString())
+        }
         compose.onNodeWithText(text(R.string.records_correction_save)).assertIsNotEnabled()
         compose.onNodeWithText(text(R.string.records_attribution_clear)).assertIsNotEnabled()
         assertEquals(1, fixture.posts.size)

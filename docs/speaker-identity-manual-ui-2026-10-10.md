@@ -46,4 +46,6 @@ adb -s emulator-5556 shell am instrument -w -r -e class com.we.meet.ui.records.S
 
 本轮验证：上述 6 个 JVM 测试类共 72 项通过；API 29 模拟器（1080×1920、420 dpi）中，8 项身份界面交互和 5 项时间线回归共 13 项通过。交互覆盖真实 Retrofit 请求的标签／清除、外部联系人预览、部门／分页成员选择、冲突、只读／未知轨道隐藏及来源试听。5 个语言资源文件各 18 项键一致，XML 解析和 APK 编译通过。
 
+冲突用例进一步检查只读标签的文本选择、复制动作和模拟器剪贴板内容，单独复测通过；这是一项已有用例的增强，不重复计入测试总数。
+
 已检查[中文大字体暗色界面](reviews/speaker-identity/label-zh-dark-large.png)和[外部联系人姓名预览](reviews/speaker-identity/contacts-external-light.png)：文本颜色正确，筛选项可换行，保存／清除可见并可滚动到达。这些图片全部来自合成界面数据。
