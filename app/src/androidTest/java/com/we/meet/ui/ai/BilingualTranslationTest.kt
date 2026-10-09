@@ -28,7 +28,10 @@ class BilingualTranslationTest {
             main { f.controller.fixedSource("zh") }
             assertEquals("en", f.controller.state.value.fixedSource)
             main { f.controller.stop(); f.controller.directAoq(false) }
-            assertNull(f.controller.state.value.fixedSource)
+            assertEquals("en", f.controller.state.value.fixedSource)
+            main { f.controller.start() }
+            waitFor { f.webRtcOpened && f.wire != null && !f.wire!!.closed.get() }
+            assertEquals("en", f.fixedSource)
         } finally { main { f.controller.close() } }
     }
     @Test fun defaultTranslationUsesAoqWithoutRequestingACloudTicket() {
@@ -44,7 +47,7 @@ class BilingualTranslationTest {
             assertTrue(f.controller.state.value.directAoq)
             assertFalse(f.wire!!.closed.get())
             main { f.controller.stop(); f.controller.directAoq(false); f.controller.start() }
-            waitFor { f.api.selected != null && f.wire != null && !f.wire!!.closed.get() }
+            waitFor { f.webRtcOpened && f.wire != null && !f.wire!!.closed.get() }
             f.wire!!.ready()
             waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
             assertFalse(f.controller.state.value.directAoq)
@@ -196,7 +199,7 @@ class BilingualTranslationTest {
         }
     }
 
-    @Test fun selectedLanguagesReachTicketAndBothDirectionsKeepTheirLabels() {
+    @Test fun selectedLanguagesReachWebRtcAndBothDirectionsKeepTheirLabels() {
         val f = Fixture()
         try {
             main {
@@ -206,7 +209,8 @@ class BilingualTranslationTest {
                 f.controller.selectLanguage(false, "de")
             }
             waitFor { f.wire != null }; f.wire!!.ready()
-            assertEquals(AssistantTranslationPair("ja", "fr"), f.api.selected)
+            assertEquals(AssistantTranslationPair("ja", "fr"), f.selectedPair)
+            assertNull(f.api.selected)
             for ((source, target) in listOf("ja" to "fr", "fr" to "ja")) {
                 f.wire!!.listener.message(JSONObject().put("type", "translation").put("id", source)
                     .put("source_language", source).put("target_language", target)
@@ -223,7 +227,9 @@ class BilingualTranslationTest {
         val output = Output()
         @Volatile var wire: Wire? = null
         @Volatile var aoqOpened = false
+        @Volatile var webRtcOpened = false
         @Volatile var fixedSource: String? = null
+        @Volatile var selectedPair: AssistantTranslationPair? = null
         var opened = false
         @Volatile var playbackUnderruns = 0
         val controller = BilingualTranslationController(
@@ -249,7 +255,7 @@ class BilingualTranslationTest {
                         override fun close() = delegate.close()
                     }
                 }
-            }, { _, listener -> Wire(listener).also { wire = it } },
+            }, { pair, source, listener -> selectedPair = pair; fixedSource = source; Wire(listener).also { webRtcOpened = true; wire = it } },
             openForeground = { stopped ->
                 if (realBackground) com.we.meet.feature.assistant.background.AssistantForegroundSession.start(
                     InstrumentationRegistry.getInstrumentation().targetContext,
@@ -375,23 +381,24 @@ class BilingualTranslationTest {
         } finally { main { f.controller.close() } }
     }
 
-    @Test fun disposingDuringTicketRequestCannotStartMicrophoneLater() {
-        val api = Api().apply { wait = CompletableDeferred() }
-        val f = Fixture(api)
+    @Test fun disposingBeforeWebRtcReadyCannotStartMicrophoneLater() {
+        val f = Fixture()
         main { f.controller.start() }
-        runBlocking { withTimeout(1000) { api.entered.await() } }
+        waitFor { f.wire != null }
         main { f.controller.close() }
-        api.wait!!.complete(Unit)
-        main { assertFalse(f.opened); assertNull(f.wire); assertEquals(BilingualPhase.IDLE, f.controller.state.value.phase) }
+        f.wire!!.ready()
+        main { assertFalse(f.opened); assertTrue(f.wire!!.closed.get()); assertEquals(BilingualPhase.IDLE, f.controller.state.value.phase) }
     }
 
     @Test fun timeoutShowsErrorAndAllowsExplicitRetry() {
-        val f = Fixture(Api().apply { timeout = true })
+        val f = Fixture()
         try {
             main { f.controller.start() }
-            waitFor { f.controller.state.value.phase == BilingualPhase.ERROR }
-            main { f.api.timeout = false; f.controller.start() }
             waitFor { f.wire != null }
+            f.wire!!.listener.failed()
+            waitFor { f.controller.state.value.phase == BilingualPhase.ERROR }
+            main { f.controller.start() }
+            waitFor { f.wire != null && !f.wire!!.closed.get() }
             assertFalse(f.opened)
         } finally { main { f.controller.close() } }
     }

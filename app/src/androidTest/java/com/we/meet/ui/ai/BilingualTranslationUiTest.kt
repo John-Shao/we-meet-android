@@ -48,7 +48,7 @@ class BilingualTranslationUiTest {
                 onDirectAoqChange = { state.value = state.value.copy(directAoq = it) })
         } }
         compose.onNodeWithTag("bilingual-aoq").assertIsDisplayed()
-        compose.onNodeWithTag("bilingual-cloud").performClick()
+        compose.onNodeWithTag("bilingual-webrtc").performClick()
         compose.runOnIdle {
             assertEquals(false, state.value.directAoq)
             state.value = state.value.copy(phase = BilingualPhase.LISTENING)

@@ -10,7 +10,6 @@ import com.we.meet.data.capture.AndroidCapturePcmSource
 import com.we.meet.data.capture.AndroidTranslationOutput
 import com.we.meet.data.capture.CaptureTranslationWire
 import com.we.meet.data.capture.CapturePcmSource
-import com.we.meet.data.capture.OkHttpCaptureTranslationWire
 import com.we.meet.feature.assistant.background.AssistantForegroundSession
 import com.we.meet.feature.assistant.background.AssistantSessionKind
 import com.we.meet.feature.assistant.background.AssistantSessionLease
@@ -88,14 +87,16 @@ internal class BilingualTranslationController(
             override fun close() = delegate.close()
         }
     },
-    private val openWire: (String, CaptureTranslationWire.Listener) -> CaptureTranslationWire = OkHttpCaptureTranslationWire::open,
+    private val openWebRtcWire: (AssistantTranslationPair, String?, CaptureTranslationWire.Listener) -> CaptureTranslationWire = { pair, source, listener ->
+        DirectBilingualWire(context.applicationContext, api, pair, listener, source, webRtc = true)
+    },
     private val openForeground: suspend (() -> Unit) -> AssistantSessionLease = { stopped ->
         AssistantForegroundSession.start(context, AssistantSessionKind.TRANSLATION, camera = false, stopped = stopped)
     },
     val history: com.we.meet.feature.assistant.history.AssistantHistoryStore? = null,
     private val preferences: BilingualPreferences? = null,
     private val openAoqWire: (AssistantTranslationPair, String?, CaptureTranslationWire.Listener) -> CaptureTranslationWire = { pair, source, listener ->
-        AoqBilingualWire(context.applicationContext, api, pair, listener, source)
+        DirectBilingualWire(context.applicationContext, api, pair, listener, source)
     },
 ) : Closeable {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -202,11 +203,11 @@ internal class BilingualTranslationController(
     }
     fun directAoq(enabled: Boolean) {
         if (active != null) return
-        mutable.update { it.copy(directAoq = enabled, fixedSource = if (enabled) it.fixedSource else null) }
+        mutable.update { it.copy(directAoq = enabled) }
         preferences?.save(mutable.value)
     }
     fun fixedSource(language: String?) {
-        if (active != null || !mutable.value.directAoq) return
+        if (active != null) return
         val pair = mutable.value.pair
         if (language != null && language != pair.source && language != pair.target) return
         mutable.update { it.copy(fixedSource = language, unknownLanguage = false) }
@@ -279,24 +280,11 @@ internal class BilingualTranslationController(
             check(BilingualLanguages.valid(pair))
             foreground = openForeground { if (active === this@Session) stop() }
             stage = "allocation"
-            val ticket = if (direct) null else api.ticket(pair)
-            check(!closed.get() && authorized() && (direct || ticket!!.url.startsWith("wss://")))
+            check(!closed.get() && authorized())
             // Resource installation occurs on Main, serialized with stop/disposal.
             stage = "playback"
-            if (!direct) {
-                output = openOutput(::failure)
-                output!!.open()
-                output!!.mute(!mutable.value.sound)
-            }
             val listener = object : CaptureTranslationWire.Listener {
-                override fun opened() {
-                    scope.launch {
-                        if (!closed.get() && !direct) {
-                            val value = JSONObject().put("type", "assistant_translation").put("ticket", ticket!!.ticket).toString()
-                            if (wire?.send(value) != true) failure()
-                        }
-                    }
-                }
+                override fun opened() = Unit
                 override fun message(text: String) {
                     if (!closed.get() && (text.length > 300_000 || !events.trySend(text).isSuccess)) failure()
                 }
@@ -305,9 +293,9 @@ internal class BilingualTranslationController(
                     if (!closed.get() && !events.trySend("{\"type\":\"disconnected\"}").isSuccess) failure()
                 }
             }
-            stage = if (direct) "aoq_transport" else "cloud_transport"
+            stage = if (direct) "aoq_transport" else "webrtc_transport"
             wire = if (direct) openAoqWire(pair, mutable.value.fixedSource, listener)
-                else openWire(ticket!!.url, listener)
+                else openWebRtcWire(pair, mutable.value.fixedSource, listener)
             launch(Dispatchers.Default) {
                 for (raw in events) {
                     if (closed.get()) break
@@ -363,7 +351,7 @@ internal class BilingualTranslationController(
                 }
             }
             withTimeout(60_000) { ready.await() }
-            if (direct) {
+            run {
                 // The SDK initializes focus even for external decoding. Acquire
                 // the app player's focus after all native players are ready.
                 output = openOutput(::failure)

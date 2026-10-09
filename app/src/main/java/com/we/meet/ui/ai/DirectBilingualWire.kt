@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Base64
 import com.we.meet.data.api.*
 import com.we.meet.data.capture.CaptureTranslationWire
-import com.we.meet.feature.assistant.aicall.rtc.AoqDataConnection
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.selects.select
@@ -15,17 +14,21 @@ import java.nio.ByteOrder
 import java.io.ByteArrayOutputStream
 
 /** Local routing and bounded buffering; every speech frame goes directly to Aliyun. */
-internal class AoqBilingualWire(
-    context: Context, private val api: AssistantTranslationApi,
+internal class DirectBilingualWire(
+    private val context: Context, private val api: AssistantTranslationApi,
     private val pair: AssistantTranslationPair, private val listener: CaptureTranslationWire.Listener,
     fixedSource: String? = null,
+    private val webRtc: Boolean = false,
 ) : CaptureTranslationWire {
     private val plan = BilingualSessionPlan(pair, fixedSource)
     private val leases = mutableListOf<com.we.meet.feature.assistant.aicall.data.DirectAILease>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val translator = AoqDataConnection(context.applicationContext, false)
-    private val reverse = AoqDataConnection(context.applicationContext, false, true)
-    private val detector = AoqDataConnection(context.applicationContext, true)
+    private fun connection(detection: Boolean, reverse: Boolean = false): BilingualModelConnection =
+        if (webRtc) WebRtcBilingualConnection(context.applicationContext, detection)
+        else AoqBilingualConnection(context.applicationContext, detection, reverse)
+    private val translator = connection(false)
+    private val reverse = connection(false, true)
+    private val detector = connection(true)
     private val frames = Channel<ByteArray>(100)
     private val boundaries = Channel<Unit>(Channel.CONFLATED)
     private val updates = mapOf(translator to Channel<Unit>(Channel.CONFLATED), reverse to Channel<Unit>(Channel.CONFLATED))
@@ -47,26 +50,33 @@ internal class AoqBilingualWire(
         scope.launch {
             try { run() }
             catch (e: CancellationException) { if (e is TimeoutCancellationException && !closed) listener.failed() }
-            catch (e: Exception) { android.util.Log.w("AoqBilingual", "failure_class=${e.javaClass.simpleName}"); if (!closed) listener.failed() }
+            catch (e: Exception) {
+                val frame = e.stackTrace.firstOrNull()
+                android.util.Log.w("DirectBilingual", "failure_class=${e.javaClass.simpleName} at=${frame?.className}:${frame?.lineNumber}")
+                if (!closed) listener.failed()
+            }
         }
     }
 
     private suspend fun run() = coroutineScope {
         val purposes = if (plan.automatic) listOf("translation", "reverse", "language_detection") else listOf("translation")
-        val allocations = purposes.map { purpose -> async {
-            api.directSession(AssistantTranslationDirectRequest(
+        val connected = if (plan.automatic) listOf(translator, reverse, detector) else listOf(translator)
+        connected.mapIndexed { index, connection -> async {
+            val purpose = purposes[index]
+            connection.connect { offer -> api.directSession(AssistantTranslationDirectRequest(
                 if (purpose == "reverse") pair.target else plan.inputLanguage,
                 if (purpose == "reverse") pair.source else plan.outputLanguage,
-                if (purpose == "reverse") "translation" else purpose)).also {
+                if (purpose == "reverse") "translation" else purpose,
+                if (webRtc) "webrtc" else "aoq", offer)).also {
                 it.sessionLease?.let { info ->
-                    leases += com.we.meet.feature.assistant.aicall.data.DirectAILease(info, api::sessionLease,
-                        { scope.launch { if (!closed) listener.failed() } }).also { lease -> lease.start() }
+                    val lease = com.we.meet.feature.assistant.aicall.data.DirectAILease(info, api::sessionLease,
+                        { scope.launch { if (!closed) listener.failed() } })
+                    if (closed) lease.close() else { leases += lease; lease.start() }
                 }
+                check(!closed)
                 check(it.model == if (purpose == "language_detection") "qwen3.8-omni-flash-realtime" else "qwen3.8-livetranslate-flash-realtime")
-            }
+            } }
         } }.awaitAll()
-        val connected = if (plan.automatic) listOf(translator, reverse, detector) else listOf(translator)
-        connected.mapIndexed { index, connection -> async { connection.connect(allocations[index].aoq) } }.awaitAll()
         launch { for (event in translator.events) accept(event, translator, plan.inputLanguage) }
         if (plan.automatic) launch { for (event in reverse.events) accept(event, reverse, pair.target) }
         val translations = if (plan.automatic) listOf(translator to pair.target, reverse to pair.source)
@@ -81,7 +91,7 @@ internal class AoqBilingualWire(
             while (true) {
                 val event = detector.events.receive()
                 if (event.optString("type") == "error") {
-                    android.util.Log.w("AoqBilingual", "language_setup_code=${event.optJSONObject("error")?.optString("code")}")
+                    android.util.Log.w("DirectBilingual", "language_setup_code=${event.optJSONObject("error")?.optString("code")}")
                     error("Language setup failed")
                 }
                 if (event.optString("type") == "session.updated") break
@@ -89,7 +99,7 @@ internal class AoqBilingualWire(
         }
         }
         emit(JSONObject().put("type", "ready"))
-        android.util.Log.i("AoqBilingual", "direct_ready model_connections=${plan.connections}")
+        android.util.Log.i("DirectBilingual", "direct_ready model_connections=${plan.connections}")
         val buffer = ByteArrayOutputStream()
         var direction: String? = plan.source
         var probe: Deferred<String?>? = null
@@ -133,7 +143,7 @@ internal class AoqBilingualWire(
                 }
                 probe?.let { current ->
                     current.onAwait { language ->
-                        android.util.Log.i("AoqBilingual", "language_result=${language ?: "unknown"}")
+                        android.util.Log.i("DirectBilingual", "language_result=${language ?: "unknown"}")
                         probe = null
                         if (language == null) {
                             nextProbe = buffer.size() + 12800
@@ -155,7 +165,7 @@ internal class AoqBilingualWire(
         while (pcm.remaining() >= 2) { val sample = pcm.short.toDouble(); sum += sample * sample; count++ }
         return count > 0 && sum / count > 200.0 * 200.0
     }
-    private suspend fun append(connection: AoqDataConnection, bytes: ByteArray) {
+    private suspend fun append(connection: BilingualModelConnection, bytes: ByteArray) {
         for (offset in bytes.indices step 16000) connection.send(JSONObject().put("type", "input_audio_buffer.append")
             .put("audio", Base64.encodeToString(bytes.copyOfRange(offset, minOf(offset + 16000, bytes.size)), Base64.NO_WRAP)))
     }
@@ -174,14 +184,14 @@ internal class AoqBilingualWire(
                 "response.text.delta" -> text += event.optString("delta")
                 "response.text.done" -> text = event.optString("text")
                 "error" -> {
-                    android.util.Log.w("AoqBilingual", "language_code=${event.optJSONObject("error")?.optString("code")}")
+                    android.util.Log.w("DirectBilingual", "language_code=${event.optJSONObject("error")?.optString("code")}")
                     error("Language detection failed")
                 }
                 "response.done" -> {
                     check(event.optJSONObject("response")?.optString("status") == "completed")
                     // Keep each classification independent of previous conversation.
                     for (id in items) detector.send(JSONObject().put("type", "conversation.item.delete").put("item_id", id))
-                    android.util.Log.i("AoqBilingual", "language_probe input_ms=${bytes.size / 32} elapsed_ms=${android.os.SystemClock.elapsedRealtime() - startedAt}")
+                    android.util.Log.i("DirectBilingual", "language_probe input_ms=${bytes.size / 32} elapsed_ms=${android.os.SystemClock.elapsedRealtime() - startedAt}")
                     return@withTimeout text.trim().lowercase().takeIf { it == pair.source || it == pair.target }
                 }
             }
@@ -190,7 +200,7 @@ internal class AoqBilingualWire(
         @Suppress("UNREACHABLE_CODE") null
     }
     private fun connection(language: String) = if (!plan.automatic || language == pair.source) translator else reverse
-    private suspend fun configureTranslation(connection: AoqDataConnection, language: String) {
+    private suspend fun configureTranslation(connection: BilingualModelConnection, language: String) {
         connection.send(JSONObject().put("type", "session.update").put("session", JSONObject()
             .put("output_modalities", JSONArray(listOf("text", "audio")))
             .put("audio", JSONObject()
@@ -198,13 +208,13 @@ internal class AoqBilingualWire(
                     .put("turn_detection", JSONObject().put("type", "server_vad").put("threshold", 0.2).put("silence_duration_ms", 1000)))
                 .put("output", JSONObject().put("format", JSONObject().put("type", "pcm").put("sample_rate", 24000)).put("voice", "Tina")))
             .put("translation", JSONObject().put("language", language))))
-        withTimeout(5000) { updates.getValue(connection).receive() }
+        withTimeout(25_000) { updates.getValue(connection).receive() }
     }
     private var finishedConnections = 0
-    private fun accept(event: JSONObject, connection: AoqDataConnection, language: String) {
+    private fun accept(event: JSONObject, connection: BilingualModelConnection, language: String) {
         val kind = event.optString("type")
         if (kind in setOf("session.updated", "response.created", "response.done", "input_audio_buffer.speech_started", "input_audio_buffer.speech_stopped", "conversation.item.input_audio_transcription.completed", "response.audio.done"))
-            android.util.Log.i("AoqBilingual", "translation_event=$kind")
+            android.util.Log.i("DirectBilingual", "translation_event=$kind")
         when (event.optString("type")) {
             "session.updated" -> updates.getValue(connection).trySend(Unit)
             "response.created" -> {
@@ -222,8 +232,8 @@ internal class AoqBilingualWire(
             "response.audio_transcript.delta", "response.text.delta" -> translated += event.optString("delta")
             "response.audio_transcript.done", "response.text.done", "response.audio_transcript.text", "response.text.text" -> translated = event.optString("transcript", event.optString("text", translated))
             "response.audio.delta" -> emit(JSONObject().put("type", "audio").put("id", row.toString()).put("audio", event.getString("delta")))
-            "aoq.audio" -> if (responseId.isNotEmpty()) {
-                lastPcmAt = android.os.SystemClock.elapsedRealtime()
+            "aoq.audio", "rtc.audio" -> if (responseId.isNotEmpty()) {
+                if (!event.optBoolean("silent")) lastPcmAt = android.os.SystemClock.elapsedRealtime()
                 val encoded = event.getString("audio")
                 if (sourceCompleted) emitAudio(encoded)
                 else {
@@ -257,7 +267,9 @@ internal class AoqBilingualWire(
                 // late PCM is rejected by both playback and replay caches.
                 ending = scope.launch {
                     delay(350)
-                    while (android.os.SystemClock.elapsedRealtime() - lastPcmAt < 350) delay(50)
+                    withTimeout(20_000) {
+                        while (android.os.SystemClock.elapsedRealtime() - lastPcmAt < 350) delay(50)
+                    }
                     emit(JSONObject().put("type", "audio_end").put("id", id))
                     responseId = ""; responding = false; boundaries.trySend(Unit)
                 }
@@ -265,7 +277,7 @@ internal class AoqBilingualWire(
             }
             "session.finished" -> { finishedConnections++; if (finishedConnections == if (plan.automatic) 2 else 1) emit(JSONObject().put("type", "finished")) }
             "error" -> {
-                android.util.Log.w("AoqBilingual", "translation_code=${event.optJSONObject("error")?.optString("code")}")
+                android.util.Log.w("DirectBilingual", "translation_code=${event.optJSONObject("error")?.optString("code")}")
                 error("Translation failed")
             }
         }

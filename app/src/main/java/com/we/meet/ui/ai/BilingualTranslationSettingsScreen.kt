@@ -50,8 +50,8 @@ internal fun BilingualTranslationSettingsScreen(
             SettingsGroupHeader(stringResource(R.string.bilingual_transport))
             SettingsGroup {
                 listOf(true, false).forEach { direct ->
-                    SettingsRow(label = stringResource(if (direct) R.string.bilingual_transport_aoq else R.string.bilingual_transport_cloud),
-                        modifier = Modifier.testTag(if (direct) "bilingual-aoq" else "bilingual-cloud"),
+                    SettingsRow(label = stringResource(if (direct) R.string.bilingual_transport_aoq else R.string.bilingual_transport_webrtc),
+                        modifier = Modifier.testTag(if (direct) "bilingual-aoq" else "bilingual-webrtc"),
                         onClick = { if (!state.active) onDirectAoqChange(direct) },
                         trailing = { RadioButton(selected = state.directAoq == direct, onClick = null, enabled = !state.active) })
                 }
@@ -63,7 +63,7 @@ internal fun BilingualTranslationSettingsScreen(
                 }
             }
             if (state.active) SettingsHint(stringResource(R.string.bilingual_settings_locked))
-            if (state.directAoq) {
+            run {
                 SettingsGroupHeader(stringResource(R.string.bilingual_direction_settings))
                 SettingsGroup {
                     listOf(null, state.pair.source, state.pair.target).forEach { source ->

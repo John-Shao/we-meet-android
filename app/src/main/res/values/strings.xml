@@ -16,7 +16,7 @@
     <string name="capture_direct_asr_gap">Transcription covers audio while enabled. For complete text, use whole-recording transcription after recording ends.</string>
     <string name="bilingual_transport">Connection</string>
     <string name="bilingual_transport_aoq">AOQ direct connection</string>
-    <string name="bilingual_transport_cloud">Cloud connection</string>
+    <string name="bilingual_transport_webrtc">WebRTC client direct</string>
     <string name="app_name">We Meet</string>
 
     <!-- Login screen -->

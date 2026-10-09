@@ -37,13 +37,16 @@ data class AssistantTranslationDirectRequest(
     @Json(name = "source_language") val source: String,
     @Json(name = "target_language") val target: String,
     val purpose: String = "translation",
+    val transport: String = "aoq",
+    val sdp: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
 data class AssistantTranslationDirectSession(
     val model: String,
-    val aoq: com.we.meet.feature.assistant.aicall.model.AoqCredentials,
+    val aoq: com.we.meet.feature.assistant.aicall.model.AoqCredentials? = null,
     @Json(name = "session_lease") val sessionLease: DirectAILeaseInfo? = null,
+    val sdp: String? = null,
 ) {
     override fun toString() = "AssistantTranslationDirectSession(<private>)"
 }

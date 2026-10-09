@@ -114,11 +114,11 @@ class AoqBilingualLiveTest {
             }
         }
         val events = Channel<JSONObject>(2048)
-        var wire: AoqBilingualWire? = null
+        var wire: DirectBilingualWire? = null
         val ended = mutableSetOf<String>()
         try {
             withContext(Dispatchers.Main) {
-                wire = AoqBilingualWire(context, api, AssistantTranslationPair(), object : CaptureTranslationWire.Listener {
+                wire = DirectBilingualWire(context, api, AssistantTranslationPair(), object : CaptureTranslationWire.Listener {
                     override fun opened() = Unit
                     override fun message(text: String) {
                         val event = JSONObject(text)

@@ -21,7 +21,7 @@ internal class BilingualPreferences(context: Context, account: String) {
         val sound = prefs.getBoolean("sound", true)
         val scene = TranslationScene.find(prefs.getString("scene", null))
         val direct = prefs.getBoolean("direct-aoq", true)
-        val fixed = prefs.getString("fixed-source", null)?.takeIf { direct && it in setOf(pair.source, pair.target) }
+        val fixed = prefs.getString("fixed-source", null)?.takeIf { it in setOf(pair.source, pair.target) }
         return BilingualState(pair = pair, sound = sound, sceneId = scene?.id, directAoq = direct, fixedSource = fixed)
     }
 
