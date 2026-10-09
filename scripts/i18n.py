@@ -95,6 +95,67 @@ def cmd_check(args: argparse.Namespace) -> int:
     return 1 if errors else 0
 
 
+def cmd_report(args: argparse.Namespace) -> int:
+    root = Path(args.root).resolve()
+    locales = tuple(args.locale) if args.locale else i18n.FULL_LOCALES
+    modules = args.module or i18n.discover_modules(root)
+    payload = []
+    for locale in locales:
+        clashes = i18n.consistency_report(root, locale, modules)
+        register = i18n.register_violations(root, locale, modules)
+        length = i18n.length_outliers(root, locale, modules)
+        payload.append({
+            "locale": locale,
+            "clashes": [{"english": c.english, "chinese": c.chinese,
+                         "variants": c.variants} for c in clashes],
+            "register_violations": [{"location": loc, "text": text} for loc, text in register],
+            "length_outliers": [{"location": loc, "english": en, "target": t}
+                                for loc, en, t in length],
+        })
+
+    if args.json:
+        print(json.dumps({"root": str(root), "report": payload}, ensure_ascii=False, indent=2))
+        return 0
+
+    for entry in payload:
+        locale = entry["locale"]
+        style = i18n.REGISTER_STYLE.get(locale)
+        print(f"\n{'=' * 74}\n{locale}"
+              + (f"   (house register: {style[0]})" if style else "")
+              + f"\n{'=' * 74}")
+
+        clashes = entry["clashes"]
+        print(f"\n[consistency] {len(clashes)} source string(s) rendered more than one way")
+        for clash in clashes[:args.max_clashes]:
+            print(f"    EN {clash['english']!r}   ZH {clash['chinese']!r}")
+            for variant, keys in sorted(clash["variants"].items()):
+                shown = ", ".join(keys[:4]) + (" …" if len(keys) > 4 else "")
+                print(f"        {variant!r}  ({len(keys)}) {shown}")
+        if len(clashes) > args.max_clashes:
+            print(f"    ... {len(clashes) - args.max_clashes} more (--max-clashes, or --json)")
+
+        register = entry["register_violations"]
+        print(f"\n[register] {len(register)} string(s) outside the house style")
+        for item in register[:10]:
+            print(f"    {item['location']}: {item['text'][:80]!r}")
+        if len(register) > 10:
+            print(f"    ... {len(register) - 10} more")
+
+        length = entry["length_outliers"]
+        print(f"\n[length] {len(length)} string(s) far longer than English — check the layout")
+        for item in length[:5]:
+            print(f"    {item['location']}: {len(item['english'])} -> {len(item['target'])}")
+            print(f"        EN {item['english'][:80]!r}")
+            print(f"        -> {item['target'][:100]!r}")
+        if len(length) > 5:
+            print(f"    ... {len(length) - 5} more")
+
+    print("\nAdvisory only — this never fails the build. The lists need a human decision;"
+          "\nsome splits are correct (grammatical gender, a microphone vs the audio output)."
+          "\nSee docs/i18n.md § Review policy.")
+    return 0
+
+
 def cmd_plan(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve()
     work_dir = Path(args.work_dir)
@@ -149,6 +210,16 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("--no-allow-identical", action="store_true",
                        help="ignore the baseline and report every identical value")
     check.set_defaults(func=cmd_check)
+
+    report = sub.add_parser(
+        "report",
+        help="advisory consistency / register / length report (never fails)")
+    report.add_argument("--locale", action="append", help="locale to report (repeatable)")
+    report.add_argument("--module", action="append", help="module to report (repeatable)")
+    report.add_argument("--json", action="store_true", help="emit a JSON report")
+    report.add_argument("--max-clashes", type=int, default=12,
+                        help="clash groups to print per locale (default: 12)")
+    report.set_defaults(func=cmd_report)
 
     plan = sub.add_parser("plan", help="extract untranslated entries as per-file bundles")
     plan.add_argument("--locale", required=True, help="target locale, e.g. es or pt-rBR")

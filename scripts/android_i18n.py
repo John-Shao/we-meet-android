@@ -540,6 +540,101 @@ def count_translatable_keys(root: Path, modules: list[str]) -> int:
     return total
 
 
+# ── reporting (advisory, never fails a build) ───────────────────────────
+#
+# `check` proves a locale is *complete and structurally sound*.  These helpers
+# look for the softer defect a translation pass leaves behind: the same source
+# string rendered two different ways, a string that breaks the house register,
+# and a translation far longer than its English original.  All three need human
+# judgement, so `report` never changes the exit code.
+
+#: House register per locale, with the pattern that indicates a violation.
+REGISTER_STYLE: dict[str, tuple[str, re.Pattern]] = {
+    "de": ("formal Sie", re.compile(r"\b(du|dich|dir|dein\w*|Du|Dich|Dein\w*)\b")),
+    "fr": ("formal vous", re.compile(r"\b(tu|ton|ta|tes|Ton|Ta|Tes)\b")),
+    "nl": ("informal je", re.compile(r"(?<![\w-])(u|uw|U|Uw)(?![\w-])")),
+}
+
+#: The locale used as the semantic reference when judging a translation.
+REFERENCE_LOCALE = "zh-rCN"
+
+
+@dataclass
+class Clash:
+    """One English+Chinese source rendered more than one way in a locale."""
+    english: str
+    chinese: str
+    variants: dict[str, list[str]]      # rendering -> ["module/file:key", ...]
+
+    @property
+    def occurrences(self) -> int:
+        return sum(len(keys) for keys in self.variants.values())
+
+
+def aligned_rows(root: Path, locale: str, modules: list[str] | None = None,
+                 reference: str = REFERENCE_LOCALE):
+    """(module, file, key, english, reference, target) for every translated string."""
+    for module in (modules or discover_modules(root)):
+        for default in default_files(root, module):
+            en = read_resources(default)
+            target = read_resources(res_dir(root, module, locale) / default.name)
+            ref = read_resources(res_dir(root, module, reference) / default.name)
+            for key, element in en.items():
+                if element.tag != "string" or element.get("translatable") == "false":
+                    continue
+                if key not in target:
+                    continue
+                yield (
+                    module,
+                    default.name,
+                    key.split(":", 1)[1],
+                    element_text(element),
+                    element_text(ref[key]) if key in ref else "",
+                    element_text(target[key]),
+                )
+
+
+def consistency_report(root: Path, locale: str, modules: list[str] | None = None,
+                       reference: str = REFERENCE_LOCALE) -> list[Clash]:
+    """Same source rendered several ways — the defect parallel batches create."""
+    groups: dict[tuple[str, str], dict[str, list[str]]] = {}
+    for module, fname, key, english, chinese, target in aligned_rows(
+            root, locale, modules, reference):
+        groups.setdefault((english, chinese), {}).setdefault(target, []).append(
+            f"{module}/{fname}:{key}")
+    clashes = [Clash(english, chinese, variants)
+               for (english, chinese), variants in groups.items() if len(variants) > 1]
+    return sorted(clashes, key=lambda clash: clash.english.lower())
+
+
+def register_violations(root: Path, locale: str,
+                        modules: list[str] | None = None) -> list[tuple[str, str]]:
+    """Strings that address the user in the wrong register for this locale."""
+    style = REGISTER_STYLE.get(locale)
+    if style is None:
+        return []
+    pattern = style[1]
+    return [(f"{module}/{fname}:{key}", text)
+            for module, fname, key, _en, _zh, text in aligned_rows(root, locale, modules)
+            if pattern.search(text)]
+
+
+def length_outliers(root: Path, locale: str, modules: list[str] | None = None,
+                    ratio: float = 1.7, delta: int = 18,
+                    minimum: int = 20) -> list[tuple[str, str, str]]:
+    """(location, english, target) where the target is suspiciously long.
+
+    German and French run ~30% longer than English by nature, so this is a
+    "look at the layout" list, not a defect list.
+    """
+    out = []
+    for module, fname, key, english, _zh, target in aligned_rows(root, locale, modules):
+        if len(english) >= minimum and len(target) > len(english) * ratio \
+                and len(target) - len(english) > delta:
+            out.append((f"{module}/{fname}:{key}", english, target))
+    return out
+
+
 # ── backfill: extract bundles ───────────────────────────────────────────
 
 def plan(root: Path, locale: str, work_dir: Path, reference_locale: str | None = "zh-rCN",

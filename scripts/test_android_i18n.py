@@ -383,6 +383,87 @@ class DiscoveryTest(unittest.TestCase):
             self.assertEqual(["de", "zh-rCN"], i18n.locale_qualifiers(root, "app"))
 
 
+class ReportTest(unittest.TestCase):
+    """The advisory report: consistency, register and length."""
+
+    def _pair(self, root: Path, file_stem: str, english: str, chinese: str,
+              translated: str, locale: str = "de"):
+        for name, body in ((f"values/{file_stem}.xml", english),
+                           (f"values-zh-rCN/{file_stem}.xml", chinese),
+                           (f"values-{locale}/{file_stem}.xml", translated)):
+            write(root / "app" / "src" / "main" / "res" / name,
+                  "<resources>\n" + '    <string name="k">' + body + "</string>\n" + "</resources>\n")
+
+    def test_one_source_rendered_two_ways_is_a_clash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_repo(Path(tmp))
+            self._pair(root, "a", "Save", "保存", "Speichern")
+            self._pair(root, "b", "Save", "保存", "Sichern")
+            clashes = i18n.consistency_report(root, "de")
+            self.assertEqual(1, len(clashes))
+            self.assertEqual("Save", clashes[0].english)
+            self.assertEqual(sorted(["Speichern", "Sichern"]), sorted(clashes[0].variants))
+            self.assertEqual(2, clashes[0].occurrences)
+
+    def test_a_uniform_locale_has_no_clash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_repo(Path(tmp))
+            self._pair(root, "a", "Save", "保存", "Speichern")
+            self._pair(root, "b", "Save", "保存", "Speichern")
+            self.assertEqual([], i18n.consistency_report(root, "de"))
+
+    def test_a_different_chinese_source_is_not_a_clash(self):
+        """Different Chinese means a different concept, so a different word is fine."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_repo(Path(tmp))
+            self._pair(root, "a", "Open", "开放", "Offen")
+            self._pair(root, "b", "Open", "未完成", "Öffnen")
+            self.assertEqual([], i18n.consistency_report(root, "de"))
+
+    def test_register_violations_follow_the_house_style(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_repo(Path(tmp))
+            self._pair(root, "a", "Your files", "你的文件", "Deine Dateien")
+            self._pair(root, "b", "Your files", "你的文件", "Ihre Dateien")
+            hits = i18n.register_violations(root, "de")
+            self.assertEqual(1, len(hits))
+            self.assertIn("Deine Dateien", hits[0][1])
+            # a locale with no declared style is never flagged
+            self.assertEqual([], i18n.register_violations(root, "es"))
+
+    def test_dutch_flags_formal_u(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_repo(Path(tmp))
+            self._pair(root, "a", "Your files", "你的文件", "Uw bestanden", locale="nl")
+            self.assertEqual(1, len(i18n.register_violations(root, "nl")))
+
+    def test_length_outlier_detection(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_repo(Path(tmp))
+            self._pair(root, "a", "Retry the request now",
+                       "重试", "Versuchen Sie die Anfrage jetzt bitte erneut")
+            self.assertEqual(1, len(i18n.length_outliers(root, "de")))
+            self._pair(root, "a", "Retry the request now", "重试", "Erneut versuchen")
+            self.assertEqual([], i18n.length_outliers(root, "de"))
+
+    def test_report_cli_is_advisory_and_json_readable(self):
+        import json
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_repo(Path(tmp))
+            self._pair(root, "a", "Save", "保存", "Speichern")
+            self._pair(root, "b", "Save", "保存", "Sichern")
+            result = subprocess.run(
+                [sys.executable, str(CLI), "--root", str(root), "report",
+                 "--locale", "de", "--json"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace")
+            self.assertEqual(0, result.returncode)   # advisory: never fails
+            payload = json.loads(result.stdout)
+            entry = payload["report"][0]
+            self.assertEqual("de", entry["locale"])
+            self.assertEqual(1, len(entry["clashes"]))
+            self.assertIn("english", entry["clashes"][0])
+
+
 class CliTest(unittest.TestCase):
     def _run(self, *args, root: Path):
         return subprocess.run(
