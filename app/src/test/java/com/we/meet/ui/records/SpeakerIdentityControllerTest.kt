@@ -72,7 +72,7 @@ class SpeakerIdentityControllerTest {
     @Test fun invalidAndOverlongLabelsNeverSendBut64UnicodeCodePointsAreAllowed() = runBlocking {
         val operations = Operations()
         val editor = SpeakerIdentityController(operations, 3, initialLabel = "Guest")
-        for (label in listOf("", "  ", "x".repeat(65), "Guest\nHost", "\u2028", "Host\u200B", "Host\uD800", "Host" + String(Character.toChars(0xE0001)))) {
+        for (label in listOf("", "  ", "x".repeat(65), "Guest\nHost", "\nHost", "Host\t", "\u0000Host", "\u2028Host", "Host\u2029", "\u2028", "Host\u200B", "Host\uD800", "Host" + String(Character.toChars(0xE0001)))) {
             editor.editLabel(label)
             assertFalse(editor.state.value.canSave)
             assertFalse(editor.save())

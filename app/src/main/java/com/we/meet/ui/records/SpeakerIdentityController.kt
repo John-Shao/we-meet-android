@@ -148,7 +148,7 @@ internal class SpeakerIdentityController(
 }
 
 internal fun cleanSpeakerLabel(value: String): String? = value.trim().takeIf { text ->
-    text.isNotBlank() && text.codePointCount(0, text.length) <= 64 && text.codePoints().noneMatch {
+    text.isNotBlank() && text.codePointCount(0, text.length) <= 64 && value.codePoints().noneMatch {
         Character.getType(it) in setOf(Character.CONTROL.toInt(), Character.FORMAT.toInt(),
             Character.SURROGATE.toInt(), Character.LINE_SEPARATOR.toInt(), Character.PARAGRAPH_SEPARATOR.toInt())
     }
