@@ -62,9 +62,13 @@ fun AiSettingsSheet(
                 modifier = Modifier.padding(horizontal = Dimens.SpaceXl), enabled = historyEnabled)
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
             SectionLabel(stringResource(R.string.assistant_call_transport))
+            val transportLabels = listOf(
+                stringResource(R.string.assistant_call_transport_webrtc),
+                stringResource(R.string.assistant_call_transport_aoq),
+            )
             CallSettingsDropdown(
-                selection.transport.name,
-                listOf("WebRTC", "AOQ"),
+                transportLabels[selection.transport.ordinal],
+                transportLabels,
                 { onSelectTransport(com.we.meet.feature.assistant.aicall.model.AiCallTransport.entries[it]) },
                 historyEnabled,
             )
