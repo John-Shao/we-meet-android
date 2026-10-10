@@ -507,6 +507,7 @@ internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, c
         ).joinToString(" · "),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (version.stage != "final") Text(stringResource(R.string.records_provisional), style = MaterialTheme.typography.bodySmall)
+        if (version.identityUpdated) Text(stringResource(R.string.records_identity_updated), style = MaterialTheme.typography.bodySmall)
         if (version.asrStatus == "incomplete") Text(stringResource(R.string.records_incomplete), style = MaterialTheme.typography.bodySmall)
         if (!chaptersOnly) Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = MaterialTheme.shapes.large) {
             Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {

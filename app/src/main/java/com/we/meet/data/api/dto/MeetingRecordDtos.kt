@@ -110,6 +110,7 @@ data class RecordSummaryVersionDto(
     @Json(name = "asr_status") val asrStatus: String = "unverified",
     @Json(name = "source_through_ms") val sourceThroughMs: Long? = null,
     val content: RecordSummaryContentDto,
+    @Json(name = "identity_updated") val identityUpdated: Boolean = false,
 )
 
 data class RecordSnapshotSegmentDto(

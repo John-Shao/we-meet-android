@@ -118,4 +118,5 @@
     <string name="records_actions">Empfohlene Aktionen</string>
     <string name="records_questions">Offene Fragen</string>
     <string name="records_back_to_playback">Zurück zur Wiedergabe</string>
+    <string name="records_identity_updated">Die Sprecheridentitäten wurden aktualisiert. Sie können das Protokoll neu erstellen; diese Version behält ihren ursprünglichen Inhalt.</string>
 </resources>

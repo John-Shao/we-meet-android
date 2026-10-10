@@ -118,4 +118,5 @@
     <string name="records_actions">Suggested actions</string>
     <string name="records_questions">Open questions</string>
     <string name="records_back_to_playback">Back to playback</string>
+    <string name="records_identity_updated">Speaker identities have changed. You can regenerate the minutes; this version keeps its original content.</string>
 </resources>
