@@ -311,6 +311,9 @@ data class AiCallColors(
     val sphereHighlight: Color,
     /** 球体扫描渐变,首尾同色才能接成环。 */
     val sphereGradient: List<Color>,
+    val transcriptUser: Color,
+    val transcriptAi: Color,
+    val onTranscript: Color,
 )
 
 private val LightAiCallControls = AiCallControlColors(
@@ -327,8 +330,11 @@ private val DarkAiCallControls = AiCallControlColors(
     onSelected = DarkAiCallOnControlSelected,
 )
 
-private fun aiCallColors(control: AiCallControlColors) = AiCallColors(
+private fun aiCallColors(control: AiCallControlColors, dark: Boolean = false) = AiCallColors(
     control = control,
+    transcriptUser = if (dark) DarkAiCallTranscriptUser else LightAiCallTranscriptUser,
+    transcriptAi = if (dark) DarkSurfaceVariant else LightBackground,
+    onTranscript = if (dark) DarkOnSurface else LightOnSurface,
     // 压在摄像头画面上时恒用深色那套。
     controlOnDark = DarkAiCallControls,
     // 与 SharedImColors 同源 —— 通话红绿只此一套。
@@ -537,7 +543,7 @@ private val DarkExtras = WeMeetExtras(
         onAccentActiveContainer = DarkOnAccentActiveContainer,
     ),
     room = SharedRoomColors,
-    aiCall = aiCallColors(DarkAiCallControls),
+    aiCall = aiCallColors(DarkAiCallControls, dark = true),
     im = SharedImColors,
     docs = DocsColors(
         commentHighlight = DarkDocsCommentHighlight,

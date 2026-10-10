@@ -364,6 +364,9 @@ val ImMentionSelfFg = Color(0xFF92400E)
  * 图标。改圆底颜色前先确认上表里的图标那几行还成立。
  */
 val LightAiCallControlSurface = Color(0xFFEDEDED)
+/** Soft blue outgoing transcript bubble; neutral text follows the call theme. */
+val LightAiCallTranscriptUser = Color(0xFFCFE9FF)
+val DarkAiCallTranscriptUser = Color(0xFF203E59)
 val LightAiCallOnControlSurface = Color(0xFF1A1C1E)
 val LightAiCallControlSelected = Color(0xFFFFFFFF)
 val LightAiCallOnControlSelected = Color(0xFF1A1C1E)

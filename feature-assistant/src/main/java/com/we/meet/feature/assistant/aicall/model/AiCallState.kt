@@ -32,6 +32,8 @@ data class AiCallSelection(
 data class AiCallUiState(
     val transcriptSessionId: String? = null,
     val transcriptRows: List<AssistantHistoryRow> = emptyList(),
+    /** First final-transcript receipt time; corrections keep the original time. */
+    val transcriptTimestamps: Map<String, Long> = emptyMap(),
     val status: AiCallStatus = AiCallStatus.Idle,
     val mode: AiCallMode = AiCallMode.Voice,
     val isMicMuted: Boolean = false,
@@ -60,7 +62,8 @@ data class AiCallUiState(
 )
 
 /** The session check belongs inside the atomic state update, including late callbacks. */
-internal fun AiCallUiState.withTranscript(sessionId: String, row: AssistantHistoryRow): AiCallUiState {
+internal fun AiCallUiState.withTranscript(sessionId: String, row: AssistantHistoryRow, receivedAt: Long = System.currentTimeMillis()): AiCallUiState {
     if (transcriptSessionId != sessionId) return this
-    return copy(transcriptRows = (transcriptRows.filterNot { it.id == row.id } + row).sortedBy { it.order })
+    return copy(transcriptRows = (transcriptRows.filterNot { it.id == row.id } + row).sortedBy { it.order },
+        transcriptTimestamps = transcriptTimestamps + (row.id to (transcriptTimestamps[row.id] ?: receivedAt)))
 }

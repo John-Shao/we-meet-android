@@ -34,6 +34,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.feature.assistant.R
+import com.we.meet.feature.assistant.aicall.ui.CallTranscriptBubble
+import com.we.meet.feature.assistant.aicall.ui.CallTranscriptTimestamp
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.components.WeMeetTopBar
 import java.text.DateFormat
@@ -139,7 +141,7 @@ fun AssistantHistoryContent(store: AssistantHistoryStore, onBack: () -> Unit, de
     }
     BackHandler(onBack = back)
     val formatter = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
-    Scaffold(topBar = {
+    Scaffold(containerColor = if (entry?.kind == "call") MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background, topBar = {
         WeMeetTopBar(title = stringResource(when (entry?.kind) {
             "call" -> R.string.assistant_history_call
             "translation" -> R.string.assistant_history_translation
@@ -186,13 +188,15 @@ fun AssistantHistoryContent(store: AssistantHistoryStore, onBack: () -> Unit, de
                     }
                 }
             } else {
-                Text(formatter.format(Date(entry.startedAt)), style = MaterialTheme.typography.labelMedium)
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM), contentPadding = PaddingValues(vertical = Dimens.SpaceL)) {
+                if (entry.kind != "call") Text(formatter.format(Date(entry.startedAt)), style = MaterialTheme.typography.labelMedium)
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(if (entry.kind == "call") Dimens.SpaceL else Dimens.SpaceM), contentPadding = PaddingValues(vertical = Dimens.SpaceL)) {
+                    if (entry.kind == "call") item(key = "timestamp") { CallTranscriptTimestamp(entry.startedAt) }
                     if (summaryVm != null || entry.summary != null) item(key = "summary") {
                         AssistantSummaryPanel(entry, requests[entry.id], summaryVm?.let { { it.generate(entry.id) } }) { index, done -> store.setTodo(entry.id, index, done) }
                     }
                     items(entry.rows, key = { it.id }) { row ->
-                        Card(Modifier.fillMaxWidth()) {
+                        if (entry.kind == "call") CallTranscriptBubble(row)
+                        else Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(Dimens.SpaceL)) {
                                 SelectionContainer { Text(row.displayText(context)) }
                             }

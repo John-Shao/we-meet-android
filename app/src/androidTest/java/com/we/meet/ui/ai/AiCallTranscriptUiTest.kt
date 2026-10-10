@@ -54,7 +54,8 @@ class AiCallTranscriptUiTest {
             @Suppress("UNCHECKED_CAST")
             state = AiCallViewModel::class.java.getDeclaredField("_state").apply { isAccessible = true }.get(vm) as MutableStateFlow<AiCallUiState>
             state.value = state.value.copy(status = AiCallStatus.Active(AiCallMode.Voice), transcriptSessionId = "live",
-                transcriptRows = listOf(AssistantHistoryRow("u", 0, "user", "current question"), AssistantHistoryRow("a", 1, "assistant", "current answer")))
+                transcriptRows = listOf(AssistantHistoryRow("u", 0, "user", "你好"), AssistantHistoryRow("a", 1, "assistant", "你好呀～今天想聊点什么？")),
+                transcriptTimestamps = mapOf("u" to System.currentTimeMillis(), "a" to System.currentTimeMillis()))
         }
         val deps = object : AssistantDeps {
             override val baseUrl = "https://unused.invalid/"
@@ -66,11 +67,15 @@ class AiCallTranscriptUiTest {
             restoration.setContent { CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
                 WeMeetTheme(darkTheme = dark.value) { AssistantCallScreen(deps, { exited = true }) }
             } }
-            compose.onNodeWithText("current question").assertIsDisplayed()
-            compose.onNodeWithText("current answer").assertIsDisplayed()
+            compose.onNodeWithText("你好").assertIsDisplayed()
+            compose.onNodeWithText("你好呀～今天想聊点什么？").assertIsDisplayed()
+            compose.onAllNodesWithTag("call-transcript-time").assertCountEquals(1)
+            compose.onNodeWithText(context.getString(R.string.assistant_history_you)).assertDoesNotExist()
+            compose.onNodeWithText(context.getString(R.string.assistant_history_ai)).assertDoesNotExist()
             restoration.emulateSavedInstanceStateRestore()
-            compose.onNodeWithText("current question").assertIsDisplayed()
-            compose.onNodeWithText("current answer").assertIsDisplayed()
+            compose.onNodeWithText("你好").assertIsDisplayed()
+            compose.onNodeWithText("你好呀～今天想聊点什么？").assertIsDisplayed()
+            compose.onAllNodesWithTag("call-transcript-time").assertCountEquals(1)
             compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertIsDisplayed().performClick()
             capture("call-chat-light.png")
             compose.runOnIdle { dark.value = true }
@@ -83,7 +88,7 @@ class AiCallTranscriptUiTest {
             pressBack()
             compose.onNodeWithText("saved phone conversation").assertIsDisplayed()
             pressBack()
-            compose.onNodeWithText("current answer").assertIsDisplayed()
+            compose.onNodeWithText("你好呀～今天想聊点什么？").assertIsDisplayed()
             compose.runOnIdle {
                 assertFalse(exited)
                 assertEquals("live", vm.state.value.transcriptSessionId)
@@ -91,13 +96,13 @@ class AiCallTranscriptUiTest {
                 state.value = state.value.copy(mode = AiCallMode.Video, status = AiCallStatus.Active(AiCallMode.Video))
             }
             compose.onNodeWithText(context.getString(R.string.assistant_call_transcript)).performClick()
-            compose.onNodeWithText("current answer").assertIsDisplayed()
+            compose.onNodeWithText("你好呀～今天想聊点什么？").assertIsDisplayed()
             pressBack()
             compose.runOnIdle {
                 assertEquals(AiCallStatus.Active(AiCallMode.Video), vm.state.value.status)
                 vm.endCall()
             }
-            compose.onNodeWithText("current answer").assertIsDisplayed()
+            compose.onNodeWithText("你好呀～今天想聊点什么？").assertIsDisplayed()
             compose.runOnIdle { assertEquals(2, vm.state.value.transcriptRows.size) }
         } finally { compose.runOnIdle { owner.viewModelStore.clear() }; store.clear() }
     }
@@ -107,10 +112,11 @@ class AiCallTranscriptUiTest {
         compose.setContent { WeMeetTheme { CallTranscriptList(rows.value) } }
         compose.onNodeWithText("sentence 40").assertIsDisplayed()
         compose.onNode(hasScrollAction()).performTouchInput { swipeDown() }
-        compose.onNodeWithText(context.getString(R.string.assistant_call_latest)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(context.getString(R.string.assistant_call_latest)).assertIsDisplayed()
+        capture("call-chat-latest.png")
         compose.runOnIdle { rows.value += AssistantHistoryRow("41", 41, "assistant", "sentence 41") }
         compose.onNodeWithText("sentence 41").assertIsNotDisplayed()
-        compose.onNodeWithText(context.getString(R.string.assistant_call_latest)).performClick()
+        compose.onNodeWithContentDescription(context.getString(R.string.assistant_call_latest)).performClick()
         compose.onNodeWithText("sentence 41").assertIsDisplayed()
         compose.runOnIdle { rows.value += AssistantHistoryRow("42", 42, "user", "sentence 42") }
         compose.onNodeWithText("sentence 42").assertIsDisplayed()

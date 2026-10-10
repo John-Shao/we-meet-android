@@ -268,7 +268,7 @@ fun AssistantCallScreen(
         modifier = modifier.fillMaxSize(),
         // Theme-aware background; the previous hardcoded white looked broken
         // in dark mode (black title text on a forced-white rectangle).
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = MaterialTheme.colorScheme.surface,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopBar(
@@ -319,7 +319,8 @@ fun AssistantCallScreen(
                     }
                     if (!isVideoActive) {
                         CallTranscriptList(state.transcriptRows, Modifier.fillMaxSize()
-                            .padding(top = if (state.status is AiCallStatus.Active) Dimens.SpaceXxl + Dimens.SpaceS else Dimens.SpaceNone))
+                            .padding(top = if (state.status is AiCallStatus.Active) Dimens.SpaceXxl + Dimens.SpaceS else Dimens.SpaceNone),
+                            timestamps = state.transcriptTimestamps)
                     } else {
                         FilledTonalButton(onClick = { showTranscript = true }, modifier = Modifier.align(Alignment.BottomCenter)) {
                             Text(stringResource(R.string.assistant_call_transcript))
@@ -396,7 +397,7 @@ fun AssistantCallScreen(
                 Surface(Modifier.fillMaxSize()) {
                     Scaffold(topBar = { WeMeetTopBar(title = stringResource(R.string.assistant_call_transcript),
                         onBack = { showTranscript = false }) }) { padding ->
-                        CallTranscriptList(state.transcriptRows, Modifier.fillMaxSize().padding(padding))
+                        CallTranscriptList(state.transcriptRows, Modifier.fillMaxSize().padding(padding), timestamps = state.transcriptTimestamps)
                     }
                 }
             }

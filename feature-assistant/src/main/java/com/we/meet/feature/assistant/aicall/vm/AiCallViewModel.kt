@@ -71,7 +71,7 @@ class AiCallViewModel(
         val transcriptSessionId = java.util.UUID.randomUUID().toString()
         recording = history?.begin("call")
         val currentRecording = recording
-        _state.update { it.copy(transcriptSessionId = transcriptSessionId, transcriptRows = emptyList(), status = AiCallStatus.Connecting(ConnectingStep.Connecting), isMicMuted = false, isOutputMuted = false, cameraResult = null) }
+        _state.update { it.copy(transcriptSessionId = transcriptSessionId, transcriptRows = emptyList(), transcriptTimestamps = emptyMap(), status = AiCallStatus.Connecting(ConnectingStep.Connecting), isMicMuted = false, isOutputMuted = false, cameraResult = null) }
         val makeClient = if (selection.transport == AiCallTransport.AOQ) ::OmniAoqClient else ::OmniWebRtcClient
         lateinit var client: OmniCallClient
         var owner: CameraActionController? = null
