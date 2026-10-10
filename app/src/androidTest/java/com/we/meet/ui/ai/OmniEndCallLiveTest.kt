@@ -32,6 +32,8 @@ class OmniEndCallLiveTest {
     @Test fun aoqByeByeEndsCallButMeaningQuestionDoesNot() = probe(AiCallTransport.AOQ, video = false,
         endAsset = "byebye", endText = "拜拜",
         nonCommands = listOf("byebye-question" to "拜拜是什么意思？"))
+    @Test fun aoqStandaloneByeByeEndsCall() = probe(AiCallTransport.AOQ, video = false,
+        endAsset = "byebye", endText = "拜拜", nonCommands = emptyList())
     @Test fun aoqGoodbyeVariantEndsVideoCall() = probe(AiCallTransport.AOQ, video = true,
         endAsset = "goodbye-variant", endText = "再见了")
     @Test fun aoqByeByeVariantEndsCallButTranslationDoesNot() = probe(AiCallTransport.AOQ, video = false,
@@ -111,6 +113,12 @@ class OmniEndCallLiveTest {
                 if (!com.we.meet.feature.assistant.BuildConfig.AI_CALL_CAMERA_VOICE_CONTROL)
                     assertEquals("Default Release camera gate must not disable hangup", listOf("end_call"), names)
                 android.util.Log.i("OmniEndCallTest", "Registered tool names=$names transport=$transport")
+                if (endAsset in listOf("goodbye", "byebye", "goodbye-variant", "byebye-variant")) {
+                    @Suppress("UNCHECKED_CAST") val rules = tools.javaClass.getDeclaredField("serverInstructions").apply { isAccessible = true }.get(tools) as Map<String, String>
+                    assertTrue("Client must retain the strengthened goodbye rules", rules["end_call"].orEmpty().contains("上述告别本身就是明确的挂断授权"))
+                    assertTrue(rules["end_call_description"].orEmpty().contains("这些告别本身就是明确挂断授权"))
+                    android.util.Log.i("OmniEndCallTest", "Strengthened goodbye rules present in configured client tools")
+                }
                 // Observe final natural-language responses, not an independent ASR action path.
                 val transcript = client.javaClass.getDeclaredField("transcript").apply { isAccessible = true }.get(client)
                 val emit = transcript.javaClass.getDeclaredField("emit").apply { isAccessible = true }
@@ -178,9 +186,22 @@ class OmniEndCallLiveTest {
                 say(endAsset, endText)
                 // rtcClient is cleared before potentially blocking native cleanup;
                 // observe the completed UI state, not that intermediate pointer value.
-                withTimeout(30_000) { while (vm!!.state.value.status !is AiCallStatus.Ended) {
+                try { withTimeout(30_000) { while (vm!!.state.value.status !is AiCallStatus.Ended) {
                     check(vm!!.state.value.status !is AiCallStatus.Failed); delay(50)
-                } }
+                } } } catch (error: TimeoutCancellationException) {
+                    val seen = tools.javaClass.getDeclaredField("seen").apply { isAccessible = true }.get(tools) as Set<*>
+                    val rounds = tools.javaClass.getDeclaredField("rounds").apply { isAccessible = true }.get(tools) as Map<*, *>
+                    val summary = rounds.values.filterNotNull().map { round ->
+                        listOf("hasTools", "done", "cancelled", "feedbackFailed").associateWith { name ->
+                            round.javaClass.getDeclaredField(name).apply { isAccessible = true }.getBoolean(round)
+                        }
+                    }
+                    val userText = vm!!.state.value.transcriptRows.lastOrNull { it.role == "user" }?.text
+                    val replyText = vm!!.state.value.transcriptRows.lastOrNull { it.role == "assistant" && !it.isStreaming }?.text
+                    val diagnostic = "Hangup missed: asset=$endAsset status=${vm!!.state.value.status} sameClient=${vm!!.rtcClient === client} endTools=${ends.get()} seenTools=${seen.size} rounds=$summary user=$userText reply=$replyText"
+                    android.util.Log.e("OmniEndCallTest", diagnostic)
+                    throw AssertionError(diagnostic, error)
+                }
                 assertNull(vm!!.rtcClient)
                 assertTrue(vm!!.state.value.status is AiCallStatus.Ended)
                 assertEquals("Must end through the requested tool, not a connection failure", 1, ends.get())
