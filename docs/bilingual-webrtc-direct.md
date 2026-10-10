@@ -65,3 +65,15 @@ AOQ 和 WebRTC 均将所选音色写入翻译会话的 `session.audio.output.voi
 后端提交 `3fd572f6b`；Android 实现提交 `7961947b`。后端已部署并完成迁移 0198/0199，生产拥有 47 个翻译音色、12 条后台提示词（四个可选场景）。Release APK 的目录读取、WebRTC 三种翻译路径、AOQ 自动翻译以及 WebRTC/AOQ 通话结束工具共七项验证通过，另有 15 项 Release 偏好/版本回归通过。首次 Release 探针因测试变体、测试 Activity 及旧系统权限不匹配失败，已修正测试代码后通过。
 
 内部 Release APK：`release/0.3.0-work.2-managed-assistant-20261009/we-meet-managed-assistant-release-internal.apk`。完整生产记录见后端 `docs/reviews/managed-assistant-production-2026-10-09.md`。
+
+## 停顿期间环境噪声导致断开（2026-10-11）
+
+自动方向模式把持续环境声加入待识别缓冲区，模型反复返回 unknown 时，原先的 320000 字节上限检查会在约 10 秒后抛异常并终止会话。已用支持 ARM 的本地模拟器、真实 AOQ 模型连接和持续低水平合成噪声复现。完全零值的静音不会触发这个路径。
+
+待识别缓冲区现在达到上限后开始新的识别窗口，提示无法识别语言并继续监听。识别任务携带窗口代数，窗口或轮次已重置时丢弃迟到的旧结果，不把旧识别结果应用到新语音上。正常识别成功的语音仍完整发送；不通过重新分配收费会话处理噪声。
+
+同时修正响应收尾竞态：噪声前缀可能产生一个空响应并立即开始真正的语音响应，旧响应延迟清理只在对应响应仍为当前响应时重置方向，避免中途清除新一轮翻译。
+
+验证：4 项缓冲区 JVM 回归通过；Debug App 和测试 APK 构建通过。真实 AOQ 噪声复验通过（67.046 秒），覆盖开始前持续噪声 15 秒、英→中翻译、播报后持续噪声 15 秒、中→英翻译、再次持续噪声 15 秒、重播及正常结束。模拟器使用合成麦克风输入；真机麦克风和用户当时的网络环境尚未复验。另一次重复相同语句的 60 秒停顿探针收到空响应而超时，不计为完整通过。测试信令由已登录模拟器分配短期会话后私下转交 ARM 模拟器，本次音频复验不涵盖其业务租约心跳。
+
+测试入口：`AoqBilingualLiveTest#automaticTranslationSurvivesSilenceBeforeAndAfterSpeech`，显式启用 `liveBackend=true`；`idleSeconds` 默认 15，`ambientAmplitude=500` 开启合成环境噪声。`exportTemporarySessionsForArmProbe` 仅在 `exportAoqProbe=true` 时生成一次性模型会话文件，读取后删除，不导出账号凭据。

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -39,8 +40,10 @@ private fun LanguagePanel(rows: List<BilingualRow>, language: String, modifier: 
             Text(stringResource(BilingualLanguages.label(language)), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             LazyColumn(state = list, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                 items(visible, key = { it.id }) { row ->
-                    Text(row.forLanguage(language).orEmpty(), style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Normal)
+                    SelectionContainer {
+                        Text(row.forLanguage(language).orEmpty(), style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Normal)
+                    }
                 }
             }
         }

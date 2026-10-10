@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -31,7 +32,6 @@ import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.ui.components.WeMeetTopBar
 import com.we.meet.ui.theme.Dimens
-import com.we.meet.feature.assistant.history.HistoryTextActions
 import com.we.meet.feature.assistant.R as AssistantR
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,10 +108,6 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                 color = if (state.phase == BilingualPhase.ERROR || permissionDenied) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
             if (state.audioOmitted) Text(stringResource(R.string.bilingual_audio_omitted),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (state.replayError) Text(stringResource(AssistantR.string.assistant_history_replay_error),
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-            if (state.rows.isNotEmpty() && !facing) Text(stringResource(AssistantR.string.assistant_history_replay_hint),
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (facing) {
                 BilingualFaceToFace(state, Modifier.weight(1f).fillMaxWidth())
             } else if (state.rows.isEmpty()) {
@@ -132,22 +128,15 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                     items(state.rows, key = { it.id }) { row ->
                         Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                                    Text(stringResource(R.string.bilingual_direction,
-                                        stringResource(BilingualLanguages.label(row.sourceLanguage)), stringResource(BilingualLanguages.label(row.targetLanguage))),
-                                        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.weight(1f))
-                                    HistoryTextActions(
-                                        text = stringResource(R.string.bilingual_direction,
-                                            stringResource(BilingualLanguages.label(row.sourceLanguage)), stringResource(BilingualLanguages.label(row.targetLanguage))) + "\n${row.source}\n${row.text}",
-                                        replay = if (row.id in state.replayable) ({ controller.replay(row.id) }) else null,
-                                        replayEnabled = !state.replaying && (!state.active || state.phase == BilingualPhase.LISTENING),
-                                        showShare = false,
-                                    )
+                                Text(stringResource(R.string.bilingual_direction,
+                                    stringResource(BilingualLanguages.label(row.sourceLanguage)), stringResource(BilingualLanguages.label(row.targetLanguage))),
+                                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                SelectionContainer {
+                                    Text(row.source, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                Text(row.source, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(row.text, style = MaterialTheme.typography.bodyLarge)
+                                SelectionContainer {
+                                    Text(row.text, style = MaterialTheme.typography.bodyLarge)
+                                }
                             }
                         }
                     }

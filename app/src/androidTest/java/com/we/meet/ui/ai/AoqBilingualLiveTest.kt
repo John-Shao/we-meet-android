@@ -14,21 +14,42 @@ import java.io.File
 
 /** Opt-in synthetic speech probe of both private worker processes, text and PCM. */
 class AoqBilingualLiveTest {
+    /** Allocate on a logged-in emulator without requiring its native AOQ ABI. */
+    @Test fun exportTemporarySessionsForArmProbe() = runBlocking {
+        assumeTrue(InstrumentationRegistry.getArguments().getString("exportAoqProbe") == "true")
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val api = ApiClient(com.we.meet.data.auth.TokenStore(context)).assistantTranslationApi
+        val adapter = com.squareup.moshi.Moshi.Builder().add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory())
+            .build().adapter(AssistantTranslationDirectSession::class.java)
+        val result = JSONObject()
+        for (request in listOf(AssistantTranslationDirectRequest("zh", "en"),
+            AssistantTranslationDirectRequest("en", "zh"), AssistantTranslationDirectRequest("zh", "en", "language_detection"))) {
+            result.put("${request.purpose}:${request.source}", JSONObject(adapter.toJson(api.directSession(request).copy(sessionLease = null))))
+        }
+        File(context.filesDir, "aoq-idle-probe.json").writeText(result.toString())
+    }
     @Test fun controllerKeepsPlaybackFocusAndReplaysRealAoqAudio() = verifyController(null)
     @Test fun fixedDirectionUsesOneRealSessionAndKeepsPlaybackAndFinish() = verifyController("en")
+    @Test fun automaticTranslationSurvivesSilenceBeforeAndAfterSpeech() = verifyController(null,
+        idleSeconds = InstrumentationRegistry.getArguments().getString("idleSeconds")?.toInt() ?: 15)
 
-    private fun verifyController(fixedSource: String?) = runBlocking {
+    private fun verifyController(fixedSource: String?, idleSeconds: Int = 0) = runBlocking {
         assumeTrue(InstrumentationRegistry.getArguments().getString("liveBackend") == "true")
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val delegate = ApiClient(com.we.meet.data.auth.TokenStore(context)).assistantTranslationApi
+        val probeFile = File(context.filesDir, "aoq-idle-probe.json")
+        val probe = if (probeFile.exists()) JSONObject(probeFile.readText()).also { probeFile.delete() } else null
+        val adapter = com.squareup.moshi.Moshi.Builder().add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory())
+            .build().adapter(AssistantTranslationDirectSession::class.java)
         val allocations = mutableListOf<AssistantTranslationDirectRequest>()
         val api = object : AssistantTranslationApi {
             override suspend fun voiceConfig() = delegate.voiceConfig()
             override suspend fun ticket(pair: AssistantTranslationPair) = error("Cloud gateway must not be used")
             override suspend fun directSession(request: AssistantTranslationDirectRequest): AssistantTranslationDirectSession {
                 allocations += request
-                return delegate.directSession(request)
+                return if (probe == null) delegate.directSession(request)
+                    else checkNotNull(adapter.fromJson(probe.getJSONObject("${request.purpose}:${request.source}").toString()))
             }
             override suspend fun sessionLease(id: String, operation: com.we.meet.feature.assistant.aicall.data.DirectAILeaseOperation) = delegate.sessionLease(id, operation)
         }
@@ -36,8 +57,11 @@ class AoqBilingualLiveTest {
         val samples = ShortArray(pcm.size / 2).also {
             java.nio.ByteBuffer.wrap(pcm).order(java.nio.ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(it)
         }
+        val currentSamples = java.util.concurrent.atomic.AtomicReference(samples)
         var position = 0
         val admit = java.util.concurrent.atomic.AtomicBoolean()
+        val ambientAmplitude = InstrumentationRegistry.getArguments().getString("ambientAmplitude")?.toInt() ?: 0
+        val ambient = java.util.Random(1)
         val microphone = object : com.we.meet.data.capture.CapturePcmSource {
             @Volatile var stopped = false
             override fun start() = Unit
@@ -47,9 +71,13 @@ class AoqBilingualLiveTest {
                 Thread.sleep(100)
                 if (stopped) return 0
                 buffer.fill(0)
-                if (admit.get() && position < samples.size) {
-                    val end = minOf(position + buffer.size, samples.size)
-                    samples.copyInto(buffer, 0, position, end); position = end
+                if (ambientAmplitude > 0) for (i in buffer.indices) {
+                    buffer[i] = (ambient.nextInt(ambientAmplitude * 2 + 1) - ambientAmplitude).toShort()
+                }
+                val input = currentSamples.get()
+                if (admit.get() && position < input.size) {
+                    val end = minOf(position + buffer.size, input.size)
+                    input.copyInto(buffer, 0, position, end); position = end
                 }
                 return buffer.size
             }
@@ -69,6 +97,10 @@ class AoqBilingualLiveTest {
                 withTimeout(50_000) { while (controller!!.state.value.phase != BilingualPhase.LISTENING) {
                     check(controller!!.state.value.phase != BilingualPhase.ERROR); delay(50)
                 } }
+                repeat(idleSeconds * 10) {
+                    delay(100)
+                    assertEquals("Silence before speech must keep the session connected", BilingualPhase.LISTENING, controller!!.state.value.phase)
+                }
                 admit.set(true)
                 withTimeout(30_000) { while (controller!!.state.value.rows.isEmpty() || controller!!.state.value.replayable.isEmpty()
                         || controller!!.state.value.phase != BilingualPhase.LISTENING) {
@@ -76,6 +108,29 @@ class AoqBilingualLiveTest {
                 } }
                 val row = controller!!.state.value.rows.single()
                 assertTrue(row.source.lowercase().contains("coffee"))
+                repeat(idleSeconds * 10) {
+                    delay(100)
+                    assertEquals("Silence after playback must keep the session connected", BilingualPhase.LISTENING, controller!!.state.value.phase)
+                }
+                if (idleSeconds > 0) {
+                    admit.set(false)
+                    val nextPcm = instrumentation.context.assets.open("aoq-chinese.pcm").use { it.readBytes() }
+                    currentSamples.set(ShortArray(nextPcm.size / 2).also {
+                        java.nio.ByteBuffer.wrap(nextPcm).order(java.nio.ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(it)
+                    })
+                    position = 0
+                    admit.set(true)
+                    withTimeout(30_000) { while (controller!!.state.value.rows.size < 2
+                        || controller!!.state.value.phase != BilingualPhase.LISTENING) {
+                        check(controller!!.state.value.phase != BilingualPhase.ERROR); delay(50)
+                    } }
+                    assertEquals("zh", controller!!.state.value.rows.last().sourceLanguage)
+                    assertTrue(controller!!.state.value.rows.last().source.contains("咖啡"))
+                    repeat(idleSeconds * 10) {
+                        delay(100)
+                        assertEquals("Silence after the next turn must keep the session connected", BilingualPhase.LISTENING, controller!!.state.value.phase)
+                    }
+                }
                 withContext(Dispatchers.Main) { controller!!.replay(row.id) }
                 withTimeout(5000) { while (!controller!!.state.value.replaying) delay(10) }
                 withTimeout(15_000) { while (controller!!.state.value.replaying

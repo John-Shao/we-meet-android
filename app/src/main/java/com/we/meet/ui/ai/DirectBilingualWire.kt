@@ -106,9 +106,9 @@ internal class DirectBilingualWire(
         }
         emit(JSONObject().put("type", "ready"))
         android.util.Log.i("DirectBilingual", "direct_ready model_connections=${plan.connections}")
-        val buffer = ByteArrayOutputStream()
+        val buffer = BilingualProbeBuffer()
         var direction: String? = plan.source
-        var probe: Deferred<String?>? = null
+        var probe: Deferred<Pair<Long, String?>>? = null
         var nextProbe = 25600
         while (isActive) {
             select<Unit> {
@@ -116,7 +116,9 @@ internal class DirectBilingualWire(
                     val bytes = result.getOrNull()
                     if (bytes == null) {
                         if (direction == null && buffer.size() > 0) {
-                            val language = probe?.await() ?: classify(buffer.toByteArray())
+                            val result = probe?.await()
+                            val language = result?.takeIf { it.first == buffer.generation }?.second
+                                ?: classify(buffer.toByteArray())
                             probe = null
                             if (language != null) {
                                 direction = language
@@ -136,11 +138,15 @@ internal class DirectBilingualWire(
                     emit(JSONObject().put("type", "ack"))
                     if (direction != null) append(connection(direction!!), bytes)
                     else if (buffer.size() > 0 || voiced(bytes)) {
-                        check(buffer.size() + bytes.size <= 320000)
-                        buffer.write(bytes)
+                        if (buffer.append(bytes)) {
+                            nextProbe = 25600
+                            emit(JSONObject().put("type", "language_unknown"))
+                            android.util.Log.i("DirectBilingual", "language_probe_window_reset")
+                        }
                         if (probe == null && buffer.size() >= nextProbe) {
                             val sample = buffer.toByteArray()
-                            probe = async { classify(sample) }
+                            val generation = buffer.generation
+                            probe = async { generation to classify(sample) }
                         }
                     }
                 }
@@ -148,9 +154,12 @@ internal class DirectBilingualWire(
                     direction = plan.source; buffer.reset(); nextProbe = 25600
                 }
                 probe?.let { current ->
-                    current.onAwait { language ->
-                        android.util.Log.i("DirectBilingual", "language_result=${language ?: "unknown"}")
+                    current.onAwait { result ->
                         probe = null
+                        // The model may complete after a noise window or turn was reset.
+                        if (result.first != buffer.generation) return@onAwait
+                        val language = result.second
+                        android.util.Log.i("DirectBilingual", "language_result=${language ?: "unknown"}")
                         if (language == null) {
                             nextProbe = buffer.size() + 12800
                             if (buffer.size() >= 320000) { buffer.reset(); nextProbe = 25600; emit(JSONObject().put("type", "language_unknown")) }
@@ -264,9 +273,11 @@ internal class DirectBilingualWire(
                     }
                 }
                 if (canonical.isNotBlank()) translated = canonical.toString()
+                android.util.Log.i("DirectBilingual", "translation_response source=$language source_chars=${sourceText.length} translated_chars=${translated.length}")
                 if (translated.isNotBlank()) emit(JSONObject().put("type", "translation").put("id", row.toString())
                     .put("source", sourceText).put("text", translated).put("source_language", language).put("target_language", BilingualLanguages.opposite(pair, language)))
                 val id = row.toString()
+                val completedResponseId = response.optString("id", responseId)
                 ending?.cancel()
                 // AOQ's response.done precedes the native decoded playback tail.
                 // End the app queue only after decoding has gone idle; otherwise
@@ -277,7 +288,11 @@ internal class DirectBilingualWire(
                         while (android.os.SystemClock.elapsedRealtime() - lastPcmAt < 350) delay(50)
                     }
                     emit(JSONObject().put("type", "audio_end").put("id", id))
-                    responseId = ""; responding = false; boundaries.trySend(Unit)
+                    // A new VAD response can start while the previous decoder tail
+                    // drains. Its predecessor must not clear the new turn's routing.
+                    if (responseId == completedResponseId) {
+                        responseId = ""; responding = false; boundaries.trySend(Unit)
+                    }
                 }
                 sourceText = ""; translated = ""
             }
