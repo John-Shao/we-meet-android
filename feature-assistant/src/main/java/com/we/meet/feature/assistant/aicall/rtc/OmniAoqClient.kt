@@ -151,7 +151,7 @@ class OmniAoqClient(
                 }
                 "error" -> {
                     val error = event.optJSONObject("error")
-                    Log.w("OmniAoq", "Session error code=${error?.optString("code")}")
+                    Log.w("OmniAoq", "Session error type=${error?.optString("type")} code=${error?.optString("code")} param=${error?.optString("param")}")
                     val rejectedVideoFrame = error != null && ready.isCompleted && OmniMediaErrors.isImageBeforeAudio(
                         error.optString("type"), error.optString("code"), error.optString("message"),
                         error.optString("event_id"), error.optString("param"))
@@ -306,8 +306,9 @@ class OmniAoqClient(
         else outputSuppressed = true
         if (responding) {
             val id = UUID.randomUUID().toString()
+            cancellation.sent(id)
             send(JSONObject().put("type", "response.cancel").put("event_id", id))
-            cancellation.sent(id); responding = false
+            responding = false
         }
         onAudioLevel(0f)
     }

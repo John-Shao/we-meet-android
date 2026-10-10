@@ -314,8 +314,8 @@ class OmniWebRtcClient(
         remoteAudio?.setEnabled(false)
         if (responding) {
             val eventId = UUID.randomUUID().toString()
-            send(JSONObject().put("type", "response.cancel").put("event_id", eventId))
             cancellation.sent(eventId)
+            send(JSONObject().put("type", "response.cancel").put("event_id", eventId))
             responding = false
         }
         onAudioLevel(0f)

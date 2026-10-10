@@ -4,6 +4,28 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class OmniCancellationTest {
+    @Test fun measuredQwenNoActiveResponseRejectionKeepsPendingCallOnlyOnce() {
+        val cancellation = OmniCancellation { 0 }
+        cancellation.sent("cancel-1")
+        assertTrue(cancellation.recoverable("invalid_request_error", "", "Conversation has none active response", "", ""))
+        assertFalse(cancellation.recoverable("invalid_request_error", "", "Conversation has none active response", "", ""))
+    }
+
+    @Test fun qwenCancellationRaceCannotMaskOtherRequestsOrFatalErrors() {
+        var time = 0L
+        val cancellation = OmniCancellation { time }
+        val message = "Conversation has none active response"
+        assertFalse(cancellation.recoverable("invalid_request_error", "", message, "", ""))
+        cancellation.sent("cancel-1")
+        assertFalse(cancellation.recoverable("server_error", "", message, "", ""))
+        assertFalse(cancellation.recoverable("invalid_request_error", "unknown", message, "", ""))
+        assertFalse(cancellation.recoverable("invalid_request_error", "", message, "update-1", ""))
+        assertFalse(cancellation.recoverable("invalid_request_error", "", message, "", "session.voice"))
+        assertFalse(cancellation.recoverable("invalid_request_error", "", message, "cancel-1", "session.voice"))
+        time = 30_001
+        assertFalse(cancellation.recoverable("invalid_request_error", "", message, "", ""))
+    }
+
     @Test fun correlatedCancelRejectionIsRecoverableOnlyOnce() {
         val cancellation = OmniCancellation { 0 }
         cancellation.sent("cancel-1")
