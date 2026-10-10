@@ -23,15 +23,17 @@ import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 import java.util.Calendar
 import java.util.Date
+import android.icu.text.BreakIterator
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
-/** Follow new final sentences only while the reader is at the bottom. */
+/** Follow streaming text only while the reader is at the bottom. */
 @Composable
 fun CallTranscriptList(rows: List<AssistantHistoryRow>, modifier: Modifier = Modifier, timestamps: Map<String, Long> = emptyMap()) {
     val list = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var followLatest by rememberSaveable { mutableStateOf(true) }
+    var typingRevision by remember { mutableIntStateOf(0) }
     val timeSeparators = remember(rows, timestamps) {
         buildMap<String, Long> {
             var previous: Long? = null
@@ -47,8 +49,8 @@ fun CallTranscriptList(rows: List<AssistantHistoryRow>, modifier: Modifier = Mod
                 if (scrolling || !canScroll) followLatest = !canScroll
             }
     }
-    LaunchedEffect(rows) {
-        if (followLatest && rows.isNotEmpty()) list.scrollToItem(0)
+    LaunchedEffect(rows, typingRevision) {
+        if (followLatest && !list.isScrollInProgress && rows.isNotEmpty()) list.scrollToItem(0)
     }
     Box(modifier.testTag("call-transcript")) {
         if (rows.isEmpty()) {
@@ -62,7 +64,7 @@ fun CallTranscriptList(rows: List<AssistantHistoryRow>, modifier: Modifier = Mod
             items(rows.asReversed(), key = { it.id }) { row ->
                 Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)) {
                     timeSeparators[row.id]?.let { CallTranscriptTimestamp(it) }
-                    CallTranscriptBubble(row)
+                    CallTranscriptBubble(row, animateText = true, onTyping = { typingRevision++ })
                 }
             }
         }
@@ -83,9 +85,10 @@ fun CallTranscriptList(rows: List<AssistantHistoryRow>, modifier: Modifier = Mod
 
 /** Short sentences hug their content; long sentences stop before the opposite edge. */
 @Composable
-fun CallTranscriptBubble(row: AssistantHistoryRow) {
+fun CallTranscriptBubble(row: AssistantHistoryRow, animateText: Boolean = false, onTyping: () -> Unit = {}) {
     val user = row.role == "user"
     val colors = WeMeetTheme.extras.aiCall
+    val text = if (animateText && !user && row.photo == null) typewriterText(row, onTyping) else row.text
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         if (row.photo != null) {
             CallTranscriptPhoto(row.photo, row.id, Modifier.align(if (user) Alignment.CenterEnd else Alignment.CenterStart).width(maxWidth * 0.66f))
@@ -93,11 +96,44 @@ fun CallTranscriptBubble(row: AssistantHistoryRow) {
             .widthIn(max = maxWidth * 0.88f), shape = RoundedCornerShape(Dimens.CornerXl),
             color = if (user) colors.transcriptUser else colors.transcriptAi, contentColor = colors.onTranscript) {
             SelectionContainer {
-                Text(row.text, modifier = Modifier.padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceM),
+                Text(text, modifier = Modifier.testTag("call-text-${row.id}").padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceM),
                     style = MaterialTheme.typography.bodyLarge)
             }
         }
     }
+}
+
+/** Save the revealed position so rotation and scrolling do not replay an answer. */
+@Composable
+private fun typewriterText(row: AssistantHistoryRow, onTyping: () -> Unit): String {
+    var revealed by rememberSaveable(row.id) { mutableIntStateOf(if (row.isStreaming) 0 else row.text.length) }
+    val notify by rememberUpdatedState(onTyping)
+    val boundaries = remember(row.text) { BreakIterator.getCharacterInstance().apply { setText(row.text) } }
+    val safeEnd = revealed.coerceIn(0, row.text.length).let { end ->
+        if (boundaries.isBoundary(end)) end else boundaries.preceding(end).coerceAtLeast(0)
+    }
+    LaunchedEffect(row.id, row.text) {
+        revealed = safeEnd
+        var lastFrame = 0L
+        while (revealed < row.text.length) {
+            val frame = withFrameNanos { it }
+            if (lastFrame != 0L && frame - lastFrame < 25_000_000L) continue
+            lastFrame = frame
+            // Catch up with large provider chunks instead of queuing minutes of animation.
+            val step = maxOf(1, (row.text.length - revealed) / 20)
+            var next = revealed
+            repeat(step) {
+                if (next < row.text.length) next = boundaries.following(next).let {
+                    if (it == BreakIterator.DONE) row.text.length else it
+                }
+            }
+            revealed = next
+            notify()
+        }
+    }
+    // An incomplete UTF-16 pair from a transport chunk must never reach Text.
+    val end = if (safeEnd > 0 && row.text[safeEnd - 1].isHighSurrogate()) safeEnd - 1 else safeEnd
+    return row.text.take(end)
 }
 
 @Composable

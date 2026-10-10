@@ -40,12 +40,14 @@ class OmniStopLiveTest {
         var allocations = 0
         var replies = 0
         var samples = 0
+        var streamed = 0
         ActivityScenario.launch(com.we.meet.MainActivity::class.java).use {
             try {
                 withContext(Dispatchers.Main) {
                     val level: (Float) -> Unit = { if (it > 0.001f) samples++ }
                     val transcript: (com.we.meet.feature.assistant.history.AssistantHistoryRow) -> Unit = {
-                        if (it.role == "assistant") replies++
+                        if (it.role == "assistant" && it.isStreaming) streamed++
+                        if (it.role == "assistant" && !it.isStreaming) replies++
                     }
                     val handler = CameraToolHandler { CameraActionResult(true, false, false, "already_disabled", "摄像头已关闭") }
                     client = if (transport == AiCallTransport.AOQ)
@@ -97,7 +99,8 @@ class OmniStopLiveTest {
                     check(!failed.isCompleted); delay(50)
                 } }
                 assertEquals(1, allocations)
-                android.util.Log.i("OmniStopLive", "transport=$transport active/repeated/late stop and next reply passed")
+                assertTrue("Provider must emit live transcript chunks", streamed > 0)
+                android.util.Log.i("OmniStopLive", "transport=$transport streamed=$streamed active/repeated/late stop and next reply passed")
             } finally {
                 withContext(Dispatchers.Main) { client?.close(); lease?.close() }
             }

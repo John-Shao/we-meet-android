@@ -84,7 +84,7 @@ class AiCallViewModel(
             { if (rtcClient === client) endCall(R.string.assistant_disconnected_ended) },
             { row ->
                 _state.update { it.withTranscript(transcriptSessionId, row) }
-                if (_state.value.transcriptSessionId == transcriptSessionId) currentRecording?.put(row)
+                if (!row.isStreaming && _state.value.transcriptSessionId == transcriptSessionId) currentRecording?.put(row)
             },
             CameraToolHandler { request ->
                 val started = android.os.SystemClock.elapsedRealtime()
@@ -317,7 +317,11 @@ class AiCallViewModel(
         }
     }
     private fun closeClient() {
-        _state.update { it.copy(transcriptSessionId = null) }
+        val unfinished = _state.value.transcriptRows.filter { it.isStreaming }
+        _state.update { it.copy(transcriptSessionId = null,
+            transcriptRows = it.transcriptRows.map { row -> if (row.isStreaming) row.copy(isStreaming = false) else row }) }
+        // Preserve received text when hanging up before the provider's final event.
+        unfinished.forEach { recording?.put(it.copy(isStreaming = false)) }
         cameraController?.close(); cameraController = null
         modelLease?.close(); modelLease = null
         val client = rtcClient

@@ -152,11 +152,17 @@ class AiCallTranscriptUiTest {
             pressBack()
             compose.runOnIdle {
                 assertEquals(AiCallStatus.Active(AiCallMode.Video), vm.state.value.status)
+                state.value = state.value.copy(transcriptRows = state.value.transcriptRows.map {
+                    if (it.role == "assistant") it.copy(isStreaming = true) else it
+                })
                 vm.endCall()
             }
             compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertDoesNotExist()
             compose.onNodeWithText("你好呀～今天想聊点什么？").assertIsDisplayed()
-            compose.runOnIdle { assertEquals(3, vm.state.value.transcriptRows.size) }
+            compose.runOnIdle {
+                assertEquals(3, vm.state.value.transcriptRows.size)
+                assertTrue(vm.state.value.transcriptRows.none { it.isStreaming })
+            }
         } finally { compose.runOnIdle { owner.viewModelStore.clear() }; store.clear() }
     }
 
@@ -166,13 +172,45 @@ class AiCallTranscriptUiTest {
         compose.onNodeWithText("sentence 40").assertIsDisplayed()
         compose.onNode(hasScrollAction()).performTouchInput { swipeDown() }
         compose.onNodeWithContentDescription(context.getString(R.string.assistant_call_latest)).assertIsDisplayed()
+        compose.runOnIdle { rows.value += AssistantHistoryRow("stream", 41, "assistant", "streaming first", isStreaming = true) }
+        compose.onNodeWithTag("call-text-stream").assertIsNotDisplayed()
+        compose.runOnIdle { rows.value = rows.value.map { if (it.id == "stream") it.copy(text = "streaming first and more", isStreaming = false) else it } }
+        compose.onNodeWithContentDescription(context.getString(R.string.assistant_call_latest)).assertIsDisplayed()
+        compose.onNodeWithTag("call-text-stream").assertIsNotDisplayed()
         capture("call-chat-latest.png")
-        compose.runOnIdle { rows.value += AssistantHistoryRow("41", 41, "user", "", photo = AssistantHistoryPhoto.Memory(historyTestJpeg())) }
+        compose.runOnIdle { rows.value += AssistantHistoryRow("41", 42, "user", "", photo = AssistantHistoryPhoto.Memory(historyTestJpeg())) }
         compose.onNodeWithTag("call-photo-41").assertIsNotDisplayed()
         compose.onNodeWithContentDescription(context.getString(R.string.assistant_call_latest)).performClick()
         compose.onNodeWithTag("call-photo-41").assertIsDisplayed()
-        compose.runOnIdle { rows.value += AssistantHistoryRow("42", 42, "user", "sentence 42") }
+        compose.runOnIdle { rows.value += AssistantHistoryRow("42", 43, "user", "sentence 42") }
         compose.onNodeWithText("sentence 42").assertIsDisplayed()
+    }
+
+    @Test fun typewriterStreamsWithoutSplittingEmojiOrRestartingAfterRestore() {
+        compose.mainClock.autoAdvance = false
+        val reply = mutableStateOf(AssistantHistoryRow("typed", 0, "assistant", "你好👨‍👩‍👧‍👦，这是逐字输出的回复。", isStreaming = true))
+        val restore = StateRestorationTester(compose)
+        restore.setContent { WeMeetTheme { CallTranscriptList(listOf(reply.value)) } }
+        fun visible() = compose.onNodeWithTag("call-text-typed").fetchSemanticsNode().config[SemanticsProperties.Text].single().text
+        compose.mainClock.advanceTimeBy(96)
+        val first = visible()
+        assertTrue(first.isNotEmpty()); assertTrue(first.length < reply.value.text.length)
+        assertTrue(reply.value.text.startsWith(first))
+        assertFalse(first.last().isHighSurrogate())
+        // Family emoji is one grapheme and must never appear as a partial ZWJ sequence.
+        if (first.contains("👨")) assertTrue(first.contains("👨‍👩‍👧‍👦"))
+        assertFalse(first.endsWith("‍"))
+        restore.emulateSavedInstanceStateRestore()
+        compose.mainClock.advanceTimeBy(32)
+        assertTrue(visible().length >= first.length)
+        compose.runOnIdle { reply.value = reply.value.copy(text = reply.value.text + " 接着说。") }
+        compose.mainClock.advanceTimeBy(32)
+        assertTrue(visible().length >= first.length)
+        compose.runOnIdle { reply.value = reply.value.copy(isStreaming = false) }
+        compose.mainClock.advanceTimeBy(3000)
+        compose.onNodeWithText(reply.value.text).assertIsDisplayed()
+        capture("call-typewriter-complete.png")
+        compose.mainClock.autoAdvance = true
     }
 
     private fun capture(name: String) {

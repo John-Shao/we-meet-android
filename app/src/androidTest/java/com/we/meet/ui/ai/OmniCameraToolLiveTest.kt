@@ -66,7 +66,7 @@ class OmniCameraToolLiveTest {
                     }
                     val level: (Float) -> Unit = { if (it > 0.001f) audioSamples++ }
                     val transcript: (com.we.meet.feature.assistant.history.AssistantHistoryRow) -> Unit = {
-                        if (it.role == "assistant") replies.trySend(it.text)
+                        if (it.role == "assistant" && !it.isStreaming) replies.trySend(it.text)
                     }
                     client = if (transport == AiCallTransport.AOQ)
                         OmniAoqClient(context, level, { failed.complete(Unit) }, transcript, handler, { failed.complete(Unit) })

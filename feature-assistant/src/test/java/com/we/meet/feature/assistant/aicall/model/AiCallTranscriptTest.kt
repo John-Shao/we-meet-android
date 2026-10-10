@@ -5,6 +5,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AiCallTranscriptTest {
+    @Test fun streamUpdatesKeepTheTimestampAndCannotEnterTheNextCall() {
+        val partial = AssistantHistoryRow("ai", 1, "assistant", "first", isStreaming = true)
+        val first = AiCallUiState(transcriptSessionId = "call").withTranscript("call", partial, 1000)
+        val completed = first.withTranscript("call", partial.copy(text = "first reply", isStreaming = false), 2000)
+        assertEquals(1, completed.transcriptRows.size)
+        assertEquals(1000L, completed.transcriptTimestamps["ai"])
+        assertFalse(completed.transcriptRows.single().isStreaming)
+        val next = completed.copy(transcriptSessionId = "next", transcriptRows = emptyList(), transcriptTimestamps = emptyMap())
+        assertSame(next, next.withTranscript("call", partial.copy(text = "old delta")))
+    }
     @Test fun currentPhotosNeedNoSavingAndCannotLeakFromPreviousCall() {
         val photo = AssistantHistoryRow("photo", 1, "user", "", photo = com.we.meet.feature.assistant.history.AssistantHistoryPhoto.Memory(byteArrayOf(1)))
         val state = AiCallUiState(transcriptSessionId = "call").withTranscript("call", photo)

@@ -32,7 +32,7 @@ data class AiCallSelection(
 data class AiCallUiState(
     val transcriptSessionId: String? = null,
     val transcriptRows: List<AssistantHistoryRow> = emptyList(),
-    /** First final-transcript receipt time; corrections keep the original time. */
+    /** First transcript receipt time; streaming updates and corrections keep it. */
     val transcriptTimestamps: Map<String, Long> = emptyMap(),
     val status: AiCallStatus = AiCallStatus.Idle,
     val mode: AiCallMode = AiCallMode.Voice,

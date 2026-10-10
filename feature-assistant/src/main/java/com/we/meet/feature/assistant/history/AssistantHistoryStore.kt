@@ -16,6 +16,8 @@ data class AssistantHistoryRow(
     val id: String, val order: Int, val role: String, val text: String,
     val source: String = "", val sourceLanguage: String = "", val targetLanguage: String = "",
     val photo: AssistantHistoryPhoto? = null,
+    /** Current-call presentation only; persisted rows are always complete snapshots. */
+    val isStreaming: Boolean = false,
 ) {
     override fun toString() = "AssistantHistoryRow(<private>)"
 }

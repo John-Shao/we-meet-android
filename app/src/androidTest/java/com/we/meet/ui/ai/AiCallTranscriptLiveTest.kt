@@ -41,6 +41,7 @@ class AiCallTranscriptLiveTest {
     @Test fun webRtcSpeechUpdatesChatWhileHistoryIsOpen() = verify(AiCallTransport.WebRTC)
 
     private fun verify(transport: AiCallTransport) = runBlocking<Unit> {
+        val probeScope = this
         assumeTrue(InstrumentationRegistry.getArguments().getString("liveBackend") == "true")
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
@@ -82,6 +83,8 @@ class AiCallTranscriptLiveTest {
         val owner = object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
         lateinit var vm: AiCallViewModel
         var input: SyntheticInput? = null
+        var streamObserver: Job? = null
+        val streamedStates = AtomicInteger()
         try {
             withContext(Dispatchers.Main) {
                 compose.activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -92,6 +95,9 @@ class AiCallTranscriptLiveTest {
                 })[AiCallViewModel::class.java]
                 vm.selectTransport(transport)
                 vm.selectMode(AiCallMode.Voice)
+                streamObserver = probeScope.launch(Dispatchers.Main) {
+                    vm.state.collect { state -> if (state.transcriptRows.any { it.isStreaming }) streamedStates.incrementAndGet() }
+                }
             }
             compose.setContent {
                 CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
@@ -111,6 +117,7 @@ class AiCallTranscriptLiveTest {
             input = syntheticInput(firstClient)
             input!!.say("camera-question.pcm")
             awaitRows(vm, userCount = 1, assistantCount = 1)
+            assertTrue("Current call must expose provider transcript deltas", streamedStates.get() > 0)
             val firstRows = vm.state.value.transcriptRows
             assertOrdered(firstRows)
             compose.onNodeWithText(firstRows.last().text).assertIsDisplayed()
@@ -132,16 +139,24 @@ class AiCallTranscriptLiveTest {
             compose.onNodeWithText(vm.state.value.transcriptRows.last().text).assertIsDisplayed()
 
             input!!.close(); input = null
+            withContext(Dispatchers.Main) {
+                // A terminal event may never arrive before hanging up. Exercise
+                // the production ViewModel's persistence of a received partial.
+                oldEmit(AssistantHistoryRow("interrupted", vm.state.value.transcriptRows.maxOf { it.order } + 1,
+                    "assistant", "synthetic interrupted text", isStreaming = true))
+            }
             val retained = vm.state.value.transcriptRows
             withContext(Dispatchers.Main) { vm.endCall() }
-            assertEquals(retained, vm.state.value.transcriptRows)
+            val finalized = retained.map { it.copy(isStreaming = false) }
+            assertEquals(finalized, vm.state.value.transcriptRows)
             withTimeout(15_000) { while (leaseCloses.get() != 1 || store.entries.value.size != 2 || store.entries.value.any { it.endedAt == null }) delay(50) }
-            assertEquals(retained, store.entries.value.first().rows)
+            assertEquals(finalized, store.entries.value.first().rows)
             store.setEnabled("call", false)
             withContext(Dispatchers.Main) {
                 vm.startCall()
                 assertTrue(vm.state.value.transcriptRows.isEmpty())
                 oldEmit(AssistantHistoryRow("late", 999, "assistant", "old connection callback"))
+                oldEmit(AssistantHistoryRow("late-stream", 999, "assistant", "old connection delta", isStreaming = true))
                 assertTrue(vm.state.value.transcriptRows.isEmpty())
             }
             awaitActive(vm)
@@ -157,6 +172,7 @@ class AiCallTranscriptLiveTest {
             assertEquals("Saving disabled must not create a third history entry", 2, store.entries.value.size)
             android.util.Log.i("CallTranscriptLive", "transport=$transport realAsrTurns=3 historyOpenAudio=true savedAndUnsaved=true allocations=${allocations.get()} leaseCloses=${leaseCloses.get()}")
         } finally {
+            streamObserver?.cancelAndJoin()
             input?.close()
             withContext(Dispatchers.Main) {
                 owner.viewModelStore.clear(); prefs.save(original)
@@ -176,7 +192,7 @@ class AiCallTranscriptLiveTest {
 
     private suspend fun awaitRows(vm: AiCallViewModel, userCount: Int, assistantCount: Int) = withTimeout(60_000) {
         while (vm.state.value.transcriptRows.count { it.role == "user" } < userCount ||
-            vm.state.value.transcriptRows.count { it.role == "assistant" } < assistantCount) {
+            vm.state.value.transcriptRows.count { it.role == "assistant" && !it.isStreaming } < assistantCount) {
             check(vm.state.value.status is AiCallStatus.Active) { "Call ended before final transcripts" }
             delay(50)
         }
