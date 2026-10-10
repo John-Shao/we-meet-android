@@ -132,6 +132,7 @@ class AiCallViewModel(
                     } finally { if (rtcClient === client) _state.update { it.copy(photoPending = false) } }
                 }
             },
+            selection.vadMode,
         )
         rtcClient = client
         owner = CameraActionController(
@@ -306,6 +307,7 @@ class AiCallViewModel(
     }
 
     fun selectTransport(value: AiCallTransport) = updateSelection(_state.value.selection.copy(transport = value))
+    fun selectVadMode(value: AiCallVadMode) = updateSelection(_state.value.selection.copy(vadMode = value))
     fun selectVoice(id: String?) = updateSelection(_state.value.selection.copy(voiceId = id))
     fun selectPrompt(id: String?) = updateSelection(_state.value.selection.copy(promptId = id, sceneId = null))
     fun selectScene(id: String?) {

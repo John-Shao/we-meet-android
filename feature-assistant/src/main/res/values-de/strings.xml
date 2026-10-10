@@ -143,4 +143,8 @@
     <string name="assistant_photo_close">Foto schließen</string>
     <string name="assistant_photo_attachment">[Foto]</string>
     <string name="assistant_photo_failed">Das Foto konnte nicht analysiert werden. Bitte erneut versuchen.</string>
+    <string name="assistant_call_vad_mode">Erkennung von Gesprächsbeiträgen (VAD)</string>
+    <string name="assistant_call_vad_server">Akustische Erkennung (server_vad)</string>
+    <string name="assistant_call_vad_semantic">Semantische Erkennung (semantic_vad)</string>
+    <string name="assistant_call_vad_hint">Vor dem Anruf auswählen. Wird für Sprach- und Videoanrufe über AOQ und WebRTC gespeichert. Beide Modi verwenden dieselbe Empfindlichkeit und Stille-Dauer.</string>
 </resources>

@@ -143,4 +143,8 @@
     <string name="assistant_photo_close">Fermer la photo</string>
     <string name="assistant_photo_attachment">[Image]</string>
     <string name="assistant_photo_failed">Impossible de répondre à partir de cette photo. Réessayez.</string>
+    <string name="assistant_call_vad_mode">Détection des tours de parole (VAD)</string>
+    <string name="assistant_call_vad_server">Détection acoustique (server_vad)</string>
+    <string name="assistant_call_vad_semantic">Détection sémantique (semantic_vad)</string>
+    <string name="assistant_call_vad_hint">Choisissez avant de lancer un appel. Le choix est enregistré pour les appels audio et vidéo via AOQ et WebRTC. Les deux modes utilisent la même sensibilité et la même durée de silence.</string>
 </resources>

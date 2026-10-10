@@ -13,6 +13,7 @@ import com.alibaba.aoq.clientsdk.AoqClientEngine
 import com.alibaba.aoq.clientsdk.AoqClientEngine.*
 import com.alibaba.aoq.clientsdk.AoqClientListener
 import com.we.meet.feature.assistant.aicall.model.AiCallAnswer
+import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
 import com.we.meet.feature.assistant.aicall.model.AiCallSetupException
 import com.we.meet.feature.assistant.aicall.model.CameraToolHandler
 import com.we.meet.feature.assistant.aicall.model.CameraActionResult
@@ -35,6 +36,7 @@ class OmniAoqClient(
     onToolFeedbackFailure: (CameraFeedbackFailure) -> Unit = {},
     onEndCall: (() -> Unit)? = null,
     photoHandler: PhotoToolHandler? = null,
+    private val vadMode: AiCallVadMode = AiCallVadMode.Server,
 ) : OmniCallClient {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val playbackDiagnostics = OmniPlaybackDiagnostics(context, "AOQ", "decoded_pcm_rms")
@@ -280,14 +282,13 @@ class OmniAoqClient(
     private fun configure() {
         val config = checkNotNull(answer)
         configured = true
-        // Match the existing WebRTC baseline's prompt and VAD configuration.
+        Log.i("OmniCall", "transport=AOQ vad=${vadMode.wireValue}")
         send(JSONObject().put("type", "session.update").put("session", JSONObject()
             .put("modalities", JSONArray(listOf("text", "audio")))
             .put("input_audio_format", "pcm").put("output_audio_format", "pcm")
             .put("voice", config.voice).put("instructions", tools?.instructions(config.instructions) ?: config.instructions)
             .put("input_audio_transcription", JSONObject().put("model", "qwen3-asr-flash-realtime"))
-            .put("turn_detection", JSONObject().put("type", "server_vad")
-                .put("threshold", 0.5).put("silence_duration_ms", 800))
+            .put("turn_detection", vadMode.turnDetection())
             .apply { if (tools != null) {
                 put("tools", tools.definitions()); put("enable_search", false)
                 put("temperature", 0.0); put("presence_penalty", 0.0)

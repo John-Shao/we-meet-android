@@ -27,6 +27,7 @@ data class AiCallSelection(
     val promptId: String? = null,
     val sceneId: String? = null,
     val transport: AiCallTransport = AiCallTransport.AOQ,
+    val vadMode: AiCallVadMode = AiCallVadMode.Server,
 )
 
 data class AiCallUiState(

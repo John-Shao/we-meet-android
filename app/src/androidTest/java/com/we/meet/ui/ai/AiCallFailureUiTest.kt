@@ -38,6 +38,7 @@ class AiCallFailureUiTest {
             com.we.meet.feature.assistant.aicall.ui.AiSettingsSheet(config = null,
                 selection = selection.value, historyStore = null, historyEnabled = enabled.value,
                 onSelectTransport = { selection.value = selection.value.copy(transport = it) },
+                onSelectVadMode = { selection.value = selection.value.copy(vadMode = it) },
                 onSelectVoice = {}, onSelectPrompt = {}, onSelectScene = {}, onDismiss = {})
         } }
         compose.onNodeWithText("AOQ").performScrollTo().performClick()

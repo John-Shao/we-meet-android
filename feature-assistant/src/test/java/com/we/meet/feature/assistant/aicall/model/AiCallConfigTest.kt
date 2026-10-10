@@ -5,6 +5,14 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class AiCallConfigTest {
+    @Test fun catalogResolutionPreservesVadAndTransportForBothCameraStates() {
+        for (transport in AiCallTransport.entries) for (vad in AiCallVadMode.entries) {
+            val selection = AiCallSelection("ryan-id", "prompt-id", transport = transport, vadMode = vad)
+            for (mode in AiCallMode.entries) {
+                assertEquals(selection, config.resolveSelection(AiCallUiState(mode = mode, selection = selection).selection))
+            }
+        }
+    }
     @Test fun legacySceneResolvesToServerPromptIdAndRemovedSceneFallsBack() {
         val migrated = config.resolveSelection(AiCallSelection(voiceId = "ryan-id", sceneId = "practice"))
         assertEquals(AiCallSelection(voiceId = "ryan-id", promptId = "practice-id"), migrated)

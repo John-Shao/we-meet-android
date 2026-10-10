@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import com.we.meet.feature.assistant.aicall.model.AiAgentConfigResponse
 import com.we.meet.feature.assistant.aicall.model.AiCallSelection
+import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
 import com.we.meet.feature.assistant.history.AssistantHistoryPreference
 import com.we.meet.feature.assistant.history.AssistantHistoryStore
 
@@ -49,6 +50,7 @@ fun AiSettingsSheet(
     onSelectPrompt: (String?) -> Unit,
     onSelectScene: (String?) -> Unit,
     onDismiss: () -> Unit,
+    onSelectVadMode: (AiCallVadMode) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -73,6 +75,25 @@ fun AiSettingsSheet(
                 historyEnabled,
             )
             CallConfigSection(config, selection, onSelectVoice, enabled = historyEnabled)
+            SectionLabel(stringResource(R.string.assistant_call_vad_mode))
+            val vadLabels = listOf(
+                stringResource(R.string.assistant_call_vad_server),
+                stringResource(R.string.assistant_call_vad_semantic),
+            )
+            CallSettingsDropdown(
+                value = vadLabels[selection.vadMode.ordinal],
+                options = vadLabels,
+                onSelect = { onSelectVadMode(AiCallVadMode.entries[it]) },
+                enabled = historyEnabled,
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl).testTag("call-vad-picker"),
+                optionTag = { "call-vad-${AiCallVadMode.entries[it].wireValue}" },
+            )
+            Text(
+                text = stringResource(R.string.assistant_call_vad_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS),
+            )
             Spacer(modifier = Modifier.height(Dimens.SpaceM))
             AssistantHistoryPreference(historyStore, kind = "call", enabled = historyEnabled,
                 horizontalPadding = Dimens.SpaceXl)

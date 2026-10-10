@@ -10,6 +10,7 @@ import com.we.meet.feature.assistant.aicall.data.AiCallPreferences
 import com.we.meet.feature.assistant.aicall.model.AiCallOffer
 import com.we.meet.feature.assistant.aicall.model.AiCallSelection
 import com.we.meet.feature.assistant.aicall.model.AiCallTransport
+import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
 import java.security.MessageDigest
 import java.util.UUID
 import org.junit.After
@@ -72,6 +73,25 @@ class AoqDefaultPreferencesTest {
         assertTrue(BilingualState().directAoq)
         assertTrue(BilingualPreferences(context, "new").load().directAoq)
         assertEquals("Tina", BilingualPreferences(context, "new").load().voice)
+    }
+    @Test fun vadPreferencePersistsAcrossTransportsAndNewPreferenceInstances() {
+        val prefs = AiCallPreferences(context)
+        assertEquals(AiCallVadMode.Server, prefs.load().vadMode)
+        for (transport in AiCallTransport.entries) for (mode in AiCallVadMode.entries) {
+            val selected = prefs.load().copy(transport = transport, vadMode = mode)
+            prefs.save(selected)
+            assertEquals(selected, AiCallPreferences(context).load())
+        }
+    }
+
+    @Test fun missingOrInvalidVadPreferenceKeepsExistingAcousticModeAndOtherSelections() {
+        val prefs = AiCallPreferences(context)
+        val selected = prefs.load().copy(voiceId = "voice", promptId = "prompt", transport = AiCallTransport.WebRTC)
+        prefs.save(selected)
+        for (value in listOf(null, "unsupported")) {
+            callStore().edit().putString("call_vad_mode", value).commit()
+            assertEquals(selected, AiCallPreferences(context).load())
+        }
     }
     @Test fun translationVoicePersistsIndependentlyAndRejectsOmniOnlyVoice() {
         val prefs = BilingualPreferences(context, "voice")

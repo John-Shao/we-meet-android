@@ -143,4 +143,8 @@
     <string name="assistant_photo_close">Close photo</string>
     <string name="assistant_photo_attachment">[Photo]</string>
     <string name="assistant_photo_failed">Unable to answer this photo. Please retry.</string>
+    <string name="assistant_call_vad_mode">Voice turn detection (VAD)</string>
+    <string name="assistant_call_vad_server">Acoustic detection (server_vad)</string>
+    <string name="assistant_call_vad_semantic">Semantic detection (semantic_vad)</string>
+    <string name="assistant_call_vad_hint">Choose before calling. Saved for voice and video calls over AOQ and WebRTC. Both modes use the same sensitivity and silence duration.</string>
 </resources>

@@ -381,6 +381,7 @@ fun AssistantCallScreen(
                     historyStore = vm.history,
                     historyEnabled = !callInProgress,
                     onSelectTransport = vm::selectTransport,
+                    onSelectVadMode = vm::selectVadMode,
                     onSelectVoice = vm::selectVoice,
                     onSelectPrompt = vm::selectPrompt,
                     onSelectScene = vm::selectScene,

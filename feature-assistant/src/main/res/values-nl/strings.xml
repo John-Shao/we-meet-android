@@ -143,4 +143,8 @@
     <string name="assistant_photo_close">Foto sluiten</string>
     <string name="assistant_photo_attachment">[Foto]</string>
     <string name="assistant_photo_failed">Kan deze foto niet analyseren. Probeer het opnieuw.</string>
+    <string name="assistant_call_vad_mode">Detectie van spreekbeurten (VAD)</string>
+    <string name="assistant_call_vad_server">Akoestische detectie (server_vad)</string>
+    <string name="assistant_call_vad_semantic">Semantische detectie (semantic_vad)</string>
+    <string name="assistant_call_vad_hint">Kies vóór het bellen. De keuze wordt opgeslagen voor spraak- en videogesprekken via AOQ en WebRTC. Beide modi gebruiken dezelfde gevoeligheid en stilteduur.</string>
 </resources>

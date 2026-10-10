@@ -137,4 +137,8 @@
     <string name="assistant_photo_close">关闭图片</string>
     <string name="assistant_photo_attachment">[图片]</string>
     <string name="assistant_photo_failed">拍图问答失败，请重试</string>
+    <string name="assistant_call_vad_mode">语音轮次检测（VAD）</string>
+    <string name="assistant_call_vad_server">声学检测（server_vad）</string>
+    <string name="assistant_call_vad_semantic">语义检测（semantic_vad）</string>
+    <string name="assistant_call_vad_hint">通话前选择，保存后用于 AOQ 和 WebRTC 的语音、视频通话。两种模式使用相同的灵敏度和静音等待时间。</string>
 </resources>

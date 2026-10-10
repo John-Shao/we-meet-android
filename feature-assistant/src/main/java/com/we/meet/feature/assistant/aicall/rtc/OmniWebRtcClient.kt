@@ -7,6 +7,7 @@ import android.util.Log
 import com.twilio.audioswitch.AudioDevice
 import com.twilio.audioswitch.AudioSwitch
 import com.we.meet.feature.assistant.aicall.model.AiCallAnswer
+import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
 import com.we.meet.feature.assistant.aicall.model.CameraToolHandler
 import com.we.meet.feature.assistant.aicall.model.CameraActionResult
 import com.we.meet.feature.assistant.aicall.model.CameraFeedbackFailure
@@ -43,6 +44,7 @@ class OmniWebRtcClient(
     onToolFeedbackFailure: (CameraFeedbackFailure) -> Unit = {},
     onEndCall: (() -> Unit)? = null,
     photoHandler: PhotoToolHandler? = null,
+    private val vadMode: AiCallVadMode = AiCallVadMode.Server,
 ) : OmniCallClient {
     private val playbackDiagnostics = OmniPlaybackDiagnostics(context, "WebRTC", "inbound_rtp_audio_level")
     private val transcript = OmniTranscript(onTranscript)
@@ -288,6 +290,7 @@ class OmniWebRtcClient(
     private fun configureIfReady() {
         val config = answer ?: return
         if (!handshake.takeConfiguration()) return
+        Log.i("OmniCall", "transport=WebRTC vad=${vadMode.wireValue}")
         send(JSONObject().put("type", "session.update").put("session", JSONObject()
             .put("modalities", JSONArray(listOf("text", "audio")))
             .put("input_audio_format", "pcm")
@@ -295,8 +298,7 @@ class OmniWebRtcClient(
             .put("voice", config.voice)
             .put("instructions", tools?.instructions(config.instructions) ?: config.instructions)
             .put("input_audio_transcription", JSONObject().put("model", "qwen3-asr-flash-realtime"))
-            .put("turn_detection", JSONObject().put("type", "server_vad")
-                .put("threshold", 0.5).put("silence_duration_ms", 800))
+            .put("turn_detection", vadMode.turnDetection())
             .apply { if (tools != null) {
                 put("tools", tools.definitions()); put("enable_search", false)
                 put("temperature", 0.0); put("presence_penalty", 0.0)
