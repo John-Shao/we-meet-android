@@ -15,10 +15,18 @@ import com.we.meet.data.api.RecordingUploadRetry
 import com.we.meet.data.api.RecordingUploadSign
 import com.we.meet.data.api.RecordingUploadState
 import com.we.meet.data.api.RecordingUploadTicket
+import com.we.meet.data.api.RecordingImportApi
+import com.we.meet.data.api.RecordingImportBinding
+import com.we.meet.data.api.RecordingImportIdentity
+import com.we.meet.data.api.RecordingPreflightDecision
+import com.we.meet.data.auth.PrivateLogin
+import com.squareup.moshi.Moshi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -65,6 +73,7 @@ data class ChunkedUploadRequest(
     val onProgress: (sent: Long, total: Long) -> Unit,
     val cancelled: () -> Boolean,
     val diarization: Boolean = false,
+    val identity: RecordingImportIdentity? = null,
 )
 
 /** Streams the selected document with a byte limit; never caches private media or results. */
@@ -82,7 +91,68 @@ class RecordingUploadRepository(
      * unavailable, so a caller wired for the whole-file path still works.
      */
     private val partStorage: RecordingPartStorage? = null,
+    private val importApi: RecordingImportApi? = null,
+    private val currentSession: () -> String = { "isolated-upload-session" },
+    private val boundSession: String? = null,
 ) {
+    val loginId: String get() = boundSession ?: currentSession()
+    fun allowed(viewer: String): Boolean = currentViewer() == viewer && (boundSession == null || currentSession() == boundSession)
+    fun open(viewer: String): RecordingUploadRepository {
+        require(viewer.isNotBlank() && allowed(viewer))
+        val login = currentSession()
+        val active = { currentViewer() == viewer && currentSession() == login }
+        return RecordingUploadRepository(RecordingImportBinding(api, importApi, viewer, PrivateLogin(login), active),
+            { if (active()) viewer else null }, storage, partStorage, importApi, currentSession, login).also { bound ->
+                lastCapabilities(viewer)?.let { bound.capabilitiesByViewer[viewer] = it }
+            }
+    }
+
+    private suspend fun <T> privateRequest(viewer: String, operation: suspend (RecordingImportApi, PrivateLogin) -> T): Result<T> = scoped(viewer) {
+        val login = loginId
+        try {
+            withTimeout(15_000) { operation(requireNotNull(importApi), PrivateLogin(login)) }.also {
+                if (!allowed(viewer) || currentSession() != login) throw IdentityLoginChangedException()
+            }
+        } catch (_: TimeoutCancellationException) {
+            currentCoroutineContext().ensureActive()
+            throw IdentityRequestTimeoutException()
+        }
+    }
+    suspend fun importScopes(viewer: String, offset: Int = 0) = privateRequest(viewer) { network, login ->
+        identityUuid(viewer); require(offset in 0..10_000)
+        network.scopes(viewer, login, offset).also { page ->
+            directoryPage(page.results.map { it.id }, page.nextOffset, offset)
+            page.results.forEach { require(it.name.isNotBlank() && it.name.length <= 512 && it.policy.version >= 0) }
+        }
+    }
+    suspend fun importCandidates(viewer: String, organization: String?, query: String = "", offset: Int = 0) = privateRequest(viewer) { network, login ->
+        identityUuid(viewer); organization?.let(::identityUuid); require(query.length <= 80 && offset in 0..10_000)
+        network.candidates(viewer, login, organization ?: "personal", query, offset).also { page ->
+            require(page.organizationId == organization)
+            directoryPage(page.results.map { it.id }, page.nextOffset, offset)
+            page.results.forEach { require(it.name.isNotBlank() && it.name.length <= 512 && (organization != null || it.id == viewer)) }
+        }
+    }
+    suspend fun decidePreflight(viewer: String, recordId: String, attempt: Int, action: String) = privateRequest(viewer) { network, login ->
+        identityUuid(viewer); uuid(recordId); require(attempt in 1 until Int.MAX_VALUE && action in setOf("retry_identity", "continue_without_identity"))
+        network.decide(recordId, viewer, login, RecordingPreflightDecision(attempt, action)).also {
+            validate(it); require(it.recordId == recordId && it.attempt == attempt + 1)
+            if (action == "continue_without_identity") require(it.identityPreflight?.status == "disabled")
+        }
+    }
+    private fun directoryPage(ids: List<String>, next: Int?, offset: Int) {
+        require(ids.size <= 25 && ids.distinct().size == ids.size); ids.forEach(::identityUuid)
+        require(next == null || next in (offset + 1)..10_000)
+    }
+    private fun intent(viewer: String, config: RecordingUploadCapabilities, value: RecordingImportIdentity?, diarization: Boolean, adopting: Boolean = false): RecordingImportIdentity? {
+        if (value == null) return null
+        identityUuid(viewer); value.organizationId?.let(::identityUuid)
+        val ids = value.candidateUserIds.toList()
+        require(diarization && ids.size in 1..50 && ids.distinct().size == ids.size); ids.forEach(::identityUuid)
+        require(value.organizationId != null || ids == listOf(viewer))
+        if (!adopting) require(config.identityPreflight?.available == true && ids.size <= config.identityPreflight.maxCandidates)
+        return value.copy(candidateUserIds = ids.sorted())
+    }
     suspend fun personalHotwords(viewer: String) = scoped(viewer) {
         api.personalHotwords().also(::validatePersonalHotwords)
     }
@@ -115,6 +185,9 @@ class RecordingUploadRepository(
     suspend fun capabilities(viewer: String) = scoped(viewer) {
         api.capabilities().also {
             require(!it.available || (it.maxBytes > 0 && it.extensions.isNotEmpty()))
+            it.identityPreflight?.let { gate -> require(gate.maxCandidates in 0..50 && gate.reason.length <= 64)
+                if (gate.available) require(gate.maxCandidates > 0 && gate.maxBytes in 1..(512L * 1024 * 1024) && gate.maxDurationMs in 1..7_200_000)
+            }
             require(currentViewer() == viewer)
             capabilitiesByViewer[viewer] = it
         }
@@ -129,6 +202,7 @@ class RecordingUploadRepository(
         viewer: String, key: String, name: String, size: Long?, config: RecordingUploadCapabilities,
         context: String, hotwords: String, open: () -> InputStream,
         diarization: Boolean = false,
+        identity: RecordingImportIdentity? = null,
         onProgress: (Long, Long) -> Unit,
     ): Result<RecordingUploadState> = scoped(viewer) {
         val transferContext = currentCoroutineContext()
@@ -138,6 +212,9 @@ class RecordingUploadRepository(
         require(name.substringAfterLast('.', "").lowercase() in config.extensions)
         require(context.length <= 400 && hotwords.length <= 4000)
         require(hotwords.lines().filter { it.isNotBlank() }.let { words -> words.size <= 100 && words.all { it.trim().length <= 40 } })
+        val identityIntent = intent(viewer, config, identity, diarization)
+        val byteLimit = if (identityIntent == null) config.maxBytes else minOf(config.maxBytes, requireNotNull(config.identityPreflight).maxBytes)
+        require(size == null || size <= byteLimit)
         val body = object : RequestBody() {
             override fun contentType() = "application/octet-stream".toMediaType()
             override fun contentLength() = size ?: -1
@@ -151,7 +228,7 @@ class RecordingUploadRepository(
                         val count = stream.read(buffer)
                         if (count < 0) break
                         total += count
-                        if (total > config.maxBytes) throw IOException("File exceeds upload limit")
+                        if (total > byteLimit) throw IOException("File exceeds upload limit")
                         sink.write(buffer, 0, count)
                         onProgress(total, size ?: 0)
                     }
@@ -160,8 +237,14 @@ class RecordingUploadRepository(
             }
         }
         val text = "text/plain".toMediaType()
-        api.upload(key.toRequestBody(text), MultipartBody.Part.createFormData("audio", name, body),
+        val audio = MultipartBody.Part.createFormData("audio", name, body)
+        if (identityIntent == null) api.upload(key.toRequestBody(text), audio,
             context.toRequestBody(text), hotwords.toRequestBody(text), diarization.toString().toRequestBody(text)).also(::validate)
+        else {
+            val json = Moshi.Builder().build().adapter(Map::class.java).serializeNulls().toJson(mapOf("organization_id" to identityIntent.organizationId, "candidate_user_ids" to identityIntent.candidateUserIds))
+            api.uploadIdentity(key.toRequestBody(text), audio, context.toRequestBody(text), hotwords.toRequestBody(text),
+                diarization.toString().toRequestBody(text), json.toRequestBody("application/json".toMediaType())).also(::validate)
+        }
     }
 
     /** True when a file this large can only travel by the presigned path. */
@@ -196,6 +279,7 @@ class RecordingUploadRepository(
         onProgress: (Long, Long) -> Unit = { _, _ -> },
         onTicket: (RecordingUploadTicket) -> Unit = {},
         diarization: Boolean = false,
+        identity: RecordingImportIdentity? = null,
     ): Result<RecordingUploadState> = scoped(viewer) {
         uuid(key)
         require(directUploadEnabled(config))
@@ -203,8 +287,10 @@ class RecordingUploadRepository(
         require(name.substringAfterLast('.', "").lowercase() in config.extensions)
         require(context.length <= 400 && hotwords.length <= 4000)
         require(contentType.isNotBlank() && contentType.length <= 128)
+        val identityIntent = intent(viewer, config, identity, diarization, ticket?.uploaded == true)
+        if (identityIntent != null && ticket?.uploaded != true) require(size <= requireNotNull(config.identityPreflight).maxBytes)
         val signed = ticket ?: api.presign(
-            RecordingUploadPresign(key, name, size, contentType, context, hotwords, diarization)
+            RecordingUploadPresign(key, name, size, contentType, context, hotwords, diarization, identityIntent)
         ).also {
             require(it.storageName.isNotBlank() && it.uploadUrl.startsWith("https://"))
             require(it.headers["Content-Type"] == contentType)
@@ -224,7 +310,7 @@ class RecordingUploadRepository(
         onProgress(size, size)
         require(currentViewer() == viewer)
         api.complete(
-            RecordingUploadComplete(key, name, size, contentType, signed.storageName, context, hotwords, diarization)
+            RecordingUploadComplete(key, name, size, contentType, signed.storageName, context, hotwords, diarization, identityIntent)
         ).also(::validate)
     }
 
@@ -261,7 +347,8 @@ class RecordingUploadRepository(
         val contentType = request.contentType
         val openAt = request.openAt
         val onProgress = request.onProgress
-        val cancelled = request.cancelled
+        val transferContext = currentCoroutineContext()
+        val cancelled = { request.cancelled() || currentViewer() != viewer || !transferContext.isActive }
         uuid(key)
         val parts = partStorage ?: error("Chunked upload is not configured")
         require(config.directUploadAvailable && config.directMaxBytes > 0)
@@ -269,11 +356,13 @@ class RecordingUploadRepository(
         require(name.substringAfterLast('.', "").lowercase() in config.extensions)
         require(contentType.isNotBlank() && contentType.length <= 128)
         require(context.length <= 400 && hotwords.length <= 4000)
+        val identityIntent = intent(viewer, config, request.identity, request.diarization, request.resumeFrom != null)
+        if (identityIntent != null && request.resumeFrom == null) require(size <= requireNotNull(config.identityPreflight).maxBytes)
 
         val plan = request.resumeFrom
-            ?.let { runCatching { api.multipartResume(it) }.getOrNull() }
+            ?.let { try { api.multipartResume(it) } catch (cancelled: CancellationException) { throw cancelled } catch (_: Exception) { null } }
             ?: api.multipartBegin(
-                RecordingUploadBegin(key, name, size, contentType, context, hotwords, request.diarization)
+                RecordingUploadBegin(key, name, size, contentType, context, hotwords, request.diarization, identityIntent)
             )
         plan.job?.let { return@scoped it.also(::validate) }
         val sessionId = plan.sessionId
@@ -347,6 +436,11 @@ class RecordingUploadRepository(
     private fun validate(state: RecordingUploadState) {
         uuid(state.recordId)
         require(state.attempt > 0 && state.status in setOf("queued", "submitting", "running", "succeeded", "failed"))
+        state.identityPreflight?.let {
+            require(it.status in setOf("pending", "preflighting", "ready", "awaiting_choice", "disabled") && it.reason.length <= 64)
+            require(!it.canContinueWithoutIdentity || (state.status == "failed" && it.status == "awaiting_choice" && !state.retryable))
+        }
+        state.identityRequest?.let { require(state.status == "succeeded" && it.status in setOf("queued", "running", "submitted", "unavailable") && it.reason.length <= 64) }
     }
     private fun uuid(value: String) { require(UUID.fromString(value).toString().equals(value, true)) }
     private suspend fun <T> scoped(viewer: String, action: suspend () -> T): Result<T> = try {

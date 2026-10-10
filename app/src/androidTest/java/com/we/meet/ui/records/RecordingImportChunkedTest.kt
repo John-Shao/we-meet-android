@@ -23,6 +23,8 @@ import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import java.io.ByteArrayInputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -47,10 +49,10 @@ class RecordingImportChunkedTest {
     @Test fun aLargeImportShowsProgressAndCanBeCancelled() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val resolver = context.contentResolver
-        val uri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, ContentValues().apply {
-            put(MediaStore.Video.Media.DISPLAY_NAME, "chunked-fixture.mp4")
-            put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-            put(MediaStore.Video.Media.IS_PENDING, 1)
+        val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, ContentValues().apply {
+            put(MediaStore.Audio.Media.DISPLAY_NAME, "chunked-fixture.wav")
+            put(MediaStore.Audio.Media.MIME_TYPE, "audio/wav")
+            put(MediaStore.Audio.Media.IS_PENDING, 1)
         })!!
         // Real bytes, not a sparse placeholder: MediaStore must report a size at
         // or above the chunked threshold, and the part writer must be able to
@@ -62,18 +64,31 @@ class RecordingImportChunkedTest {
         val apiCalls = mutableListOf<String>()
         try {
             val megabyte = ByteArray(1024 * 1024)
-            resolver.openOutputStream(uri)!!.use { out -> repeat(101) { out.write(megabyte) } }
-            resolver.update(uri, ContentValues().apply { put(MediaStore.Video.Media.IS_PENDING, 0) }, null, null)
-            // If MediaStore under-reports, the dialog takes the legacy path and
-            // this test would silently be testing nothing.
-            var reported: Long? = null
-            resolver.query(uri, arrayOf(MediaStore.Video.Media.SIZE), null, null, null)?.use { rows ->
-                if (rows.moveToFirst()) reported = rows.getLong(0)
+            // A structurally valid silent WAV: invalid all-zero MP4s can retain
+            // zero-byte scanner metadata on API 29 despite a complete write.
+            val header = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN).apply {
+                put("RIFF".toByteArray(Charsets.US_ASCII)); putInt(bigSize.toInt() - 8)
+                put("WAVEfmt ".toByteArray(Charsets.US_ASCII)); putInt(16)
+                putShort(1); putShort(1); putInt(24_000); putInt(48_000)
+                putShort(2); putShort(16); put("data".toByteArray(Charsets.US_ASCII)); putInt(bigSize.toInt() - 44)
+            }.array()
+            resolver.openOutputStream(uri)!!.use { out ->
+                out.write(header); repeat(100) { out.write(megabyte) }; out.write(megabyte, 0, megabyte.size - header.size)
             }
-            assertTrue(
-                "MediaStore reported $reported bytes, below the chunked threshold",
-                (reported ?: 0L) > 100L * 1024 * 1024,
-            )
+            resolver.update(uri, ContentValues().apply { put(MediaStore.Audio.Media.IS_PENDING, 0) }, null, null)
+            // Publishing schedules an asynchronous scan on API 29. Wait for
+            // its actual size instead of racing the initial zero-byte metadata.
+            // The assertion must still prove that the dialog chooses chunking.
+            var reported: Long? = null
+            val deadline = android.os.SystemClock.elapsedRealtime() + 5_000
+            while (android.os.SystemClock.elapsedRealtime() < deadline) {
+                resolver.query(uri, arrayOf(MediaStore.Audio.Media.SIZE), null, null, null)?.use { rows ->
+                    if (rows.moveToFirst()) reported = rows.getLong(0)
+                }
+                if (reported == bigSize) break
+                Thread.sleep(50)
+            }
+            assertEquals("MediaStore must report all fixture bytes", bigSize, reported)
 
             val registry = object : ActivityResultRegistry() {
                 override fun <I, O> onLaunch(
@@ -89,7 +104,7 @@ class RecordingImportChunkedTest {
 
             val api = object : RecordingUploadApi {
                 override suspend fun capabilities() = RecordingUploadCapabilities(
-                    available = true, maxBytes = 1024, extensions = listOf("mp4"),
+                    available = true, maxBytes = 1024, extensions = listOf("wav"),
                     directUploadAvailable = true, directMaxBytes = 6L * 1024 * 1024 * 1024,
                 )
                 override suspend fun state(recordId: String) = RecordingUploadState(recordId, "queued", 1)

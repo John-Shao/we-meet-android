@@ -91,6 +91,11 @@ class ApiClient(tokenStore: TokenStore) {
     val recordingUploadApi: RecordingUploadApi = retrofit.newBuilder()
         .client(recordingUploadHttp(okHttp))
         .build().create(RecordingUploadApi::class.java)
+    val recordingImportApi: RecordingImportApi = retrofit.newBuilder()
+        .client(recordingUploadHttp(okHttp))
+        .apply { converterFactories().clear() }
+        .addConverterFactory(MoshiConverterFactory.create(moshi).withNullSerialization())
+        .build().create(RecordingImportApi::class.java)
     val userApi: UserApi = retrofit.create(UserApi::class.java)
     val qrLoginApi: QrLoginApi = retrofit.create(QrLoginApi::class.java)
     val imBridgeApi: ImBridgeApi = retrofit.create(ImBridgeApi::class.java)

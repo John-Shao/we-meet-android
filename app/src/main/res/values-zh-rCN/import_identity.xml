@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_identity_enable">识别说话人身份</string>
+    <string name="import_identity_enable_hint">同时开启说话人区分。转写前检查音频，完成后提供身份建议。</string>
+    <string name="import_identity_limit">身份识别支持 512 MiB 以内且不超过两小时的音频；仍可使用普通转写。</string>
+    <string name="import_identity_unavailable">身份识别暂不可用，可关闭此选项后继续普通转写。</string>
+    <string name="import_identity_scope">声纹库范围</string>
+    <string name="import_identity_personal">本人个人库</string>
+    <string name="import_identity_selected_scope">已选组织</string>
+    <string name="import_identity_more_scopes">更多组织</string>
+    <string name="import_identity_search">搜索成员</string>
+    <string name="import_identity_search_action">搜索</string>
+    <string name="import_identity_selected">已选 %1$d 人（最多 %2$d 人）</string>
+    <string name="import_identity_remove">移除 %1$s</string>
+    <string name="import_identity_directory_error">成员列表暂不可用，请刷新后继续。</string>
+    <string name="import_identity_loading">正在加载成员…</string>
+    <string name="import_identity_empty">没有匹配的成员</string>
+    <string name="import_identity_previous">上一页</string>
+    <string name="import_identity_next">下一页</string>
+    <string name="import_identity_hint">请选择参与匹配的成员。仅使用他们当前有效授权的声纹，结果需由你复核确认。</string>
+    <string name="import_preflight_stopped">身份预检已停止</string>
+    <string name="import_preflight_pending">正在进行身份预检，尚未提交转写。</string>
+    <string name="import_preflight_ready">身份预检完成，等待转写。</string>
+    <string name="import_preflight_failed">音频、声纹库或授权未通过身份预检，尚未提交转写。请选择继续方式。</string>
+    <string name="import_preflight_retry">重新进行身份预检</string>
+    <string name="import_preflight_continue">继续普通转写</string>
+    <string name="import_identity_request_queued">转写已完成，正在安排身份识别。</string>
+    <string name="import_identity_request_submitted">已提交身份识别，可在“识别身份”中查看进度和建议。</string>
+    <string name="import_identity_request_unavailable">转写已完成，身份识别暂不可用，可人工标记说话人。</string>
+</resources>

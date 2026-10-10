@@ -216,6 +216,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
             // Part PUTs additionally need to report progress and return the ETag
             // that completion requires.
             partStorage = com.we.meet.data.api.OkHttpPartStorage(),
+            importApi = apiClient.recordingImportApi,
+            currentSession = { tokenStore.authSnapshot().session },
         )
         translationArchiveRepository = com.we.meet.data.repository.TranslationArchiveRepository(apiClient.translationArchiveApi) { captureAccount }
         uploadTranslationRepository = com.we.meet.data.repository.UploadTranslationRepository(apiClient.uploadTranslationApi) { captureAccount }
