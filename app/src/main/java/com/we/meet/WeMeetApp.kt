@@ -60,6 +60,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
     lateinit var meetingRecordRepository: MeetingRecordRepository
     lateinit var speakerIdentificationRepository: com.we.meet.data.repository.SpeakerIdentificationRepository
         private set
+    lateinit var voiceprintRepository: com.we.meet.data.repository.VoiceprintRepository
+        private set
     lateinit var recordingUploadRepository: com.we.meet.data.repository.RecordingUploadRepository
         private set
     lateinit var translationArchiveRepository: com.we.meet.data.repository.TranslationArchiveRepository
@@ -203,6 +205,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         meetingRecordRepository = MeetingRecordRepository(apiClient.meetingRecordApi, this) { tokenStore.userId }
         speakerIdentificationRepository = com.we.meet.data.repository.SpeakerIdentificationRepository(
             apiClient.speakerIdentificationApi, { captureAccount }, { tokenStore.authSnapshot().session })
+        voiceprintRepository = com.we.meet.data.repository.VoiceprintRepository(
+            apiClient.voiceprintApi, { captureAccount }, { tokenStore.authSnapshot().session })
         recordingUploadRepository = com.we.meet.data.repository.RecordingUploadRepository(
             apiClient.recordingUploadApi,
             currentViewer = { tokenStore.userId },

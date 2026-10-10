@@ -126,6 +126,7 @@ object Routes {
             if (query.isEmpty()) "" else "?$query"
     }
     const val SETTINGS = "settings"
+    const val VOICEPRINT_SETTINGS = "voiceprint_settings"
     const val ACCOUNT_SECURITY = "account_security"
     const val MEETING_SETTINGS = "meeting_settings"
     const val TASK_SETTINGS = "task_settings"
@@ -1593,6 +1594,7 @@ fun AppNav() {
                     }
                 },
                 onOpenAccountSecurity = { navController.navigate(Routes.ACCOUNT_SECURITY) },
+                onOpenVoiceprint = { navController.navigate(Routes.VOICEPRINT_SETTINGS) },
                 // P8 设置收敛:模块设置从用户设置进,模块内齿轮是同页快捷入口。
                 onOpenMeetingSettings = { navController.navigate(Routes.MEETING_SETTINGS) },
                 onOpenCalendarSettings = { navController.navigate(Routes.CALENDAR_SETTINGS) },
@@ -1603,6 +1605,9 @@ fun AppNav() {
             )
         }
 
+        composable(Routes.VOICEPRINT_SETTINGS) {
+            com.we.meet.ui.voiceprint.VoiceprintSettingsScreen(app.voiceprintRepository, app.tokenStore.userId.orEmpty(), onBack = rememberOnceOnly(safePop))
+        }
         composable(Routes.CAPTURE) {
             CaptureScreen(app.tokenStore.userId.orEmpty(), onBack = rememberOnceOnly(safePop),
                 onSummaryRecord = { id -> navController.navigate(Routes.recordDetail(id, summaryView = true)) },

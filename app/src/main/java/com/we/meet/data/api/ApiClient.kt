@@ -120,6 +120,10 @@ class ApiClient(tokenStore: TokenStore) {
         .apply { converterFactories().clear() }
         .addConverterFactory(MoshiConverterFactory.create(moshi).withNullSerialization())
         .build().create(SpeakerIdentificationApi::class.java)
+    val voiceprintApi: VoiceprintApi = meetingPrivateRetrofit.newBuilder()
+        .apply { converterFactories().clear() }
+        .addConverterFactory(MoshiConverterFactory.create(moshi).withNullSerialization())
+        .build().create(VoiceprintApi::class.java)
     val workApi: WorkApi = meetingPrivateRetrofit.create(WorkApi::class.java)
     val uploadTranslationApi: UploadTranslationApi = meetingPrivateRetrofit.create(UploadTranslationApi::class.java)
     val translationArchiveApi: TranslationArchiveApi = meetingPrivateRetrofit.newBuilder()
