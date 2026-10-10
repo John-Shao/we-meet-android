@@ -103,9 +103,10 @@ class AiCallTranscriptUiTest {
             compose.onNodeWithText("说话或点击打断").assertDoesNotExist()
             capture("call-chat-light.png")
             compose.runOnIdle { state.value = state.value.copy(isMicMuted = true) }
-            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertIsDisplayed().performClick()
+            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertDoesNotExist()
             capture("call-chat-muted-light.png")
             compose.runOnIdle { dark.value = true }
+            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertDoesNotExist()
             capture("call-chat-muted-dark.png")
             compose.runOnIdle { state.value = state.value.copy(isMicMuted = false) }
             compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertDoesNotExist()
@@ -118,7 +119,7 @@ class AiCallTranscriptUiTest {
             compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertDoesNotExist()
             capture("call-photo-dark.png")
             compose.runOnIdle { state.value = state.value.copy(isMicMuted = true) }
-            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertIsDisplayed().performClick()
+            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertDoesNotExist()
             compose.onNodeWithText(context.getString(R.string.assistant_photo_working)).assertIsDisplayed()
             compose.runOnIdle { dark.value = false }
             capture("call-photo-light.png")
@@ -144,7 +145,7 @@ class AiCallTranscriptUiTest {
             }
             compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertDoesNotExist()
             compose.runOnIdle { state.value = state.value.copy(isMicMuted = true) }
-            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertIsDisplayed().performClick()
+            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertDoesNotExist()
             capture("call-video-muted.png")
             compose.onNodeWithText(context.getString(R.string.assistant_call_transcript)).performClick()
             compose.onNodeWithText("你好呀～今天想聊点什么？").assertIsDisplayed()
