@@ -7,11 +7,15 @@ data class VoiceprintScopeDto(val id: String, val name: String,
     @Json(name = "can_manage_policy") val canManagePolicy: Boolean, val policy: VoiceprintPolicyDto)
 data class VoiceprintPageDto<T>(val results: List<T>, @Json(name = "next_offset") val nextOffset: Int?)
 data class VoiceprintProfileDto(val id: String, val status: String, val generation: Int,
-    @Json(name = "confirmed_at") val confirmedAt: String?, @Json(name = "last_updated_at") val lastUpdatedAt: String?)
+    @Json(name = "confirmed_at") val confirmedAt: String?, @Json(name = "last_updated_at") val lastUpdatedAt: String?,
+    @Json(name = "display_state") val displayState: String? = null,
+    @Json(name = "update_reasons") val updateReasons: List<String> = emptyList(),
+    @Json(name = "effective_device_groups") val effectiveDeviceGroups: List<String> = emptyList())
 data class VoiceprintSettingsDto(@Json(name = "organization_id") val organizationId: String?, val available: Boolean,
     val version: Int, val generation: Int, @Json(name = "allow_enrollment") val allowEnrollment: Boolean,
     @Json(name = "allow_accumulation") val allowAccumulation: Boolean,
-    @Json(name = "allow_identification") val allowIdentification: Boolean, val profiles: List<VoiceprintProfileDto>)
+    @Json(name = "allow_identification") val allowIdentification: Boolean, val profiles: List<VoiceprintProfileDto>,
+    @Json(name = "display_state") val displayState: String? = null)
 data class VoiceprintPolicyChangeDto(val enabled: Boolean, @Json(name = "expected_version") val expectedVersion: Int)
 data class VoiceprintEnrollmentRequestDto(@Json(name = "organization_id") val organizationId: String?,
     @Json(name = "expected_version") val expectedVersion: Int, @Json(name = "request_key") val requestKey: String, val locale: String)

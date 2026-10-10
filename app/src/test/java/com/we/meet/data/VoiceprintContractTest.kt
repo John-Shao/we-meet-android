@@ -62,6 +62,25 @@ class VoiceprintContractTest {
             f.reply = { 200 to value }; assertTrue(f.client.settings().isFailure)
         }
     }
+    @Test fun verifiedProjectionAcceptsEightStatesAndRejectsInvalidGroupsOrReasons() = runBlocking {
+        val f = Fixture(); val base = F.settings(); val profile = base.profiles.single()
+        val established = profile.copy(status = "active", confirmedAt = F.EXPIRES, lastUpdatedAt = F.EXPIRES, displayState = "established", effectiveDeviceGroups = listOf("default"))
+        f.reply = { 200 to base.copy(displayState = "established", profiles = listOf(established)) }
+        assertEquals(listOf("default"), f.client.settings().getOrThrow().profiles.single().effectiveDeviceGroups)
+        for (state in listOf("not_enabled", "collecting", "awaiting_confirmation", "needs_update", "paused", "deleting", "deleted")) {
+            f.reply = { 200 to base.copy(displayState = state, profiles = listOf(profile.copy(displayState = state, updateReasons = if (state == "needs_update") listOf("expired") else emptyList()))) }
+            assertEquals(state, f.client.settings().getOrThrow().displayState)
+        }
+        for (bad in listOf(established.copy(effectiveDeviceGroups = emptyList()), established.copy(confirmedAt = null), established.copy(effectiveDeviceGroups = listOf("private device ID")),
+            established.copy(effectiveDeviceGroups = listOf("default", "default")), profile.copy(displayState = "needs_update"), profile.copy(displayState = "needs_update", updateReasons = listOf("internal_secret")), profile.copy(displayState = "unknown"))) {
+            f.reply = { 200 to base.copy(profiles = listOf(bad)) }; assertTrue(f.client.settings().isFailure)
+        }
+    }
+    @Test fun legacyMetadataRemainsReadableButDoesNotProveAnEstablishedProfile() = runBlocking {
+        val f = Fixture(); f.reply = { 200 to F.settings().copy(profiles = listOf(F.settings().profiles.single().copy(status = "active"))) }
+        val profile = f.client.settings().getOrThrow().profiles.single()
+        assertNull(profile.displayState); assertTrue(profile.effectiveDeviceGroups.isEmpty())
+    }
     @Test fun pagesRejectDuplicatesBackwardsOffsetsOversizedPagesAndNegativePolicyVersions() = runBlocking {
         val f = Fixture(); val scope = VoiceprintScopeDto(F.ORGANIZATION, "Synthetic", true, VoiceprintPolicyDto(false, 0))
         for (page in listOf(VoiceprintPageDto(listOf(scope, scope), null), VoiceprintPageDto(listOf(scope), 0),

@@ -224,10 +224,13 @@ private fun ScopeBody(client: VoiceprintSession, policyScope: VoiceprintScopeDto
             }
         }
         Text(stringResource(R.string.voiceprint_profiles), style = MaterialTheme.typography.titleLarge)
+        Text(if (settings.displayState != null) stringResource(R.string.voiceprint_scope_state, stringResource(displayStateText(settings.displayState))) else stringResource(R.string.voiceprint_status_unavailable))
         if (settings.profiles.isEmpty()) Text(stringResource(R.string.voiceprint_no_profile))
         settings.profiles.forEach { profile ->
             OutlinedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(Dimens.ScreenPadding)) {
-                Text(stringResource(profileText(profile.status)))
+                Text(stringResource(if (profile.displayState != null) displayStateText(profile.displayState) else if (profile.status == "active") R.string.voiceprint_display_state_needs_update else profileText(profile.status)))
+                profile.updateReasons.forEach { reason -> Text(stringResource(updateReasonText(reason))) }
+                Text(stringResource(R.string.voiceprint_effective_groups, stringResource(if (profile.effectiveDeviceGroups.isNotEmpty()) R.string.voiceprint_default_group else R.string.voiceprint_no_effective_groups)))
                 Text(stringResource(R.string.voiceprint_last_confirmed, profile.confirmedAt ?: stringResource(R.string.voiceprint_never)))
                 Text(stringResource(R.string.voiceprint_last_updated, profile.lastUpdatedAt ?: stringResource(R.string.voiceprint_never)))
                 if (profile.status != "deleted") TextButton(enabled = enabled, onClick = { controller.requestRemoval(profile.id) }) { Text(stringResource(R.string.voiceprint_delete)) }
@@ -266,6 +269,25 @@ private fun ScopeBody(client: VoiceprintSession, policyScope: VoiceprintScopeDto
             confirmButton = { CompositionLocalProvider(LocalContext provides context, LocalConfiguration provides configuration, LocalDensity provides density) { TextButton(enabled = enabled, onClick = { scope.launch { controller.remove() } }) { Text(stringResource(R.string.voiceprint_confirm_delete)) } } },
             dismissButton = { CompositionLocalProvider(LocalContext provides context, LocalConfiguration provides configuration, LocalDensity provides density) { TextButton(enabled = !state.busy, onClick = { controller.requestRemoval(null) }) { Text(stringResource(R.string.voiceprint_cancel)) } } })
     }
+}
+
+private fun displayStateText(state: String) = when (state) {
+    "not_enabled" -> R.string.voiceprint_display_state_not_enabled
+    "collecting" -> R.string.voiceprint_display_state_collecting
+    "awaiting_confirmation" -> R.string.voiceprint_display_state_awaiting_confirmation
+    "established" -> R.string.voiceprint_display_state_established
+    "needs_update" -> R.string.voiceprint_display_state_needs_update
+    "paused" -> R.string.voiceprint_display_state_paused
+    "deleting" -> R.string.voiceprint_display_state_deleting
+    "deleted" -> R.string.voiceprint_display_state_deleted
+    else -> R.string.voiceprint_status_unavailable
+}
+private fun updateReasonText(reason: String) = when (reason) {
+    "expired" -> R.string.voiceprint_update_reason_expired
+    "model_changed" -> R.string.voiceprint_update_reason_model_changed
+    "contributions_changed" -> R.string.voiceprint_update_reason_contributions_changed
+    "storage_unavailable" -> R.string.voiceprint_update_reason_storage_unavailable
+    else -> R.string.voiceprint_status_unavailable
 }
 
 @Composable private fun PermissionRow(title: String, hint: String, checked: Boolean, enabled: Boolean, change: (Boolean) -> Unit) {

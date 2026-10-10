@@ -121,11 +121,18 @@ class VoiceprintSession internal constructor(private val api: VoiceprintApi, val
     }
     private fun checkSettings(value: VoiceprintSettingsDto) {
         require(value.organizationId == organization && value.version >= 0 && value.generation >= 0)
+        require(value.displayState == null || value.displayState in VOICEPRINT_DISPLAY_STATES)
         require(value.profiles.map { it.id }.distinct().size == value.profiles.size)
         value.profiles.forEach {
             identityUuid(it.id); require(it.generation > 0 && it.status in listOf("pending", "active", "paused", "deleted"))
             it.confirmedAt?.let(::voiceprintDate); it.lastUpdatedAt?.let(::voiceprintDate)
+            require(it.displayState == null || it.displayState in VOICEPRINT_DISPLAY_STATES)
+            require(it.updateReasons.distinct().size == it.updateReasons.size && it.updateReasons.all { reason -> reason in VOICEPRINT_UPDATE_REASONS })
+            require(it.effectiveDeviceGroups.size <= 5 && it.effectiveDeviceGroups.distinct().size == it.effectiveDeviceGroups.size && it.effectiveDeviceGroups.all { group -> group == "default" })
+            require(if (it.displayState == "needs_update") it.updateReasons.isNotEmpty() else it.updateReasons.isEmpty())
+            require(if (it.displayState == "established") it.effectiveDeviceGroups.isNotEmpty() && it.status == "active" && it.generation == value.generation && it.confirmedAt != null && it.lastUpdatedAt != null && value.available else it.effectiveDeviceGroups.isEmpty())
         }
+        require(value.displayState != "established" || value.profiles.any { it.displayState == "established" })
     }
     private fun checkEnrollment(value: VoiceprintEnrollmentDto) {
         identityUuid(value.id); value.profileId?.let(::identityUuid)
@@ -137,6 +144,9 @@ class VoiceprintSession internal constructor(private val api: VoiceprintApi, val
         require(value.uploadToken == null || Regex("[A-Za-z0-9_-]{43}").matches(value.uploadToken))
     }
 }
+
+private val VOICEPRINT_DISPLAY_STATES = setOf("not_enabled", "collecting", "awaiting_confirmation", "established", "needs_update", "paused", "deleting", "deleted")
+private val VOICEPRINT_UPDATE_REASONS = setOf("expired", "model_changed", "contributions_changed", "storage_unavailable")
 
 internal fun voiceprintDate(value: String) = OffsetDateTime.parse(value).toInstant().toEpochMilli()
 internal fun voiceprintExpired(value: String, now: Long = System.currentTimeMillis()) = voiceprintDate(value) <= now

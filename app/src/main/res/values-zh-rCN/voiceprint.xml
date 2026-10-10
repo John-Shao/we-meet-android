@@ -85,4 +85,21 @@
     <string name="voiceprint_errors_voiceprint_quality_pending">此片段尚在等待质量审核。</string>
     <string name="voiceprint_errors_voiceprint_upload_expired">上传许可已到期，请开始新的登记。</string>
     <string name="voiceprint_errors_voiceprint_key_unavailable">声纹存储暂不可用，请稍后重试。</string>
+    <string name="voiceprint_display_state_not_enabled">未开启</string>
+    <string name="voiceprint_display_state_collecting">采样中</string>
+    <string name="voiceprint_display_state_awaiting_confirmation">待本人确认</string>
+    <string name="voiceprint_display_state_established">已建立</string>
+    <string name="voiceprint_display_state_needs_update">需要更新</string>
+    <string name="voiceprint_display_state_paused">已暂停</string>
+    <string name="voiceprint_display_state_deleting">删除中</string>
+    <string name="voiceprint_display_state_deleted">已删除</string>
+    <string name="voiceprint_update_reason_expired">声纹已超过一年未更新，请重新登记新片段。</string>
+    <string name="voiceprint_update_reason_model_changed">声纹模型已变更，请重新登记。</string>
+    <string name="voiceprint_update_reason_contributions_changed">原始片段或模板已失效，请重新登记新片段。</string>
+    <string name="voiceprint_update_reason_storage_unavailable">无法读取私有声纹，请联系管理员。</string>
+    <string name="voiceprint_scope_state">当前状态：%1$s</string>
+    <string name="voiceprint_effective_groups">有效设备组：%1$s</string>
+    <string name="voiceprint_default_group">登记基线</string>
+    <string name="voiceprint_no_effective_groups">无</string>
+    <string name="voiceprint_status_unavailable">此服务未提供有效性状态，请更新后重新加载。</string>
 </resources>

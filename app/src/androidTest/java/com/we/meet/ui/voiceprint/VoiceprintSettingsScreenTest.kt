@@ -85,6 +85,7 @@ class VoiceprintSettingsScreenTest {
         var slots = emptyList<Int>()
         var deleted = false
         var accepted = false
+        var projectedState: String? = null
         val calls = CopyOnWriteArrayList<String>()
         val posts = CopyOnWriteArrayList<Pair<String, String>>()
         val uploads = CopyOnWriteArrayList<Pair<String, ByteArray>>()
@@ -92,7 +93,9 @@ class VoiceprintSettingsScreenTest {
         val audioReads = AtomicInteger()
         private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
         private fun settings(scope: String?) = VoiceprintSettingsDto(scope, available && (scope == null || policyEnabled), version, 1, allowEnrollment, allowAccumulation, allowIdentification,
-            listOf(VoiceprintProfileDto(profile, if (deleted) "deleted" else if (accepted) "active" else "pending", 1, null, null)))
+            listOf(VoiceprintProfileDto(profile, if (deleted) "deleted" else if (accepted || projectedState in listOf("established", "needs_update")) "active" else "pending", 1,
+                if (projectedState == "established") expiry else null, if (projectedState == "established") expiry else null,
+                projectedState, if (projectedState == "needs_update") listOf("expired") else emptyList(), if (projectedState == "established") listOf("default") else emptyList())), projectedState)
         private fun registration(scope: String?) = VoiceprintEnrollmentDto(enrollment, scope, profile, if (slots.size == 6) "closed" else "open", expiry, version,
             1, (0..5).map { "Synthetic randomized prompt $it" }, 6, slots, 24000, 1, "pcm16_wav", VoiceprintDurationDto(3000, 10000), if (slots.size == 6) null else token)
         private fun clip() = VoiceprintSampleDto(sample, profile, sampleStatus, "enrollment", 3000, expiry,
@@ -195,6 +198,22 @@ class VoiceprintSettingsScreenTest {
         val fixture = Fixture(); show(fixture)
         assertTrue(fixture.posts.isEmpty()); assertTrue(fixture.uploads.isEmpty()); assertEquals(0, fixture.recordings.get()); assertEquals(0, fixture.audioReads.get())
         compose.onNodeWithText(text(R.string.voiceprint_organization_policy)).assertDoesNotExist()
+    }
+    @Test fun staleActiveMetadataShowsUpdateReasonAndNoEffectiveGroupsInChineseDarkLargeText() {
+        val fixture = Fixture(); fixture.projectedState = "needs_update"; show(fixture, chinese = true)
+        waitText(text(R.string.voiceprint_scope_state, text(R.string.voiceprint_display_state_needs_update)))
+        compose.onNodeWithText(text(R.string.voiceprint_update_reason_expired)).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.voiceprint_effective_groups, text(R.string.voiceprint_no_effective_groups))).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.voiceprint_display_state_established)).assertDoesNotExist()
+        assertTrue(fixture.posts.isEmpty()); assertEquals(0, fixture.audioReads.get())
+        val directory = File(context.getExternalFilesDir(null), "voiceprint-settings").apply { mkdirs() }
+        File(directory, "status-update-zh-dark-large.png").outputStream().use { InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot().compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+    @Test fun establishedProjectionDisplaysOnlyTheVerifiedRegistrationGroup() {
+        val fixture = Fixture(); fixture.projectedState = "established"; show(fixture)
+        waitText(text(R.string.voiceprint_scope_state, text(R.string.voiceprint_display_state_established)))
+        compose.onNodeWithText(text(R.string.voiceprint_effective_groups, text(R.string.voiceprint_default_group))).performScrollTo().assertIsDisplayed()
+        assertTrue(fixture.posts.isEmpty()); assertEquals(0, fixture.audioReads.get())
     }
     @Test fun stoppingNativePlaybackConcurrentlyWithCompletionChecksNeverReadsAReleasedTrack() {
         val errors = CopyOnWriteArrayList<Throwable>()

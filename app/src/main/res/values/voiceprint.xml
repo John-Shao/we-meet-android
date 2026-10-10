@@ -85,4 +85,21 @@
     <string name="voiceprint_errors_voiceprint_quality_pending">This clip is awaiting quality review.</string>
     <string name="voiceprint_errors_voiceprint_upload_expired">Upload permission expired. Start a new registration session.</string>
     <string name="voiceprint_errors_voiceprint_key_unavailable">Voiceprint storage is temporarily unavailable. Try again later.</string>
+    <string name="voiceprint_display_state_not_enabled">Not started</string>
+    <string name="voiceprint_display_state_collecting">Collecting samples</string>
+    <string name="voiceprint_display_state_awaiting_confirmation">Awaiting your confirmation</string>
+    <string name="voiceprint_display_state_established">Established</string>
+    <string name="voiceprint_display_state_needs_update">Update needed</string>
+    <string name="voiceprint_display_state_paused">Paused</string>
+    <string name="voiceprint_display_state_deleting">Deleting</string>
+    <string name="voiceprint_display_state_deleted">Deleted</string>
+    <string name="voiceprint_update_reason_expired">The voiceprint is over a year old. Register fresh samples.</string>
+    <string name="voiceprint_update_reason_model_changed">The voice model has changed. Register again.</string>
+    <string name="voiceprint_update_reason_contributions_changed">The original samples or template are no longer valid. Register fresh samples.</string>
+    <string name="voiceprint_update_reason_storage_unavailable">The private voiceprint cannot be read. Contact your administrator.</string>
+    <string name="voiceprint_scope_state">Current status: %1$s</string>
+    <string name="voiceprint_effective_groups">Effective device groups: %1$s</string>
+    <string name="voiceprint_default_group">Registration baseline</string>
+    <string name="voiceprint_no_effective_groups">None</string>
+    <string name="voiceprint_status_unavailable">This server does not provide verified voiceprint status. Update it and reload.</string>
 </resources>
