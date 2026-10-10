@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="identity_title">Identifier les intervenants</string>
+    <string name="identity_open">Choisir les candidats et identifier</string>
+    <string name="identity_hint">Seules les personnes sélectionnées sont comparées. Une suggestion devient un nom définitif après confirmation humaine.</string>
+    <string name="identity_cancel">Annuler cette identification</string>
+    <string name="identity_conflict">L’enregistrement ou le contexte a changé. Actualisez avant de prendre une décision.</string>
+    <string name="identity_failed">Échec de l’identification</string>
+    <string name="identity_request_error">La demande ne peut pas être vérifiée. Les noms restent masqués jusqu’à l’actualisation.</string>
+    <string name="identity_uncertain">La demande a peut-être atteint le serveur. Vérifiez son état ou réessayez exactement la même demande.</string>
+    <string name="identity_retry_same">Réessayer la même demande</string>
+    <string name="identity_bank">Bibliothèque vocale</string>
+    <string name="identity_personal">Ma bibliothèque personnelle</string>
+    <string name="identity_bank_disabled">Empreintes vocales désactivées</string>
+    <string name="identity_more_banks">Autres organisations</string>
+    <string name="identity_targets">Intervenants à identifier</string>
+    <string name="identity_no_targets">Aucun intervenant sans identité attribuée n’est disponible.</string>
+    <string name="identity_people">Personnes sélectionnées : %1$d / 50</string>
+    <string name="identity_people_hint">Sélectionnez explicitement les personnes. La bibliothèque personnelle se limite à vous ; celle d’une organisation utilise ses membres actuels.</string>
+    <string name="identity_find">Rechercher une personne</string>
+    <string name="identity_search">Rechercher</string>
+    <string name="identity_no_people">Aucune personne ne correspond à cette recherche.</string>
+    <string name="identity_remove">Retirer %1$s</string>
+    <string name="identity_submit">Identifier les intervenants sélectionnés</string>
+    <string name="identity_processing">L’identification est en cours. Vous pourrez confirmer ou refuser les suggestions une fois toute la demande terminée.</string>
+    <string name="identity_unverified">Cette suggestion ne peut pas être vérifiée actuellement. Le nom du candidat est masqué.</string>
+    <string name="identity_suggested">Identité suggérée : %1$s</string>
+    <string name="identity_preview">Écouter l’extrait %1$d</string>
+    <string name="identity_confirm">Confirmer l’identité</string>
+    <string name="identity_reject">Refuser la suggestion</string>
+    <string name="identity_queued">En attente d’identification</string>
+    <string name="identity_running">Identification en cours</string>
+    <string name="identity_succeeded">Identification terminée</string>
+    <string name="identity_canceled">Identification annulée</string>
+    <string name="identity_expired">Identification expirée</string>
+    <string name="identity_confirmed">Identité confirmée</string>
+    <string name="identity_rejected">Suggestion refusée</string>
+    <string name="identity_invalidated">Suggestion devenue invalide</string>
+    <string name="identity_found">Une identité candidate a été trouvée.</string>
+    <string name="identity_unknown">Aucune correspondance fiable.</string>
+    <string name="identity_mixed">Cette piste peut contenir plusieurs intervenants.</string>
+    <string name="identity_ambiguous">Plusieurs candidats sont plausibles.</string>
+    <string name="identity_short">Pas assez de parole exploitable.</string>
+    <string name="identity_unavailable">Aucune empreinte vocale autorisée ou aucun audio vérifié n’est utilisable.</string>
+</resources>

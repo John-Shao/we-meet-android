@@ -115,6 +115,11 @@ class ApiClient(tokenStore: TokenStore) {
         .client(meetingPrivateHttp)
         .build()
     val meetingRecordApi: MeetingRecordApi = meetingPrivateRetrofit.create(MeetingRecordApi::class.java)
+    // Personal submissions require an explicit JSON null for organization_id.
+    val speakerIdentificationApi: SpeakerIdentificationApi = meetingPrivateRetrofit.newBuilder()
+        .apply { converterFactories().clear() }
+        .addConverterFactory(MoshiConverterFactory.create(moshi).withNullSerialization())
+        .build().create(SpeakerIdentificationApi::class.java)
     val workApi: WorkApi = meetingPrivateRetrofit.create(WorkApi::class.java)
     val uploadTranslationApi: UploadTranslationApi = meetingPrivateRetrofit.create(UploadTranslationApi::class.java)
     val translationArchiveApi: TranslationArchiveApi = meetingPrivateRetrofit.newBuilder()

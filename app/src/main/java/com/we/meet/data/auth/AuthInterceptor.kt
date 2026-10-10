@@ -25,6 +25,7 @@ class AuthInterceptor(
         }
 
         val snapshot = tokenStore.authSnapshot()
+        requirePrivateLogin(original, snapshot.session)
         val token = snapshot.access
         val request = if (!token.isNullOrBlank()) {
             original.newBuilder()

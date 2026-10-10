@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="identity_title">识别说话人身份</string>
+    <string name="identity_open">选择候选并识别</string>
+    <string name="identity_hint">只匹配明确选择的人员。建议身份须由人工确认后才成为最终姓名。</string>
+    <string name="identity_cancel">取消本次识别</string>
+    <string name="identity_conflict">记录或识别上下文已变化，请刷新后再决定。</string>
+    <string name="identity_failed">识别失败</string>
+    <string name="identity_request_error">暂时无法核验请求，刷新前隐藏候选姓名。</string>
+    <string name="identity_uncertain">提交可能已到达服务端，请检查状态或使用原请求重试。</string>
+    <string name="identity_retry_same">使用原请求重试</string>
+    <string name="identity_bank">声纹库</string>
+    <string name="identity_personal">我的个人声纹库</string>
+    <string name="identity_bank_disabled">声纹未启用</string>
+    <string name="identity_more_banks">更多组织</string>
+    <string name="identity_targets">待识别的说话人</string>
+    <string name="identity_no_targets">当前没有可识别且尚未标记的说话人。</string>
+    <string name="identity_people">已选人员：%1$d / 50</string>
+    <string name="identity_people_hint">请明确选择候选人员。个人库仅匹配本人；组织库仅匹配该组织的当前有效成员。</string>
+    <string name="identity_find">查找人员</string>
+    <string name="identity_search">搜索</string>
+    <string name="identity_no_people">没有符合搜索条件的人员。</string>
+    <string name="identity_remove">移除 %1$s</string>
+    <string name="identity_submit">识别所选说话人</string>
+    <string name="identity_processing">仍在识别，整批完成后可以确认或拒绝建议。</string>
+    <string name="identity_unverified">暂时无法核验此建议，已隐藏候选姓名。</string>
+    <string name="identity_suggested">建议身份：%1$s</string>
+    <string name="identity_preview">试听片段 %1$d</string>
+    <string name="identity_confirm">确认身份</string>
+    <string name="identity_reject">拒绝建议</string>
+    <string name="identity_queued">等待识别</string>
+    <string name="identity_running">正在识别</string>
+    <string name="identity_succeeded">识别完成</string>
+    <string name="identity_canceled">识别已取消</string>
+    <string name="identity_expired">识别已过期</string>
+    <string name="identity_confirmed">身份已确认</string>
+    <string name="identity_rejected">建议已拒绝</string>
+    <string name="identity_invalidated">建议已失效</string>
+    <string name="identity_found">找到候选身份。</string>
+    <string name="identity_unknown">没有可靠的身份匹配。</string>
+    <string name="identity_mixed">该轨道可能包含多名说话人。</string>
+    <string name="identity_ambiguous">多名候选相近，无法可靠判断。</string>
+    <string name="identity_short">可用语音不足。</string>
+    <string name="identity_unavailable">没有可用的授权声纹或已验证音频。</string>
+</resources>

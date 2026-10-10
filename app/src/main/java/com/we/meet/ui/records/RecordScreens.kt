@@ -111,6 +111,7 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     val viewStates = androidx.compose.runtime.key(viewer, recordId) { rememberSaveableStateHolder() }
     val app = LocalContext.current.applicationContext as? WeMeetApp
     var audioSeek by remember(viewer, recordId) { mutableStateOf<CaptureAudioSeek?>(null) }
+    var identityPreviewStop by remember(viewer, recordId) { mutableStateOf<String?>(null) }
     /**
      * Playback position, lifted here because the player and the transcript are
      * separate regions: the player owns the clock, the transcript owns the text,
@@ -160,7 +161,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     val uploadPlayer: @Composable () -> Unit = {
         uploadedMedia?.let { read ->
             UploadMediaPlayer(read, playbackPositionMs, audioSeek, onDuration = { playerDuration = it }, sourceId = recordId,
-                onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow)
+                onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow,
+                previewStop = identityPreviewStop)
         }
     }
     // 二级页的页面层级规范(docs/page-backgrounds.md §1):白色固定头 + 浅灰滚动区。
@@ -280,6 +282,9 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         } else if (selectedTab == "speakers") {
                             RecordSpeakers(repository, viewer, record, Modifier.weight(1f),
                                 onRecordChanged = { refresh++ },
+                                identification = app?.speakerIdentificationRepository,
+                                onIdentityPreview = { start, end -> if (canPlayImport) audioSeek = CaptureAudioSeek(start, endMs = end) },
+                                onIdentityPreviewStop = { audioSeek = null; identityPreviewStop = java.util.UUID.randomUUID().toString() },
                                 fullDuration = fullDuration, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
                         } else if (showTranslations) {
                             Column(Modifier.weight(1f).fillMaxWidth()) {

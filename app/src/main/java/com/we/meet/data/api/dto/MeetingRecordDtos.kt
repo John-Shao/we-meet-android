@@ -21,6 +21,7 @@ data class RecordCapabilitiesDto(
     @Json(name = "download_media") val downloadMedia: Boolean = false,
     @Json(name = "batch_correct") val batchCorrect: Boolean = false,
     val trash: Boolean = false,
+    val edit: Boolean = false,
 )
 
 data class RecordTitleRequestDto(val title: String, @Json(name = "expected_title") val expectedTitle: String)

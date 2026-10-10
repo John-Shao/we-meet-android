@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="identity_title">Sprekers identificeren</string>
+    <string name="identity_open">Kandidaten kiezen en identificeren</string>
+    <string name="identity_hint">Alleen geselecteerde personen worden vergeleken. Een suggestie wordt pas een definitieve naam na menselijke bevestiging.</string>
+    <string name="identity_cancel">Deze identificatie annuleren</string>
+    <string name="identity_conflict">De opname of identificatiecontext is gewijzigd. Vernieuw voordat u een nieuwe beslissing neemt.</string>
+    <string name="identity_failed">Identificatie mislukt</string>
+    <string name="identity_request_error">De aanvraag kan niet worden gecontroleerd. Namen blijven verborgen totdat u vernieuwt.</string>
+    <string name="identity_uncertain">De aanvraag heeft de server mogelijk bereikt. Controleer de status of probeer exact dezelfde aanvraag opnieuw.</string>
+    <string name="identity_retry_same">Dezelfde aanvraag opnieuw proberen</string>
+    <string name="identity_bank">Stemmenbibliotheek</string>
+    <string name="identity_personal">Mijn persoonlijke bibliotheek</string>
+    <string name="identity_bank_disabled">Stemafdrukken uitgeschakeld</string>
+    <string name="identity_more_banks">Meer organisaties</string>
+    <string name="identity_targets">Te identificeren sprekers</string>
+    <string name="identity_no_targets">Er zijn geen sprekers zonder toegewezen identiteit beschikbaar.</string>
+    <string name="identity_people">Geselecteerde personen: %1$d / 50</string>
+    <string name="identity_people_hint">Selecteer personen expliciet. De persoonlijke bibliotheek vergelijkt alleen u; een organisatiebibliotheek gebruikt haar huidige leden.</string>
+    <string name="identity_find">Een persoon zoeken</string>
+    <string name="identity_search">Zoeken</string>
+    <string name="identity_no_people">Geen personen gevonden voor deze zoekopdracht.</string>
+    <string name="identity_remove">%1$s verwijderen</string>
+    <string name="identity_submit">Geselecteerde sprekers identificeren</string>
+    <string name="identity_processing">De identificatie loopt nog. U kunt suggesties bevestigen of afwijzen zodra de volledige aanvraag klaar is.</string>
+    <string name="identity_unverified">Deze suggestie kan momenteel niet worden gecontroleerd. De kandidaatnaam is verborgen.</string>
+    <string name="identity_suggested">Voorgestelde identiteit: %1$s</string>
+    <string name="identity_preview">Fragment %1$d beluisteren</string>
+    <string name="identity_confirm">Identiteit bevestigen</string>
+    <string name="identity_reject">Suggestie afwijzen</string>
+    <string name="identity_queued">Wacht op identificatie</string>
+    <string name="identity_running">Bezig met identificeren</string>
+    <string name="identity_succeeded">Identificatie voltooid</string>
+    <string name="identity_canceled">Identificatie geannuleerd</string>
+    <string name="identity_expired">Identificatie verlopen</string>
+    <string name="identity_confirmed">Identiteit bevestigd</string>
+    <string name="identity_rejected">Suggestie afgewezen</string>
+    <string name="identity_invalidated">Suggestie is niet meer geldig</string>
+    <string name="identity_found">Er is een mogelijke identiteit gevonden.</string>
+    <string name="identity_unknown">Geen betrouwbare overeenkomst.</string>
+    <string name="identity_mixed">Dit spoor bevat mogelijk meerdere sprekers.</string>
+    <string name="identity_ambiguous">Meerdere kandidaten zijn mogelijk.</string>
+    <string name="identity_short">Niet genoeg bruikbare spraak.</string>
+    <string name="identity_unavailable">Geen bruikbare toegestane stemafdrukken of geverifieerde audio beschikbaar.</string>
+</resources>

@@ -78,6 +78,7 @@ internal fun UploadMediaPlayer(
     /** Bounds native HTTP preparation retries; tests use a shorter real-clock deadline. */
     preparationTimeoutMs: Long = PREPARATION_TIMEOUT_MS,
     followState: TranscriptFollowState? = null,
+    previewStop: String? = null,
 ) {
     val context = LocalContext.current.applicationContext
     val latestPosition by rememberUpdatedState(onPosition)
@@ -95,6 +96,7 @@ internal fun UploadMediaPlayer(
     var preparationStartedAt by remember(sourceId) { mutableLongStateOf(0) }
     var automaticRecoveries by remember(sourceId) { mutableIntStateOf(0) }
     var awaitingSeek by remember(sourceId) { mutableStateOf(false) }
+    var previewEnd by remember(sourceId) { mutableStateOf<Long?>(null) }
 
     var openedUrl by remember(sourceId) { mutableStateOf<String?>(null) }
     var surface by remember(sourceId) { mutableStateOf<Surface?>(null) }
@@ -102,6 +104,7 @@ internal fun UploadMediaPlayer(
     val latestMedia by rememberUpdatedState(media)
 
     fun stop() {
+        previewEnd = null
         awaitingSeek = false
         engine?.close()
         engine = null
@@ -118,7 +121,11 @@ internal fun UploadMediaPlayer(
         automaticRecoveries = if (automatic) automaticRecoveries + 1 else 0
         // A refreshed lease does not interrupt an existing stream. The next
         // explicit play/seek uses the latest URL while preserving source time.
-        if (engine != null && openedUrl != latestMedia.url) stop()
+        if (engine != null && openedUrl != latestMedia.url) {
+            val end = previewEnd
+            stop()
+            previewEnd = end
+        }
         val current = engine ?: runCatching {
             openedUrl = latestMedia.url
             createEngine?.invoke(latestMedia.url) { stop() }
@@ -149,11 +156,23 @@ internal fun UploadMediaPlayer(
     }
 
     fun report(milliseconds: Long) {
+        val end = previewEnd
+        if (end != null && milliseconds >= end) {
+            previewEnd = null
+            engine?.pause()
+            engine?.seekTo(end)
+            awaitingSeek = false
+            state = MediaPlaybackState.Ready
+            position = end
+            latestPosition(end)
+            return
+        }
         position = milliseconds
         latestPosition(milliseconds)
     }
 
     fun jump(milliseconds: Long) {
+        previewEnd = null
         start(milliseconds)
         report(milliseconds)
         followState?.resume()
@@ -172,6 +191,8 @@ internal fun UploadMediaPlayer(
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
+    LaunchedEffect(visible) { if (!visible && previewEnd != null) stop() }
+    LaunchedEffect(previewStop) { if (previewStop != null && previewEnd != null) stop() }
     // One local sampler, suspended while this UI is in the background.
     LaunchedEffect(tick, state, visible, awaitingSeek) {
         while ((state.showsPause || awaitingSeek) && visible) {
@@ -200,6 +221,10 @@ internal fun UploadMediaPlayer(
                 }
             }
             duration = current.durationMs()
+            if (previewEnd != null && validMediaDuration(duration) && previewEnd!! > duration) {
+                stop(); state = MediaPlaybackState.Error
+                break
+            }
             latestDuration(duration.takeIf(::validMediaDuration))
             aspect = current.videoAspectRatio()
             if (state == MediaPlaybackState.Preparing) {
@@ -220,7 +245,19 @@ internal fun UploadMediaPlayer(
             latestConsume()
             return@LaunchedEffect
         }
-        if (request.preservePlayback) {
+        val end = request.endMs
+        if (end != null) {
+            if (request.preservePlayback || request.milliseconds < 0 || request.milliseconds > 7200000 ||
+                end !in request.milliseconds + 3000..minOf(7200000, request.milliseconds + 10000) ||
+                validMediaDuration(duration) && end > duration) {
+                latestConsume()
+                return@LaunchedEffect
+            }
+            start(request.milliseconds)
+            if (state != MediaPlaybackState.Error) previewEnd = end
+            report(request.milliseconds)
+        } else if (request.preservePlayback) {
+            previewEnd = null
             position = request.milliseconds
             val current = engine
             if (current == null) {
@@ -251,6 +288,7 @@ internal fun UploadMediaPlayer(
                 muted = muted, onToggleMute = { muted = !muted; engine?.setMuted(muted) },
                 compactTopSpacing = media.mediaType == "video" && !videoExpanded,
                 onSeek = { value ->
+                    previewEnd = null
                     followState?.following = false
                     engine?.pause()
                     state = MediaPlaybackState.Ready
@@ -289,7 +327,7 @@ internal fun UploadMediaPlayer(
                 if (state.showsPause) { engine?.pause(); state = MediaPlaybackState.Ready }
                 else start(if (duration > 0 && position >= duration) 0 else position)
             },
-            onSeek = { value -> followState?.following = false; engine?.pause(); state = MediaPlaybackState.Ready; report(value); latestConsume() },
+            onSeek = { value -> previewEnd = null; followState?.following = false; engine?.pause(); state = MediaPlaybackState.Ready; report(value); latestConsume() },
             onSeekFinished = { engine?.seekTo(position); followState?.resume() },
             onRate = { speed -> rate = speed; if (state.showsPause) start(position) },
             onSkipBack = { jump(maxOf(0L, position - 15_000)) },
@@ -307,7 +345,7 @@ internal fun UploadMediaPlayer(
         val heightCap = (LocalConfiguration.current.screenHeightDp * Dimens.MediaPreviewMaxHeightRatio).dp
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             // Bound the top preview so the transcript retains reading space below it.
-            videoPanel(Modifier.fillMaxWidth().height(minOf(maxWidth / (16f / 9f), heightCap).coerceAtLeast(Dimens.RecordPlayback.VideoMinHeight)))
+            videoPanel(Modifier.fillMaxWidth().height(minOf(maxWidth / (16f / 9f), heightCap).coerceAtLeast(minOf(Dimens.RecordPlayback.VideoMinHeight, heightCap))))
         }
     } else if (!fullscreen) RecordPlayerSurface {
         if (hasVideo) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
