@@ -26,8 +26,26 @@ class OmniEndCallLiveTest {
     @Test fun aoqSpeechEndsVoiceCallAndRejectsNonCommands() = probe(AiCallTransport.AOQ, video = false)
     @Test fun aoqSpeechStopsMutedVideoCall() = probe(AiCallTransport.AOQ, video = true)
     @Test fun webRtcToolEndsCurrentCall() = probe(AiCallTransport.WebRTC, video = false)
+    @Test fun aoqGoodbyeEndsCallButNegationDoesNot() = probe(AiCallTransport.AOQ, video = false,
+        endAsset = "goodbye", endText = "再见",
+        nonCommands = listOf("goodbye-negative" to "不要说再见，我们继续聊。"))
+    @Test fun aoqByeByeEndsCallButMeaningQuestionDoesNot() = probe(AiCallTransport.AOQ, video = false,
+        endAsset = "byebye", endText = "拜拜",
+        nonCommands = listOf("byebye-question" to "拜拜是什么意思？"))
+    @Test fun aoqGoodbyeVariantEndsVideoCall() = probe(AiCallTransport.AOQ, video = true,
+        endAsset = "goodbye-variant", endText = "再见了")
+    @Test fun aoqByeByeVariantEndsCallButTranslationDoesNot() = probe(AiCallTransport.AOQ, video = false,
+        endAsset = "byebye-variant", endText = "拜拜了",
+        nonCommands = listOf("goodbye-translation" to "把再见了翻译成英语。"))
+    @Test fun webRtcGoodbyeVariantEndsCallButHypothesisDoesNot() = probe(AiCallTransport.WebRTC, video = false,
+        endAsset = "byebye-variant", endText = "那先这样，拜拜了",
+        nonCommands = listOf("byebye-hypothesis" to "如果我说拜拜会怎样？", "goodbye-quote" to "他说了再见，但我们继续聊。"))
 
-    private fun probe(transport: AiCallTransport, video: Boolean) = runBlocking<Unit> {
+    private fun probe(transport: AiCallTransport, video: Boolean,
+        endAsset: String = if (video) "stop" else "end",
+        endText: String = if (video) "停止对话" else "结束对话",
+        nonCommands: List<Pair<String, String>> = listOf("negative" to "不要结束对话，我们继续聊。", "question" to "怎么停止对话？"),
+    ) = runBlocking<Unit> {
         assumeTrue(InstrumentationRegistry.getArguments().getString("liveBackend") == "true")
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
@@ -50,7 +68,12 @@ class OmniEndCallLiveTest {
         val repository = AiAgentRepository(object : AiAgentApi {
             override suspend fun fetchConfig() = delegate.fetchConfig()
             override suspend fun exchangeOffer(offer: AiCallOffer): AiCallAnswer {
-                allocations.incrementAndGet(); return delegate.exchangeOffer(offer)
+                allocations.incrementAndGet(); return delegate.exchangeOffer(offer).also { answer ->
+                    if (endAsset in listOf("goodbye", "byebye", "goodbye-variant", "byebye-variant")) {
+                        assertTrue("New calls must receive goodbye rules", answer.tool_instructions["end_call"].orEmpty().contains("告别结束通话："))
+                        assertTrue(answer.tool_instructions["end_call_description"].orEmpty().contains("拜拜了"))
+                    }
+                }
             }
             override suspend fun sessionLease(id: String, operation: DirectAILeaseOperation) {
                 delegate.sessionLease(id, operation)
@@ -95,7 +118,7 @@ class OmniEndCallLiveTest {
                 emit.set(transcript, { row: AssistantHistoryRow ->
                     originalEmit(row)
                     android.util.Log.i("OmniEndCallTest", "Synthetic probe transcript role=${row.role} text=${row.text}")
-                    if (row.role == "assistant") replies.trySend(row.text)
+                    if (row.role == "assistant" && !row.isStreaming) replies.trySend(row.text)
                     Unit
                 })
                 withContext(Dispatchers.Main) { client.setMicrophoneEnabled(false) }
@@ -143,7 +166,7 @@ class OmniEndCallLiveTest {
                     }
                 }
                 if (!video) {
-                    for ((asset, text) in listOf("negative" to "不要结束对话，我们继续聊。", "question" to "怎么停止对话？")) {
+                    for ((asset, text) in nonCommands) {
                         say(asset, text)
                         try { withTimeout(30_000) { replies.receive() } }
                         catch (error: TimeoutCancellationException) { throw AssertionError("No reply to $asset; current=${vm!!.state.value.status}", error) }
@@ -152,7 +175,7 @@ class OmniEndCallLiveTest {
                     }
                 } else withContext(Dispatchers.Main) { vm!!.toggleOutput() }
                 val started = android.os.SystemClock.elapsedRealtime()
-                say(if (video) "stop" else "end", if (video) "停止对话" else "结束对话")
+                say(endAsset, endText)
                 // rtcClient is cleared before potentially blocking native cleanup;
                 // observe the completed UI state, not that intermediate pointer value.
                 withTimeout(30_000) { while (vm!!.state.value.status !is AiCallStatus.Ended) {

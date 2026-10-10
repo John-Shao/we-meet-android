@@ -1,0 +1,8 @@
+Synthetic speech: Microsoft Huihui Desktop, 16000 Hz, mono, signed PCM16 little endian.
+hangup-goodbye.pcm: 再见
+hangup-byebye.pcm: 拜拜
+hangup-goodbye-variant.pcm: 再见了
+hangup-byebye-variant.pcm: 拜拜了
+hangup-goodbye-negative.pcm: 不要说再见，我们继续聊。
+hangup-byebye-question.pcm: 拜拜是什么意思？
+hangup-goodbye-translation.pcm: 把再见了翻译成英语。
