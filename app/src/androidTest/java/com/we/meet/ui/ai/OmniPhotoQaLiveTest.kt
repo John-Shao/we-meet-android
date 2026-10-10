@@ -22,8 +22,12 @@ class OmniPhotoQaLiveTest {
     @Test fun webRtcVoicePhotoQa() = probe(AiCallTransport.WebRTC)
     @Test fun aoqVoicePhotoQa() = probe(AiCallTransport.AOQ)
     @Test fun aoqVoicePhotoAndVideoModes() = probe(AiCallTransport.AOQ, exerciseVideo = true)
+    @Test fun aoqRepeatLookVoiceCommandsCaptureNewPhotos() = probe(
+        AiCallTransport.AOQ, exerciseVideo = true,
+        repeatPhotoAssets = listOf("photo-again.pcm", "photo-again-once.pcm", "photo-you-again.pcm", "photo-again-please.pcm"),
+    )
 
-    private fun probe(transport: AiCallTransport, exerciseVideo: Boolean = false) = runBlocking<Unit> {
+    private fun probe(transport: AiCallTransport, exerciseVideo: Boolean = false, repeatPhotoAssets: List<String> = emptyList()) = runBlocking<Unit> {
         val args = InstrumentationRegistry.getArguments()
         assumeTrue(args.getString("liveBackend") == "true")
         val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -104,24 +108,40 @@ class OmniPhotoQaLiveTest {
                 val uploadedPhoto = photoRows.single().photo as com.we.meet.feature.assistant.history.AssistantHistoryPhoto.Memory
                 assertNotNull(BitmapFactory.decodeByteArray(uploadedPhoto.jpeg, 0, uploadedPhoto.jpeg.size)?.also { it.recycle() })
                 android.util.Log.i("OmniPhotoQaLive", "transport=$transport voice photo and realtime audio passed")
+                for ((index, asset) in repeatPhotoAssets.withIndex()) {
+                    withTimeout(60_000) { while (vm!!.state.value.transcriptRows.count { it.role == "assistant" && !it.isStreaming } < index + 1) delay(50) }
+                    delay(4000)
+                    input!!.say(asset)
+                    assertNotNull("Repeat-look photo missing: $asset", withTimeoutOrNull(50_000) { answered.receive() })
+                    withTimeout(30_000) { while (vm!!.state.value.photoPending) delay(50) }
+                    assertEquals(index + 2, photos.get())
+                    val captures = vm!!.state.value.transcriptRows.filter { it.photo != null }
+                    assertEquals(index + 2, captures.size)
+                    assertEquals(captures.size, captures.map { it.id }.distinct().size)
+                    assertEquals(AiCallMode.Voice, vm!!.state.value.mode)
+                    assertEquals(false, client.cameraEnabled)
+                    assertEquals(1, allocations.get()); assertSame(client, vm!!.rtcClient)
+                    android.util.Log.i("OmniPhotoQaLive", "repeat-look asset=$asset freshCapture=${photos.get()} mode=Voice allocations=1")
+                }
                 if (exerciseVideo) {
+                    val voicePhotos = 1 + repeatPhotoAssets.size
                     delay(4000)
                     input!!.say("camera-open.pcm")
                     val opened = withTimeoutOrNull(30_000) { while (!vm!!.state.value.isCameraEnabled || vm!!.state.value.cameraPending) delay(50); true } ?: false
                     assertTrue("Open missing: status=${vm!!.state.value.status} result=${vm!!.state.value.cameraResult?.code}", opened)
-                    assertEquals(AiCallMode.Video, vm!!.state.value.mode); assertEquals(1, photos.get())
+                    assertEquals(AiCallMode.Video, vm!!.state.value.mode); assertEquals(voicePhotos, photos.get())
                     delay(4000)
                     input!!.say("photo-question.pcm")
                     val videoAnswer = withTimeoutOrNull(50_000) { answered.receive() }
                     assertNotNull("Video photo missing: status=${vm!!.state.value.status} result=${vm!!.state.value.cameraResult?.code} captures=${photos.get()} http=${photoHttpError.get()}", videoAnswer)
                     withTimeout(10_000) { while (vm!!.state.value.photoPending) delay(50) }
                     assertTrue(client.cameraEnabled!!); assertEquals(AiCallMode.Video, vm!!.state.value.mode)
-                    assertEquals(2, photos.get()); assertEquals(1, allocations.get())
-                    assertEquals(2, vm!!.state.value.transcriptRows.count { it.photo != null })
+                    assertEquals(voicePhotos + 1, photos.get()); assertEquals(1, allocations.get())
+                    assertEquals(voicePhotos + 1, vm!!.state.value.transcriptRows.count { it.photo != null })
                     delay(4000); input!!.say("camera-close.pcm")
                     withTimeout(30_000) { while (vm!!.state.value.isCameraEnabled || vm!!.state.value.cameraPending) delay(50) }
                     assertTrue("Close ended call: reason=${vm!!.state.value.errorToastRes} result=${vm!!.state.value.cameraResult?.code}", vm!!.state.value.status is AiCallStatus.Active)
-                    assertEquals(AiCallMode.Voice, vm!!.state.value.mode); assertEquals(2, photos.get())
+                    assertEquals(AiCallMode.Voice, vm!!.state.value.mode); assertEquals(voicePhotos + 1, photos.get())
                     android.util.Log.i("OmniPhotoQaLive", "AOQ video photo keeps mode; explicit open/close still switches mode")
                 }
             } finally {

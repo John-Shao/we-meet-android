@@ -1,0 +1,5 @@
+Synthetic speech: Microsoft Huihui Desktop, 16000 Hz, mono, signed PCM16 little endian.
+photo-again.pcm: 再看看
+photo-again-once.pcm: 再看一下
+photo-you-again.pcm: 你再看看
+photo-again-please.pcm: 再看一下嘛
