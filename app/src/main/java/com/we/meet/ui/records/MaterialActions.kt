@@ -59,6 +59,8 @@ internal fun RecordHeaderMenu(
     onTranslations: (() -> Unit)? = null,
     onInfo: (() -> Unit)? = null,
     onTrash: (() -> Unit)? = null,
+    summaryId: String? = null,
+    humanId: String? = null,
 ) {
     var menu by remember { mutableStateOf(false) }
     Box {
@@ -81,20 +83,23 @@ internal fun RecordHeaderMenu(
             onTranslations = onTranslations,
             onInfo = onInfo,
             onTrash = onTrash,
+            summaryId = summaryId,
+            humanId = humanId,
         )
     }
 }
 
 @Composable
-internal fun MaterialChatShare(app: WeMeetApp, viewer: String, record: RecordDto, objectScope: String, onClose: () -> Unit) {
+internal fun MaterialChatShare(app: WeMeetApp, viewer: String, record: RecordDto, objectScope: String, summaryId: String? = null, humanId: String? = null, onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
     val session = remember { ImSession.get(app) }
     var creating by remember { mutableStateOf(false) }
     var remaining by remember { mutableStateOf<List<String>?>(null) }
     var busy by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
-    val body = remember(record.id, objectScope) { JSONObject().apply {
+    val body = remember(record.id, objectScope, summaryId, humanId) { JSONObject().apply {
         put("v", 1); put("record_id", record.id); put("scope", objectScope); put("title", record.title); put("origin_at", record.originAt)
+        summaryId?.let { put("summary_id", it) }; humanId?.let { put("human_id", it) }
     }.toString() }
     fun send(targets: List<String>) {
         if (busy || app.captureAccount != viewer) return

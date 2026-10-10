@@ -118,7 +118,19 @@ sealed interface MessageContent {
      * `{v,doc_id,title,url,shared_by?}`。与 EventCard 不同,这是分享时刻的
      * 静态快照,不追更——没有 kind 多态。
      */
-    data class MeetingRecordCard(val recordId: String, val title: String, val scope: String = "minutes") : MessageContent
+    data class MeetingRecordCard(val recordId: String, val title: String, val scope: String = "minutes",
+        val summaryId: String? = null, val humanId: String? = null) : MessageContent {
+        fun relativeLink(): String = "/meeting/records/$recordId" + when {
+            humanId != null -> "?human=$humanId"
+            summaryId != null -> "?summary=$summaryId"
+            else -> "?tab=${if (scope == "minutes") "summary" else "overview"}"
+        }
+        fun previewSelector(): String = when {
+            humanId != null -> "?human_id=$humanId"
+            summaryId != null -> "?summary_id=$summaryId"
+            else -> ""
+        }
+    }
 
     data class DocCard(
         val docId: String,
@@ -277,7 +289,14 @@ object MessageContentParser {
             require(java.util.UUID.fromString(id).toString() == id)
             val scope = it.optString("scope", "minutes")
             require(scope in setOf("record", "minutes"))
-            MessageContent.MeetingRecordCard(id, it.getString("title"), scope)
+            fun version(key: String) = if (!it.has(key)) null else it.getString(key).also { value ->
+                require(java.util.UUID.fromString(value).toString() == value)
+            }
+            val summary = version("summary_id")
+            val human = version("human_id")
+            require(summary == null || human == null)
+            require(scope == "minutes" || summary == null && human == null)
+            MessageContent.MeetingRecordCard(id, it.getString("title"), scope, summary, human)
         }
         "doc-card" -> parseJson(contentType, body) {
             MessageContent.DocCard(

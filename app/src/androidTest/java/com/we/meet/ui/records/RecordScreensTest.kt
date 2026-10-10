@@ -723,17 +723,19 @@ class RecordScreensTest {
         openPageActions()
         compose.onNodeWithText(label(id)).performClick()
     }
-    private fun detail(fixture: Fixture, dark: Boolean = false): Owner {
+    private fun detail(fixture: Fixture, dark: Boolean = false, minutes: Boolean = false): Owner {
         val owner = Owner()
         compose.runOnUiThread { owner.registry.currentState = Lifecycle.State.RESUMED }
         val repo = MeetingRecordRepository(fixture) { "reader" }
         compose.setContent {
             CompositionLocalProvider(LocalLifecycleOwner provides owner) {
-                WeMeetTheme(darkTheme = dark) { RecordDetailScreen(repo, "reader", recordId, {}) }
+                WeMeetTheme(darkTheme = dark) { RecordDetailScreen(repo, "reader", recordId, {}, initialSummary = minutes) }
             }
         }
-        awaitText(label(R.string.records_minutes))
-        compose.onNodeWithText(label(R.string.records_minutes)).performClick()
+        if (!minutes) {
+            awaitText(label(R.string.records_minutes))
+            compose.onNodeWithText(label(R.string.records_minutes)).performClick()
+        }
         awaitText("Confirm release scope")
         return owner
     }
@@ -952,7 +954,7 @@ class RecordScreensTest {
 
     @Test fun backgroundClearsPrivateBodyAndRevocationFailsClosedOnReturn() {
         val fixture = Fixture()
-        val owner = detail(fixture)
+        val owner = detail(fixture, minutes = true)
         compose.runOnUiThread { owner.registry.currentState = Lifecycle.State.CREATED }
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Confirm release scope").fetchSemanticsNodes().isEmpty() }
         fixture.revoked = true
@@ -963,7 +965,7 @@ class RecordScreensTest {
 
     @Test fun exactCitationOpensAndDoesNotSurviveRevocation() {
         val fixture = Fixture()
-        val owner = detail(fixture)
+        val owner = detail(fixture, minutes = true)
         compose.onNodeWithText(context.getString(R.string.records_source_at, "0:01")).performScrollTo().performClick()
         awaitText("Exact recorded evidence")
         assertEquals(1, fixture.snapshotReads)
@@ -976,7 +978,7 @@ class RecordScreensTest {
 
     @Test fun summaryOnlyAccessHasNoSourceControl() {
         val fixture = Fixture().apply { originals = false }
-        detail(fixture)
+        detail(fixture, minutes = true)
         compose.onNodeWithText(context.getString(R.string.records_source_at, "0:01")).assertDoesNotExist()
         assertEquals(0, fixture.snapshotReads)
         screenshot("records-summary-only-light")
@@ -984,7 +986,7 @@ class RecordScreensTest {
 
     @Test fun unknownStageIsNotMislabelledFinalAndIncompleteIsExplicit() {
         val fixture = Fixture().apply { stage = "future-stage"; asr = "incomplete" }
-        detail(fixture, dark = true)
+        detail(fixture, dark = true, minutes = true)
         compose.onNodeWithText(label(R.string.records_final)).assertDoesNotExist()
         compose.onNodeWithText(label(R.string.records_incomplete)).assertIsDisplayed()
         screenshot("records-summary-dark")

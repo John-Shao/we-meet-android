@@ -66,6 +66,7 @@ import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.api.dto.RecordReferenceDto
 import com.we.meet.data.api.dto.RecordSummaryVersionDto
 import com.we.meet.data.repository.MeetingRecordRepository
+import com.we.meet.data.repository.MeetingReviewRepository
 import com.we.meet.data.repository.RecordScope
 import com.we.meet.data.repository.RecordSource
 import com.we.meet.ui.components.WeMeetInlineEmptyState
@@ -107,9 +108,10 @@ internal fun <T> visibleRead(vararg keys: Any?, intervalMs: Long = 15_000, refre
 }
 
 @Composable
-fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null, onTask: ((String) -> Unit)? = null, onDocument: ((String) -> Unit)? = null, initialSummary: Boolean = false, initialReview: Boolean = false, onRemoved: () -> Unit = onBack) {
+fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null, onTask: ((String) -> Unit)? = null, onDocument: ((String) -> Unit)? = null, initialSummary: Boolean = false, initialReview: Boolean = false, onRemoved: () -> Unit = onBack, humanVersionId: String? = null, reviewRepository: MeetingReviewRepository? = null) {
     val viewStates = androidx.compose.runtime.key(viewer, recordId) { rememberSaveableStateHolder() }
     val app = LocalContext.current.applicationContext as? WeMeetApp
+    val humanRepository = reviewRepository ?: app?.meetingReviewRepository
     var audioSeek by remember(viewer, recordId) { mutableStateOf<CaptureAudioSeek?>(null) }
     var identityPreviewStop by remember(viewer, recordId) { mutableStateOf<String?>(null) }
     /**
@@ -121,20 +123,20 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     var playbackPositionMs by remember(viewer, recordId) { mutableStateOf<Long?>(null) }
     var trashSelection by remember(viewer, recordId) { mutableStateOf<RecordLifecycleDto?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
-    var selectedHuman by remember(viewer, recordId) { mutableStateOf<String?>(null) }
+    var selectedHuman by remember(viewer, recordId, humanVersionId) { mutableStateOf(humanVersionId) }
     var selectedVersion by remember(viewer, recordId, summaryVersionId) { mutableStateOf(summaryVersionId) }
     var cursors by remember(viewer, recordId, selectedVersion) { mutableStateOf(listOf<String?>(null)) }
-    var citation by remember(viewer, recordId, summaryVersionId) { mutableStateOf<Pair<String, RecordReferenceDto>?>(null) }
-    var tool by remember(viewer, recordId, summaryVersionId, initialReview) { mutableStateOf<String?>(if (initialReview) "manage" else null) }
+    var citation by remember(viewer, recordId, summaryVersionId, humanVersionId) { mutableStateOf<Pair<String, RecordReferenceDto>?>(null) }
+    var tool by remember(viewer, recordId, summaryVersionId, humanVersionId, initialReview) { mutableStateOf<String?>(if (initialReview) "manage" else null) }
     var history by remember(viewer, recordId, summaryVersionId) { mutableStateOf(false) }
-    var detailTab by remember(viewer, recordId, summaryVersionId, initialSummary) { mutableStateOf(if (summaryVersionId != null || initialSummary) "summary" else "text") }
-    val initialDocument = summaryVersionId != null || initialSummary || initialReview
-    var document by remember(viewer, recordId, summaryVersionId, initialSummary, initialReview) { mutableStateOf(initialDocument) }
+    var detailTab by remember(viewer, recordId, summaryVersionId, humanVersionId, initialSummary) { mutableStateOf(if (summaryVersionId != null || humanVersionId != null || initialSummary) "summary" else "text") }
+    val initialDocument = summaryVersionId != null || humanVersionId != null || initialSummary || initialReview
+    var document by remember(viewer, recordId, summaryVersionId, humanVersionId, initialSummary, initialReview) { mutableStateOf(initialDocument) }
     val navigateBack: () -> Unit = {
         if (document != initialDocument) {
             document = initialDocument
             detailTab = if (initialDocument) "summary" else "overview"
-            selectedHuman = null; selectedVersion = summaryVersionId
+            selectedHuman = humanVersionId; selectedVersion = summaryVersionId
             tool = null; history = false; citation = null; cursors = listOf(null)
         } else onBack()
     }
@@ -200,6 +202,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             onTranslations = if (!document && record.capabilities.readTranscript && (record.sourceType in listOf("meeting", "upload") || record.sourceType == "audio_recording" && record.captureId != null && record.capabilities.controlCapture)) ({ detailTab = "translations" }) else null,
                             onInfo = if (!document) ({ detailTab = "info" }) else null,
                             onTrash = if (!document && record.capabilities.trash && record.lifecycleRevision != null) ({ trashSelection = RecordLifecycleDto(record.id, record.title, record.sourceType, null, record.lifecycleRevision) }) else null,
+                            summaryId = if (document && selectedHuman == null) selectedVersion else null,
+                            humanId = if (document) selectedHuman else null,
                         )
                     }
                 }
@@ -343,10 +347,11 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             else RecordOverview(viewer, record, app.meetingSummaryRepository, { app.captureAccount }, Modifier.weight(1f),
                                 onOpenMinutes = if (record.capabilities.readSummary) ({ document = true; selectedVersion = null; selectedHuman = null; cursors = listOf(null); tool = null; citation = null; history = false }) else null,
                             ) { snapshot, ref -> citation = snapshot to ref }
-                        } else if (selectedHuman != null && document && app != null) {
+                        } else if (selectedHuman != null && document) {
                             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                                 TextButton(onClick = { selectedHuman = null; selectedVersion = null; citation = null }) { Text(stringResource(R.string.records_all_versions)) }
-                                HumanSummaryRevision(viewer, record, app.meetingReviewRepository, selectedHuman!!) { snapshot, reference -> citation = snapshot to reference }
+                                if (humanRepository == null) WeMeetEmptyState(stringResource(R.string.records_unavailable))
+                                else HumanSummaryRevision(viewer, record, humanRepository, selectedHuman!!) { snapshot, reference -> citation = snapshot to reference }
                             }
                         } else {
                             val cursor = if (overviewOnly) null else cursors.last()

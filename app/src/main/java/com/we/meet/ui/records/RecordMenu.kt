@@ -59,6 +59,8 @@ internal fun RecordMenuContent(
     onTranslations: (() -> Unit)? = null,
     onInfo: (() -> Unit)? = null,
     onTrash: (() -> Unit)? = null,
+    summaryId: String? = null,
+    humanId: String? = null,
 ) {
     val repository = app.meetingRecordRepository
     var panel by remember { mutableStateOf<String?>(null) }
@@ -101,13 +103,13 @@ internal fun RecordMenuContent(
             Text(record.title, style = MaterialTheme.typography.titleMedium)
             TextButton(onClick = { panel = "chat" }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) { Text(stringResource(R.string.collaboration_send)) }
             TextButton(onClick = {
-                val url = RecordLinks.material(record.id, BuildConfig.WE_MEET_BASE_URL, objectScope)
+                val url = RecordLinks.material(record.id, BuildConfig.WE_MEET_BASE_URL, objectScope, summaryId, humanId)
                 (app.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText(record.title, url))
                 copied = true
             }, modifier = Modifier.heightIn(min = Dimens.MinTouchTarget)) { Text(stringResource(R.string.collaboration_copy)) }
             if (copied) Text(stringResource(R.string.collaboration_copied))
         }
     }
-    if (panel == "chat") MaterialChatShare(app, viewer, record, objectScope) { panel = null }
+    if (panel == "chat") MaterialChatShare(app, viewer, record, objectScope, summaryId, humanId) { panel = null }
     if (panel == "members") MaterialMembers(app, viewer, record, objectScope, onChanged) { panel = null }
 }
