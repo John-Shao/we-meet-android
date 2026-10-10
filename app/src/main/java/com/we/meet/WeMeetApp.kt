@@ -75,6 +75,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
     override val assistantAccount: String? get() = captureAccount
     lateinit var captureTranscriptionRepository: com.we.meet.data.repository.CaptureTranscriptionRepository
         private set
+    lateinit var captureDiarizationRepository: com.we.meet.data.repository.CaptureDiarizationRepository
+        private set
     lateinit var meetingSummaryRepository: com.we.meet.data.repository.MeetingSummaryRepository
         private set
     lateinit var meetingReviewRepository: com.we.meet.data.repository.MeetingReviewRepository
@@ -223,6 +225,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         uploadTranslationRepository = com.we.meet.data.repository.UploadTranslationRepository(apiClient.uploadTranslationApi) { captureAccount }
         captureRepository = com.we.meet.data.repository.CaptureRepository(apiClient.captureApi) { tokenStore.userId }
         captureTranscriptionRepository = com.we.meet.data.repository.CaptureTranscriptionRepository(apiClient.captureTranscriptionApi) { captureAccount }
+        captureDiarizationRepository = com.we.meet.data.repository.CaptureDiarizationRepository(
+            apiClient.captureTranscriptionApi, { captureAccount }, { tokenStore.authSnapshot().session })
         meetingSummaryRepository = com.we.meet.data.repository.MeetingSummaryRepository(apiClient.meetingSummaryApi) { captureAccount }
         meetingReviewRepository = com.we.meet.data.repository.MeetingReviewRepository(apiClient.meetingReviewApi) { captureAccount }
         meetingQuestionRepository = com.we.meet.data.repository.MeetingQuestionRepository(apiClient.meetingQuestionApi) { captureAccount }

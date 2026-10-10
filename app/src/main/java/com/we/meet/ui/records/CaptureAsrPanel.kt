@@ -52,6 +52,12 @@ import java.util.Locale
 
 @Composable
 internal fun CaptureAsrPanel(viewer: String, capture: CaptureDto, repository: CaptureTranscriptionRepository, currentViewer: () -> String?) {
+    CaptureAsrPanel(viewer, capture, repository, currentViewer, null, false, {})
+}
+
+@Composable
+internal fun CaptureAsrPanel(viewer: String, capture: CaptureDto, repository: CaptureTranscriptionRepository, currentViewer: () -> String?,
+    diarization: com.we.meet.data.repository.CaptureDiarizationRepository?, editing: Boolean, onChanged: () -> Unit) {
     val context = LocalContext.current.applicationContext
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
@@ -100,6 +106,7 @@ internal fun CaptureAsrPanel(viewer: String, capture: CaptureDto, repository: Ca
     fun operate(cancel: Boolean) {
         val controller = coordinator ?: return
         if (busy || !lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
+        if (!cancel && editing) return
         if (cancel && (!active || latest == null || pending != null)) return
         if (!cancel && pending == null && (!available || active)) return
         if (!cancel && pending == null && textMode && !CaptureRetention.canStartTranscription(state?.audioRetention)) return
@@ -141,7 +148,7 @@ internal fun CaptureAsrPanel(viewer: String, capture: CaptureDto, repository: Ca
                     Checkbox(allowIncomplete, { allowIncomplete = it }, enabled = !busy)
                     Text(stringResource(R.string.capture_asr_allow_incomplete), Modifier.padding(top = Dimens.SpaceM), style = MaterialTheme.typography.bodyMedium)
                 }
-                if (pending != null || available && !active) Button(onClick = { operate(false) }, enabled = !busy && coordinator != null && !storageError) {
+                if (pending != null || available && !active) Button(onClick = { operate(false) }, enabled = !busy && !editing && coordinator != null && !storageError) {
                     Text(stringResource(if (pending != null) R.string.capture_asr_reconcile else if (live) R.string.capture_asr_start_live else R.string.capture_asr_start_sealed))
                 }
                 if (active && pending == null) TextButton(onClick = { operate(true) }, enabled = !busy && coordinator != null) {
@@ -150,6 +157,9 @@ internal fun CaptureAsrPanel(viewer: String, capture: CaptureDto, repository: Ca
                 if (busy) WeMeetInlineLoading()
                 if (latest?.mode == "live") key(viewer, capture.id, latest.id) {
                     CaptureAsrPreview(viewer, capture.id, latest, repository)
+                }
+                if (!live && state.diarizationAvailable && diarization != null) {
+                    CaptureDiarizationPanel(diarization, viewer, capture.id, editing) { retry++; onChanged() }
                 }
             }
         }

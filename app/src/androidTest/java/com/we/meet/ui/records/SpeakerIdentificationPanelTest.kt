@@ -147,7 +147,8 @@ class SpeakerIdentificationPanelTest {
         val repository = SpeakerIdentificationRepository(Retrofit.Builder().baseUrl("https://fixture.invalid/").client(client)
             .addConverterFactory(MoshiConverterFactory.create(moshi).withNullSerialization()).build().create(SpeakerIdentificationApi::class.java), { owner }, { session })
     }
-    private fun show(fixture: Fixture, current: RecordDto = record, chineseDarkLarge: Boolean = false) {
+    private fun show(fixture: Fixture, current: RecordDto = record, chineseDarkLarge: Boolean = false,
+        captureDerivation: androidx.compose.runtime.State<String?> = androidx.compose.runtime.mutableStateOf(null)) {
         diagnostic = fixture
         val configuration = Configuration(context.resources.configuration).apply { if (chineseDarkLarge) setLocale(Locale.SIMPLIFIED_CHINESE) }
         resources = context.createConfigurationContext(configuration)
@@ -156,7 +157,7 @@ class SpeakerIdentificationPanelTest {
                 LocalDensity provides Density(LocalDensity.current.density, if (chineseDarkLarge) 1.5f else 1f)) {
                 WeMeetTheme(darkTheme = chineseDarkLarge) { Surface { Column {
                     RecordSpeakerIdentification(fixture.repository, owner, current, { fixture.changed.incrementAndGet() },
-                        { start, end -> fixture.preview += start to end }, { fixture.stopped.incrementAndGet() })
+                        { start, end -> fixture.preview += start to end }, { fixture.stopped.incrementAndGet() }, captureDerivation.value)
                 } } }
             }
         }
@@ -191,6 +192,23 @@ class SpeakerIdentificationPanelTest {
         val fixture = Fixture(); show(fixture)
         waitText(text(R.string.identity_open))
         assertTrue(fixture.calls.all { it.endsWith("/config/") })
+        assertTrue(fixture.submissions.isEmpty())
+    }
+    @Test fun recordingWithoutSuccessfulDiarizationHasNoPrivateEntry() {
+        val fixture=Fixture(); show(fixture,record.copy(sourceType="audio_recording",upload=null))
+        compose.onNodeWithText(text(R.string.identity_open)).assertDoesNotExist()
+        assertTrue(fixture.calls.isEmpty())
+    }
+    @Test fun publishedRecordingSupportsReviewAndChangingGenerationClearsOldChoices() {
+        val fixture=Fixture()
+        val generation=androidx.compose.runtime.mutableStateOf<String?>("66666666-6666-4666-8666-666666666666")
+        show(fixture,record.copy(sourceType="audio_recording",upload=null),captureDerivation=generation)
+        openAndChoose(fixture)
+        val stopped=fixture.stopped.get()
+        compose.runOnIdle { generation.value="77777777-7777-4777-8777-777777777777" }
+        compose.waitUntil(10000) { fixture.stopped.get() > stopped }
+        compose.onNodeWithText(text(R.string.identity_submit)).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.identity_open)).assertExists()
         assertTrue(fixture.submissions.isEmpty())
     }
     @Test fun readonlyOrMissingEditCapabilityHidesTheEntry() {

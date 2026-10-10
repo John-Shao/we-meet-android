@@ -62,6 +62,8 @@ data class RecordOriginalRow(
     val playbackAlignment: com.we.meet.data.api.dto.PlaybackAlignmentDto? = null,
 )
 
+data class CaptureOriginalVersion(val asrId: String, val diarizationId: String?)
+
 /** No disk cache or cross-account memory; every response is checked against its reader. */
 class MeetingRecordRepository(
     private val api: MeetingRecordApi,
@@ -245,6 +247,7 @@ class MeetingRecordRepository(
         speakerId: String? = null,
         cursor: String? = null,
         atMs: Long? = null,
+        captureVersion: CaptureOriginalVersion? = null,
     ): Result<RecordPageDto<RecordOriginalRow>> = scoped(viewer) {
         requireUuid(recordId)
         require(revision > 0 && (query == null || query.length <= 200))
@@ -252,6 +255,10 @@ class MeetingRecordRepository(
         speakerId?.let(::requireUuid)
         validateCursor(cursor)
         val record = originalRecord(recordId, revision)
+        captureVersion?.let {
+            require(record.sourceType == "audio_recording")
+            requireUuid(it.asrId); it.diarizationId?.let(::requireUuid)
+        }
         val page = when (record.sourceType) {
             "meeting" -> {
                 require(speakerId == null && record.meetingSessionId != null)
@@ -264,7 +271,8 @@ class MeetingRecordRepository(
                 }, rows.nextCursor)
             }
             "audio_recording", "upload" -> {
-                val rows = api.originals(recordId, revision, query, speakerId, cursor, atMs)
+                val rows = if (captureVersion == null) api.originals(recordId, revision, query, speakerId, cursor, atMs)
+                else api.captureOriginals(recordId, revision, query, speakerId, cursor, atMs, captureVersion.asrId, captureVersion.diarizationId)
                 validatePage(rows)
                 RecordPageDto(rows.results.map {
                     requireUuid(it.id)
@@ -272,6 +280,7 @@ class MeetingRecordRepository(
                     requireUuid(it.speakerId)
                     require(it.revision > 0 && it.startMs >= 0 && (it.endMs == null || it.endMs >= it.startMs))
                     require(record.captureId == null || it.captureSessionId == record.captureId)
+                    if (captureVersion != null) require(it.diarizationJobId == captureVersion.diarizationId)
                     require(speakerId == null || speakerId == it.speakerId)
                     RecordOriginalRow(
                         it.id, it.speakerLabel, it.text, it.language,

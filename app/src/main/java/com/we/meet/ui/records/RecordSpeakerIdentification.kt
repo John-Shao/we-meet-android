@@ -24,13 +24,23 @@ import com.we.meet.data.repository.SpeakerIdentificationRepository
 import com.we.meet.ui.components.WeMeetInlineLoading
 import com.we.meet.ui.theme.Dimens
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /** Closed by default; even the directory is not loaded before an explicit open. */
 @Composable
 internal fun RecordSpeakerIdentification(repository: SpeakerIdentificationRepository, viewer: String, record: RecordDto,
+    onChanged: () -> Unit, onPreview: (Long, Long) -> Unit, onPreviewStop: () -> Unit, captureDiarizationId: String? = null) {
+    if (record.sourceType !in setOf("upload", "audio_recording") || record.sourceType == "upload" && record.upload?.status != "succeeded" ||
+        record.sourceType == "audio_recording" && captureDiarizationId == null || !record.capabilities.edit || !record.capabilities.readTranscript || !record.capabilities.playMedia) return
+    key(captureDiarizationId) {
+        RecordSpeakerIdentificationContent(repository, viewer, record, onChanged, onPreview, onPreviewStop)
+    }
+}
+
+@Composable
+private fun RecordSpeakerIdentificationContent(repository: SpeakerIdentificationRepository, viewer: String, record: RecordDto,
     onChanged: () -> Unit, onPreview: (Long, Long) -> Unit, onPreviewStop: () -> Unit) {
-    if (record.sourceType != "upload" || record.upload?.status != "succeeded" || !record.capabilities.edit || !record.capabilities.readTranscript || !record.capabilities.playMedia) return
     val client = remember(repository, viewer, record.id) { runCatching { repository.open(viewer, record.id) }.getOrNull() } ?: return
     var opened by remember(client) { mutableStateOf(false) }
     var allowed by remember(client) { mutableStateOf(client.allowed()) }
@@ -66,7 +76,7 @@ internal fun IdentificationSheet(controller: SpeakerIdentificationController, on
     val context = LocalContext.current
     val density = LocalDensity.current
     val sheetHeight = configuration.screenHeightDp.dp * 0.85f
-    val state by controller.state.collectAsState()
+    val state by controller.state.collectAsState(context = Dispatchers.Main.immediate)
     val scope = rememberCoroutineScope()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(controller, lifecycle) {

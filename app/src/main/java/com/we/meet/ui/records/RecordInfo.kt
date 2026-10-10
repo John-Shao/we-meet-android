@@ -131,7 +131,7 @@ private fun retentionLabel(mode: String): Int = when (mode) {
 @Composable
 internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String, record: RecordDto, modifier: Modifier = Modifier, onSource: ((Long) -> Unit)? = null, fullDuration: Long? = null, onRecordChanged: (() -> Unit)? = null,
     identification: com.we.meet.data.repository.SpeakerIdentificationRepository? = null,
-    onIdentityPreview: (Long, Long) -> Unit = { _, _ -> }, onIdentityPreviewStop: () -> Unit = {}) {
+    onIdentityPreview: (Long, Long) -> Unit = { _, _ -> }, onIdentityPreviewStop: () -> Unit = {}, captureDiarizationId: String? = null) {
     var cursors by remember(viewer, record.id, record.revision) { mutableStateOf(listOf<String?>(null)) }
     var refresh by remember { mutableIntStateOf(0) }
     val result = visibleRead(viewer, record.id, record.revision, cursors.last(), refresh) { repository.speakers(viewer, record.id, record.revision, cursors.last()) }
@@ -143,7 +143,7 @@ internal fun RecordSpeakers(repository: MeetingRecordRepository, viewer: String,
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(stringResource(R.string.records_activity_basis), Modifier.padding(horizontal = Dimens.ScreenPadding), style = MaterialTheme.typography.bodySmall)
         identification?.let {
-            RecordSpeakerIdentification(it, viewer, record, { if (onRecordChanged != null) onRecordChanged() else refresh++ }, onIdentityPreview, onIdentityPreviewStop)
+            RecordSpeakerIdentification(it, viewer, record, { if (onRecordChanged != null) onRecordChanged() else refresh++ }, onIdentityPreview, onIdentityPreviewStop, captureDiarizationId)
         }
         when {
             result == null -> WeMeetInlineLoading()

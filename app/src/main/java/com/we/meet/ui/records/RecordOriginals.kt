@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
 package com.we.meet.ui.records
+import androidx.compose.runtime.rememberUpdatedState
 
 import androidx.compose.runtime.saveable.rememberSaveable
 
@@ -100,14 +101,24 @@ internal fun RecordOriginals(
     replacementLabel: (@Composable () -> Unit)? = null,
     onManageReplacement: (() -> Unit)? = null,
     followState: TranscriptFollowState = remember(viewer, record.id) { TranscriptFollowState() },
+    captureVersion: com.we.meet.data.repository.CaptureOriginalVersion? = null,
+    onEditingChanged: (Boolean) -> Unit = {},
 ) {
+    val correctionDrafts = remember(viewer, record.id) { OriginalCorrectionDrafts() }
+    val editing = correctionDrafts.isEditing()
+    val reportEditing by rememberUpdatedState(onEditingChanged)
+    LaunchedEffect(editing) { reportEditing(editing) }
+    var reading by remember(viewer, record.id) { mutableStateOf(record.revision to captureVersion) }
+    LaunchedEffect(editing, record.revision, captureVersion) { if (!editing) reading = record.revision to captureVersion }
+    val revision = if (editing) reading.first else record.revision
+    val version = if (editing) reading.second else captureVersion
     var input by rememberSaveable(viewer, record.id) { mutableStateOf("") }
     var query by rememberSaveable(viewer, record.id) { mutableStateOf("") }
     var searchVisible by rememberSaveable(viewer, record.id) { mutableStateOf(false) }
     var actionsVisible by remember(viewer, record.id) { mutableStateOf(false) }
-    var speakerId by rememberSaveable(viewer, record.id, record.revision) { mutableStateOf<String?>(null) }
-    var selectSpeaker by remember(viewer, record.id, record.revision) { mutableStateOf(false) }
-    var anchorMs by rememberSaveable(viewer, record.id, record.revision) { mutableStateOf(0L) }
+    var speakerId by rememberSaveable(viewer, record.id, revision) { mutableStateOf<String?>(null) }
+    var selectSpeaker by remember(viewer, record.id, revision) { mutableStateOf(false) }
+    var anchorMs by rememberSaveable(viewer, record.id, revision) { mutableStateOf(0L) }
     val following = followState.following
     LaunchedEffect(followState.resumeToken) {
         if (followState.resumeToken > 0) {
@@ -119,11 +130,9 @@ internal fun RecordOriginals(
         }
     }
     val scope = rememberCoroutineScope()
-    val correctionDrafts = remember(viewer, record.id) { OriginalCorrectionDrafts() }
-    val editing = correctionDrafts.isEditing()
     DisposableEffect(correctionDrafts, followState) {
         followState.canResume = { !correctionDrafts.isEditing() }
-        onDispose { followState.canResume = { true }; correctionDrafts.clear() }
+        onDispose { followState.canResume = { true }; correctionDrafts.clear(); reportEditing(false) }
     }
     var exportVisible by remember(viewer, record.id) { mutableStateOf(false) }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -131,14 +140,14 @@ internal fun RecordOriginals(
     val filtered = query.isNotBlank() || speakerId != null
     LaunchedEffect(filtered) { if (filtered) followState.following = false }
     val atMs = if (record.sourceType == "meeting") null else if (filtered) 0L else anchorMs
-    val continuous = rememberRecordContinuousRead(viewer, record.id, record.revision, query, speakerId, atMs,
+    val continuous = rememberRecordContinuousRead(viewer, record.id, revision, version, query, speakerId, atMs,
         initial = null as String?, next = { it.nextCursor },
         intervalMs = if (record.isOngoing && !editing) 15_000L else null,
         merge = { pages -> pages.last().copy(results = pages.flatMap { it.results }.distinctBy { it.id }) },
-        read = { cursor -> repository.originals(viewer, record.id, record.revision, query.ifBlank { null }, speakerId, cursor, atMs) })
+        read = { cursor -> repository.originals(viewer, record.id, revision, query.ifBlank { null }, speakerId, cursor, atMs, version) })
     val page = continuous.result
     RecordAutoLoad(continuous, listState, disabled = editing)
-    val refreshText: () -> Unit = { if (page?.exceptionOrNull() is RecordSourceChangedException) onRefresh() else continuous.refresh() }
+    val refreshText: () -> Unit = { if (!editing) { if (page?.exceptionOrNull() is RecordSourceChangedException) onRefresh() else continuous.refresh() } }
     val rows = page?.getOrNull()?.results.orEmpty()
     val readError = page?.exceptionOrNull()
     LaunchedEffect(readError) {
@@ -320,7 +329,7 @@ internal fun RecordOriginals(
                                     repository = repository,
                                     viewer = viewer,
                                     recordId = record.id,
-                                    revision = record.revision,
+                                    revision = if (version != null) revision else record.revision,
                                     segmentId = original.id,
                                     text = original.text,
                                     originalText = original.originalText,

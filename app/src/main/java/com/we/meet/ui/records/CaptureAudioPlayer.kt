@@ -26,12 +26,14 @@ import kotlinx.coroutines.*
 internal data class CaptureAudioSeek(val milliseconds: Long, val token: String = UUID.randomUUID().toString(), val preservePlayback: Boolean = false, val endMs: Long? = null)
 
 @Composable
-internal fun NativeCaptureAudioPlayer(viewer: String, recordId: String, repository: CapturePlaybackRepository, currentViewer: () -> String?, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}, followState: TranscriptFollowState? = null) {
+internal fun NativeCaptureAudioPlayer(viewer: String, recordId: String, repository: CapturePlaybackRepository, currentViewer: () -> String?, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}, followState: TranscriptFollowState? = null,
+    previewStopToken: String? = null, currentSession: (() -> String)? = null) {
     val context = LocalContext.current.applicationContext
+    val login = remember(viewer, recordId) { currentSession?.invoke() }
     CaptureAudioPlayer(viewer, recordId, { repository.playlist(viewer, recordId).getOrThrow() }, { allowed ->
         CapturePlaybackEngine({ playlist, index -> repository.audio(viewer, playlist, index).getOrThrow() },
             { repository.checkAccess(viewer, it).getOrThrow() }, { AndroidCapturePlaybackOutput(context, it) }, allowed)
-    }, { currentViewer() == viewer && !CaptureForegroundService.microphoneActive && !ConferenceForegroundService.isRunning }, seek, onSeekConsumed, onPosition, followState)
+    }, { currentViewer() == viewer && (currentSession == null || currentSession() == login) && !CaptureForegroundService.microphoneActive && !ConferenceForegroundService.isRunning }, seek, onSeekConsumed, onPosition, followState, previewStopToken)
 }
 
 /**
@@ -42,7 +44,7 @@ internal fun NativeCaptureAudioPlayer(viewer: String, recordId: String, reposito
  */
 @Composable
 internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend () -> CapturePlaylist, createEngine: (allowed: () -> Boolean) -> CapturePlaybackEngine,
-    authorized: () -> Boolean, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}, followState: TranscriptFollowState? = null) {
+    authorized: () -> Boolean, seek: CaptureAudioSeek? = null, onSeekConsumed: () -> Unit = {}, onPosition: (Long) -> Unit = {}, followState: TranscriptFollowState? = null, previewStopToken: String? = null) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     val currentAllowed by rememberUpdatedState(authorized)
@@ -56,6 +58,7 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
     var refresh by remember(viewer, recordId) { mutableIntStateOf(0) }
     var engine by remember(viewer, recordId) { mutableStateOf<CapturePlaybackEngine?>(null) }
     var work by remember(viewer, recordId) { mutableStateOf<Job?>(null) }
+    var previewEnd by remember(viewer, recordId) { mutableStateOf<Long?>(null) }
     val allowed = { lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) && currentAllowed() }
 
     /**
@@ -101,10 +104,20 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
         }
     }
     DisposableEffect(viewer, recordId) { onDispose { stop() } }
-    fun play(milliseconds: Long) {
+    LaunchedEffect(previewStopToken) {
+        if (previewEnd != null) { stop(); previewEnd = null; state = MediaPlaybackState.Ready }
+    }
+    LaunchedEffect(viewer, recordId, lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (currentAllowed()) delay(250)
+            stop(); previewEnd = null; playlist = null; setPosition(0); consumeSeek(); state = MediaPlaybackState.Error
+        }
+    }
+    fun play(milliseconds: Long, endMs: Long? = null) {
         val data = playlist ?: return
         if (!allowed() || state == MediaPlaybackState.Error) return
         stop()
+        previewEnd = endMs
         setPosition(milliseconds.coerceIn(0, data.endMs))
         if (data.locate(position) == null) { state = MediaPlaybackState.Gap; return }
         state = MediaPlaybackState.Preparing
@@ -116,7 +129,7 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
             try {
                 val end = current.play(data, position, rate, onBuffering = {
                     if (engine === current && allowed()) state = MediaPlaybackState.Preparing
-                }) {
+                }, endMs = endMs) {
                     if (engine === current && allowed()) { setPosition(it); state = MediaPlaybackState.Playing }
                 }
                 if (engine === current && allowed()) { setPosition(end.positionMs); state = if (end.gap) MediaPlaybackState.Gap else MediaPlaybackState.Ready }
@@ -128,7 +141,7 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
             finally {
                 current.close()
                 CapturePlaybackRegistry.release(current)
-                if (engine === current) { engine = null; work = null }
+                if (engine === current) { engine = null; work = null; previewEnd = null }
             }
         }
     }
@@ -139,7 +152,10 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
     LaunchedEffect(seek?.token, playlist, state == MediaPlaybackState.Error) {
         val request = seek ?: return@LaunchedEffect
         if (state == MediaPlaybackState.Error) consumeSeek()
-        else if (playlist != null && allowed()) { jump(request.milliseconds); consumeSeek() }
+        else if (playlist != null && allowed()) {
+            if (request.endMs != null) play(request.milliseconds, request.endMs) else jump(request.milliseconds)
+            consumeSeek()
+        }
     }
     val data = playlist
     RecordPlayerSurface {
@@ -154,9 +170,9 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
                 RecordPlaybackControls(
                     positionMs = position, durationMs = data.endMs, playing = state.showsPause, rate = rate,
                     muted = muted, onToggleMute = { muted = !muted; engine?.setMuted(muted) },
-                    onSeek = { stop(); setPosition(it); state = MediaPlaybackState.Ready; consumeSeek() },
+                    onSeek = { stop(); previewEnd = null; setPosition(it); state = MediaPlaybackState.Ready; consumeSeek() },
                     onPlayPause = {
-                        if (state.showsPause) { stop(); state = MediaPlaybackState.Ready; consumeSeek() }
+                        if (state.showsPause) { stop(); previewEnd = null; state = MediaPlaybackState.Ready; consumeSeek() }
                         else play(if (position >= data.endMs) 0 else position)
                     },
                     onSkipBack = { jump(maxOf(0, position - 15_000)) },
@@ -164,7 +180,7 @@ internal fun CaptureAudioPlayer(viewer: String, recordId: String, load: suspend 
                     onRate = { speed ->
                         val resume = state.showsPause
                         rate = speed
-                        if (resume) play(position)
+                        if (resume) play(position, previewEnd)
                     },
                     onSeekFinished = { followState?.resume() },
                 )

@@ -62,6 +62,9 @@ internal fun RecordCaptureToolsSheet(
     transcriptions: CaptureTranscriptionRepository,
     currentViewer: () -> String?,
     onClose: () -> Unit,
+    diarization: com.we.meet.data.repository.CaptureDiarizationRepository? = null,
+    editing: Boolean = false,
+    onChanged: () -> Unit = {},
 ) {
     val captureId = record.captureId ?: return
     if (!record.capabilities.readTranscript || !record.capabilities.controlCapture) return
@@ -83,7 +86,7 @@ internal fun RecordCaptureToolsSheet(
                     val capture = result.getOrThrow()
                     if (record.retentionMode == "text") CaptureRetentionPanel(viewer, capture, transcriptions)
                     if (record.retentionMode == "text" || capture.status == "stopped") {
-                        CaptureAsrPanel(viewer, capture, transcriptions, currentViewer)
+                        CaptureAsrPanel(viewer, capture, transcriptions, currentViewer, diarization, editing, onChanged)
                     } else {
                         Text(stringResource(R.string.capture_asr_after_recording),
                             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

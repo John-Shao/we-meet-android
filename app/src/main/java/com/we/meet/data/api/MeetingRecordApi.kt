@@ -166,6 +166,13 @@ interface MeetingRecordApi {
     ): RecordPageDto<RecordOriginalSegmentDto>
 
     @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/meeting-records/{record}/original-segments/")
+    suspend fun captureOriginals(@Path("record") recordId: String, @Query("expected_revision") revision: Int,
+        @Query("q") query: String?, @Query("speaker") speakerId: String?, @Query("cursor") cursor: String?,
+        @Query("at_ms") atMs: Long?, @Query("transcription_job_id") asrId: String,
+        @Query("diarization_job_id") diarizationId: String?): RecordPageDto<RecordOriginalSegmentDto> = error("Pinned capture originals unavailable")
+
+    @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/{record}/speakers/")
     suspend fun speakers(
         @Path("record") recordId: String,

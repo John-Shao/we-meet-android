@@ -16,6 +16,7 @@ data class CaptureDto(
     @Json(name = "missing_sequences") val missingSequences: List<Int>? = null,
     @Json(name = "missing_ranges") val missingRanges: List<CaptureGapDto>? = null,
     @Json(name = "audio_retention") val audioRetention: CaptureAudioRetentionDto? = null,
+    @Json(name = "active_diarization_job_id") val activeDiarizationJobId: String? = null,
 )
 
 data class CaptureAudioRetentionDto(

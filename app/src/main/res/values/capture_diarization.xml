@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_diarization_title">Separate recorded speakers</string>
+    <string name="capture_diarization_hint">Create a separate speaker version, preserving original text and corrections. Then identify and confirm names in Speakers. Confirm identities again for each new version; voiceprints are not enrolled automatically.</string>
+    <string name="capture_diarization_accept">I confirm speaker processing, which may incur charges. Cancellation does not guarantee a refund.</string>
+    <string name="capture_diarization_start">Separate speakers</string>
+    <string name="capture_diarization_retry">Separate again</string>
+    <string name="capture_diarization_recover">Recover the same request</string>
+    <string name="capture_diarization_cancel">Cancel processing</string>
+    <string name="capture_diarization_refresh">Refresh status</string>
+    <string name="capture_diarization_history">Speaker versions</string>
+    <string name="capture_diarization_version">Speaker version %1$d</string>
+    <string name="capture_diarization_unknown">The outcome is uncertain. Recover the same request to avoid duplicate charges.</string>
+    <string name="capture_diarization_conflict">The record changed. Refresh and confirm again.</string>
+    <string name="capture_diarization_denied">Processing is unavailable. Check access and audio retention, then refresh.</string>
+    <string name="capture_diarization_storage">The request cannot be stored safely. Reload before trying again.</string>
+    <string name="capture_diarization_cancel_unknown">Cancellation is uncertain. Refresh to check.</string>
+    <string name="capture_diarization_editing">Save or cancel text edits first.</string>
+    <string name="capture_diarization_queued">Queued</string>
+    <string name="capture_diarization_running">Processing</string>
+    <string name="capture_diarization_succeeded">Completed</string>
+    <string name="capture_diarization_failed">Failed</string>
+    <string name="capture_diarization_canceled">Canceled</string>
+</resources>

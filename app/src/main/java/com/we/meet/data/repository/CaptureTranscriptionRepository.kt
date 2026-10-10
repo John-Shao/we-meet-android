@@ -21,6 +21,7 @@ class CaptureTranscriptionRepository(private val api: CaptureTranscriptionApi, p
         api.state(capture).also { state ->
             state.audioRetention?.let(CaptureRetention::validate)
             state.activeJobId?.let(::uuid)
+            state.activeDiarizationJobId?.let { uuid(it); require(state.activeJobId != null) }
             require(state.results.size <= 10 && state.results.map { it.id }.distinct().size == state.results.size)
             var generation = Int.MAX_VALUE
             state.results.forEach { job(it); require(it.generation < generation); generation = it.generation }

@@ -143,6 +143,18 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     val exportTranslation = app?.let { rememberTranslationExporter(it.uploadTranslationRepository, viewer, recordId) }
     val detail = visibleRead(viewer, recordId, refresh) { repository.record(viewer, recordId) }
     val record = detail?.getOrNull()
+    var generationRetry by remember(viewer, recordId) { mutableIntStateOf(0) }
+    var transcriptEditing by remember(viewer, recordId) { mutableStateOf(false) }
+    val pinCapture = app != null && record?.sourceType == "audio_recording" && record.capabilities.controlCapture && record.captureId != null
+    val captureGenerationRead = visibleRead(viewer, recordId, record?.revision, generationRetry, pinCapture, intervalMs = 5000) {
+        if (!pinCapture) return@visibleRead Result.failure(IllegalStateException("No owned capture"))
+        requireNotNull(app).captureTranscriptionRepository.state(viewer, requireNotNull(record?.captureId))
+    }
+    val captureGeneration = captureGenerationRead?.getOrNull()
+    val captureVersion = captureGeneration?.activeJobId?.let { com.we.meet.data.repository.CaptureOriginalVersion(it, captureGeneration.activeDiarizationJobId) }
+    LaunchedEffect(captureGeneration?.activeJobId, captureGeneration?.activeDiarizationJobId) {
+        if (captureGeneration != null) refresh++
+    }
     val canPlay = !document && app != null && record?.sourceType == "audio_recording" && record.capabilities.readTranscript && record.capabilities.playMedia
     /**
      * An import is replayed from its sealed object, not from a capture playlist,
@@ -220,7 +232,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         // 这里只在需要时留一条分隔线,不再另起一条按钮条。
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = Dimens.DividerThin)
                     }
-                    if (canPlay) NativeCaptureAudioPlayer(viewer, recordId, requireNotNull(app).capturePlaybackRepository, { app.captureAccount }, audioSeek, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow)
+                    if (canPlay) NativeCaptureAudioPlayer(viewer, recordId, requireNotNull(app).capturePlaybackRepository, { app.captureAccount }, audioSeek, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow,
+                        previewStopToken = identityPreviewStop, currentSession = { app.tokenStore.authSnapshot().session })
                     uploadPlayer()
                     val canReadTranslations = record.capabilities.readTranscript && app != null && (record.sourceType == "meeting" || record.sourceType == "upload" || record.sourceType == "audio_recording" && record.captureId != null && record.capabilities.controlCapture)
                     val tabs = buildList {
@@ -283,7 +296,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             RecordSpeakers(repository, viewer, record, Modifier.weight(1f),
                                 onRecordChanged = { refresh++ },
                                 identification = app?.speakerIdentificationRepository,
-                                onIdentityPreview = { start, end -> if (canPlayImport) audioSeek = CaptureAudioSeek(start, endMs = end) },
+                                onIdentityPreview = { start, end -> if (canPlayImport || canPlay) audioSeek = CaptureAudioSeek(start, endMs = end) },
+                                captureDiarizationId = captureGeneration?.activeDiarizationJobId,
                                 onIdentityPreviewStop = { audioSeek = null; identityPreviewStop = java.util.UUID.randomUUID().toString() },
                                 fullDuration = fullDuration, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
                         } else if (showTranslations) {
@@ -304,7 +318,9 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                 var replacementOpen by remember(viewer, recordId) { mutableStateOf(false) }
                                 val pendingReplacement = visibleRead(viewer, recordId) { repository.pendingReplacement(viewer, recordId) }
                                 LaunchedEffect(pendingReplacement?.getOrNull() != null) { if (pendingReplacement?.getOrNull() != null) replacementOpen = true }
-                                RecordOriginals(repository, viewer, record, followState = transcriptFollow, onRefresh = { refresh++ }, onExport = exportTranscript, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport },
+                                if (pinCapture && captureGenerationRead?.isFailure == true && !transcriptEditing) WeMeetInlineErrorState(onRetry = { generationRetry++ }, message = stringResource(R.string.records_unavailable))
+                                else if (pinCapture && captureGeneration == null && !transcriptEditing) WeMeetInlineLoading()
+                                else RecordOriginals(repository, viewer, record, captureVersion = captureVersion, onEditingChanged = { transcriptEditing = it }, followState = transcriptFollow, onRefresh = { refresh++ }, onExport = exportTranscript, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport },
                                     onWordSource = if (canPlayImport) ({ audioSeek = CaptureAudioSeek(it, preservePlayback = true) }) else null,
                                     // 只给纯文本:菜单项整行可点,套按钮会带出主色和按钮内边距,
                                     // 与旁边几项的普通 Text 既不同色也不同缩进。
@@ -314,7 +330,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                     onManageReplacement = if (record.capabilities.batchCorrect) ({ replacementOpen = true }) else null)
                                 if (transcriptionOpen && canManageTranscription) RecordCaptureToolsSheet(
                                     viewer, record, requireNotNull(app).captureRepository, app.captureTranscriptionRepository,
-                                    { app.captureAccount }, onClose = { transcriptionOpen = false; refresh++ })
+                                    { app.captureAccount }, onClose = { transcriptionOpen = false; refresh++ },
+                                    diarization = app.captureDiarizationRepository, editing = transcriptEditing, onChanged = { refresh++; generationRetry++ })
                                 if (replacementOpen && record.capabilities.batchCorrect) TranscriptReplacementDialog(
                                     repository, viewer, recordId, open = true,
                                     onClose = { replacementOpen = false }, onChanged = { refresh++ })
