@@ -210,6 +210,8 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    // New Android versions removed InputManager.getInstance; Espresso 3.7 uses getSystemService.
+    androidTestImplementation(libs.androidx.test.espresso)
     androidTestImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(files("../feature-assistant/libs/AoqClientSdk-release.aar"))
     // Build real LiveKit participant updates in SID lifecycle regression tests.

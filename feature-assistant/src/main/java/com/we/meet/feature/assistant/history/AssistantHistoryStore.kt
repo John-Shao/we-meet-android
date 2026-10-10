@@ -2,6 +2,7 @@ package com.we.meet.feature.assistant.history
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import android.util.AtomicFile
 import java.io.File
 import java.security.MessageDigest
 import java.util.UUID
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 data class AssistantHistoryRow(
     val id: String, val order: Int, val role: String, val text: String,
     val source: String = "", val sourceLanguage: String = "", val targetLanguage: String = "",
+    val photo: AssistantHistoryPhoto? = null,
 ) {
     override fun toString() = "AssistantHistoryRow(<private>)"
 }
@@ -26,7 +28,18 @@ data class AssistantHistoryEntry(
     override fun toString() = "AssistantHistoryEntry(<private>)"
 }
 
-/** Account-scoped, local text only. A single worker orders creation, updates and deletion.
+/** Photos in the current call stay in memory; saved photos live in the account's private directory. */
+sealed interface AssistantHistoryPhoto {
+    class Memory(jpeg: ByteArray) : AssistantHistoryPhoto {
+        val jpeg = jpeg.copyOf()
+        override fun toString() = "Photo(<private>)"
+    }
+    data class Stored(val file: File) : AssistantHistoryPhoto {
+        override fun toString() = "Photo(<private>)"
+    }
+}
+
+/** Account-scoped, local conversation history. A single worker orders creation, updates and deletion.
  * Deleted sessions cannot be resurrected by a late transcript callback.
  * The database lives outside Android backup; neither microphone nor reply PCM is persisted.
  */
@@ -34,6 +47,7 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
     private val key = MessageDigest.getInstance("SHA-256").digest(account.toByteArray())
         .joinToString("") { "%02x".format(it) }
     private val path = File(context.noBackupFilesDir, "assistant-$key.sqlite")
+    private val photoDirectory = File(context.noBackupFilesDir, "assistant-$key-images")
     private val prefs = context.getSharedPreferences("assistant-history-$key", Context.MODE_PRIVATE).also { prefs ->
         // Preserve the old choice for both kinds, without overwriting a migrated preference.
         val legacy = prefs.getBoolean("enabled", true)
@@ -62,16 +76,23 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
                     setForeignKeyConstraintsEnabled(true)
                     execSQL("CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, kind TEXT NOT NULL, started INTEGER NOT NULL, ended INTEGER)")
                     execSQL("CREATE TABLE IF NOT EXISTS rows (session TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, id TEXT NOT NULL, position INTEGER NOT NULL, role TEXT NOT NULL, text TEXT NOT NULL, source TEXT NOT NULL, source_lang TEXT NOT NULL, target_lang TEXT NOT NULL, PRIMARY KEY(session,id))")
+                    // Upgrade existing text history without replacing its rows.
+                    val hasPhoto = rawQuery("PRAGMA table_info(rows)", null).use { columns ->
+                        var found = false
+                        while (columns.moveToNext()) if (columns.getString(1) == "image_path") found = true
+                        found
+                    }
+                    if (!hasPhoto) execSQL("ALTER TABLE rows ADD COLUMN image_path TEXT NOT NULL DEFAULT ''")
                     execSQL("CREATE TABLE IF NOT EXISTS summaries (session TEXT PRIMARY KEY REFERENCES sessions(id) ON DELETE CASCADE, content TEXT NOT NULL)")
                     // A previous process may have died before marking its session ended.
                     execSQL("UPDATE sessions SET ended = started WHERE ended IS NULL")
                 }
             }.getOrElse { mutableError.value = true; operations.close(); return@launch }
             try {
-                runCatching { refresh(db) }.onFailure { mutableError.value = true }
+                runCatching { prunePhotos(db); refresh(db) }.onFailure { mutableError.value = true }
                 for (operation in operations) {
                     if (!allowed()) continue
-                    runCatching { operation(db); refresh(db) }
+                    runCatching { operation(db); prunePhotos(db); refresh(db) }
                         .onFailure { mutableError.value = true }
                 }
             } finally { db.close() }
@@ -98,14 +119,31 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
     inner class Recording internal constructor(val id: String) : AutoCloseable {
         private val closed = AtomicBoolean()
         @Synchronized fun put(row: AssistantHistoryRow) {
-            if (closed.get() || row.text.isBlank() && row.source.isBlank()) return
+            if (closed.get() || row.text.isBlank() && row.source.isBlank() && row.photo == null) return
             if (row.order !in 0 until 2000 || row.text.length > 20000 || row.source.length > 20000) {
                 mutableError.value = true
                 return
             }
+            if (row.photo != null && (row.photo !is AssistantHistoryPhoto.Memory || row.photo.jpeg.size !in 1..512_000)) {
+                mutableError.value = true
+                return
+            }
             enqueue { db ->
-                db.execSQL("INSERT OR REPLACE INTO rows(session,id,position,role,text,source,source_lang,target_lang) SELECT ?,?,?,?,?,?,?,? WHERE EXISTS (SELECT 1 FROM sessions WHERE id=?)",
-                    arrayOf(id, row.id, row.order, row.role, row.text, row.source, row.sourceLanguage, row.targetLanguage, id))
+                // Deleted sessions must not create orphan photos through a late callback.
+                val exists = db.rawQuery("SELECT 1 FROM sessions WHERE id=?", arrayOf(id)).use { it.moveToFirst() }
+                if (exists) {
+                    val imagePath = if (row.photo is AssistantHistoryPhoto.Memory) {
+                        check(photoDirectory.isDirectory || photoDirectory.mkdirs())
+                        val name = "$id-${MessageDigest.getInstance("SHA-256").digest(row.id.toByteArray()).joinToString("") { "%02x".format(it) }}.jpg"
+                        val image = AtomicFile(File(photoDirectory, name))
+                        val output = image.startWrite()
+                        try { output.write(row.photo.jpeg); image.finishWrite(output) }
+                        catch (error: Exception) { image.failWrite(output); throw error }
+                        name
+                    } else ""
+                    db.execSQL("INSERT OR REPLACE INTO rows(session,id,position,role,text,source,source_lang,target_lang,image_path) VALUES (?,?,?,?,?,?,?,?,?)",
+                        arrayOf(id, row.id, row.order, row.role, row.text, row.source, row.sourceLanguage, row.targetLanguage, imagePath))
+                }
                 db.execSQL("DELETE FROM sessions WHERE EXISTS (SELECT 1 FROM rows WHERE session=sessions.id) AND id NOT IN (SELECT id FROM sessions WHERE EXISTS (SELECT 1 FROM rows WHERE session=sessions.id) ORDER BY started DESC, rowid DESC LIMIT 200)")
             }
         }
@@ -155,9 +193,10 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
             while (c.moveToNext()) AssistantSummary.adapter.fromJson(c.getString(1))?.let { summaries[c.getString(0)] = it }
         }
         val rows = linkedMapOf<String, MutableList<AssistantHistoryRow>>()
-        db.rawQuery("SELECT session,id,position,role,text,source,source_lang,target_lang FROM rows ORDER BY position", null).use { c ->
+        db.rawQuery("SELECT session,id,position,role,text,source,source_lang,target_lang,image_path FROM rows ORDER BY position", null).use { c ->
             while (c.moveToNext()) rows.getOrPut(c.getString(0)) { mutableListOf() }.add(
-                AssistantHistoryRow(c.getString(1), c.getInt(2), c.getString(3), c.getString(4), c.getString(5), c.getString(6), c.getString(7)))
+                AssistantHistoryRow(c.getString(1), c.getInt(2), c.getString(3), c.getString(4), c.getString(5), c.getString(6), c.getString(7),
+                    c.getString(8).takeIf { it.matches(Regex("[a-f0-9-]+\\.jpg")) }?.let { AssistantHistoryPhoto.Stored(File(photoDirectory, it)) }))
         }
         val result = mutableListOf<AssistantHistoryEntry>()
         db.rawQuery("SELECT id,kind,started,ended FROM sessions ORDER BY started DESC, rowid DESC", null).use { c ->
@@ -167,6 +206,17 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
             }
         }
         mutableEntries.value = result
+    }
+
+    /** Delete files when their rows are removed by delete, clear, replacement or retention. */
+    private fun prunePhotos(db: SQLiteDatabase) {
+        val keep = mutableSetOf<String>()
+        db.rawQuery("SELECT image_path FROM rows WHERE image_path != ''", null).use { c ->
+            while (c.moveToNext()) keep += c.getString(0)
+        }
+        photoDirectory.listFiles()?.forEach { file ->
+            if (file.isFile && file.name !in keep) check(file.delete())
+        }
     }
 
     companion object {

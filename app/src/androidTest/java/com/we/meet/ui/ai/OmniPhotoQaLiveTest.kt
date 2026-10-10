@@ -97,6 +97,12 @@ class OmniPhotoQaLiveTest {
                 assertEquals(AiCallMode.Voice, vm!!.state.value.mode); assertFalse(vm!!.state.value.photoPending)
                 assertEquals("photo_answer", vm!!.state.value.cameraResult!!.code)
                 assertTrue(vm!!.state.value.cameraResult!!.success)
+                val photoRows = vm!!.state.value.transcriptRows.filter { it.photo != null }
+                assertEquals(1, photoRows.size)
+                assertEquals("user", photoRows.single().role)
+                assertTrue(vm!!.state.value.transcriptRows.indexOf(photoRows.single()) < vm!!.state.value.transcriptRows.indexOfFirst { it.role == "assistant" })
+                val uploadedPhoto = photoRows.single().photo as com.we.meet.feature.assistant.history.AssistantHistoryPhoto.Memory
+                assertNotNull(BitmapFactory.decodeByteArray(uploadedPhoto.jpeg, 0, uploadedPhoto.jpeg.size)?.also { it.recycle() })
                 android.util.Log.i("OmniPhotoQaLive", "transport=$transport voice photo and realtime audio passed")
                 if (exerciseVideo) {
                     delay(4000)
@@ -111,6 +117,7 @@ class OmniPhotoQaLiveTest {
                     withTimeout(10_000) { while (vm!!.state.value.photoPending) delay(50) }
                     assertTrue(client.cameraEnabled!!); assertEquals(AiCallMode.Video, vm!!.state.value.mode)
                     assertEquals(2, photos.get()); assertEquals(1, allocations.get())
+                    assertEquals(2, vm!!.state.value.transcriptRows.count { it.photo != null })
                     delay(4000); input!!.say("camera-close.pcm")
                     withTimeout(30_000) { while (vm!!.state.value.isCameraEnabled || vm!!.state.value.cameraPending) delay(50) }
                     assertTrue("Close ended call: reason=${vm!!.state.value.errorToastRes} result=${vm!!.state.value.cameraResult?.code}", vm!!.state.value.status is AiCallStatus.Active)

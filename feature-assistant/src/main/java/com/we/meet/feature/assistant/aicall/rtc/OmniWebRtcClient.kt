@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.ensureActive
 import livekit.org.webrtc.*
 import livekit.org.webrtc.audio.JavaAudioDeviceModule
 import org.json.JSONArray
@@ -416,8 +417,12 @@ class OmniWebRtcClient(
 
     override suspend fun capturePhoto(): ByteArray {
         check(!closed && handshake.ready)
-        return if (cameraStarted) photos.capture(cameraFront, cameraFrames::attach, cameraFrames::detach)
+        val jpeg = if (cameraStarted) photos.capture(cameraFront, cameraFrames::attach, cameraFrames::detach)
             else photos.capture(front = false)
+        kotlinx.coroutines.currentCoroutineContext().ensureActive()
+        check(!closed)
+        transcript.photo(jpeg)
+        return jpeg
     }
 
     private fun send(event: JSONObject) {

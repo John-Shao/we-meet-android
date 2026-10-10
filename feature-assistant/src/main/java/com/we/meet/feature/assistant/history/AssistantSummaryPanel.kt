@@ -45,7 +45,7 @@ fun AssistantSummaryPanel(entry: AssistantHistoryEntry, request: SummaryRequestS
                     if (request == SummaryRequestState.FAILED || request == SummaryRequestState.TOO_LONG) Text(
                         stringResource(if (request == SummaryRequestState.TOO_LONG) R.string.assistant_summary_too_long else R.string.assistant_summary_error),
                         color = MaterialTheme.colorScheme.error)
-                    Button(onClick = generate, enabled = request != SummaryRequestState.WORKING) {
+                    Button(onClick = generate, enabled = request != SummaryRequestState.WORKING && entry.rows.any { it.text.isNotBlank() || it.source.isNotBlank() }) {
                         Text(stringResource(if (request == SummaryRequestState.WORKING) R.string.assistant_summary_working else R.string.assistant_summary_generate))
                     }
                 }

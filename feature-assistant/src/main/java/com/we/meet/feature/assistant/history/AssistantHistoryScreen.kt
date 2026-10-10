@@ -47,7 +47,7 @@ import kotlinx.coroutines.withContext
 
 fun AssistantHistoryRow.displayText(context: Context): String = if (role == "translation") {
     "${Locale(sourceLanguage).getDisplayLanguage(Locale.getDefault())} → ${Locale(targetLanguage).getDisplayLanguage(Locale.getDefault())}\n$source\n$text"
-} else "${context.getString(if (role == "user") R.string.assistant_history_you else R.string.assistant_history_ai)}: $text"
+} else "${context.getString(if (role == "user") R.string.assistant_history_you else R.string.assistant_history_ai)}: ${if (photo != null) context.getString(R.string.assistant_photo_attachment) else text}"
 
 @Composable
 fun HistoryTextActions(text: String, replay: (() -> Unit)? = null, replayEnabled: Boolean = true, showShare: Boolean = true) {
@@ -182,7 +182,7 @@ fun AssistantHistoryContent(store: AssistantHistoryStore, onBack: () -> Unit, de
                             Column(Modifier.padding(Dimens.SpaceL)) {
                                 Text(stringResource(if (item.kind == "call") R.string.assistant_history_call else R.string.assistant_history_translation), style = MaterialTheme.typography.titleMedium)
                                 Text(formatter.format(Date(item.startedAt)), style = MaterialTheme.typography.labelMedium)
-                                Text(item.rows.first().text, maxLines = 2, style = MaterialTheme.typography.bodyMedium)
+                                Text(item.rows.firstOrNull { it.text.isNotBlank() }?.text ?: stringResource(R.string.assistant_photo_attachment), maxLines = 2, style = MaterialTheme.typography.bodyMedium)
                             }
                         }
                     }

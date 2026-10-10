@@ -77,13 +77,13 @@
     <string name="assistant_history_copy_large">无法复制全部文字，请分享完整会话。</string>
     <string name="assistant_history_share">分享文字</string>
     <string name="assistant_history_share_failed">暂时无法打开分享</string>
-    <string name="assistant_history_save">在本机保存会话文字</string>
+    <string name="assistant_history_save">在本机保存会话记录</string>
     <string name="assistant_history_error">部分会话记录未能保存或读取。</string>
     <string name="assistant_history_back">返回</string>
     <string name="assistant_history_clear">清空记录</string>
     <string name="assistant_history_delete">删除本次会话</string>
     <string name="assistant_history_delete_hint">删除后无法恢复所选本地记录。</string>
-    <string name="assistant_history_local_hint">仅在本机保存当前账号的文字，保留最近 200 次会话。可在打电话和双语互译的设置中分别控制保存，仅对新会话生效。</string>
+    <string name="assistant_history_local_hint">在本机保存当前账号的文字及通话拍图，保留最近 200 次会话。可在打电话和双语互译的设置中分别控制保存，仅对新会话生效。</string>
     <string name="assistant_history_search">搜索会话文字</string>
     <string name="assistant_history_close_search">关闭搜索</string>
     <string name="assistant_history_empty">暂无匹配的会话记录</string>
@@ -134,5 +134,8 @@
     <string name="assistant_camera_video_unavailable">当前设备不支持 WebRTC 视频，请使用 AOQ 或支持视频编码的手机</string>
     <string name="assistant_photo_working">正在拍图并分析…</string>
     <string name="assistant_photo_captured">照片已获取</string>
+    <string name="assistant_photo_view">全屏查看图片</string>
+    <string name="assistant_photo_close">关闭图片</string>
+    <string name="assistant_photo_attachment">[图片]</string>
     <string name="assistant_photo_failed">拍图问答失败，请重试</string>
 </resources>

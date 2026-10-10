@@ -83,13 +83,13 @@
     <string name="assistant_history_copy_large">Der gesamte Text kann nicht kopiert werden. Teilen Sie stattdessen die vollständige Unterhaltung.</string>
     <string name="assistant_history_share">Text teilen</string>
     <string name="assistant_history_share_failed">Teilen kann derzeit nicht geöffnet werden.</string>
-    <string name="assistant_history_save">Unterhaltungstext auf diesem Gerät speichern</string>
+    <string name="assistant_history_save">Unterhaltungen auf diesem Gerät speichern</string>
     <string name="assistant_history_error">Ein Teil des Unterhaltungsverlaufs konnte nicht gespeichert oder geladen werden.</string>
     <string name="assistant_history_back">Zurück</string>
     <string name="assistant_history_clear">Verlauf leeren</string>
     <string name="assistant_history_delete">Unterhaltung löschen</string>
     <string name="assistant_history_delete_hint">Der ausgewählte lokale Verlauf wird endgültig entfernt.</string>
-    <string name="assistant_history_local_hint">Nur Text, für dieses Konto auf diesem Gerät. Die letzten 200 Unterhaltungen bleiben erhalten. Das Speichern lässt sich in den Anruf- und Übersetzungseinstellungen getrennt steuern. Änderungen gelten für neue Sitzungen.</string>
+    <string name="assistant_history_local_hint">Text und Anruffotos für dieses Konto auf diesem Gerät speichern. Die letzten 200 Unterhaltungen bleiben erhalten. Das Speichern lässt sich in den Anruf- und Übersetzungseinstellungen getrennt steuern. Änderungen gelten für neue Sitzungen.</string>
     <string name="assistant_history_search">Unterhaltungstext durchsuchen</string>
     <string name="assistant_history_close_search">Suche schließen</string>
     <string name="assistant_history_empty">Keine passenden Unterhaltungen</string>
@@ -140,5 +140,8 @@
     <string name="assistant_camera_video_unavailable">Video ist auf diesem Gerät mit WebRTC nicht verfügbar. Verwenden Sie AOQ oder ein kompatibles Telefon.</string>
     <string name="assistant_photo_working">Foto wird aufgenommen und analysiert…</string>
     <string name="assistant_photo_captured">Foto aufgenommen.</string>
+    <string name="assistant_photo_view">Foto im Vollbild anzeigen</string>
+    <string name="assistant_photo_close">Foto schließen</string>
+    <string name="assistant_photo_attachment">[Foto]</string>
     <string name="assistant_photo_failed">Das Foto konnte nicht analysiert werden. Bitte erneut versuchen.</string>
 </resources>

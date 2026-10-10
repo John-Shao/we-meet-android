@@ -1,12 +1,20 @@
 package com.we.meet.feature.assistant.aicall.rtc
 
 import com.we.meet.feature.assistant.history.AssistantHistoryRow
+import com.we.meet.feature.assistant.history.AssistantHistoryPhoto
 import org.json.JSONObject
 
 /** Reserve positions before ASR finishes, since source transcription can arrive after the reply. */
 internal class OmniTranscript(private val emit: (AssistantHistoryRow) -> Unit) {
     private val positions = linkedMapOf<String, Int>()
     private fun position(id: String) = positions.getOrPut(id) { positions.size }
+
+    /** Reserve a slot before model continuation, so late user ASR still precedes the photo. */
+    fun photo(jpeg: ByteArray) {
+        if (positions.size >= 2000) return
+        val id = "photo:${java.util.UUID.randomUUID()}"
+        emit(AssistantHistoryRow(id, position(id), "user", "", photo = AssistantHistoryPhoto.Memory(jpeg)))
+    }
 
     fun accept(event: JSONObject, suppressAssistant: Boolean = false) {
         when (event.optString("type")) {

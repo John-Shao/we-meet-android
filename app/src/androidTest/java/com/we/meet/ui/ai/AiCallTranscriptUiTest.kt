@@ -6,6 +6,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.lifecycle.*
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import android.view.KeyEvent
@@ -32,7 +33,11 @@ class AiCallTranscriptUiTest {
     @Test fun callHistoryAndVideoPanelKeepCurrentCallAndBackClosesPanels() {
         val account = "call-ui-${UUID.randomUUID()}"
         val store = AssistantHistoryStore.get(context, account) { account }
-        store.begin("call")!!.apply { put(AssistantHistoryRow("h", 0, "user", "saved phone conversation")); close() }
+        val photo = AssistantHistoryPhoto.Memory(historyTestJpeg())
+        store.begin("call")!!.apply {
+            put(AssistantHistoryRow("h", 0, "user", "saved phone conversation"))
+            put(AssistantHistoryRow("h-photo", 1, "user", "", photo = photo)); close()
+        }
         store.begin("translation")!!.apply { put(AssistantHistoryRow("t", 0, "translation", "hidden translation")); close() }
         compose.waitUntil(5000) { store.entries.value.size == 2 }
         store.setEnabled("call", false)
@@ -54,7 +59,8 @@ class AiCallTranscriptUiTest {
             @Suppress("UNCHECKED_CAST")
             state = AiCallViewModel::class.java.getDeclaredField("_state").apply { isAccessible = true }.get(vm) as MutableStateFlow<AiCallUiState>
             state.value = state.value.copy(status = AiCallStatus.Active(AiCallMode.Voice), transcriptSessionId = "live",
-                transcriptRows = listOf(AssistantHistoryRow("u", 0, "user", "你好"), AssistantHistoryRow("a", 1, "assistant", "你好呀～今天想聊点什么？")),
+                transcriptRows = listOf(AssistantHistoryRow("u", 0, "user", "你好"),
+                    AssistantHistoryRow("photo", 1, "user", "", photo = photo), AssistantHistoryRow("a", 2, "assistant", "你好呀～今天想聊点什么？")),
                 transcriptTimestamps = mapOf("u" to System.currentTimeMillis(), "a" to System.currentTimeMillis()))
         }
         val deps = object : AssistantDeps {
@@ -72,7 +78,24 @@ class AiCallTranscriptUiTest {
             compose.onAllNodesWithTag("call-transcript-time").assertCountEquals(1)
             compose.onNodeWithText(context.getString(R.string.assistant_history_you)).assertDoesNotExist()
             compose.onNodeWithText(context.getString(R.string.assistant_history_ai)).assertDoesNotExist()
+            compose.onNodeWithTag("call-photo-photo").performClick()
+            compose.waitUntil(5000) { compose.onAllNodesWithContentDescription(context.getString(R.string.assistant_photo_attachment)).fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithTag("call-photo-viewer").assertIsDisplayed()
+            compose.onNodeWithTag("call-photo-zoom").performTouchInput { doubleClick() }
+            compose.onNodeWithTag("call-photo-zoom").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "250%"))
+            compose.onNodeWithTag("call-photo-zoom").performTouchInput {
+                pinch(start0 = center - androidx.compose.ui.geometry.Offset(40f, 0f), end0 = center - androidx.compose.ui.geometry.Offset(100f, 0f),
+                    start1 = center + androidx.compose.ui.geometry.Offset(40f, 0f), end1 = center + androidx.compose.ui.geometry.Offset(100f, 0f))
+            }
+            compose.onNodeWithTag("call-photo-zoom").assert(SemanticsMatcher("Pinch increases magnification") {
+                it.config[SemanticsProperties.StateDescription].removeSuffix("%").toInt() > 250
+            })
+            capture("call-photo-expanded-light.png")
             restoration.emulateSavedInstanceStateRestore()
+            compose.onNodeWithTag("call-photo-viewer").assertIsDisplayed()
+            pressBack()
+            compose.onNodeWithTag("call-photo-viewer").assertDoesNotExist()
+            compose.runOnIdle { assertEquals(AiCallStatus.Active(AiCallMode.Voice), vm.state.value.status) }
             compose.onNodeWithText("你好").assertIsDisplayed()
             compose.onNodeWithText("你好呀～今天想聊点什么？").assertIsDisplayed()
             compose.onAllNodesWithTag("call-transcript-time").assertCountEquals(1)
@@ -80,6 +103,9 @@ class AiCallTranscriptUiTest {
             capture("call-chat-light.png")
             compose.runOnIdle { dark.value = true }
             capture("call-chat-dark.png")
+            compose.onNodeWithTag("call-photo-photo").performClick()
+            capture("call-photo-expanded-dark.png")
+            compose.onNodeWithContentDescription(context.getString(R.string.assistant_photo_close)).performClick()
             compose.runOnIdle { state.value = state.value.copy(photoPending = true, cameraPending = true) }
             compose.onNodeWithText(context.getString(R.string.assistant_photo_working)).assertIsDisplayed()
             compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertIsDisplayed()
@@ -92,6 +118,10 @@ class AiCallTranscriptUiTest {
             compose.onNodeWithText("hidden translation").assertDoesNotExist()
             compose.onNodeWithText("saved phone conversation").performClick()
             compose.onNodeWithText("saved phone conversation", substring = true).assertIsDisplayed()
+            compose.onNodeWithTag("call-photo-h-photo").performClick()
+            compose.onNodeWithTag("call-photo-viewer").assertIsDisplayed()
+            pressBack()
+            compose.onNodeWithTag("call-photo-viewer").assertDoesNotExist()
             pressBack()
             compose.onNodeWithText("saved phone conversation").assertIsDisplayed()
             pressBack()
@@ -110,7 +140,7 @@ class AiCallTranscriptUiTest {
                 vm.endCall()
             }
             compose.onNodeWithText("你好呀～今天想聊点什么？").assertIsDisplayed()
-            compose.runOnIdle { assertEquals(2, vm.state.value.transcriptRows.size) }
+            compose.runOnIdle { assertEquals(3, vm.state.value.transcriptRows.size) }
         } finally { compose.runOnIdle { owner.viewModelStore.clear() }; store.clear() }
     }
 
@@ -121,16 +151,18 @@ class AiCallTranscriptUiTest {
         compose.onNode(hasScrollAction()).performTouchInput { swipeDown() }
         compose.onNodeWithContentDescription(context.getString(R.string.assistant_call_latest)).assertIsDisplayed()
         capture("call-chat-latest.png")
-        compose.runOnIdle { rows.value += AssistantHistoryRow("41", 41, "assistant", "sentence 41") }
-        compose.onNodeWithText("sentence 41").assertIsNotDisplayed()
+        compose.runOnIdle { rows.value += AssistantHistoryRow("41", 41, "user", "", photo = AssistantHistoryPhoto.Memory(historyTestJpeg())) }
+        compose.onNodeWithTag("call-photo-41").assertIsNotDisplayed()
         compose.onNodeWithContentDescription(context.getString(R.string.assistant_call_latest)).performClick()
-        compose.onNodeWithText("sentence 41").assertIsDisplayed()
+        compose.onNodeWithTag("call-photo-41").assertIsDisplayed()
         compose.runOnIdle { rows.value += AssistantHistoryRow("42", 42, "user", "sentence 42") }
         compose.onNodeWithText("sentence 42").assertIsDisplayed()
     }
 
     private fun capture(name: String) {
-        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        val viewer = compose.onAllNodesWithTag("call-photo-viewer").fetchSemanticsNodes().isNotEmpty()
+        if (viewer) compose.waitUntil(5000) { compose.onAllNodesWithContentDescription(context.getString(R.string.assistant_photo_attachment)).fetchSemanticsNodes().isNotEmpty() }
+        val bitmap = (if (viewer) compose.onNodeWithTag("call-photo-viewer") else compose.onRoot()).captureToImage().asAndroidBitmap()
         java.io.File(context.getExternalFilesDir(null), name).outputStream().use {
             bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
         }

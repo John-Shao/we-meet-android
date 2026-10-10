@@ -55,7 +55,7 @@ class AssistantSummaryViewModel(
 
     fun generate(id: String) {
         val entry = store.entries.value.firstOrNull { it.id == id } ?: return
-        if (entry.endedAt == null || entry.summary != null || !authorized() || mutable.value[id] == SummaryRequestState.WORKING) return
+        if (entry.endedAt == null || entry.summary != null || !authorized() || mutable.value[id] == SummaryRequestState.WORKING || entry.rows.none { it.text.isNotBlank() || it.source.isNotBlank() }) return
         mutable.update { it + (id to SummaryRequestState.WORKING) }
         viewModelScope.launch {
             try {
@@ -83,7 +83,7 @@ class AssistantSummaryViewModel(
             val api = AssistantNetwork.retrofit(deps, readTimeoutSeconds = 40).create(AssistantSummaryApi::class.java)
             return AssistantSummaryViewModel(store, { account != null && deps.assistantAccount == account }) { entry ->
                 api.generate(SummaryRequest(entry.id, java.util.Locale.getDefault().language.ifBlank { "zh" },
-                    entry.rows.map { SummaryRow(it.id, it.role, it.text, it.source) }))
+                    entry.rows.filter { it.text.isNotBlank() || it.source.isNotBlank() }.map { SummaryRow(it.id, it.role, it.text, it.source) }))
             } as T
         }
     }

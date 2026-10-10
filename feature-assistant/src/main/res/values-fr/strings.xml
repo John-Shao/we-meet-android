@@ -83,13 +83,13 @@
     <string name="assistant_history_copy_large">Impossible de copier tout le texte. Partagez plutôt la conversation complète.</string>
     <string name="assistant_history_share">Partager le texte</string>
     <string name="assistant_history_share_failed">Impossible d’ouvrir le partage</string>
-    <string name="assistant_history_save">Enregistrer le texte des conversations sur cet appareil</string>
+    <string name="assistant_history_save">Enregistrer les conversations sur cet appareil</string>
     <string name="assistant_history_error">Une partie de l’historique des conversations n’a pas pu être enregistrée ni chargée.</string>
     <string name="assistant_history_back">Retour</string>
     <string name="assistant_history_clear">Effacer l’historique</string>
     <string name="assistant_history_delete">Supprimer la conversation</string>
     <string name="assistant_history_delete_hint">L’historique local sélectionné sera définitivement supprimé.</string>
-    <string name="assistant_history_local_hint">Texte uniquement, pour ce compte sur cet appareil. Conserve les 200 dernières conversations. L’enregistrement se règle séparément dans les paramètres d’appel et de traduction. Les modifications s’appliquent aux nouvelles sessions.</string>
+    <string name="assistant_history_local_hint">Enregistre les textes et les photos d’appel de ce compte sur cet appareil. Conserve les 200 dernières conversations. L’enregistrement se règle séparément dans les paramètres d’appel et de traduction. Les modifications s’appliquent aux nouvelles sessions.</string>
     <string name="assistant_history_search">Rechercher dans le texte des conversations</string>
     <string name="assistant_history_close_search">Fermer la recherche</string>
     <string name="assistant_history_empty">Aucune conversation correspondante</string>
@@ -140,5 +140,8 @@
     <string name="assistant_camera_video_unavailable">La vidéo est indisponible sur cet appareil avec WebRTC. Utilisez AOQ ou un téléphone compatible.</string>
     <string name="assistant_photo_working">Prise et analyse de la photo…</string>
     <string name="assistant_photo_captured">Photo prise.</string>
+    <string name="assistant_photo_view">Afficher la photo en plein écran</string>
+    <string name="assistant_photo_close">Fermer la photo</string>
+    <string name="assistant_photo_attachment">[Image]</string>
     <string name="assistant_photo_failed">Impossible de répondre à partir de cette photo. Réessayez.</string>
 </resources>

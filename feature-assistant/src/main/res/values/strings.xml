@@ -83,13 +83,13 @@
     <string name="assistant_history_copy_large">Unable to copy all text. Share the full conversation instead.</string>
     <string name="assistant_history_share">Share text</string>
     <string name="assistant_history_share_failed">Unable to open sharing</string>
-    <string name="assistant_history_save">Save conversation text on this device</string>
+    <string name="assistant_history_save">Save conversations on this device</string>
     <string name="assistant_history_error">Some conversation history could not be saved or loaded.</string>
     <string name="assistant_history_back">Back</string>
     <string name="assistant_history_clear">Clear history</string>
     <string name="assistant_history_delete">Delete conversation</string>
     <string name="assistant_history_delete_hint">This permanently removes the selected local history.</string>
-    <string name="assistant_history_local_hint">Text only, for this account on this device. Keeps the latest 200 conversations. Control saving separately in call and translation settings. Changes apply to new sessions.</string>
+    <string name="assistant_history_local_hint">Saves text and call photos for this account on this device. Keeps the latest 200 conversations. Control saving separately in call and translation settings. Changes apply to new sessions.</string>
     <string name="assistant_history_search">Search conversation text</string>
     <string name="assistant_history_close_search">Close search</string>
     <string name="assistant_history_empty">No matching conversations</string>
@@ -140,5 +140,8 @@
     <string name="assistant_camera_video_unavailable">Video is unavailable on this device with WebRTC. Use AOQ or a compatible phone.</string>
     <string name="assistant_photo_working">Capturing and analyzing a photo…</string>
     <string name="assistant_photo_captured">Photo captured.</string>
+    <string name="assistant_photo_view">View photo full screen</string>
+    <string name="assistant_photo_close">Close photo</string>
+    <string name="assistant_photo_attachment">[Photo]</string>
     <string name="assistant_photo_failed">Unable to answer this photo. Please retry.</string>
 </resources>

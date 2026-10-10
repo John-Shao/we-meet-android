@@ -87,7 +87,9 @@ fun CallTranscriptBubble(row: AssistantHistoryRow) {
     val user = row.role == "user"
     val colors = WeMeetTheme.extras.aiCall
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        Surface(modifier = Modifier.align(if (user) Alignment.CenterEnd else Alignment.CenterStart)
+        if (row.photo != null) {
+            CallTranscriptPhoto(row.photo, row.id, Modifier.align(if (user) Alignment.CenterEnd else Alignment.CenterStart).width(maxWidth * 0.66f))
+        } else Surface(modifier = Modifier.align(if (user) Alignment.CenterEnd else Alignment.CenterStart)
             .widthIn(max = maxWidth * 0.88f), shape = RoundedCornerShape(Dimens.CornerXl),
             color = if (user) colors.transcriptUser else colors.transcriptAi, contentColor = colors.onTranscript) {
             SelectionContainer {

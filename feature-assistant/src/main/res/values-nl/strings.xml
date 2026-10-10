@@ -83,13 +83,13 @@
     <string name="assistant_history_copy_large">Kan niet alle tekst kopiëren. Deel in plaats daarvan het hele gesprek.</string>
     <string name="assistant_history_share">Tekst delen</string>
     <string name="assistant_history_share_failed">Delen kan niet worden geopend.</string>
-    <string name="assistant_history_save">Gesprekstekst op dit apparaat opslaan</string>
+    <string name="assistant_history_save">Gesprekken op dit apparaat opslaan</string>
     <string name="assistant_history_error">Een deel van de gespreksgeschiedenis kon niet worden opgeslagen of geladen.</string>
     <string name="assistant_history_back">Terug</string>
     <string name="assistant_history_clear">Geschiedenis wissen</string>
     <string name="assistant_history_delete">Gesprek verwijderen</string>
     <string name="assistant_history_delete_hint">Hiermee wordt de geselecteerde lokale geschiedenis definitief verwijderd.</string>
-    <string name="assistant_history_local_hint">Alleen tekst, voor dit account op dit apparaat. De laatste 200 gesprekken blijven bewaard. Het opslaan regel je apart in de instellingen voor oproepen en vertaling. Wijzigingen gelden alleen voor nieuwe sessies.</string>
+    <string name="assistant_history_local_hint">Slaat tekst en oproepfoto’s voor dit account op dit apparaat op. De laatste 200 gesprekken blijven bewaard. Het opslaan regel je apart in de instellingen voor oproepen en vertaling. Wijzigingen gelden alleen voor nieuwe sessies.</string>
     <string name="assistant_history_search">Gesprekstekst zoeken</string>
     <string name="assistant_history_close_search">Zoeken sluiten</string>
     <string name="assistant_history_empty">Geen overeenkomende gesprekken</string>
@@ -140,5 +140,8 @@
     <string name="assistant_camera_video_unavailable">Video is op dit apparaat niet beschikbaar met WebRTC. Gebruik AOQ of een compatibele telefoon.</string>
     <string name="assistant_photo_working">Foto maken en analyseren…</string>
     <string name="assistant_photo_captured">Foto gemaakt.</string>
+    <string name="assistant_photo_view">Foto op volledig scherm bekijken</string>
+    <string name="assistant_photo_close">Foto sluiten</string>
+    <string name="assistant_photo_attachment">[Foto]</string>
     <string name="assistant_photo_failed">Kan deze foto niet analyseren. Probeer het opnieuw.</string>
 </resources>

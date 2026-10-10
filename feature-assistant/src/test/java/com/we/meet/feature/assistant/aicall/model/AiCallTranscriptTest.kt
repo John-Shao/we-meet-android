@@ -5,6 +5,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AiCallTranscriptTest {
+    @Test fun currentPhotosNeedNoSavingAndCannotLeakFromPreviousCall() {
+        val photo = AssistantHistoryRow("photo", 1, "user", "", photo = com.we.meet.feature.assistant.history.AssistantHistoryPhoto.Memory(byteArrayOf(1)))
+        val state = AiCallUiState(transcriptSessionId = "call").withTranscript("call", photo)
+            .withTranscript("call", row("question", 0, "look"))
+        assertEquals(listOf("question", "photo"), state.transcriptRows.map { it.id })
+        assertNotNull(state.copy(status = AiCallStatus.Ended).transcriptRows.last().photo)
+        val next = state.copy(transcriptSessionId = "next", transcriptRows = emptyList(), transcriptTimestamps = emptyMap())
+        assertSame(next, next.withTranscript("call", photo))
+    }
+
     private fun row(id: String, order: Int, text: String) = AssistantHistoryRow(id, order, "user", text)
 
     @Test fun lateSourceAndDuplicateFinalsAreOrderedAndUpdated() {
