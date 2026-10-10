@@ -2,7 +2,8 @@ package com.we.meet.data.api.dto
 
 import com.squareup.moshi.Json
 
-data class SpeakerIdentityFlagsDto(val enabled: Boolean = false, @Json(name = "matching_enabled") val matchingEnabled: Boolean = false)
+data class SpeakerIdentityFlagsDto(val enabled: Boolean = false, @Json(name = "matching_enabled") val matchingEnabled: Boolean = false,
+    @Json(name = "sampling_enabled") val samplingEnabled: Boolean = false)
 data class SpeakerIdentityConfigDto(@Json(name = "speaker_identity") val speakerIdentity: SpeakerIdentityFlagsDto? = null)
 data class IdentityPersonDto(val id: String, val name: String)
 data class IdentityScopeDto(val id: String, val name: String, val enabled: Boolean)

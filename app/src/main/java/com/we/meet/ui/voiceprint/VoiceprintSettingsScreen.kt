@@ -42,7 +42,8 @@ import kotlinx.coroutines.flow.first
 
 @Composable
 fun VoiceprintSettingsScreen(repository: VoiceprintRepository, viewer: String, onBack: () -> Unit,
-    recordingFactory: (Context) -> VoiceprintRecording = { context -> VoiceprintRecorder { AndroidCapturePcmSource.open(context, VoiceprintWave.SAMPLE_RATE) } }) {
+    recordingFactory: (Context) -> VoiceprintRecording = { context -> VoiceprintRecorder { AndroidCapturePcmSource.open(context, VoiceprintWave.SAMPLE_RATE) } },
+    initialOrganizationId: String? = null, initialOrganizationName: String? = null) {
     val client = remember(repository, viewer) { runCatching { repository.open(viewer) }.getOrNull() }
     var allowed by remember(client) { mutableStateOf(client?.allowed() == true) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -54,15 +55,17 @@ fun VoiceprintSettingsScreen(repository: VoiceprintRepository, viewer: String, o
     }
     Scaffold(topBar = { WeMeetTopBar(stringResource(R.string.voiceprint_title), onBack = onBack) }) { padding ->
         if (client == null || !allowed) Text(stringResource(R.string.voiceprint_login_required), Modifier.padding(padding).padding(Dimens.ScreenPadding))
-        else ScopeChooser(repository, viewer, client, Modifier.padding(padding), recordingFactory)
+        else ScopeChooser(repository, viewer, client, Modifier.padding(padding), recordingFactory, initialOrganizationId, initialOrganizationName)
     }
 }
 
 @Composable
-private fun ScopeChooser(repository: VoiceprintRepository, viewer: String, client: VoiceprintSession, modifier: Modifier, recordingFactory: (Context) -> VoiceprintRecording) {
-    var scopes by remember(client) { mutableStateOf<List<VoiceprintScopeDto>>(emptyList()) }
+private fun ScopeChooser(repository: VoiceprintRepository, viewer: String, client: VoiceprintSession, modifier: Modifier,
+    recordingFactory: (Context) -> VoiceprintRecording, initialOrganizationId: String?, initialOrganizationName: String?) {
+    val initialLabel = initialOrganizationName ?: stringResource(R.string.voiceprint_call_current_organization)
+    var scopes by remember(client) { mutableStateOf(initialOrganizationId?.let { listOf(VoiceprintScopeDto(it, initialLabel, false, VoiceprintPolicyDto(false, 0))) } ?: emptyList()) }
     var next by remember(client) { mutableStateOf<Int?>(null) }
-    var selected by remember(client) { mutableStateOf<String?>(null) }
+    var selected by remember(client) { mutableStateOf(initialOrganizationId) }
     var failed by remember(client) { mutableStateOf(false) }
     var busy by remember(client) { mutableStateOf(false) }
     var sequence by remember(client) { mutableIntStateOf(0) }
@@ -74,7 +77,9 @@ private fun ScopeChooser(repository: VoiceprintRepository, viewer: String, clien
         try {
             val page = client.scopes(offset).getOrThrow()
             if (client.allowed() && request == sequence) {
-                val previous = scopes.find { it.id == selected }
+                val previous = scopes.find { it.id == selected } ?: initialOrganizationId?.takeIf { it == selected }?.let {
+                    VoiceprintScopeDto(it, initialLabel, false, VoiceprintPolicyDto(false, 0))
+                }
                 scopes = if (offset == 0) page.results else (scopes + page.results).distinctBy { it.id }
                 if (selected != null && scopes.none { it.id == selected } && previous != null) scopes = scopes + previous.copy(canManagePolicy = false)
                 next = page.nextOffset; failed = false
@@ -230,7 +235,8 @@ private fun ScopeBody(client: VoiceprintSession, policyScope: VoiceprintScopeDto
             OutlinedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(Dimens.ScreenPadding)) {
                 Text(stringResource(if (profile.displayState != null) displayStateText(profile.displayState) else if (profile.status == "active") R.string.voiceprint_display_state_needs_update else profileText(profile.status)))
                 profile.updateReasons.forEach { reason -> Text(stringResource(updateReasonText(reason))) }
-                Text(stringResource(R.string.voiceprint_effective_groups, stringResource(if (profile.effectiveDeviceGroups.isNotEmpty()) R.string.voiceprint_default_group else R.string.voiceprint_no_effective_groups)))
+                val groups = profile.effectiveDeviceGroups.map { voiceprintDeviceText(it) }.joinToString(if (LocalConfiguration.current.locales[0].language == "zh") "、" else ", ")
+                Text(stringResource(R.string.voiceprint_effective_groups, groups.ifEmpty { stringResource(R.string.voiceprint_no_effective_groups) }))
                 Text(stringResource(R.string.voiceprint_last_confirmed, profile.confirmedAt ?: stringResource(R.string.voiceprint_never)))
                 Text(stringResource(R.string.voiceprint_last_updated, profile.lastUpdatedAt ?: stringResource(R.string.voiceprint_never)))
                 if (profile.status != "deleted") TextButton(enabled = enabled, onClick = { controller.requestRemoval(profile.id) }) { Text(stringResource(R.string.voiceprint_delete)) }

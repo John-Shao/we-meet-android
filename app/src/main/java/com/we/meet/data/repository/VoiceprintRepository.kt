@@ -22,6 +22,12 @@ enum class VoiceprintPermission(val wireName: String) {
 
 /** A client belongs to one actual login and scope. Biometric content stays outside application caches. */
 class VoiceprintRepository(private val api: VoiceprintApi, private val currentViewer: () -> String?, private val currentSession: () -> String) {
+    fun openCall(viewer: String, roomSid: String, participantSid: String): VoiceprintCallSession {
+        identityUuid(viewer); require(currentViewer() == viewer)
+        return VoiceprintCallSession(api, viewer, roomSid, participantSid, currentSession()) {
+            owner, session -> currentViewer() == owner && currentSession() == session
+        }
+    }
     fun open(viewer: String, organization: String? = null): VoiceprintSession {
         identityUuid(viewer); organization?.let(::identityUuid)
         require(currentViewer() == viewer)
@@ -128,7 +134,7 @@ class VoiceprintSession internal constructor(private val api: VoiceprintApi, val
             it.confirmedAt?.let(::voiceprintDate); it.lastUpdatedAt?.let(::voiceprintDate)
             require(it.displayState == null || it.displayState in VOICEPRINT_DISPLAY_STATES)
             require(it.updateReasons.distinct().size == it.updateReasons.size && it.updateReasons.all { reason -> reason in VOICEPRINT_UPDATE_REASONS })
-            require(it.effectiveDeviceGroups.size <= 5 && it.effectiveDeviceGroups.distinct().size == it.effectiveDeviceGroups.size && it.effectiveDeviceGroups.all { group -> group == "default" })
+            require(it.effectiveDeviceGroups.size <= 4 && it.effectiveDeviceGroups.distinct().size == it.effectiveDeviceGroups.size && it.effectiveDeviceGroups.all { group -> group in VOICEPRINT_DEVICE_GROUPS })
             require(if (it.displayState == "needs_update") it.updateReasons.isNotEmpty() else it.updateReasons.isEmpty())
             require(if (it.displayState == "established") it.effectiveDeviceGroups.isNotEmpty() && it.status == "active" && it.generation == value.generation && it.confirmedAt != null && it.lastUpdatedAt != null && value.available else it.effectiveDeviceGroups.isEmpty())
         }
@@ -147,6 +153,7 @@ class VoiceprintSession internal constructor(private val api: VoiceprintApi, val
 
 private val VOICEPRINT_DISPLAY_STATES = setOf("not_enabled", "collecting", "awaiting_confirmation", "established", "needs_update", "paused", "deleting", "deleted")
 private val VOICEPRINT_UPDATE_REASONS = setOf("expired", "model_changed", "contributions_changed", "storage_unavailable")
+internal val VOICEPRINT_DEVICE_GROUPS = setOf("default", "headset", "handset", "computer")
 
 internal fun voiceprintDate(value: String) = OffsetDateTime.parse(value).toInstant().toEpochMilli()
 internal fun voiceprintExpired(value: String, now: Long = System.currentTimeMillis()) = voiceprintDate(value) <= now

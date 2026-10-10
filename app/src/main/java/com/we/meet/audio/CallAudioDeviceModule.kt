@@ -6,6 +6,7 @@ import android.media.AudioDeviceInfo
 import android.media.AudioTrack
 import android.media.MediaRecorder
 import android.util.Log
+import kotlinx.coroutines.flow.asStateFlow
 import livekit.org.webrtc.audio.JavaAudioDeviceModule
 
 private const val TAG = "CallADM"
@@ -30,6 +31,9 @@ private const val TAG = "CallADM"
  * corresponding R8 keep rule.
  */
 class CallAudioDeviceModule(context: Context) {
+    private val samplingRouteRevision = kotlinx.coroutines.flow.MutableStateFlow(0L)
+    /** Only a change counter; raw device IDs never leave this existing routing owner. */
+    val voiceprintRouteRevision = samplingRouteRevision.asStateFlow()
 
     /**
      * The user's last-requested device pin. Remembered across AudioTrack
@@ -88,6 +92,7 @@ class CallAudioDeviceModule(context: Context) {
      * the state callback) or the call itself rejected the device.
      */
     fun setPreferredDevice(device: AudioDeviceInfo?): Boolean {
+        if (desiredDevice?.id != device?.id) samplingRouteRevision.value++
         desiredDevice = device
         return applyPreferredDevice(device)
     }

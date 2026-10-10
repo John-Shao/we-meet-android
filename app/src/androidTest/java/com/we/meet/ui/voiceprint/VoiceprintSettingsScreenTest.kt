@@ -86,6 +86,8 @@ class VoiceprintSettingsScreenTest {
         var deleted = false
         var accepted = false
         var projectedState: String? = null
+        var effectiveGroups = listOf("default")
+        var scopeVisible = true
         val calls = CopyOnWriteArrayList<String>()
         val posts = CopyOnWriteArrayList<Pair<String, String>>()
         val uploads = CopyOnWriteArrayList<Pair<String, ByteArray>>()
@@ -95,7 +97,7 @@ class VoiceprintSettingsScreenTest {
         private fun settings(scope: String?) = VoiceprintSettingsDto(scope, available && (scope == null || policyEnabled), version, 1, allowEnrollment, allowAccumulation, allowIdentification,
             listOf(VoiceprintProfileDto(profile, if (deleted) "deleted" else if (accepted || projectedState in listOf("established", "needs_update")) "active" else "pending", 1,
                 if (projectedState == "established") expiry else null, if (projectedState == "established") expiry else null,
-                projectedState, if (projectedState == "needs_update") listOf("expired") else emptyList(), if (projectedState == "established") listOf("default") else emptyList())), projectedState)
+                projectedState, if (projectedState == "needs_update") listOf("expired") else emptyList(), if (projectedState == "established") effectiveGroups else emptyList())), projectedState)
         private fun registration(scope: String?) = VoiceprintEnrollmentDto(enrollment, scope, profile, if (slots.size == 6) "closed" else "open", expiry, version,
             1, (0..5).map { "Synthetic randomized prompt $it" }, 6, slots, 24000, 1, "pcm16_wav", VoiceprintDurationDto(3000, 10000), if (slots.size == 6) null else token)
         private fun clip() = VoiceprintSampleDto(sample, profile, sampleStatus, "enrollment", 3000, expiry,
@@ -112,7 +114,7 @@ class VoiceprintSettingsScreenTest {
                 var code = 200; var value: Any = mapOf("code" to "fixture_missing")
                 if (request.method in listOf("POST", "PATCH", "DELETE")) posts += request.method to bytes.toString(Charsets.UTF_8)
                 when {
-                    path.endsWith("/scopes/") -> value = VoiceprintPageDto(listOf(VoiceprintScopeDto(organization, "Synthetic organization", administrator, VoiceprintPolicyDto(policyEnabled, policyVersion))), null)
+                    path.endsWith("/scopes/") -> value = VoiceprintPageDto(if (scopeVisible) listOf(VoiceprintScopeDto(organization, "Synthetic organization", administrator, VoiceprintPolicyDto(policyEnabled, policyVersion))) else emptyList(), null)
                     path.endsWith("/organizations/$organization/settings/") && request.method == "PATCH" -> {
                         assertTrue(administrator); assertEquals(policyVersion.toDouble(), input["expected_version"])
                         policyEnabled = input["enabled"] == true; policyVersion++
@@ -167,14 +169,15 @@ class VoiceprintSettingsScreenTest {
             override fun cancel() {}
         }
     }
-    private fun show(fixture: Fixture, chinese: Boolean = false, results: ActivityResultRegistryOwner = compose.activity) {
+    private fun show(fixture: Fixture, chinese: Boolean = false, results: ActivityResultRegistryOwner = compose.activity,
+        initialOrganizationId: String? = null, initialOrganizationName: String? = null) {
         val configuration = Configuration(context.resources.configuration).apply { if (chinese) setLocale(Locale.SIMPLIFIED_CHINESE) }
         resources = context.createConfigurationContext(configuration)
         compose.setContent {
             CompositionLocalProvider(LocalContext provides requireNotNull(resources), LocalConfiguration provides configuration,
                 LocalActivityResultRegistryOwner provides results,
                 LocalDensity provides Density(LocalDensity.current.density, if (chinese) 1.5f else 1f)) {
-                WeMeetTheme(darkTheme = chinese) { VoiceprintSettingsScreen(fixture.repository, owner, {}, { fixture.recorder() }) }
+                WeMeetTheme(darkTheme = chinese) { VoiceprintSettingsScreen(fixture.repository, owner, {}, { fixture.recorder() }, initialOrganizationId, initialOrganizationName) }
             }
         }
         waitText(text(R.string.voiceprint_begin))
@@ -218,6 +221,26 @@ class VoiceprintSettingsScreenTest {
         waitText(text(R.string.voiceprint_scope_state, text(R.string.voiceprint_display_state_established)))
         compose.onNodeWithText(text(R.string.voiceprint_effective_groups, text(R.string.voiceprint_default_group))).performScrollTo().assertIsDisplayed()
         assertTrue(fixture.posts.isEmpty()); assertEquals(0, fixture.audioReads.get())
+    }
+    @Test fun establishedCallGroupsUseNativeLabelsInChinese() {
+        val fixture = Fixture(); fixture.projectedState = "established"; fixture.effectiveGroups = listOf("default", "headset", "handset", "computer")
+        show(fixture, chinese = true)
+        val labels = listOf(R.string.voiceprint_device_default, R.string.voiceprint_device_headset, R.string.voiceprint_device_handset, R.string.voiceprint_device_computer).joinToString("、") { text(it) }
+        compose.onNodeWithText(text(R.string.voiceprint_effective_groups, labels)).performScrollTo().assertIsDisplayed()
+        assertTrue(fixture.posts.isEmpty()); assertEquals(0, fixture.recordings.get())
+    }
+    @Test fun currentCallOrganizationMissingFromDirectoryRemainsSelectedWithoutAdministratorRightsAfterBackground() {
+        val fixture = Fixture(); fixture.scopeVisible = false; fixture.administrator = true
+        show(fixture, initialOrganizationId = organization, initialOrganizationName = "Trusted call organization")
+        compose.onNodeWithText("Trusted call organization").assertIsSelected()
+        compose.onNodeWithText(text(R.string.voiceprint_organization_policy)).assertDoesNotExist()
+        compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED); waitText(text(R.string.voiceprint_begin))
+        compose.onNodeWithText("Trusted call organization").assertIsSelected()
+        compose.onNodeWithText(text(R.string.voiceprint_organization_policy)).assertDoesNotExist()
+        permission(R.string.voiceprint_permissions_allow_accumulation_title).performScrollTo().performClick()
+        compose.waitUntil(10000) { fixture.posts.isNotEmpty() }
+        assertTrue(fixture.posts.single().second.contains("\"organization_id\":\"$organization\"")); assertEquals(0, fixture.recordings.get())
     }
     @Test fun stoppingNativePlaybackConcurrentlyWithCompletionChecksNeverReadsAReleasedTrack() {
         val errors = CopyOnWriteArrayList<Throwable>()

@@ -8,6 +8,14 @@ import retrofit2.http.*
 
 /** Fixed first-party paths; all calls are private and bound before credentials attach. */
 interface VoiceprintApi {
+    @Headers("Cache-Control: no-store") @GET("api/v1.0/config/")
+    suspend fun samplingConfiguration(@Header("X-Voiceprint-Owner") owner: String, @Tag login: PrivateLogin): SpeakerIdentityConfigDto
+    @Headers("Cache-Control: no-store") @GET("api/v1.0/voiceprint/sampling-connection/")
+    suspend fun samplingConnection(@Header("X-Voiceprint-Owner") owner: String, @Tag login: PrivateLogin,
+        @Query("room_sid") room: String, @Query("participant_sid") participant: String): VoiceprintCallConnectionDto
+    @Headers("Cache-Control: no-store") @PATCH("api/v1.0/voiceprint/sampling-control/")
+    suspend fun samplingDeclaration(@Header("X-Voiceprint-Owner") owner: String, @Tag login: PrivateLogin,
+        @Body body: VoiceprintCallDeclarationDto): VoiceprintCallControlDto
     @Headers("Cache-Control: no-store") @GET("api/v1.0/voiceprint/scopes/")
     suspend fun scopes(@Header("X-Voiceprint-Owner") owner: String, @Tag login: PrivateLogin, @Query("offset") offset: Int): VoiceprintPageDto<VoiceprintScopeDto>
     @Headers("Cache-Control: no-store") @GET("api/v1.0/voiceprint/settings/")

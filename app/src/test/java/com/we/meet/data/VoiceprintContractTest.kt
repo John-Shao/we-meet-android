@@ -64,9 +64,9 @@ class VoiceprintContractTest {
     }
     @Test fun verifiedProjectionAcceptsEightStatesAndRejectsInvalidGroupsOrReasons() = runBlocking {
         val f = Fixture(); val base = F.settings(); val profile = base.profiles.single()
-        val established = profile.copy(status = "active", confirmedAt = F.EXPIRES, lastUpdatedAt = F.EXPIRES, displayState = "established", effectiveDeviceGroups = listOf("default"))
+        val established = profile.copy(status = "active", confirmedAt = F.EXPIRES, lastUpdatedAt = F.EXPIRES, displayState = "established", effectiveDeviceGroups = listOf("default", "headset", "handset", "computer"))
         f.reply = { 200 to base.copy(displayState = "established", profiles = listOf(established)) }
-        assertEquals(listOf("default"), f.client.settings().getOrThrow().profiles.single().effectiveDeviceGroups)
+        assertEquals(listOf("default", "headset", "handset", "computer"), f.client.settings().getOrThrow().profiles.single().effectiveDeviceGroups)
         for (state in listOf("not_enabled", "collecting", "awaiting_confirmation", "needs_update", "paused", "deleting", "deleted")) {
             f.reply = { 200 to base.copy(displayState = state, profiles = listOf(profile.copy(displayState = state, updateReasons = if (state == "needs_update") listOf("expired") else emptyList()))) }
             assertEquals(state, f.client.settings().getOrThrow().displayState)
