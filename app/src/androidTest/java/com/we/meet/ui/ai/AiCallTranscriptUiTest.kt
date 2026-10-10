@@ -80,6 +80,13 @@ class AiCallTranscriptUiTest {
             capture("call-chat-light.png")
             compose.runOnIdle { dark.value = true }
             capture("call-chat-dark.png")
+            compose.runOnIdle { state.value = state.value.copy(photoPending = true, cameraPending = true) }
+            compose.onNodeWithText(context.getString(R.string.assistant_photo_working)).assertIsDisplayed()
+            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertIsDisplayed()
+            capture("call-photo-dark.png")
+            compose.runOnIdle { dark.value = false }
+            capture("call-photo-light.png")
+            compose.runOnIdle { state.value = state.value.copy(photoPending = false, cameraPending = false) }
             compose.onNodeWithContentDescription(context.getString(R.string.assistant_history_title)).performClick()
             compose.onNodeWithText("saved phone conversation").assertIsDisplayed()
             compose.onNodeWithText("hidden translation").assertDoesNotExist()

@@ -138,4 +138,7 @@
     <string name="assistant_camera_state_sync_failed">La synchronisation de l’état de la caméra a échoué. Relancez la commande vocale ou utilisez le bouton de la caméra.</string>
     <string name="assistant_camera_working">Commutation de la caméra…</string>
     <string name="assistant_camera_video_unavailable">La vidéo est indisponible sur cet appareil avec WebRTC. Utilisez AOQ ou un téléphone compatible.</string>
+    <string name="assistant_photo_working">Prise et analyse de la photo…</string>
+    <string name="assistant_photo_captured">Photo prise.</string>
+    <string name="assistant_photo_failed">Impossible de répondre à partir de cette photo. Réessayez.</string>
 </resources>

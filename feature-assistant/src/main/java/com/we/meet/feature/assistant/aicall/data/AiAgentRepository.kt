@@ -13,6 +13,9 @@ class AiAgentRepository(private val api: AiAgentApi) {
         DirectAILease(it, api::sessionLease, lost).also(DirectAILease::start)
     }
     suspend fun fetchConfig(): AiAgentConfigResponse = api.fetchConfig()
+    suspend fun photoQa(sessionId: String, question: String, jpeg: ByteArray): String = api.photoQa(
+        com.we.meet.feature.assistant.aicall.model.PhotoQaRequest(sessionId, question,
+            android.util.Base64.encodeToString(jpeg, android.util.Base64.NO_WRAP))).answer
     suspend fun exchangeOffer(offer: AiCallOffer): AiCallAnswer {
         if (offer.transport != "aoq") return api.exchangeOffer(offer)
         val answer = try {

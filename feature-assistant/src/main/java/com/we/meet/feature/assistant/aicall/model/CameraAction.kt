@@ -25,7 +25,15 @@ fun interface CameraToolHandler {
     suspend fun execute(request: CameraToolRequest): CameraActionResult
 }
 
+/** The model supplies the question it understood from this turn's speech. */
+fun interface PhotoToolHandler {
+    suspend fun execute(question: String): CameraActionResult
+}
+
 data class CameraPermissionRequest(val id: String)
+
+/** Camera teardown could not be confirmed; the call owner must release all media. */
+internal class PhotoCleanupException(cause: Throwable) : IllegalStateException("Photo camera cleanup failed", cause)
 
 enum class CameraFeedbackStage { StateSync, ToolExecution, ResultSend, ResponseEnd, Continuation }
 

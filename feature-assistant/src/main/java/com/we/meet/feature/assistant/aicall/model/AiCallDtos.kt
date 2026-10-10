@@ -66,7 +66,17 @@ data class AiCallOffer(
     val voice_id: String? = null,
     val prompt_id: String? = null,
     val transport: String = "aoq",
+    val photo_qa: Boolean = false,
 )
+
+@JsonClass(generateAdapter = true)
+data class PhotoQaRequest(val session_id: String, val question: String, val image: String) {
+    override fun toString() = "PhotoQaRequest(<private>)"
+}
+@JsonClass(generateAdapter = true)
+data class PhotoQaAnswer(val answer: String) {
+    override fun toString() = "PhotoQaAnswer(<private>)"
+}
 
 @JsonClass(generateAdapter = true)
 data class AiCallAnswer(

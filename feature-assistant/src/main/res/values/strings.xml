@@ -138,4 +138,7 @@
     <string name="assistant_camera_state_sync_failed">Camera state sync failed. Retry the voice command or use the camera button.</string>
     <string name="assistant_camera_working">Switching camera…</string>
     <string name="assistant_camera_video_unavailable">Video is unavailable on this device with WebRTC. Use AOQ or a compatible phone.</string>
+    <string name="assistant_photo_working">Capturing and analyzing a photo…</string>
+    <string name="assistant_photo_captured">Photo captured.</string>
+    <string name="assistant_photo_failed">Unable to answer this photo. Please retry.</string>
 </resources>

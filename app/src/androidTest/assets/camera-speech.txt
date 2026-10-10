@@ -1,4 +1,5 @@
 Synthetic Mandarin test speech, generated locally with Microsoft Huihui Desktop.
+photo-question.pcm: 帮我看，画面中的主要物体是什么？
 Format: 16 kHz, mono, signed 16-bit little-endian raw PCM.
 camera-open.pcm: 打开摄像头
 camera-close.pcm: 关闭摄像头

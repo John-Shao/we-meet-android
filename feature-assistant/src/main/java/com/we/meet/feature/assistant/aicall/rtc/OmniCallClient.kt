@@ -14,5 +14,6 @@ interface OmniCallClient {
     fun interrupt()
     suspend fun setCameraEnabled(enabled: Boolean)
     suspend fun flipCamera(): Boolean
+    suspend fun capturePhoto(): ByteArray = error("Photo capture unavailable")
     fun close()
 }

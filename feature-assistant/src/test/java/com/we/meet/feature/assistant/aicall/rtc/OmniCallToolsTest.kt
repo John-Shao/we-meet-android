@@ -9,6 +9,55 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OmniCallToolsTest {
+    @Test fun photoDispatchIsSeparateFromModeChangesAndDuplicateEventsDoNotRetake() = runTest {
+        val sent = mutableListOf<JSONObject>(); val questions = mutableListOf<String>(); var camera = 0
+        val tools = OmniCallTools(backgroundScope, CameraToolHandler { camera++; result }, sent::add, {}, {}, { result },
+            photoHandler = PhotoToolHandler { questions += it; result.copy(code = "photo_answer", message = "red cup") })
+        val photo = call(args = "{\"question\":\"  帮我看这是什么  \"}", name = "take_photo")
+        tools.accept(photo); tools.accept(photo); tools.accept(done()); runCurrent()
+        assertEquals(listOf("帮我看这是什么"), questions); assertEquals(0, camera)
+        assertEquals(1, sent.count { it.optString("type") == "conversation.item.create" })
+        assertEquals(1, sent.count { it.optString("type") == "response.create" })
+        assertTrue(sent.first().getJSONObject("item").getString("output").contains("red cup"))
+        tools.close()
+    }
+
+    @Test fun photoRejectsPartialMalformedExtraAndOversizedQuestions() = runTest {
+        var captures = 0; val sent = mutableListOf<JSONObject>()
+        val tools = OmniCallTools(backgroundScope, null, sent::add, {}, {}, { result.copy(code = it) },
+            photoHandler = PhotoToolHandler { captures++; result })
+        tools.accept(call(args = "{\"question\":\"valid\"}", name = "take_photo").put("type", "response.function_call_arguments.delta"))
+        for ((i, args) in listOf("{}", "{\"question\":true}", "{\"question\":\" \"}",
+            "{\"question\":\"x\",\"enabled\":true}", JSONObject().put("question", "x".repeat(1001)).toString()).withIndex()) {
+            tools.accept(call("bad$i", args, "take_photo"))
+        }
+        runCurrent(); assertEquals(0, captures)
+        assertEquals(5, sent.size); tools.close()
+    }
+
+    @Test fun onlyOnePhotoIsCapturedPerModelRoundButNewUserRoundsCanRetake() = runTest {
+        var captures = 0
+        val tools = OmniCallTools(backgroundScope, null, {}, {}, {}, { result },
+            photoHandler = PhotoToolHandler { captures++; result })
+        tools.accept(call("one", "{\"question\":\"look\"}", "take_photo"))
+        tools.accept(call("two", "{\"question\":\"look again\"}", "take_photo")); tools.accept(done()); runCurrent()
+        assertEquals(1, captures)
+        tools.accept(call("three", "{\"question\":\"look\"}", "take_photo").put("response_id", "r2")); runCurrent()
+        assertEquals(2, captures); tools.close()
+    }
+
+    @Test fun interruptOrCloseCancelsPhotoAndSuppressesEvenNonCancellableLateResult() = runTest {
+        for (close in listOf(false, true)) {
+            val sent = mutableListOf<JSONObject>(); val gate = CompletableDeferred<Unit>()
+            val tools = OmniCallTools(backgroundScope, null, sent::add, {}, {}, { result },
+                photoHandler = PhotoToolHandler { withContext(NonCancellable) { gate.await() }; result })
+            tools.accept(call(args = "{\"question\":\"what is this\"}", name = "take_photo")); runCurrent()
+            if (close) tools.close() else tools.interrupted()
+            gate.complete(Unit); runCurrent()
+            assertTrue(sent.isEmpty()); tools.close()
+        }
+    }
+
     @Test fun serverRulesAndToolDescriptionsAreUsedForInitialAndStateUpdates() = runTest {
         val sent = mutableListOf<JSONObject>()
         val tools = OmniCallTools(backgroundScope, CameraToolHandler { result }, sent::add, {}, {}, { result }, endCall = {})

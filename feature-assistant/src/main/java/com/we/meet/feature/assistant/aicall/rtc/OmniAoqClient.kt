@@ -17,6 +17,7 @@ import com.we.meet.feature.assistant.aicall.model.AiCallSetupException
 import com.we.meet.feature.assistant.aicall.model.CameraToolHandler
 import com.we.meet.feature.assistant.aicall.model.CameraActionResult
 import com.we.meet.feature.assistant.aicall.model.CameraFeedbackFailure
+import com.we.meet.feature.assistant.aicall.model.PhotoToolHandler
 import com.we.meet.feature.assistant.R
 import com.we.meet.feature.assistant.history.AssistantHistoryRow
 import kotlinx.coroutines.*
@@ -33,11 +34,13 @@ class OmniAoqClient(
     toolHandler: CameraToolHandler? = null,
     onToolFeedbackFailure: (CameraFeedbackFailure) -> Unit = {},
     onEndCall: (() -> Unit)? = null,
+    photoHandler: PhotoToolHandler? = null,
 ) : OmniCallClient {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val playbackDiagnostics = OmniPlaybackDiagnostics(context, "AOQ", "decoded_pcm_rms")
     private val audioDiagnostics = AoqAudioDiagnostics(SystemClock::elapsedRealtime)
     private val transcript = OmniTranscript(onTranscript)
+    private val photos = CallPhotoCapture(context)
     private val ready = CompletableDeferred<Unit>()
     private val recovery = OmniConnectionRecovery(scope, ::fail)
     private val cancellation = OmniCancellation(SystemClock::elapsedRealtime)
@@ -61,13 +64,13 @@ class OmniAoqClient(
     @Volatile private var outputSuppressed = false
     private val cameraToolHandler = toolHandler?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_CAMERA_VOICE_CONTROL }
     private val endCallHandler = onEndCall?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_VOICE_HANGUP }
-    private val tools = if (cameraToolHandler != null || endCallHandler != null) {
+    private val tools = if (cameraToolHandler != null || endCallHandler != null || photoHandler != null) {
         OmniCallTools(scope, cameraToolHandler, ::send, { held ->
             // Keep decoding/draining the SDK stream; pausing the player can
             // defer response.done until playback resumes, deadlocking a tool.
             toolOutputHeld = held
         }, onToolFeedbackFailure, { code -> CameraActionResult(false, cameraEnabled, false, code,
-            context.getString(R.string.assistant_call_invalid_tool)) }, endCallHandler, allowMissingResponseDone = true)
+            context.getString(R.string.assistant_call_invalid_tool)) }, endCallHandler, allowMissingResponseDone = true, photoHandler = photoHandler)
     } else null
     override var cameraFront = false
         private set
@@ -327,6 +330,9 @@ class OmniAoqClient(
             cameraStarted = true; cameraCertain = true
         } else {
             cameraCertain = false
+            // Drain frame submissions before disabling the SDK video stream.
+            // A late push after disable can fail and close the entire call.
+            camera.stopFrames()
             ok(sdk.enableSendMediaStream(video, false))
             camera.stop() // No new frames can be submitted; actual Camera2 close confirmed.
             if (captureActive) ok(sdk.stopVideoCapture())
@@ -339,6 +345,11 @@ class OmniAoqClient(
     }
     fun attachPreview(sink: VideoSink) { if (!closed) camera.attachPreview(sink) }
     fun detachPreview(sink: VideoSink) = camera.detachPreview(sink)
+    override suspend fun capturePhoto(): ByteArray {
+        check(!closed)
+        return if (cameraStarted) photos.capture(cameraFront, camera::attachPreview, camera::detachPreview)
+            else photos.capture(front = false)
+    }
     private fun send(event: JSONObject) {
         if (!event.has("event_id")) event.put("event_id", UUID.randomUUID().toString())
         ok(engine!!.sendDataMsg(AoqDataMsg().apply { data = event.toString().toByteArray(Charsets.UTF_8) }))
@@ -353,6 +364,7 @@ class OmniAoqClient(
     override fun close() {
         if (closed) return
         closed = true
+        runCatching { photos.close() }
         runCatching { camera.close() }
         ready.cancel(); recovery.close(); tools?.close(); scope.cancel()
         synchronized(ownership) {

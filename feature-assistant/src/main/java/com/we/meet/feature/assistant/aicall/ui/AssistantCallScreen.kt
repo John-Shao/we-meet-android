@@ -125,7 +125,7 @@ fun AssistantCallScreen(
 
     val activity = remember(context) { context.callActivity() }
     // Only an actual foreground video call holds the screen awake.
-    val keepVideoScreenOn = state.status is AiCallStatus.Active && state.isCameraEnabled
+    val keepVideoScreenOn = state.status is AiCallStatus.Active && (state.isCameraEnabled || state.photoPending)
     DisposableEffect(activity, lifecycleOwner, keepVideoScreenOn) {
         val window = activity?.window
         val screenOnFlag = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
@@ -340,8 +340,9 @@ fun AssistantCallScreen(
                     onDark = isVideoActive,
                 )
 
-                if (state.status is AiCallStatus.Active && (state.cameraPending || state.cameraResult?.success == false)) {
-                    Text(if (state.cameraPending) stringResource(R.string.assistant_camera_working) else state.cameraResult!!.message,
+                if (state.status is AiCallStatus.Active && (state.photoPending || state.cameraPending || state.cameraResult?.success == false)) {
+                    Text(if (state.photoPending) stringResource(R.string.assistant_photo_working)
+                        else if (state.cameraPending) stringResource(R.string.assistant_camera_working) else state.cameraResult!!.message,
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (isVideoActive) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.align(Alignment.CenterHorizontally).padding(horizontal = Dimens.SpaceL))

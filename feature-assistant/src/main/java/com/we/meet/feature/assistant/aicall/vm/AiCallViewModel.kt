@@ -75,6 +75,7 @@ class AiCallViewModel(
         val makeClient = if (selection.transport == AiCallTransport.AOQ) ::OmniAoqClient else ::OmniWebRtcClient
         lateinit var client: OmniCallClient
         var owner: CameraActionController? = null
+        var sessionId: String? = null
         client = makeClient(
             appContext,
             { level ->
@@ -110,6 +111,20 @@ class AiCallViewModel(
                 }
             } },
             { if (rtcClient === client) endCall() },
+            PhotoToolHandler { question ->
+                if (rtcClient !== client || _state.value.status !is AiCallStatus.Active || sessionId == null)
+                    cameraResult("cancelled", client.cameraEnabled, false)
+                else {
+                    _state.update { it.copy(photoPending = true, cameraResult = null) }
+                    try {
+                        val result = checkNotNull(owner).takePhoto(client::capturePhoto) { image ->
+                            agentRepo.photoQa(checkNotNull(sessionId), question, image)
+                        }
+                        if (rtcClient === client) _state.update { it.copy(cameraResult = result) }
+                        result
+                    } finally { if (rtcClient === client) _state.update { it.copy(photoPending = false) } }
+                }
+            },
         )
         rtcClient = client
         owner = CameraActionController(
@@ -135,7 +150,8 @@ class AiCallViewModel(
                     stopped = { endCall(R.string.assistant_disconnected_ended) })
                 client.connect { sdp ->
                     _state.update { it.copy(status = AiCallStatus.Connecting(ConnectingStep.Configuring)) }
-                    val answer = agentRepo.exchangeOffer(AiCallOffer(sdp = sdp, profile_code = config.callProfile()!!.code, voice_id = selection.voiceId, prompt_id = selection.promptId, transport = selection.transport.name.lowercase()))
+                    val answer = agentRepo.exchangeOffer(AiCallOffer(sdp = sdp, profile_code = config.callProfile()!!.code, voice_id = selection.voiceId, prompt_id = selection.promptId, transport = selection.transport.name.lowercase(), photo_qa = true))
+                    sessionId = answer.session_lease?.id
                     val lease = agentRepo.track(answer) {
                         viewModelScope.launch {
                             if (rtcClient === client) endCall(R.string.assistant_disconnected_ended)
@@ -172,7 +188,7 @@ class AiCallViewModel(
         cameraJob = null
         closeClient()
         _state.update {
-            it.copy(status = AiCallStatus.Ended, isCameraEnabled = false, cameraPending = false, cameraPermissionRequest = null,
+            it.copy(status = AiCallStatus.Ended, isCameraEnabled = false, cameraPending = false, photoPending = false, cameraPermissionRequest = null,
                 cameraFront = false, isMicMuted = false, micPending = false,
                 agentSpeaking = false, agentAudioLevel = 0f, errorToastRes = reasonRes)
         }
@@ -225,9 +241,11 @@ class AiCallViewModel(
             "video_unavailable" -> R.string.assistant_camera_video_unavailable
             "timeout" -> R.string.assistant_camera_timeout
             "cancelled" -> R.string.assistant_camera_cancelled
+            "photo_answer" -> R.string.assistant_photo_captured
+            "photo_failed" -> R.string.assistant_photo_failed
             else -> R.string.assistant_camera_device_error
         }
-        return CameraActionResult(code in setOf("enabled", "disabled", "already_enabled", "already_disabled"), enabled, changed, code, appContext.getString(resource))
+        return CameraActionResult(code in setOf("enabled", "disabled", "already_enabled", "already_disabled", "photo_answer"), enabled, changed, code, appContext.getString(resource))
     }
 
     fun toggleMic() {
@@ -318,7 +336,9 @@ class AiCallViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(AiCallViewModel::class.java))
-            val retrofit = AssistantNetwork.retrofit(deps)
+            val retrofit = AssistantNetwork.retrofit(deps).newBuilder()
+                .client(deps.authedOkHttp.newBuilder().followRedirects(false).followSslRedirects(false)
+                    .retryOnConnectionFailure(false).cache(null).build()).build()
             return AiCallViewModel(appContext.applicationContext,
                 AiAgentRepository(retrofit.create(AiAgentApi::class.java)), AiCallPreferences(appContext),
                 deps.assistantAccount?.let { account -> com.we.meet.feature.assistant.history.AssistantHistoryStore.get(appContext, account) { deps.assistantAccount } }) as T

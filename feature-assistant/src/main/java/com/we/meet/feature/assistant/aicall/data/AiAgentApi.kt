@@ -15,6 +15,9 @@ interface AiAgentApi {
 
     @POST("api/v1.0/ai-call/session/")
     suspend fun exchangeOffer(@Body offer: AiCallOffer): AiCallAnswer
+    @POST("api/v1.0/ai-call/photo/")
+    suspend fun photoQa(@Body request: com.we.meet.feature.assistant.aicall.model.PhotoQaRequest): com.we.meet.feature.assistant.aicall.model.PhotoQaAnswer =
+        error("Photo QA unavailable")
     @POST("api/v1.0/direct-ai/sessions/{id}/")
     suspend fun sessionLease(@Path("id") id: String, @Body operation: DirectAILeaseOperation) = Unit
 }

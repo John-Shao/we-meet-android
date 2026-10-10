@@ -132,4 +132,7 @@
     <string name="assistant_camera_state_sync_failed">摄像头状态同步暂时失败，请重试语音指令或使用摄像头按钮</string>
     <string name="assistant_camera_working">正在切换摄像头…</string>
     <string name="assistant_camera_video_unavailable">当前设备不支持 WebRTC 视频，请使用 AOQ 或支持视频编码的手机</string>
+    <string name="assistant_photo_working">正在拍图并分析…</string>
+    <string name="assistant_photo_captured">照片已获取</string>
+    <string name="assistant_photo_failed">拍图问答失败，请重试</string>
 </resources>

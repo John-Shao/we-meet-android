@@ -18,6 +18,23 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.UUID
 
 class DirectAILeaseApiTest {
+    @Test fun photoRetrofitSerializesQuestionAndInlineImageAndDecodesAnswer() = runBlocking {
+        var calls = 0
+        val request = com.we.meet.feature.assistant.aicall.model.PhotoQaRequest("lease", "question", "jpeg-base64")
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            calls++
+            assertEquals("/api/v1.0/ai-call/photo/", chain.request().url.encodedPath)
+            val body = Buffer().also { chain.request().body!!.writeTo(it) }.readUtf8()
+            assertEquals(request, moshi.adapter(request.javaClass).fromJson(body))
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200)
+                .message("Fixture").body("{\"answer\":\"red cup\"}".toResponseBody()).build()
+        }.build()
+        val api = Retrofit.Builder().baseUrl("https://fixture.invalid/").client(client)
+            .addConverterFactory(MoshiConverterFactory.create(moshi)).build().create(AiAgentApi::class.java)
+        assertEquals("red cup", api.photoQa(request).answer); assertEquals(1, calls)
+        assertFalse(request.toString().contains("jpeg-base64"))
+    }
+
     private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
 
     @Test fun allThreeFeaturesSendLifecycleRequestsThroughRetrofit() = runBlocking {

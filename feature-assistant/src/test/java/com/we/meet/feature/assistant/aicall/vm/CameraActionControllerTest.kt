@@ -8,6 +8,56 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CameraActionControllerTest {
+    @Test fun photoInVoiceModeStopsCameraServiceBeforeInferenceWithoutChangingMode() = runTest {
+        val f = Fixture(); f.available = false
+        val image = byteArrayOf(1, 2)
+        val answer = f.controller.takePhoto({ image }) {
+            assertSame(image, it)
+            assertEquals(listOf("foreground:true", "foreground:false"), f.operations)
+            assertEquals(false, f.camera)
+            "A red cup"
+        }
+        assertEquals("photo_answer", answer.code); assertEquals("A red cup", answer.message)
+        assertFalse(answer.changed); assertFalse(f.pending); assertFalse(f.unsafe)
+    }
+
+    @Test fun videoPhotoKeepsVideoRunningAndSerializesModeChanges() = runTest {
+        val f = Fixture(); f.camera = true; val gate = CompletableDeferred<Unit>()
+        val photo = async { f.controller.takePhoto({ byteArrayOf(1) }) { gate.await(); "answer" } }
+        runCurrent(); val off = async { f.set(false) }; runCurrent()
+        assertTrue(f.camera!!); assertTrue(f.operations.isEmpty())
+        gate.complete(Unit); runCurrent()
+        assertEquals("photo_answer", photo.await().code)
+        assertEquals("disabled", off.await().code); assertFalse(f.camera!!)
+    }
+
+    @Test fun photoPermissionDenialBackgroundAndEndedCallCannotCaptureOrAnalyze() = runTest {
+        val f = Fixture(); f.granted = false
+        val photo = async { f.controller.takePhoto({ fail("Must not capture"); byteArrayOf() }) { fail("Must not analyze"); "" } }
+        runCurrent(); f.controller.permissionResult(f.permission!!.id, false); runCurrent()
+        assertEquals("permission_denied", photo.await().code); assertTrue(f.operations.isEmpty())
+        f.visible = false
+        assertEquals("foreground_required", f.controller.takePhoto({ error("capture") }) { error("analyze") }.code)
+        f.active = false
+        assertEquals("cancelled", f.controller.takePhoto({ error("capture") }) { error("analyze") }.code)
+    }
+
+    @Test fun interruptedPhotoCleansForegroundAndIgnoresLateAnswerAfterHangup() = runTest {
+        val f = Fixture(); var cleanup = false
+        val photo = launch { f.controller.takePhoto({ try { awaitCancellation() } finally { cleanup = true } }) { error("analyze") } }
+        runCurrent(); photo.cancelAndJoin()
+        assertTrue(cleanup); assertFalse(f.pending)
+        assertEquals(listOf("foreground:true", "foreground:false"), f.operations)
+        val late = f.controller.takePhoto({ byteArrayOf(1) }) { f.active = false; "late answer" }
+        assertEquals("cancelled", late.code)
+    }
+
+    @Test fun uncertainPhotoCleanupClosesOwnerAndNeverCallsInference() = runTest {
+        val f = Fixture()
+        val result = f.controller.takePhoto({ throw PhotoCleanupException(IllegalStateException()) }) { error("analyze") }
+        assertEquals("photo_failed", result.code); assertTrue(f.unsafe)
+    }
+
     private class Fixture {
         var active = true; var camera: Boolean? = false; var available = true
         var visible = true; var granted = true; var unsafe = false; var pending = false

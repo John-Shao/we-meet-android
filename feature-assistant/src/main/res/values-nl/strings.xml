@@ -138,4 +138,7 @@
     <string name="assistant_camera_state_sync_failed">Synchronisatie van de camerastatus is mislukt. Probeer het spraakcommando opnieuw of gebruik de cameraknop.</string>
     <string name="assistant_camera_working">Camera wisselen…</string>
     <string name="assistant_camera_video_unavailable">Video is op dit apparaat niet beschikbaar met WebRTC. Gebruik AOQ of een compatibele telefoon.</string>
+    <string name="assistant_photo_working">Foto maken en analyseren…</string>
+    <string name="assistant_photo_captured">Foto gemaakt.</string>
+    <string name="assistant_photo_failed">Kan deze foto niet analyseren. Probeer het opnieuw.</string>
 </resources>

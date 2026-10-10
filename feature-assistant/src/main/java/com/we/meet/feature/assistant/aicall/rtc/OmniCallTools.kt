@@ -16,12 +16,14 @@ internal class OmniCallTools(
     private val invalid: (String) -> CameraActionResult,
     private val endCall: (() -> Unit)? = null,
     private val allowMissingResponseDone: Boolean = false,
+    private val photoHandler: PhotoToolHandler? = null,
 ) {
     private sealed interface Request {
         data class Camera(val request: CameraToolRequest) : Request
         data object EndCall : Request
+        data class Photo(val question: String) : Request
     }
-    fun definitions(): JSONArray = Companion.definitions(handler != null, endCall != null, serverInstructions)
+    fun definitions(): JSONArray = Companion.definitions(handler != null, endCall != null, serverInstructions, photoHandler != null)
     private var serverInstructions: Map<String, String> = emptyMap()
     fun configureInstructions(value: Map<String, String>) {
         if (handler != null) {
@@ -31,9 +33,10 @@ internal class OmniCallTools(
             require(!value["end_call"].isNullOrBlank())
             require(!value["end_call_description"].isNullOrBlank())
         }
+        if (photoHandler != null) for (key in listOf("photo", "take_photo_description")) require(!value[key].isNullOrBlank())
         serverInstructions = value
     }
-    fun instructions(base: String): String = Companion.instructions(base, handler != null, endCall != null, serverInstructions)
+    fun instructions(base: String): String = Companion.instructions(base, handler != null, endCall != null, serverInstructions, photoHandler != null)
     private class Round {
         val calls = linkedMapOf<String, Job?>()
         var done = false
@@ -42,6 +45,7 @@ internal class OmniCallTools(
         var feedbackFailed = false
         var outstanding = 0
         var hasTools = false
+        var photoRequested = false
         var endWatchdog: Job? = null
         val items = mutableSetOf<Int>()
         val completedItems = mutableSetOf<Int>()
@@ -151,6 +155,14 @@ internal class OmniCallTools(
                 }
                 "get_camera_state" -> { require(handler != null && args.length() == 0); Request.Camera(CameraToolRequest.GetState) }
                 "end_call" -> { require(endCall != null && args.length() == 0); Request.EndCall }
+                "take_photo" -> {
+                    require(photoHandler != null && args.length() == 1 && args.get("question") is String)
+                    val question = args.getString("question").trim()
+                    require(question.isNotEmpty() && question.length <= 1000)
+                    require(!round.photoRequested)
+                    round.photoRequested = true
+                    Request.Photo(question)
+                }
                 else -> error("Unknown tool")
             }
         }.getOrNull()
@@ -170,10 +182,14 @@ internal class OmniCallTools(
                 }
                 // CameraActionController serializes hardware. Let OFF enter the
                 // delegate while OPEN awaits permission so it can cancel that wait.
-                val result = if (request == null) invalid("invalid_arguments")
-                    else checkNotNull(handler).execute((request as Request.Camera).request)
+                val result = when (request) {
+                    null -> invalid("invalid_arguments")
+                    is Request.Photo -> checkNotNull(photoHandler).execute(request.question)
+                    is Request.Camera -> checkNotNull(handler).execute(request.request)
+                    Request.EndCall -> error("Terminal action already handled")
+                }
                 round.result = result
-                if (!closed) {
+                if (!closed && !round.cancelled) {
                     post(round, JSONObject().put("type", "conversation.item.create").put("item", JSONObject()
                         .put("type", "function_call_output").put("call_id", callId).put("output", result.json())))
                 }
@@ -302,7 +318,7 @@ internal class OmniCallTools(
     }
 
     companion object {
-        fun definitions(cameraEnabled: Boolean = true, endCallEnabled: Boolean = false, rules: Map<String, String> = emptyMap()): JSONArray {
+        fun definitions(cameraEnabled: Boolean = true, endCallEnabled: Boolean = false, rules: Map<String, String> = emptyMap(), photoEnabled: Boolean = false): JSONArray {
             val result = JSONArray()
             if (cameraEnabled) listOf(
             JSONObject().put("type", "function").put("function", JSONObject()
@@ -321,12 +337,18 @@ internal class OmniCallTools(
                 .put("description", rules["end_call_description"].orEmpty())
                 .put("parameters", JSONObject().put("type", "object").put("properties", JSONObject())
                     .put("additionalProperties", false))))
+            if (photoEnabled) result.put(JSONObject().put("type", "function").put("function", JSONObject()
+                .put("name", "take_photo").put("description", rules["take_photo_description"].orEmpty())
+                .put("parameters", JSONObject().put("type", "object").put("properties", JSONObject()
+                    .put("question", JSONObject().put("type", "string").put("minLength", 1).put("maxLength", 1000)))
+                    .put("required", JSONArray(listOf("question"))).put("additionalProperties", false))))
             return result
         }
 
         fun instructions(base: String, cameraEnabled: Boolean = true, endCallEnabled: Boolean = false,
-            rules: Map<String, String> = emptyMap()): String =
+            rules: Map<String, String> = emptyMap(), photoEnabled: Boolean = false): String =
             base + (if (cameraEnabled) rules["camera"]?.let { "\n$it" }.orEmpty() else "") +
+                (if (photoEnabled) rules["photo"]?.let { "\n$it" }.orEmpty() else "") +
                 (if (endCallEnabled) rules["end_call"]?.let { "\n$it" }.orEmpty() else "")
     }
 }

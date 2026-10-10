@@ -10,6 +10,7 @@ import com.we.meet.feature.assistant.aicall.model.AiCallAnswer
 import com.we.meet.feature.assistant.aicall.model.CameraToolHandler
 import com.we.meet.feature.assistant.aicall.model.CameraActionResult
 import com.we.meet.feature.assistant.aicall.model.CameraFeedbackFailure
+import com.we.meet.feature.assistant.aicall.model.PhotoToolHandler
 import com.we.meet.feature.assistant.R
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -40,9 +41,11 @@ class OmniWebRtcClient(
     toolHandler: CameraToolHandler? = null,
     onToolFeedbackFailure: (CameraFeedbackFailure) -> Unit = {},
     onEndCall: (() -> Unit)? = null,
+    photoHandler: PhotoToolHandler? = null,
 ) : OmniCallClient {
     private val playbackDiagnostics = OmniPlaybackDiagnostics(context, "WebRTC", "inbound_rtp_audio_level")
     private val transcript = OmniTranscript(onTranscript)
+    private val photos = CallPhotoCapture(context)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val handshake = OmniHandshake()
     private val recovery = OmniConnectionRecovery(scope) { fail("connection_recovery_timeout") }
@@ -84,9 +87,9 @@ class OmniWebRtcClient(
     private var toolOutputHeld = false
     private val cameraToolHandler = toolHandler?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_CAMERA_VOICE_CONTROL }
     private val endCallHandler = onEndCall?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_VOICE_HANGUP }
-    private val tools = if (cameraToolHandler != null || endCallHandler != null) {
+    private val tools = if (cameraToolHandler != null || endCallHandler != null || photoHandler != null) {
         OmniCallTools(scope, cameraToolHandler, ::send, { held -> toolOutputHeld = held; updateOutput() }, onToolFeedbackFailure,
-            { code -> CameraActionResult(false, cameraEnabled, false, code, context.getString(R.string.assistant_call_invalid_tool)) }, endCallHandler)
+            { code -> CameraActionResult(false, cameraEnabled, false, code, context.getString(R.string.assistant_call_invalid_tool)) }, endCallHandler, photoHandler = photoHandler)
     } else null
     private fun updateOutput() { remoteAudio?.setEnabled(!outputMuted && !outputSuppressed && !toolOutputHeld) }
 
@@ -411,6 +414,12 @@ class OmniWebRtcClient(
         cameraFrames.detach(sink)
     }
 
+    override suspend fun capturePhoto(): ByteArray {
+        check(!closed && handshake.ready)
+        return if (cameraStarted) photos.capture(cameraFront, cameraFrames::attach, cameraFrames::detach)
+            else photos.capture(front = false)
+    }
+
     private fun send(event: JSONObject) {
         if (!event.has("event_id")) event.put("event_id", UUID.randomUUID().toString())
         val channel = checkNotNull(eventChannel)
@@ -462,6 +471,7 @@ class OmniWebRtcClient(
     override fun close() {
         if (closed) return
         closed = true
+        runCatching { photos.close() }
         firstVideoFrame?.cancel(); videoStopped?.cancel()
         recovery.close()
         handshake.close()

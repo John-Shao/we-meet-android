@@ -32,6 +32,64 @@ internal class CameraActionController(
         permission?.takeIf { it.first == id }?.second?.complete(if (granted) Permission.Granted else Permission.Denied)
     }
 
+    private suspend fun authorize(): String? {
+        if (permissionGranted()) return null
+        val request = CameraPermissionRequest(UUID.randomUUID().toString())
+        val deferred = CompletableDeferred<Permission>()
+        permission = request.id to deferred
+        val decision = try {
+            permissionRequested(request)
+            withTimeoutOrNull(60_000) { deferred.await() }
+        } finally { permission = null; permissionRequested(null) }
+        when (decision) {
+            null -> return "timeout"
+            Permission.Denied -> return "permission_denied"
+            Permission.Cancelled -> return "cancelled"
+            Permission.Granted -> Unit
+        }
+        withTimeoutOrNull(1000) { while (active() && !visible()) delay(20) }
+        return when {
+            !active() -> "cancelled"
+            !visible() -> "foreground_required"
+            !permissionGranted() -> "permission_denied"
+            else -> null
+        }
+    }
+
+    /** Serialize photos with mode changes, without applying a Voice/Video transition. */
+    suspend fun takePhoto(capture: suspend () -> ByteArray, analyze: suspend (ByteArray) -> String): CameraActionResult = serial.withLock {
+        if (!active()) return@withLock result("cancelled", enabled(), false)
+        if (!visible()) return@withLock result("foreground_required", enabled(), false)
+        val video = enabled() == true
+        var foregroundUpgraded = false
+        pending(true)
+        try {
+            authorize()?.let { return@withLock result(it, enabled(), false) }
+            if (!video) withTimeout(10_000) { foregroundUpgraded = true; foregroundCamera(true) }
+            if (!active()) return@withLock result("cancelled", enabled(), false)
+            if (!visible()) return@withLock result("foreground_required", enabled(), false)
+            val image = withTimeout(15_000) { capture() }
+            if (!active()) return@withLock result("cancelled", enabled(), false)
+            if (foregroundUpgraded) {
+                withTimeout(10_000) { foregroundCamera(false) }
+                foregroundUpgraded = false
+            }
+            val answer = withTimeout(35_000) { analyze(image) }
+            if (!active()) return@withLock result("cancelled", enabled(), false)
+            check(answer.isNotBlank())
+            result("photo_answer", enabled(), false).copy(message = answer)
+        } catch (error: Exception) {
+            if (error is PhotoCleanupException) unsafe()
+            if (error is CancellationException && error !is TimeoutCancellationException) throw error
+            result(if (error is TimeoutCancellationException) "timeout" else "photo_failed", enabled(), false)
+        } finally {
+            if (foregroundUpgraded && active()) withContext(NonCancellable) {
+                if (runCatching { withTimeout(10_000) { foregroundCamera(false) } }.isFailure) unsafe()
+            }
+            if (active()) pending(false)
+        }
+    }
+
     suspend fun query(): CameraActionResult = serial.withLock {
         result(if (!active()) "cancelled" else when (enabled()) { true -> "already_enabled"; false -> "already_disabled"; null -> "device_error" }, enabled(), false)
     }
@@ -53,25 +111,8 @@ internal class CameraActionController(
             pending(true)
             try {
                 if (target && !permissionGranted()) {
-                    val request = CameraPermissionRequest(UUID.randomUUID().toString())
-                    val deferred = CompletableDeferred<Permission>()
-                    permission = request.id to deferred
-                    val decision = try {
-                        permissionRequested(request)
-                        withTimeoutOrNull(60_000) { deferred.await() }
-                    } finally { permission = null; permissionRequested(null) }
-                    val code = when (decision) {
-                        null -> "timeout"
-                        Permission.Denied -> "permission_denied"
-                        Permission.Cancelled -> "cancelled"
-                        Permission.Granted -> null
-                    }
+                    val code = authorize()
                     if (code != null) return@withLock result(code, enabled(), false)
-                    // Permission callbacks may run just before Activity.onResume.
-                    withTimeoutOrNull(1000) { while (active() && !visible()) delay(20) }
-                    if (!active()) return@withLock result("cancelled", enabled(), false)
-                    if (!visible()) return@withLock result("foreground_required", enabled(), false)
-                    if (!permissionGranted()) return@withLock result("permission_denied", enabled(), false)
                 }
                 try {
                     withTimeout(10_000) {
