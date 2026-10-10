@@ -7,7 +7,7 @@
 -->
 <resources>
     <string name="assistant_call_transcript">Historique de la conversation</string>
-    <string name="assistant_call_interrupt">Interrompre l’IA</string>
+    <string name="assistant_call_interrupt">Arrêter</string>
     <string name="assistant_call_latest">Revenir au dernier message</string>
     <string name="assistant_call_transcript_empty">Les échanges s’afficheront ici après votre première intervention.</string>
     <string name="assistant_background_channel">Sessions de l’assistant IA</string>
@@ -30,7 +30,6 @@
     <string name="assistant_need_camera">L’autorisation de la caméra est requise</string>
     <string name="assistant_tap_to_start_voice">Touchez pour démarrer un appel vocal</string>
     <string name="assistant_tap_to_start_video">Touchez pour démarrer un appel vidéo</string>
-    <string name="assistant_speak_or_interrupt">Parlez, ou touchez pour interrompre</string>
     <string name="assistant_listening">À l’écoute</string>
     <string name="assistant_call_ended">Appel terminé</string>
     <string name="assistant_disconnected_ended">Déconnecté — l’appel est terminé</string>

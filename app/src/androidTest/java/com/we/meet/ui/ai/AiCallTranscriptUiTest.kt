@@ -99,20 +99,30 @@ class AiCallTranscriptUiTest {
             compose.onNodeWithText("你好").assertIsDisplayed()
             compose.onNodeWithText("你好呀～今天想聊点什么？").assertIsDisplayed()
             compose.onAllNodesWithTag("call-transcript-time").assertCountEquals(1)
-            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertIsDisplayed().performClick()
+            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertDoesNotExist()
+            compose.onNodeWithText("说话或点击打断").assertDoesNotExist()
             capture("call-chat-light.png")
+            compose.runOnIdle { state.value = state.value.copy(isMicMuted = true) }
+            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertIsDisplayed().performClick()
+            capture("call-chat-muted-light.png")
             compose.runOnIdle { dark.value = true }
+            capture("call-chat-muted-dark.png")
+            compose.runOnIdle { state.value = state.value.copy(isMicMuted = false) }
+            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertDoesNotExist()
             capture("call-chat-dark.png")
             compose.onNodeWithTag("call-photo-photo").performClick()
             capture("call-photo-expanded-dark.png")
             compose.onNodeWithContentDescription(context.getString(R.string.assistant_photo_close)).performClick()
             compose.runOnIdle { state.value = state.value.copy(photoPending = true, cameraPending = true) }
             compose.onNodeWithText(context.getString(R.string.assistant_photo_working)).assertIsDisplayed()
-            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertIsDisplayed()
+            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertDoesNotExist()
             capture("call-photo-dark.png")
+            compose.runOnIdle { state.value = state.value.copy(isMicMuted = true) }
+            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertIsDisplayed().performClick()
+            compose.onNodeWithText(context.getString(R.string.assistant_photo_working)).assertIsDisplayed()
             compose.runOnIdle { dark.value = false }
             capture("call-photo-light.png")
-            compose.runOnIdle { state.value = state.value.copy(photoPending = false, cameraPending = false) }
+            compose.runOnIdle { state.value = state.value.copy(photoPending = false, cameraPending = false, isMicMuted = false) }
             compose.onNodeWithContentDescription(context.getString(R.string.assistant_history_title)).performClick()
             compose.onNodeWithText("saved phone conversation").assertIsDisplayed()
             compose.onNodeWithText("hidden translation").assertDoesNotExist()
@@ -132,6 +142,10 @@ class AiCallTranscriptUiTest {
                 assertEquals(AiCallStatus.Active(AiCallMode.Voice), vm.state.value.status)
                 state.value = state.value.copy(mode = AiCallMode.Video, status = AiCallStatus.Active(AiCallMode.Video))
             }
+            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertDoesNotExist()
+            compose.runOnIdle { state.value = state.value.copy(isMicMuted = true) }
+            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertIsDisplayed().performClick()
+            capture("call-video-muted.png")
             compose.onNodeWithText(context.getString(R.string.assistant_call_transcript)).performClick()
             compose.onNodeWithText("你好呀～今天想聊点什么？").assertIsDisplayed()
             pressBack()
@@ -139,6 +153,7 @@ class AiCallTranscriptUiTest {
                 assertEquals(AiCallStatus.Active(AiCallMode.Video), vm.state.value.status)
                 vm.endCall()
             }
+            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertDoesNotExist()
             compose.onNodeWithText("你好呀～今天想聊点什么？").assertIsDisplayed()
             compose.runOnIdle { assertEquals(3, vm.state.value.transcriptRows.size) }
         } finally { compose.runOnIdle { owner.viewModelStore.clear() }; store.clear() }

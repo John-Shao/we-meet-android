@@ -7,7 +7,7 @@
 -->
 <resources>
     <string name="assistant_call_transcript">Gespreksgeschiedenis</string>
-    <string name="assistant_call_interrupt">AI onderbreken</string>
+    <string name="assistant_call_interrupt">Stoppen</string>
     <string name="assistant_call_latest">Naar het nieuwste bericht</string>
     <string name="assistant_call_transcript_empty">Na het spreken verschijnen hier de berichten van het gesprek.</string>
     <string name="assistant_background_channel">AI-assistentsessies</string>
@@ -30,7 +30,6 @@
     <string name="assistant_need_camera">Cameratoestemming is vereist</string>
     <string name="assistant_tap_to_start_voice">Tik om een spraakoproep te starten</string>
     <string name="assistant_tap_to_start_video">Tik om een video-oproep te starten</string>
-    <string name="assistant_speak_or_interrupt">Spreek, of tik om te onderbreken</string>
     <string name="assistant_listening">Luistert</string>
     <string name="assistant_call_ended">Oproep beëindigd</string>
     <string name="assistant_disconnected_ended">Verbinding verbroken — de oproep is beëindigd</string>

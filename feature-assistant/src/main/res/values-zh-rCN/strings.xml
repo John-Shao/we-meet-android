@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="assistant_call_transcript">聊天记录</string>
-    <string name="assistant_call_interrupt">打断 AI</string>
+    <string name="assistant_call_interrupt">停止</string>
     <string name="assistant_call_latest">回到最新</string>
     <string name="assistant_call_transcript_empty">开始说话后，双方的文字记录会显示在这里。</string>
     <string name="assistant_background_channel">AI 助手会话</string>
@@ -24,7 +24,6 @@
     <string name="assistant_need_camera">需要摄像头权限</string>
     <string name="assistant_tap_to_start_voice">点击开始语音通话</string>
     <string name="assistant_tap_to_start_video">点击开始视频通话</string>
-    <string name="assistant_speak_or_interrupt">说话或点击打断</string>
     <string name="assistant_listening">正在聆听</string>
     <string name="assistant_call_ended">通话已结束</string>
     <string name="assistant_disconnected_ended">连接已断开，通话已结束</string>

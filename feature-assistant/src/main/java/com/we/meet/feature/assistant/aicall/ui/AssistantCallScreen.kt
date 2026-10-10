@@ -19,6 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.FlipCameraIos
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
@@ -40,6 +42,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -328,9 +331,18 @@ fun AssistantCallScreen(
                     }
                 }
 
-                if (state.status is AiCallStatus.Active) {
-                    FilledTonalButton(onClick = vm::onTapToInterrupt, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                        Text(stringResource(R.string.assistant_call_interrupt))
+                if (state.status is AiCallStatus.Active && state.isMicMuted) {
+                    TextButton(
+                        onClick = vm::onTapToInterrupt,
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                        contentPadding = PaddingValues(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs),
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = if (isVideoActive) WeMeetTheme.extras.aiCall.onVideo
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            containerColor = if (isVideoActive) WeMeetTheme.extras.aiCall.videoScrim else Color.Transparent,
+                        ),
+                    ) {
+                        Text(stringResource(R.string.assistant_call_interrupt), style = MaterialTheme.typography.labelMedium)
                     }
                 }
 
@@ -485,12 +497,12 @@ private fun StatusHint(
     mode: AiCallMode,
     onDark: Boolean,
 ) {
+    if (status is AiCallStatus.Active && status.mode == AiCallMode.Voice) return
     val (label, isConnecting) = when (status) {
         is AiCallStatus.Idle -> (if (mode == AiCallMode.Voice) stringResource(R.string.assistant_tap_to_start_voice)
             else stringResource(R.string.assistant_tap_to_start_video)) to false
         is AiCallStatus.Connecting -> stringResource(connectingLabelRes(status.step)) to true
-        is AiCallStatus.Active -> (if (status.mode == AiCallMode.Voice) stringResource(R.string.assistant_speak_or_interrupt)
-            else stringResource(R.string.assistant_listening)) to false
+        is AiCallStatus.Active -> stringResource(R.string.assistant_listening) to false
         is AiCallStatus.Ended -> stringResource(R.string.assistant_call_ended) to false
         is AiCallStatus.Failed -> status.message to false
     }

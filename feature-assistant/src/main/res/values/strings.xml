@@ -7,7 +7,7 @@
 -->
 <resources>
     <string name="assistant_call_transcript">Chat history</string>
-    <string name="assistant_call_interrupt">Interrupt AI</string>
+    <string name="assistant_call_interrupt">Stop</string>
     <string name="assistant_call_latest">Back to latest</string>
     <string name="assistant_call_transcript_empty">Your conversation will appear here after you speak.</string>
     <string name="assistant_background_channel">AI assistant sessions</string>
@@ -30,7 +30,6 @@
     <string name="assistant_need_camera">Camera permission is required</string>
     <string name="assistant_tap_to_start_voice">Tap to start a voice call</string>
     <string name="assistant_tap_to_start_video">Tap to start a video call</string>
-    <string name="assistant_speak_or_interrupt">Speak, or tap to interrupt</string>
     <string name="assistant_listening">Listening</string>
     <string name="assistant_call_ended">Call ended</string>
     <string name="assistant_disconnected_ended">Disconnected — the call has ended</string>
