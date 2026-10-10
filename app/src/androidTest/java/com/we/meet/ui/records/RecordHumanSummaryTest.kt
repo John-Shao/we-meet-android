@@ -156,6 +156,32 @@ class RecordHumanSummaryTest {
         assertEquals(0, api.currentReads); assertEquals(0, api.historyReads); assertTrue(api.bodies.isEmpty())
         compose.onNodeWithText(label(R.string.human_summary_edit)).assertDoesNotExist()
     }
+    @Test fun exactHistoricalIdentityNoticeKeepsHumanContentAndActionLabels() {
+        api.current = api.current.copy(identityUpdated = true, content = api.current.content.copy(
+            actionItems = listOf(HumanActionDto("Historical action", emptyList(), "Original owner", "Original due"))))
+        exact()
+        await(R.string.human_summary_history_read_only)
+        compose.onNodeWithText(label(R.string.records_identity_updated)).assertExists()
+        compose.onNodeWithText("Private reviewed overview").assertExists()
+        compose.onNodeWithText("Original owner · Original due").assertExists()
+        compose.onNodeWithText(label(R.string.records_source) + " · " + sourceTime(ref.startMs)).performScrollTo().performClick()
+        assertEquals(listOf(snapshot to ref), sources.toList())
+        assertEquals(0, api.currentReads); assertTrue(api.bodies.isEmpty())
+    }
+    @Test fun currentHumanIdentityNoticeKeepsTypedDraftAcrossRefresh() {
+        show()
+        edit()
+        val editor = compose.onAllNodes(hasSetTextAction())[0]
+        editor.performTextReplacement("Unsaved human identity draft")
+        api.current = api.current.copy(identityUpdated = true)
+        compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        compose.waitUntil(8000) { api.currentReads >= 2 && compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
+        compose.onAllNodes(hasSetTextAction())[0].assertTextContains("Unsaved human identity draft")
+        assertTrue(api.bodies.isEmpty())
+        compose.onNodeWithText(label(R.string.records_close)).performClick()
+        await(R.string.records_identity_updated)
+    }
     @Test fun exactHistoricalBodyDisappearsAfterPermissionLoss() {
         exact(); await(R.string.human_summary_history_read_only)
         compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
