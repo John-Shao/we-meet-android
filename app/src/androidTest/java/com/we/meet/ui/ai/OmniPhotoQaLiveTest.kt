@@ -40,6 +40,7 @@ class OmniPhotoQaLiveTest {
                 com.squareup.moshi.Moshi.Builder().addLast(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory()).build()))
             .build().create(AiAgentApi::class.java)
         val allocations = AtomicInteger(); val photos = AtomicInteger(); val samples = AtomicInteger()
+        val photoHttpError = AtomicInteger()
         val answered = Channel<String>(Channel.UNLIMITED)
         val repo = AiAgentRepository(object : AiAgentApi {
             override suspend fun fetchConfig() = api.fetchConfig()
@@ -54,7 +55,10 @@ class OmniPhotoQaLiveTest {
                 assertTrue(jpeg.size <= 512_000); assertTrue(bitmap.width > 0 && bitmap.height > 0)
                 bitmap.recycle(); assertTrue(request.question.isNotBlank())
                 photos.incrementAndGet()
-                return api.photoQa(request).also {
+                val result = try { api.photoQa(request) } catch (error: retrofit2.HttpException) {
+                    photoHttpError.set(error.code()); throw error
+                }
+                return result.also {
                     assertTrue(it.answer.isNotBlank()); answered.send(it.answer)
                 }
             }
@@ -78,7 +82,8 @@ class OmniPhotoQaLiveTest {
                 @Suppress("UNCHECKED_CAST") val originalLevel = levelField.get(client) as (Float) -> Unit
                 levelField.set(client, { value: Float -> originalLevel(value); if (value > 0.001f) samples.incrementAndGet(); Unit })
                 input = syntheticInput(client); input!!.say("photo-question.pcm")
-                withTimeout(50_000) { answered.receive() }
+                val photoAnswer = withTimeoutOrNull(50_000) { answered.receive() }
+                assertNotNull("Photo missing: status=${vm!!.state.value.status} result=${vm!!.state.value.cameraResult?.code} captures=${photos.get()} http=${photoHttpError.get()} rows=${vm!!.state.value.transcriptRows.map { it.role }}", photoAnswer)
                 // The synthetic utterance has ended. Stop its silence pump before
                 // testing playback and text commands; physical microphone stays muted.
                 if (!exerciseVideo) { input?.close(); input = null }
@@ -101,7 +106,8 @@ class OmniPhotoQaLiveTest {
                     assertEquals(AiCallMode.Video, vm!!.state.value.mode); assertEquals(1, photos.get())
                     delay(4000)
                     input!!.say("photo-question.pcm")
-                    withTimeout(50_000) { answered.receive() }
+                    val videoAnswer = withTimeoutOrNull(50_000) { answered.receive() }
+                    assertNotNull("Video photo missing: status=${vm!!.state.value.status} result=${vm!!.state.value.cameraResult?.code} captures=${photos.get()} http=${photoHttpError.get()}", videoAnswer)
                     withTimeout(10_000) { while (vm!!.state.value.photoPending) delay(50) }
                     assertTrue(client.cameraEnabled!!); assertEquals(AiCallMode.Video, vm!!.state.value.mode)
                     assertEquals(2, photos.get()); assertEquals(1, allocations.get())
