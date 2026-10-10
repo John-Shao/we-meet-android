@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="assistant_call_transcript">聊天记录</string>
+    <string name="assistant_call_interrupt">打断 AI</string>
+    <string name="assistant_call_latest">回到最新</string>
+    <string name="assistant_call_transcript_empty">开始说话后，双方的文字记录会显示在这里。</string>
     <string name="assistant_background_channel">AI 助手会话</string>
     <string name="assistant_background_call">正在与 AI 通话</string>
     <string name="assistant_background_translation">双语互译进行中</string>

@@ -68,9 +68,10 @@ class AiCallViewModel(
             return
         }
         val selection = config.resolveSelection(_state.value.selection)
+        val transcriptSessionId = java.util.UUID.randomUUID().toString()
         recording = history?.begin("call")
         val currentRecording = recording
-        _state.update { it.copy(status = AiCallStatus.Connecting(ConnectingStep.Connecting), isMicMuted = false, isOutputMuted = false, cameraResult = null) }
+        _state.update { it.copy(transcriptSessionId = transcriptSessionId, transcriptRows = emptyList(), status = AiCallStatus.Connecting(ConnectingStep.Connecting), isMicMuted = false, isOutputMuted = false, cameraResult = null) }
         val makeClient = if (selection.transport == AiCallTransport.AOQ) ::OmniAoqClient else ::OmniWebRtcClient
         lateinit var client: OmniCallClient
         var owner: CameraActionController? = null
@@ -80,7 +81,10 @@ class AiCallViewModel(
                 if (rtcClient === client) _state.update { it.copy(agentAudioLevel = (level * 2.5f).coerceIn(0f, 1f), agentSpeaking = level > 0.01f) }
             },
             { if (rtcClient === client) endCall(R.string.assistant_disconnected_ended) },
-            { currentRecording?.put(it) },
+            { row ->
+                _state.update { it.withTranscript(transcriptSessionId, row) }
+                if (_state.value.transcriptSessionId == transcriptSessionId) currentRecording?.put(row)
+            },
             CameraToolHandler { request ->
                 val started = android.os.SystemClock.elapsedRealtime()
                 if (rtcClient === client) _state.update { it.copy(cameraResult = null, errorToastRes = null) }
@@ -295,6 +299,7 @@ class AiCallViewModel(
         }
     }
     private fun closeClient() {
+        _state.update { it.copy(transcriptSessionId = null) }
         cameraController?.close(); cameraController = null
         modelLease?.close(); modelLease = null
         val client = rtcClient

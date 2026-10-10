@@ -101,9 +101,17 @@ fun AssistantHistoryPreference(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AssistantHistoryScreen(store: AssistantHistoryStore, onBack: () -> Unit, deps: com.we.meet.feature.assistant.AssistantDeps? = null) {
+fun AssistantHistoryScreen(store: AssistantHistoryStore, onBack: () -> Unit, deps: com.we.meet.feature.assistant.AssistantDeps? = null, kind: String? = null) {
+    AssistantHistoryContent(store, onBack, deps, kind)
+}
+
+/** Can be hosted in the call screen without navigating away from its ViewModel. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AssistantHistoryContent(store: AssistantHistoryStore, onBack: () -> Unit, deps: com.we.meet.feature.assistant.AssistantDeps? = null, kind: String? = null) {
     val context = LocalContext.current
-    val entries by store.entries.collectAsStateWithLifecycle()
+    val allEntries by store.entries.collectAsStateWithLifecycle()
+    val entries = allEntries.filter { kind == null || it.kind == kind }
     val failed by store.error.collectAsStateWithLifecycle()
     val summaryVm: AssistantSummaryViewModel? = if (deps != null) androidx.lifecycle.viewmodel.compose.viewModel(
         key = "assistant-summary:${deps.assistantAccount}", factory = AssistantSummaryViewModel.Factory(store, deps)) else null
@@ -199,7 +207,7 @@ fun AssistantHistoryScreen(store: AssistantHistoryStore, onBack: () -> Unit, dep
             title = { Text(stringResource(if (id == "all") R.string.assistant_history_clear else R.string.assistant_history_delete)) },
             text = { Text(stringResource(R.string.assistant_history_delete_hint)) },
             confirmButton = { TextButton(onClick = {
-                if (id == "all") store.clear() else store.delete(id)
+                if (id == "all") store.clear(kind) else store.delete(id)
                 selected = null; deleting = null
             }) { Text(stringResource(android.R.string.ok)) } },
             dismissButton = { TextButton(onClick = { deleting = null }) { Text(stringResource(android.R.string.cancel)) } })

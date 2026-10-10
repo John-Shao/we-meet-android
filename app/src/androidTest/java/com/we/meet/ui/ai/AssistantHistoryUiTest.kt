@@ -17,6 +17,22 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AssistantHistoryUiTest {
+    @Test fun phoneHistoryClearLeavesTranslationHistory() {
+        val account = "history-filter-${UUID.randomUUID()}"
+        val store = AssistantHistoryStore.get(context, account) { account }
+        store.begin("call")!!.apply { put(AssistantHistoryRow("c", 0, "user", "phone-only")); close() }
+        store.begin("translation")!!.apply { put(AssistantHistoryRow("t", 0, "translation", "translation-only")); close() }
+        compose.waitUntil(5000) { store.entries.value.size == 2 }
+        compose.setContent { WeMeetTheme { AssistantHistoryContent(store, onBack = {}, kind = "call") } }
+        compose.onNodeWithText("phone-only").assertIsDisplayed()
+        compose.onNodeWithText("translation-only").assertDoesNotExist()
+        compose.onNodeWithContentDescription(context.getString(R.string.assistant_history_clear)).performClick()
+        compose.onNodeWithText(context.getString(android.R.string.ok)).performClick()
+        compose.waitUntil(5000) { store.entries.value.size == 1 }
+        compose.runOnIdle { assertEquals("translation", store.entries.value.single().kind) }
+        compose.onNodeWithText(context.getString(R.string.assistant_history_empty)).assertIsDisplayed()
+        store.clear()
+    }
     @Test fun summaryAndTodoSourcesAreReadableAndCheckable() {
         val summary = AssistantSummary("讨论了报告发送计划。", listOf("明天发送报告"),
             listOf(AssistantTodo("发送报告", "我", "明天", listOf("u"))))

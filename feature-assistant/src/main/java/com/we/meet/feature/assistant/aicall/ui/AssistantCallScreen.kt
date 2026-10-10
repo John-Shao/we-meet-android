@@ -72,7 +72,10 @@ import com.we.meet.feature.assistant.aicall.model.AiCallTransport
 import com.we.meet.feature.assistant.aicall.model.AiCallMode
 import com.we.meet.feature.assistant.aicall.model.AiCallStatus
 import com.we.meet.feature.assistant.aicall.model.ConnectingStep
-import com.we.meet.feature.assistant.aicall.ui.components.AnimatedSphere
+import com.we.meet.feature.assistant.history.AssistantHistoryContent
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Surface
 import com.we.meet.feature.assistant.aicall.ui.components.BottomControls
 import com.we.meet.feature.assistant.aicall.ui.components.VideoPreview
 import com.we.meet.feature.assistant.aicall.vm.AiCallViewModel
@@ -96,6 +99,7 @@ private tailrec fun Context.callActivity(): Activity? = when (this) {
  * reuses the host session instead of its own login.
  */
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun AssistantCallScreen(
     deps: AssistantDeps,
     onBack: () -> Unit,
@@ -107,6 +111,8 @@ fun AssistantCallScreen(
         factory = AiCallViewModel.Factory(context.applicationContext, deps),
     )
     val state by vm.state.collectAsState()
+    var showHistory by rememberSaveable { mutableStateOf(false) }
+    var showTranscript by rememberSaveable { mutableStateOf(false) }
     DisposableEffect(vm, lifecycleOwner) {
         fun updateVisibility() { vm.setPageVisible(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) }
         val observer = LifecycleEventObserver { _, _ -> updateVisibility() }
@@ -160,7 +166,7 @@ fun AssistantCallScreen(
         vm.endCall()
         onBack()
     }
-    BackHandler(enabled = true) { endAndBack() }
+    BackHandler(enabled = !showHistory && !showTranscript) { endAndBack() }
 
     var pendingAction by remember { mutableStateOf<PendingPermAction?>(null) }
 
@@ -277,6 +283,8 @@ fun AssistantCallScreen(
                 tintOnDark = isVideoActive,
                 showFlipCamera = isVideoActive,
                 onFlipCamera = vm::flipCamera,
+                onOpenHistory = { showHistory = true },
+                canOpenHistory = vm.history != null,
             )
         },
     ) { inner ->
@@ -310,12 +318,18 @@ fun AssistantCallScreen(
                         )
                     }
                     if (!isVideoActive) {
-                        AnimatedSphere(
-                            audioLevel = { state.agentAudioLevel },
-                            contentDescription = stringResource(R.string.assistant_cd_interrupt),
-                            enabled = state.status is AiCallStatus.Active,
-                            onTap = vm::onTapToInterrupt,
-                        )
+                        CallTranscriptList(state.transcriptRows, Modifier.fillMaxSize()
+                            .padding(top = if (state.status is AiCallStatus.Active) Dimens.SpaceXxl + Dimens.SpaceS else Dimens.SpaceNone))
+                    } else {
+                        FilledTonalButton(onClick = { showTranscript = true }, modifier = Modifier.align(Alignment.BottomCenter)) {
+                            Text(stringResource(R.string.assistant_call_transcript))
+                        }
+                    }
+                }
+
+                if (state.status is AiCallStatus.Active) {
+                    FilledTonalButton(onClick = vm::onTapToInterrupt, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                        Text(stringResource(R.string.assistant_call_interrupt))
                     }
                 }
 
@@ -377,6 +391,22 @@ fun AssistantCallScreen(
                     onDismiss = { vm.showPicker(false) },
                 )
             }
+            if (showTranscript) {
+                BackHandler { showTranscript = false }
+                Surface(Modifier.fillMaxSize()) {
+                    Scaffold(topBar = { WeMeetTopBar(title = stringResource(R.string.assistant_call_transcript),
+                        onBack = { showTranscript = false }) }) { padding ->
+                        CallTranscriptList(state.transcriptRows, Modifier.fillMaxSize().padding(padding))
+                    }
+                }
+            }
+            if (showHistory) {
+                vm.history?.let { store ->
+                    Surface(Modifier.fillMaxSize()) {
+                        AssistantHistoryContent(store, onBack = { showHistory = false }, deps = deps, kind = "call")
+                    }
+                }
+            }
         }
     }
 }
@@ -393,6 +423,8 @@ private fun TopBar(
     tintOnDark: Boolean,
     showFlipCamera: Boolean,
     onFlipCamera: () -> Unit,
+    onOpenHistory: () -> Unit,
+    canOpenHistory: Boolean,
 ) {
     val tint = if (tintOnDark) WeMeetTheme.extras.aiCall.onVideo
         else MaterialTheme.colorScheme.onSurfaceVariant
@@ -406,6 +438,10 @@ private fun TopBar(
             actionIconContentColor = tint,
         ) else null,
         actions = {
+            IconButton(onClick = onOpenHistory, enabled = canOpenHistory) {
+                Icon(Icons.Default.History, stringResource(R.string.assistant_history_title),
+                    tint = if (canOpenHistory) tint else tint.copy(alpha = 0.4f))
+            }
             if (showFlipCamera) {
                 IconButton(onClick = onFlipCamera) {
                     Icon(

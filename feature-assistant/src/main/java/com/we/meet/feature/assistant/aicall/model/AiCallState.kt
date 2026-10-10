@@ -1,6 +1,7 @@
 package com.we.meet.feature.assistant.aicall.model
 
 import androidx.annotation.StringRes
+import com.we.meet.feature.assistant.history.AssistantHistoryRow
 
 enum class AiCallTransport { WebRTC, AOQ }
 
@@ -29,6 +30,8 @@ data class AiCallSelection(
 )
 
 data class AiCallUiState(
+    val transcriptSessionId: String? = null,
+    val transcriptRows: List<AssistantHistoryRow> = emptyList(),
     val status: AiCallStatus = AiCallStatus.Idle,
     val mode: AiCallMode = AiCallMode.Voice,
     val isMicMuted: Boolean = false,
@@ -55,3 +58,9 @@ data class AiCallUiState(
     @StringRes val errorToastRes: Int? = null,
     val showPicker: Boolean = false,
 )
+
+/** The session check belongs inside the atomic state update, including late callbacks. */
+internal fun AiCallUiState.withTranscript(sessionId: String, row: AssistantHistoryRow): AiCallUiState {
+    if (transcriptSessionId != sessionId) return this
+    return copy(transcriptRows = (transcriptRows.filterNot { it.id == row.id } + row).sortedBy { it.order })
+}

@@ -6,6 +6,10 @@
   下也只显示中文。本次一并归位,与 app / core-directory 的做法对齐。
 -->
 <resources>
+    <string name="assistant_call_transcript">Gespreksgeschiedenis</string>
+    <string name="assistant_call_interrupt">AI onderbreken</string>
+    <string name="assistant_call_latest">Naar het nieuwste bericht</string>
+    <string name="assistant_call_transcript_empty">Na het spreken verschijnen hier de berichten van het gesprek.</string>
     <string name="assistant_background_channel">AI-assistentsessies</string>
     <string name="assistant_background_call">AI-oproep loopt</string>
     <string name="assistant_background_translation">Tweetalige vertaling loopt</string>

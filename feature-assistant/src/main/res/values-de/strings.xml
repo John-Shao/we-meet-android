@@ -6,6 +6,10 @@
   下也只显示中文。本次一并归位,与 app / core-directory 的做法对齐。
 -->
 <resources>
+    <string name="assistant_call_transcript">Gesprächsverlauf</string>
+    <string name="assistant_call_interrupt">KI unterbrechen</string>
+    <string name="assistant_call_latest">Zur neuesten Nachricht</string>
+    <string name="assistant_call_transcript_empty">Sobald Sie sprechen, werden hier die Gesprächsbeiträge angezeigt.</string>
     <string name="assistant_background_channel">KI-Assistent-Sitzungen</string>
     <string name="assistant_background_call">KI-Anruf läuft</string>
     <string name="assistant_background_translation">Bilinguale Übersetzung läuft</string>

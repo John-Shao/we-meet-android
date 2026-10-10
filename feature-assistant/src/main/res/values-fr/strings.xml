@@ -6,6 +6,10 @@
   下也只显示中文。本次一并归位,与 app / core-directory 的做法对齐。
 -->
 <resources>
+    <string name="assistant_call_transcript">Historique de la conversation</string>
+    <string name="assistant_call_interrupt">Interrompre l’IA</string>
+    <string name="assistant_call_latest">Revenir au dernier message</string>
+    <string name="assistant_call_transcript_empty">Les échanges s’afficheront ici après votre première intervention.</string>
     <string name="assistant_background_channel">Sessions de l’assistant IA</string>
     <string name="assistant_background_call">Appel IA en cours</string>
     <string name="assistant_background_translation">Traduction bilingue en cours</string>

@@ -1,0 +1,127 @@
+package com.we.meet.ui.ai
+
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.StateRestorationTester
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.lifecycle.*
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import android.view.KeyEvent
+import androidx.test.platform.app.InstrumentationRegistry
+import com.we.meet.feature.assistant.AssistantDeps
+import com.we.meet.feature.assistant.R
+import com.we.meet.feature.assistant.aicall.data.*
+import com.we.meet.feature.assistant.aicall.model.*
+import com.we.meet.feature.assistant.aicall.ui.*
+import com.we.meet.feature.assistant.aicall.vm.AiCallViewModel
+import com.we.meet.feature.assistant.history.*
+import com.we.meet.ui.theme.WeMeetTheme
+import kotlinx.coroutines.flow.MutableStateFlow
+import okhttp3.OkHttpClient
+import org.junit.Assert.*
+import org.junit.Rule
+import org.junit.Test
+import java.util.UUID
+
+class AiCallTranscriptUiTest {
+    @get:Rule val compose = createComposeRule()
+    private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test fun callHistoryAndVideoPanelKeepCurrentCallAndBackClosesPanels() {
+        val account = "call-ui-${UUID.randomUUID()}"
+        val store = AssistantHistoryStore.get(context, account) { account }
+        store.begin("call")!!.apply { put(AssistantHistoryRow("h", 0, "user", "saved phone conversation")); close() }
+        store.begin("translation")!!.apply { put(AssistantHistoryRow("t", 0, "translation", "hidden translation")); close() }
+        compose.waitUntil(5000) { store.entries.value.size == 2 }
+        store.setEnabled("call", false)
+        val owner = object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
+        val api = object : AiAgentApi {
+            override suspend fun fetchConfig() = AiAgentConfigResponse()
+            override suspend fun exchangeOffer(offer: AiCallOffer): AiCallAnswer = error("No provider calls")
+        }
+        lateinit var vm: AiCallViewModel
+        lateinit var state: MutableStateFlow<AiCallUiState>
+        val dark = mutableStateOf(false)
+        var exited = false
+        compose.runOnIdle {
+            vm = ViewModelProvider(owner, object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                    AiCallViewModel(context, AiAgentRepository(api), AiCallPreferences(context), store) as T
+            })[AiCallViewModel::class.java]
+            @Suppress("UNCHECKED_CAST")
+            state = AiCallViewModel::class.java.getDeclaredField("_state").apply { isAccessible = true }.get(vm) as MutableStateFlow<AiCallUiState>
+            state.value = state.value.copy(status = AiCallStatus.Active(AiCallMode.Voice), transcriptSessionId = "live",
+                transcriptRows = listOf(AssistantHistoryRow("u", 0, "user", "current question"), AssistantHistoryRow("a", 1, "assistant", "current answer")))
+        }
+        val deps = object : AssistantDeps {
+            override val baseUrl = "https://unused.invalid/"
+            override val authedOkHttp = OkHttpClient()
+            override val assistantAccount = account
+        }
+        try {
+            val restoration = StateRestorationTester(compose)
+            restoration.setContent { CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
+                WeMeetTheme(darkTheme = dark.value) { AssistantCallScreen(deps, { exited = true }) }
+            } }
+            compose.onNodeWithText("current question").assertIsDisplayed()
+            compose.onNodeWithText("current answer").assertIsDisplayed()
+            restoration.emulateSavedInstanceStateRestore()
+            compose.onNodeWithText("current question").assertIsDisplayed()
+            compose.onNodeWithText("current answer").assertIsDisplayed()
+            compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertIsDisplayed().performClick()
+            capture("call-chat-light.png")
+            compose.runOnIdle { dark.value = true }
+            capture("call-chat-dark.png")
+            compose.onNodeWithContentDescription(context.getString(R.string.assistant_history_title)).performClick()
+            compose.onNodeWithText("saved phone conversation").assertIsDisplayed()
+            compose.onNodeWithText("hidden translation").assertDoesNotExist()
+            compose.onNodeWithText("saved phone conversation").performClick()
+            compose.onNodeWithText("saved phone conversation", substring = true).assertIsDisplayed()
+            pressBack()
+            compose.onNodeWithText("saved phone conversation").assertIsDisplayed()
+            pressBack()
+            compose.onNodeWithText("current answer").assertIsDisplayed()
+            compose.runOnIdle {
+                assertFalse(exited)
+                assertEquals("live", vm.state.value.transcriptSessionId)
+                assertEquals(AiCallStatus.Active(AiCallMode.Voice), vm.state.value.status)
+                state.value = state.value.copy(mode = AiCallMode.Video, status = AiCallStatus.Active(AiCallMode.Video))
+            }
+            compose.onNodeWithText(context.getString(R.string.assistant_call_transcript)).performClick()
+            compose.onNodeWithText("current answer").assertIsDisplayed()
+            pressBack()
+            compose.runOnIdle {
+                assertEquals(AiCallStatus.Active(AiCallMode.Video), vm.state.value.status)
+                vm.endCall()
+            }
+            compose.onNodeWithText("current answer").assertIsDisplayed()
+            compose.runOnIdle { assertEquals(2, vm.state.value.transcriptRows.size) }
+        } finally { compose.runOnIdle { owner.viewModelStore.clear() }; store.clear() }
+    }
+
+    @Test fun readingOlderMessagesDoesNotJumpWhenNewFinalSentenceArrives() {
+        val rows = mutableStateOf((0..40).map { AssistantHistoryRow("$it", it, if (it % 2 == 0) "user" else "assistant", "sentence $it") })
+        compose.setContent { WeMeetTheme { CallTranscriptList(rows.value) } }
+        compose.onNodeWithText("sentence 40").assertIsDisplayed()
+        compose.onNode(hasScrollAction()).performTouchInput { swipeDown() }
+        compose.onNodeWithText(context.getString(R.string.assistant_call_latest)).assertIsDisplayed()
+        compose.runOnIdle { rows.value += AssistantHistoryRow("41", 41, "assistant", "sentence 41") }
+        compose.onNodeWithText("sentence 41").assertIsNotDisplayed()
+        compose.onNodeWithText(context.getString(R.string.assistant_call_latest)).performClick()
+        compose.onNodeWithText("sentence 41").assertIsDisplayed()
+        compose.runOnIdle { rows.value += AssistantHistoryRow("42", 42, "user", "sentence 42") }
+        compose.onNodeWithText("sentence 42").assertIsDisplayed()
+    }
+
+    private fun capture(name: String) {
+        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        java.io.File(context.getExternalFilesDir(null), name).outputStream().use {
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+        }
+    }
+
+    private fun pressBack() = InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+}

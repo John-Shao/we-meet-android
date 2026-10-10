@@ -141,7 +141,10 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
             }
         }
     }
-    fun clear() = enqueue { it.execSQL("DELETE FROM sessions") }
+    fun clear(kind: String? = null) = enqueue {
+        if (kind == null) it.execSQL("DELETE FROM sessions")
+        else it.execSQL("DELETE FROM sessions WHERE kind=?", arrayOf(kind))
+    }
     private fun enqueue(operation: (SQLiteDatabase) -> Unit) {
         if (allowed() && !operations.trySend(operation).isSuccess) mutableError.value = true
     }
