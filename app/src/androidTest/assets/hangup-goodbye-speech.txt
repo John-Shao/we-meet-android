@@ -6,3 +6,7 @@ hangup-byebye-variant.pcm: 拜拜了
 hangup-goodbye-negative.pcm: 不要说再见，我们继续聊。
 hangup-byebye-question.pcm: 拜拜是什么意思？
 hangup-goodbye-translation.pcm: 把再见了翻译成英语。
+hangup-goodbye-affix.pcm: 好啦，那就再见吧
+hangup-byebye-affix.pcm: 那先这样，拜拜了
+hangup-byebye-hypothesis.pcm: 如果我说拜拜会怎样？
+hangup-goodbye-quote.pcm: 他说了再见，但我们继续聊。

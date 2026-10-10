@@ -85,6 +85,13 @@ class AiCallViewModel(
             { row ->
                 _state.update { it.withTranscript(transcriptSessionId, row) }
                 if (!row.isStreaming && _state.value.transcriptSessionId == transcriptSessionId) currentRecording?.put(row)
+                if (com.we.meet.feature.assistant.BuildConfig.AI_CALL_VOICE_HANGUP &&
+                    CallGoodbye.shouldEndCall(_state.value, transcriptSessionId, row, rtcClient === client)) {
+                    // A realtime model can answer a goodbye without requesting its tool.
+                    // Closing invalidates this session before any duplicate/late event can act.
+                    android.util.Log.i("OmniCall", "source=FinalTranscript action=end_call")
+                    endCall()
+                }
             },
             CameraToolHandler { request ->
                 val started = android.os.SystemClock.elapsedRealtime()

@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /** Opt-in real Omni tools and production ViewModel cleanup; no transcript/history is saved. */
 class OmniEndCallLiveTest {
+    companion object { private var lastAllocationAt = 0L }
     @Test fun aoqSpeechEndsVoiceCallAndRejectsNonCommands() = probe(AiCallTransport.AOQ, video = false)
     @Test fun aoqSpeechStopsMutedVideoCall() = probe(AiCallTransport.AOQ, video = true)
     @Test fun webRtcToolEndsCurrentCall() = probe(AiCallTransport.WebRTC, video = false)
@@ -34,19 +35,29 @@ class OmniEndCallLiveTest {
         nonCommands = listOf("byebye-question" to "拜拜是什么意思？"))
     @Test fun aoqStandaloneByeByeEndsCall() = probe(AiCallTransport.AOQ, video = false,
         endAsset = "byebye", endText = "拜拜", nonCommands = emptyList())
+    @Test fun aoqRepeatedStandaloneByeByeAndLateCallbacksAreSafe() {
+        repeat(3) { probe(AiCallTransport.AOQ, video = false,
+            endAsset = "byebye", endText = "拜拜", nonCommands = emptyList(), restartIsolation = true) }
+    }
+    @Test fun webRtcSpeechByeByeEndsCall() = probe(AiCallTransport.WebRTC, video = false,
+        endAsset = "byebye", endText = "拜拜", voiceInput = true,
+        nonCommands = listOf("byebye-question" to "拜拜是什么意思？"))
+    @Test fun aoqDerivedGoodbyeEndsCall() = probe(AiCallTransport.AOQ, video = false,
+        endAsset = "goodbye-affix", endText = "好啦，那就再见吧", nonCommands = emptyList())
     @Test fun aoqGoodbyeVariantEndsVideoCall() = probe(AiCallTransport.AOQ, video = true,
         endAsset = "goodbye-variant", endText = "再见了")
     @Test fun aoqByeByeVariantEndsCallButTranslationDoesNot() = probe(AiCallTransport.AOQ, video = false,
         endAsset = "byebye-variant", endText = "拜拜了",
         nonCommands = listOf("goodbye-translation" to "把再见了翻译成英语。"))
-    @Test fun webRtcGoodbyeVariantEndsCallButHypothesisDoesNot() = probe(AiCallTransport.WebRTC, video = false,
-        endAsset = "byebye-variant", endText = "那先这样，拜拜了",
+    @Test fun webRtcSpeechDerivedGoodbyeEndsCallButHypothesisDoesNot() = probe(AiCallTransport.WebRTC, video = false,
+        endAsset = "byebye-affix", endText = "那先这样，拜拜了", voiceInput = true,
         nonCommands = listOf("byebye-hypothesis" to "如果我说拜拜会怎样？", "goodbye-quote" to "他说了再见，但我们继续聊。"))
 
     private fun probe(transport: AiCallTransport, video: Boolean,
         endAsset: String = if (video) "stop" else "end",
         endText: String = if (video) "停止对话" else "结束对话",
         nonCommands: List<Pair<String, String>> = listOf("negative" to "不要结束对话，我们继续聊。", "question" to "怎么停止对话？"),
+        voiceInput: Boolean = false, restartIsolation: Boolean = false,
     ) = runBlocking<Unit> {
         assumeTrue(InstrumentationRegistry.getArguments().getString("liveBackend") == "true")
         val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -70,6 +81,11 @@ class OmniEndCallLiveTest {
         val repository = AiAgentRepository(object : AiAgentApi {
             override suspend fun fetchConfig() = delegate.fetchConfig()
             override suspend fun exchangeOffer(offer: AiCallOffer): AiCallAnswer {
+                // Production admission is 6/minute; repeated teardown/isolation probes
+                // must observe that limit rather than turn rate errors into regressions.
+                val remaining = 11_500 - (android.os.SystemClock.elapsedRealtime() - lastAllocationAt)
+                if (remaining > 0) delay(remaining)
+                lastAllocationAt = android.os.SystemClock.elapsedRealtime()
                 allocations.incrementAndGet(); return delegate.exchangeOffer(offer).also { answer ->
                     if (endAsset in listOf("goodbye", "byebye", "goodbye-variant", "byebye-variant")) {
                         assertTrue("New calls must receive goodbye rules", answer.tool_instructions["end_call"].orEmpty().contains("告别结束通话："))
@@ -83,7 +99,7 @@ class OmniEndCallLiveTest {
             }
         })
         val prefs = AiCallPreferences(context); val original = prefs.load()
-        var vm: AiCallViewModel? = null; var pump: Job? = null
+        var vm: AiCallViewModel? = null; var pump: Job? = null; var speechInput: SyntheticInput? = null
         val replies = Channel<String>(Channel.UNLIMITED)
         val input = Channel<ByteArray>(Channel.UNLIMITED)
         ActivityScenario.launch(com.we.meet.MainActivity::class.java).use {
@@ -96,13 +112,14 @@ class OmniEndCallLiveTest {
                 withTimeout(20_000) { while (vm!!.state.value.agentConfig == null) delay(50) }
                 withContext(Dispatchers.Main) { vm!!.startCall() }
                 withTimeout(60_000) { while (vm!!.state.value.status !is AiCallStatus.Active) {
-                    check(vm!!.state.value.status !is AiCallStatus.Failed); delay(50)
+                    check(vm!!.state.value.status !is AiCallStatus.Failed) { "Call startup failed: ${vm!!.state.value.status}" }; delay(50)
                 } }
                 val client = checkNotNull(vm!!.rtcClient)
                 assertEquals(video, vm!!.state.value.isCameraEnabled)
                 val tools = client.javaClass.getDeclaredField("tools").apply { isAccessible = true }.get(client)
                 assertNotNull("Production client must register hangup tools", tools)
                 val ends = AtomicInteger()
+                val transcriptEnds = AtomicInteger()
                 val endCallback = tools!!.javaClass.getDeclaredField("endCall").apply { isAccessible = true }
                 @Suppress("UNCHECKED_CAST") val originalEnd = endCallback.get(tools) as () -> Unit
                 // Count invocation while retaining the production ViewModel cleanup callback.
@@ -119,17 +136,20 @@ class OmniEndCallLiveTest {
                     assertTrue(rules["end_call_description"].orEmpty().contains("这些告别本身就是明确挂断授权"))
                     android.util.Log.i("OmniEndCallTest", "Strengthened goodbye rules present in configured client tools")
                 }
-                // Observe final natural-language responses, not an independent ASR action path.
+                // Count the production final-transcript fallback separately from model tools.
                 val transcript = client.javaClass.getDeclaredField("transcript").apply { isAccessible = true }.get(client)
                 val emit = transcript.javaClass.getDeclaredField("emit").apply { isAccessible = true }
                 @Suppress("UNCHECKED_CAST") val originalEmit = emit.get(transcript) as (AssistantHistoryRow) -> Unit
                 emit.set(transcript, { row: AssistantHistoryRow ->
+                    val wasActive = vm!!.state.value.status is AiCallStatus.Active
                     originalEmit(row)
+                    if (wasActive && vm!!.state.value.status is AiCallStatus.Ended) transcriptEnds.incrementAndGet()
                     android.util.Log.i("OmniEndCallTest", "Synthetic probe transcript role=${row.role} text=${row.text}")
                     if (row.role == "assistant" && !row.isStreaming) replies.trySend(row.text)
                     Unit
                 })
-                withContext(Dispatchers.Main) { client.setMicrophoneEnabled(false) }
+                if (client is OmniAoqClient || !voiceInput) withContext(Dispatchers.Main) { client.setMicrophoneEnabled(false) }
+                else speechInput = syntheticInput(client) // Replace captured samples with synthetic PCM/silence.
                 if (client is OmniAoqClient) {
                     val engine = client.javaClass.getDeclaredField("engine").apply { isAccessible = true }.get(client) as AoqClientEngine
                     withContext(Dispatchers.Main) {
@@ -164,7 +184,8 @@ class OmniEndCallLiveTest {
                         for (offset in pcm.indices step 640) {
                             val bytes = ByteArray(640); pcm.copyInto(bytes, 0, offset, minOf(offset + 640, pcm.size)); input.send(bytes)
                         }
-                    } else withContext(Dispatchers.Main) {
+                    } else if (voiceInput) speechInput!!.say("hangup-$asset.pcm")
+                    else withContext(Dispatchers.Main) {
                         // WebRTC transport protocol probe: synthetic text, not a voice ASR claim.
                         val send = client.javaClass.getDeclaredMethod("send", JSONObject::class.java).apply { isAccessible = true }
                         send.invoke(client, JSONObject().put("type", "conversation.item.create").put("item", JSONObject()
@@ -204,7 +225,7 @@ class OmniEndCallLiveTest {
                 }
                 assertNull(vm!!.rtcClient)
                 assertTrue(vm!!.state.value.status is AiCallStatus.Ended)
-                assertEquals("Must end through the requested tool, not a connection failure", 1, ends.get())
+                assertEquals("Must end through a model tool or the final-transcript fallback", 1, ends.get() + transcriptEnds.get())
                 assertNull("Explicit hangup must not be a disconnect/error", vm!!.state.value.errorToastRes)
                 assertFalse(vm!!.state.value.isCameraEnabled); assertFalse(vm!!.state.value.cameraPending)
                 assertNull(vm!!.state.value.cameraPermissionRequest)
@@ -213,9 +234,34 @@ class OmniEndCallLiveTest {
                 assertTrue(client.javaClass.getDeclaredField("closed").apply { isAccessible = true }.getBoolean(client))
                 assertEquals(1, allocations.get())
                 withTimeout(15_000) { while (leaseCloses.get() != 1) delay(50) }
-                android.util.Log.i("OmniEndCallTest", "$transport video=$video endedAfterMs=${android.os.SystemClock.elapsedRealtime() - started} endTools=${ends.get()} allocations=${allocations.get()} leaseCloses=${leaseCloses.get()}")
+                if (transcriptEnds.get() == 1) assertTrue("Keep the goodbye text after ending",
+                    vm!!.state.value.transcriptRows.any { it.role == "user" && (it.text.contains("拜拜") || it.text.contains("再见")) })
+                android.util.Log.i("OmniEndCallTest", "$transport video=$video endedAfterMs=${android.os.SystemClock.elapsedRealtime() - started} endTools=${ends.get()} transcriptEnds=${transcriptEnds.get()} allocations=${allocations.get()} leaseCloses=${leaseCloses.get()}")
+                if (restartIsolation) {
+                    pump?.cancelAndJoin(); pump = null
+                    withContext(Dispatchers.Main) {
+                        originalEmit(AssistantHistoryRow("duplicate-goodbye", 999, "user", "拜拜"))
+                        vm!!.startCall()
+                    }
+                    withTimeout(60_000) { while (vm!!.state.value.status !is AiCallStatus.Active) {
+                        check(vm!!.state.value.status !is AiCallStatus.Failed) { "Restart failed: ${vm!!.state.value.status}" }; delay(50)
+                    } }
+                    val next = checkNotNull(vm!!.rtcClient)
+                    withContext(Dispatchers.Main) {
+                        originalEmit(AssistantHistoryRow("old-goodbye", 999, "user", "再见了"))
+                        originalEnd()
+                    }
+                    assertSame(next, vm!!.rtcClient)
+                    assertTrue(vm!!.state.value.status is AiCallStatus.Active)
+                    assertTrue(vm!!.state.value.transcriptRows.isEmpty())
+                    assertEquals(1, leaseCloses.get())
+                    withContext(Dispatchers.Main) { vm!!.endCall() }
+                    withTimeout(15_000) { while (leaseCloses.get() != 2) delay(50) }
+                    assertEquals(2, allocations.get())
+                }
             } finally {
                 pump?.cancelAndJoin()
+                speechInput?.close()
                 withContext(Dispatchers.Main) { vm?.endCall(); vm?.setPageVisible(false); prefs.save(original) }
             }
         }
