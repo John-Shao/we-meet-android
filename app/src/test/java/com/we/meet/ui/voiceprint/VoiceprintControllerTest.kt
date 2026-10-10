@@ -19,6 +19,7 @@ class VoiceprintControllerTest {
         var registration = F.enrollment()
         var rows = listOf(F.sample())
         var next: Int? = null
+        var deletionRows = emptyList<VoiceprintDeletionDto>()
         var settingsRead: suspend () -> Result<VoiceprintSettingsDto> = { Result.success(value) }
         var audioRead: suspend () -> Result<ByteArray> = { Result.success(F.wav()) }
         var uploadResult: suspend () -> Result<VoiceprintSampleDto> = { Result.success(F.sample()) }
@@ -33,7 +34,7 @@ class VoiceprintControllerTest {
         override fun allowed() = allowed
         override suspend fun settings(): Result<VoiceprintSettingsDto> { readCount++; return settingsRead() }
         override suspend fun samples(offset: Int) = Result.success(VoiceprintPageDto(rows, next))
-        override suspend fun deletions(offset: Int) = Result.success(VoiceprintPageDto<VoiceprintDeletionDto>(emptyList(), null))
+        override suspend fun deletions(offset: Int) = Result.success(VoiceprintPageDto(deletionRows, null))
         override suspend fun sample(id: String) = Result.success(rows.single { it.id == id })
         override suspend fun enrollment(id: String) = Result.success(registration)
         override suspend fun change(permission: VoiceprintPermission, enabled: Boolean, version: Int): Result<VoiceprintSettingsDto> {
@@ -202,5 +203,30 @@ class VoiceprintControllerTest {
         assertEquals(VoiceprintFailure.QUOTA, controller.state.value.failure)
         ops.beginResult = { Result.failure(failure(500, "synthetic_private_payload")) }; controller.begin("en")
         assertEquals(VoiceprintFailure.REQUEST, controller.state.value.failure)
+    }
+
+    @Test fun audioExpiringDuringTheRequestIsErasedBeforePublication() = runBlocking {
+        val ops = Operations(); var time = 0L; val controller = VoiceprintController(ops, now = { time })
+        controller.refresh()
+        val bytes = F.wav()
+        ops.audioRead = { time = Long.MAX_VALUE; Result.success(bytes) }
+        controller.preview(F.sample())
+        assertNull(controller.state.value.preview); assertTrue(bytes.all { it == 0.toByte() })
+    }
+    @Test fun refreshedAudioExpiryShortensTheExistingPlaybackLease() = runBlocking {
+        val ops = Operations(); var time = 0L; val controller = VoiceprintController(ops, now = { time })
+        controller.refresh(); controller.preview(F.sample())
+        val bytes = requireNotNull(controller.state.value.preview).bytes
+        ops.rows = listOf(F.sample().copy(expiresAt = "1970-01-01T00:00:01Z"))
+        controller.refresh(); time = 1000; controller.tick()
+        assertNull(controller.state.value.preview); assertTrue(bytes.all { it == 0.toByte() })
+    }
+    @Test fun accessRevocationClearsPrivateDeletionReceiptsAsWellAsSettings() = runBlocking {
+        val ops = Operations(); ops.deletionRows = listOf(F.deletion())
+        val controller = VoiceprintController(ops); controller.refresh()
+        assertEquals(1, controller.state.value.deletions.size)
+        ops.settingsRead = { Result.failure(failure(403)) }; controller.refresh()
+        assertNull(controller.state.value.settings); assertTrue(controller.state.value.samples.isEmpty())
+        assertTrue(controller.state.value.deletions.isEmpty()); assertNull(controller.state.value.deletionOffset)
     }
 }

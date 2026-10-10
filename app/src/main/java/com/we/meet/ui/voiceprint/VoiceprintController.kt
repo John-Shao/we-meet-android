@@ -113,9 +113,14 @@ internal class VoiceprintController(private val operations: VoiceprintOperations
         }
         val conflict = failure in listOf(VoiceprintFailure.ACCESS, VoiceprintFailure.CONFLICT)
         if (conflict) { clearMedia(); beginCommand = null; removal = null }
+        if (failure == VoiceprintFailure.ACCESS) firstPage = emptySet()
         mutable.value = state.value.copy(preview = null, failure = failure, conflict = conflict || state.value.conflict,
             enrollment = if (conflict) null else state.value.enrollment,
             samples = if (failure == VoiceprintFailure.ACCESS) emptyList() else state.value.samples,
+            sampleOffset = if (failure == VoiceprintFailure.ACCESS) null else state.value.sampleOffset,
+            deletions = if (failure == VoiceprintFailure.ACCESS) emptyList() else state.value.deletions,
+            deletionOffset = if (failure == VoiceprintFailure.ACCESS) null else state.value.deletionOffset,
+            deleteTarget = if (failure == VoiceprintFailure.ACCESS) null else state.value.deleteTarget,
             settings = if (failure == VoiceprintFailure.ACCESS) null else state.value.settings)
     }
     private suspend fun run(action: suspend (Int) -> Unit) {
@@ -154,7 +159,7 @@ internal class VoiceprintController(private val operations: VoiceprintOperations
             }
             if (sample?.audioAvailable != true || voiceprintExpired(sample.expiresAt, now())) {
                 preview.bytes.fill(0); stopPlayback(); mutable.value = state.value.copy(preview = null)
-            }
+            } else mutable.value = state.value.copy(preview = preview.copy(expiresAt = minOf(preview.expiresAt, voiceprintDate(sample.expiresAt))))
         }
         if (!current(sequence)) return
         val next = if (older.isNotEmpty() && state.value.sampleOffset != null) maxOf(state.value.sampleOffset!!, samples.nextOffset ?: 0) else samples.nextOffset
@@ -295,7 +300,9 @@ internal class VoiceprintController(private val operations: VoiceprintOperations
         if (!current.audioAvailable || voiceprintExpired(current.expiresAt, now())) return@run
         stopPlayback(); state.value.preview?.bytes?.fill(0); mutable.value = state.value.copy(preview = null)
         val bytes = operations.audio(current).getOrThrow()
-        if (current(sequence) && state.value.samples.any { it.id == current.id && it.audioAvailable }) mutable.value = state.value.copy(preview = VoiceprintPreview(current.id, bytes, voiceprintDate(current.expiresAt))) else bytes.fill(0)
+        val latest = state.value.samples.find { it.id == current.id && it.profileId == current.profileId && it.audioAvailable }
+        val expiresAt = minOf(voiceprintDate(current.expiresAt), latest?.let { voiceprintDate(it.expiresAt) } ?: 0L)
+        if (current(sequence) && latest != null && expiresAt > now()) mutable.value = state.value.copy(preview = VoiceprintPreview(current.id, bytes, expiresAt)) else bytes.fill(0)
     }
     fun listened(id: String) { if (live() && state.value.preview?.sampleId == id) mutable.value = state.value.copy(preview = state.value.preview!!.copy(listened = true)) }
     fun confirmSelf(id: String, selected: Boolean) { if (live() && state.value.preview?.sampleId == id) mutable.value = state.value.copy(preview = state.value.preview!!.copy(selfConfirmed = selected)) }

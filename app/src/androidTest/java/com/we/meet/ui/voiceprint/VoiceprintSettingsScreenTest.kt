@@ -189,9 +189,13 @@ class VoiceprintSettingsScreenTest {
     }
     private fun click(id: Int) { compose.onNodeWithText(text(id)).performScrollTo().assertIsEnabled().performClick() }
     private fun permission(id: Int) = compose.onNode(hasText(text(id)) and hasClickAction())
-    private fun record(fixture: Fixture) {
+    private fun record(fixture: Fixture, results: ExternalResults) {
         click(R.string.voiceprint_begin); waitText("Synthetic randomized prompt ${fixture.slots.size}")
-        click(R.string.voiceprint_record); waitText(text(R.string.voiceprint_local_audio))
+        click(R.string.voiceprint_record)
+        // Exercise the permission return without opening a system dialog or a real microphone.
+        compose.waitUntil(10000) { results.requestCode != null || fixture.recordings.get() > 0 }
+        results.requestCode?.let { code -> compose.runOnUiThread { results.dispatchResult(code, true) } }
+        waitText(text(R.string.voiceprint_local_audio))
         assertEquals(1, fixture.recordings.get())
     }
     @Test fun openingOnlyReadsAndDoesNotRegisterRecordOrLoadSampleAudio() {
@@ -266,14 +270,15 @@ class VoiceprintSettingsScreenTest {
         assertTrue(fixture.posts.single().second.contains("\"organization_id\":null"))
     }
     @Test fun syntheticRecordingIsLocallyPreviewedAndOnlyUploadedOnExplicitAction() {
-        val fixture = Fixture(); show(fixture); record(fixture)
+        val fixture = Fixture(); val results = ExternalResults(); show(fixture, results = results); record(fixture, results)
         assertTrue(fixture.uploads.isEmpty()); click(R.string.voiceprint_local_audio); click(R.string.voiceprint_upload)
         waitText(text(R.string.voiceprint_sample_status_quality_pending))
         assertEquals(1, fixture.uploads.size); assertTrue(fixture.uploads.single().first.endsWith("/clips/0/"))
         compose.onNodeWithText(text(R.string.voiceprint_confirm)).assertDoesNotExist()
     }
     @Test fun theLastUnknownUploadRetriesTheSameSlotAndBytesAfterTheServerClosesRegistration() {
-        val fixture = Fixture(); fixture.slots = (0..4).toList(); fixture.uncertain = true; show(fixture); record(fixture)
+        val fixture = Fixture(); val results = ExternalResults(); fixture.slots = (0..4).toList(); fixture.uncertain = true
+        show(fixture, results = results); record(fixture, results)
         click(R.string.voiceprint_upload); waitText(text(R.string.voiceprint_errors_failed))
         compose.waitUntil(15000) { fixture.calls.count { it == "GET /api/v1.0/voiceprint/enrollments/$enrollment/" } >= 2 }
         compose.onNodeWithText(text(R.string.voiceprint_upload)).performScrollTo().assertIsEnabled().performClick()
