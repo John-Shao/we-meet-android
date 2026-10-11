@@ -151,4 +151,5 @@
     <string name="assistant_call_upload_fps">Model upload frame rate</string>
     <string name="assistant_call_fps_value" translatable="false">%1$d fps</string>
     <string name="assistant_call_fps_hint">Preview: 10–30 fps. Upload: 1–10 fps. Saved independently for AOQ and WebRTC; applies to the next call. Actual frame rates depend on the device and network.</string>
+    <string name="assistant_call_settings_title">Call settings</string>
 </resources>

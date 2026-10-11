@@ -144,4 +144,5 @@
     <string name="assistant_call_preview_fps">本地预览帧率</string>
     <string name="assistant_call_upload_fps">模型上传帧率</string>
     <string name="assistant_call_fps_hint">预览 10–30 fps，上传 1–10 fps，可独立选择。设置会保存，适用于 AOQ 和 WebRTC，下次通话生效。实际帧率受设备和网络影响。</string>
+    <string name="assistant_call_settings_title">通话设置</string>
 </resources>

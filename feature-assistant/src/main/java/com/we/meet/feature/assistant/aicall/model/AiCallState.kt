@@ -61,7 +61,7 @@ data class AiCallUiState(
      * 的话英文界面下就露馅了。
      */
     @StringRes val errorToastRes: Int? = null,
-    val showPicker: Boolean = false,
+    val showSettings: Boolean = false,
 )
 
 /** The session check belongs inside the atomic state update, including late callbacks. */

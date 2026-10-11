@@ -56,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.semantics
@@ -166,7 +167,9 @@ fun AssistantCallScreen(
         vm.endCall()
         onBack()
     }
-    BackHandler(enabled = !showHistory && !showTranscript) { endAndBack() }
+    BackHandler(enabled = !showHistory && !showTranscript) {
+        if (state.showSettings) vm.showSettings(false) else endAndBack()
+    }
 
     var pendingAction by remember { mutableStateOf<PendingPermAction?>(null) }
 
@@ -262,6 +265,25 @@ fun AssistantCallScreen(
         }
     }
 
+    if (state.showSettings) {
+        AiCallSettingsScreen(
+            config = state.agentConfig,
+            selection = state.selection,
+            historyStore = vm.history,
+            enabled = !callInProgress,
+            onSelectTransport = vm::selectTransport,
+            onSelectVadMode = vm::selectVadMode,
+            onSelectLocalPreviewFps = vm::selectLocalPreviewFps,
+            onSelectModelUploadFps = vm::selectModelUploadFps,
+            onSelectVoice = vm::selectVoice,
+            onSelectPrompt = vm::selectPrompt,
+            onSelectScene = vm::selectScene,
+            onBack = { vm.showSettings(false) },
+            modifier = modifier,
+        )
+        return
+    }
+
     val isVideoActive = state.status is AiCallStatus.Active && state.mode == AiCallMode.Video
 
     Scaffold(
@@ -273,7 +295,7 @@ fun AssistantCallScreen(
         topBar = {
             TopBar(
                 onBack = { endAndBack() },
-                onOpenSettings = { vm.showPicker(true) },
+                onOpenSettings = { vm.showSettings(true) },
                 canOpenSettings = state.status is AiCallStatus.Idle ||
                     state.status is AiCallStatus.Failed ||
                     state.status is AiCallStatus.Ended,
@@ -374,22 +396,6 @@ fun AssistantCallScreen(
                 )
             }
 
-            if (state.showPicker) {
-                AiSettingsSheet(
-                    config = state.agentConfig,
-                    selection = state.selection,
-                    historyStore = vm.history,
-                    historyEnabled = !callInProgress,
-                    onSelectTransport = vm::selectTransport,
-                    onSelectVadMode = vm::selectVadMode,
-                    onSelectLocalPreviewFps = vm::selectLocalPreviewFps,
-                    onSelectModelUploadFps = vm::selectModelUploadFps,
-                    onSelectVoice = vm::selectVoice,
-                    onSelectPrompt = vm::selectPrompt,
-                    onSelectScene = vm::selectScene,
-                    onDismiss = { vm.showPicker(false) },
-                )
-            }
             if (showTranscript) {
                 BackHandler { showTranscript = false }
                 Surface(Modifier.fillMaxSize()) {
@@ -465,7 +471,7 @@ private fun TopBar(
                     tint = if (canToggleOutput) tint else tint.copy(alpha = 0.4f),
                 )
             }
-            IconButton(onClick = onOpenSettings, enabled = canOpenSettings) {
+            IconButton(onClick = onOpenSettings, enabled = canOpenSettings, modifier = Modifier.testTag("call-settings")) {
                 Icon(
                     imageVector = Icons.Filled.Settings,
                     contentDescription = stringResource(R.string.assistant_cd_settings),

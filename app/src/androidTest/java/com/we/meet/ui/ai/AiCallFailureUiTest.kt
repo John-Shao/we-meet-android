@@ -8,6 +8,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -35,21 +36,23 @@ class AiCallFailureUiTest {
         val selection = mutableStateOf(AiCallSelection())
         val enabled = mutableStateOf(true)
         compose.setContent { WeMeetTheme(darkTheme = false) {
-            com.we.meet.feature.assistant.aicall.ui.AiSettingsSheet(config = null,
-                selection = selection.value, historyStore = null, historyEnabled = enabled.value,
+            com.we.meet.feature.assistant.aicall.ui.AiCallSettingsScreen(config = null,
+                selection = selection.value, historyStore = null, enabled = enabled.value,
                 onSelectTransport = { selection.value = selection.value.copy(transport = it) },
                 onSelectVadMode = { selection.value = selection.value.copy(vadMode = it) },
                 onSelectLocalPreviewFps = { selection.value = selection.value.copy(videoSettings = selection.value.videoSettings.withLocalPreviewFps(it)) },
                 onSelectModelUploadFps = { selection.value = selection.value.copy(videoSettings = selection.value.videoSettings.copy(modelUploadFps = it)) },
-                onSelectVoice = {}, onSelectPrompt = {}, onSelectScene = {}, onDismiss = {})
+                onSelectVoice = {}, onSelectPrompt = {}, onSelectScene = {}, onBack = {})
         } }
-        compose.onNodeWithText("AOQ").performScrollTo().performClick()
-        compose.onNodeWithText("WebRTC").performClick()
+        compose.onNodeWithTag("call-transport-picker").performScrollTo().performClick()
+        val webRtcLabel = InstrumentationRegistry.getInstrumentation().targetContext
+            .getString(com.we.meet.feature.assistant.R.string.assistant_call_transport_webrtc)
+        compose.onNodeWithText(webRtcLabel).performClick()
         compose.runOnIdle {
             assertEquals(AiCallTransport.WebRTC, selection.value.transport)
             enabled.value = false
         }
-        compose.onNodeWithText("WebRTC").assertIsNotEnabled()
+        compose.onNodeWithTag("call-transport-picker").assertIsNotEnabled()
     }
 
     @Test fun backgroundLifecycleDoesNotEndAnActiveCall() {

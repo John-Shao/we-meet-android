@@ -302,9 +302,9 @@ class AiCallViewModel(
         if (_state.value.status is AiCallStatus.Active) runCatching { rtcClient?.interrupt() }
     }
 
-    fun showPicker(show: Boolean) {
+    fun showSettings(show: Boolean) {
         if (show && (_state.value.status is AiCallStatus.Active || _state.value.status is AiCallStatus.Connecting)) return
-        _state.update { it.copy(showPicker = show) }
+        _state.update { it.copy(showSettings = show) }
     }
 
     fun selectTransport(value: AiCallTransport) = updateSelection(_state.value.selection.copy(transport = value))

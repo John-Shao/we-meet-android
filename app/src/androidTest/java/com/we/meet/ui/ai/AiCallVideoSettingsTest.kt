@@ -8,7 +8,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.we.meet.feature.assistant.aicall.model.AiCallSelection
 import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
-import com.we.meet.feature.assistant.aicall.ui.AiSettingsSheet
+import com.we.meet.feature.assistant.aicall.ui.AiCallSettingsScreen
 import com.we.meet.ui.theme.WeMeetTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -22,8 +22,8 @@ class AiCallVideoSettingsTest {
         val enabled = mutableStateOf(true)
         compose.setContent {
             WeMeetTheme {
-                AiSettingsSheet(config = null, selection = selection.value, historyStore = null,
-                    historyEnabled = enabled.value,
+                AiCallSettingsScreen(config = null, selection = selection.value, historyStore = null,
+                    enabled = enabled.value,
                     onSelectTransport = {}, onSelectVadMode = {},
                     onSelectLocalPreviewFps = {
                         selection.value = selection.value.copy(videoSettings = selection.value.videoSettings.withLocalPreviewFps(it))
@@ -31,7 +31,7 @@ class AiCallVideoSettingsTest {
                     onSelectModelUploadFps = {
                         selection.value = selection.value.copy(videoSettings = selection.value.videoSettings.copy(modelUploadFps = it))
                     },
-                    onSelectVoice = {}, onSelectPrompt = {}, onSelectScene = {}, onDismiss = {})
+                    onSelectVoice = {}, onSelectPrompt = {}, onSelectScene = {}, onBack = {})
             }
         }
         compose.onNodeWithTag("call-upload-fps-picker").performScrollTo().performClick()
