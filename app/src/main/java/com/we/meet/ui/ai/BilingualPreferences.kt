@@ -29,7 +29,8 @@ internal class BilingualPreferences(context: Context, account: String) {
         // Preserve legacy reverse directions by placing the chosen source on the left.
         val orderedPair = if (fixed == pair.target) AssistantTranslationPair(pair.target, pair.source) else pair
         val catalog = loadVoiceConfig()
-        return BilingualState(pair = orderedPair, sound = sound, sceneId = scene?.id, directAoq = direct, fixedSource = fixed,
+        return BilingualState(pair = orderedPair, sound = sound, facing = prefs.getBoolean("facing", true),
+            sceneId = scene?.id, directAoq = direct, fixedSource = fixed,
             voice = BilingualVoices.resolve(prefs.getString("voice", null), catalog), voiceConfig = catalog)
     }
 
@@ -53,6 +54,7 @@ internal class BilingualPreferences(context: Context, account: String) {
     fun save(state: BilingualState) {
         prefs.edit().putString("source", state.pair.source).putString("target", state.pair.target)
             .putBoolean("aoq_default_v1", true)
+            .putBoolean("facing", state.facing)
             .putString("fixed-source", state.fixedSource)
             .putString("voice", BilingualVoices.resolve(state.voice, state.voiceConfig))
             .putBoolean("direct-aoq", state.directAoq).putBoolean("sound", state.sound).putString("scene", state.sceneId).apply()

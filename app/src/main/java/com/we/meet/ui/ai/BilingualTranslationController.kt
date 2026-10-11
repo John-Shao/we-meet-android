@@ -46,6 +46,7 @@ internal data class BilingualState(
     val rows: List<BilingualRow> = emptyList(),
     val unknownLanguage: Boolean = false,
     val sound: Boolean = true,
+    val facing: Boolean = true,
     val audioOmitted: Boolean = false,
     val pair: AssistantTranslationPair = AssistantTranslationPair(),
     val replayable: Set<String> = emptySet(),
@@ -207,6 +208,11 @@ internal class BilingualTranslationController(
         active = null
         session?.release()
         mutable.update { it.copy(phase = phase, unknownLanguage = false, voice = BilingualVoices.resolve(it.voice, it.voiceConfig)) }
+    }
+
+    fun facing(enabled: Boolean) {
+        mutable.update { it.copy(facing = enabled) }
+        preferences?.save(mutable.value)
     }
 
     fun sound(enabled: Boolean) {

@@ -75,6 +75,36 @@ class AoqDefaultPreferencesTest {
         assertTrue(BilingualPreferences(context, "new").load().directAoq)
         assertEquals("Tina", BilingualPreferences(context, "new").load().voice)
     }
+
+    @Test fun translationDisplayModeDefaultsToFacingAndIsAccountScoped() {
+        val prefs = BilingualPreferences(context, "display")
+        assertTrue(prefs.load().facing)
+        prefs.save(prefs.load().copy(facing = false))
+        assertFalse(BilingualPreferences(context, "display").load().facing)
+        assertTrue(BilingualPreferences(context, "another-display").load().facing)
+    }
+
+    @Test fun translationDisplayModeSurvivesControllerRecreationAndOtherSettingChanges() {
+        val api = (base.applicationContext as com.we.meet.WeMeetApp).apiClient.assistantTranslationApi
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            BilingualTranslationController(context, api, authorized = { false },
+                preferences = BilingualPreferences(context, "display-controller")).use { controller ->
+                controller.facing(false)
+                controller.sound(false)
+                controller.directAoq(false)
+                controller.stop()
+                assertFalse(controller.state.value.facing)
+            }
+            BilingualTranslationController(context, api, authorized = { false },
+                preferences = BilingualPreferences(context, "display-controller")).use { controller ->
+                assertFalse(controller.state.value.facing)
+                assertFalse(controller.state.value.sound)
+                assertFalse(controller.state.value.directAoq)
+                controller.facing(true)
+            }
+        }
+        assertTrue(BilingualPreferences(context, "display-controller").load().facing)
+    }
     @Test fun vadPreferencePersistsAcrossTransportsAndNewPreferenceInstances() {
         val prefs = AiCallPreferences(context)
         assertEquals(AiCallVadMode.Server, prefs.load().vadMode)

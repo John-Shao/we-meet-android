@@ -43,7 +43,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
     val controller = vm.controller
     val state by controller.state.collectAsStateWithLifecycle()
     var permissionDenied by remember { mutableStateOf(false) }
-    var facing by rememberSaveable { mutableStateOf(true) }
+    val facing = state.facing
     var showSettings by rememberSaveable { mutableStateOf(false) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
@@ -66,7 +66,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
             onDirectAoqChange = controller::directAoq,
             onFixedSourceChange = controller::fixedSource,
             onVoiceChange = controller::voice,
-            onFacingChange = { facing = it },
+            onFacingChange = controller::facing,
             onSoundChange = controller::sound,
             onBack = { showSettings = false },
         )
