@@ -51,6 +51,20 @@ class OmniWebRtcCameraLifecycleTest {
                     sender.parameters.encodings.forEach { encoding ->
                         assertEquals(settings.modelUploadFps, encoding.maxFramerate)
                     }
+                    if (index < 3) {
+                        if (index == 1) withContext(Dispatchers.Main) { client.flipCamera() }
+                        val front = client.cameraFront
+                        val peer = field("peer").get(client)
+                        val jpeg = withContext(Dispatchers.Main) { withTimeout(35_000) { client.capturePhoto() } }
+                        assertTrue(jpeg.size <= 512_000)
+                        assertSame(peer, field("peer").get(client))
+                        assertEquals(true, client.cameraEnabled)
+                        assertEquals(front, client.cameraFront)
+                        assertNotNull(sender.track())
+                        val resumed = frames.get()
+                        withTimeout(3000) { while (frames.get() <= resumed) delay(20) }
+                        assertEquals(0, failures.get())
+                    }
                     val started = android.os.SystemClock.elapsedRealtime()
                     withContext(Dispatchers.Main) { client.setCameraEnabled(false); client.setCameraEnabled(false) }
                     assertEquals(false, client.cameraEnabled)

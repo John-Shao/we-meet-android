@@ -33,6 +33,11 @@ class OmniPhotoQaLiveTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
         val app = context.applicationContext as WeMeetApp
+        // UI regressions may leave isolated/expired tokens. Live tests explicitly
+        // use the authorized demo account rather than depend on another test's login.
+        val phone = args.getString("e2ePhone") ?: "13800000009"
+        app.authRepository.sendOtp(phone).getOrThrow()
+        app.authRepository.verifyOtp(phone, args.getString("e2eOtp") ?: "123456").getOrThrow()
         val network = context.getSystemService(ConnectivityManager::class.java)
         network.bindProcessToNetwork(network.activeNetwork)
         for (permission in listOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA) +
@@ -46,6 +51,7 @@ class OmniPhotoQaLiveTest {
         val allocations = AtomicInteger(); val photos = AtomicInteger(); val samples = AtomicInteger()
         val photoHttpError = AtomicInteger()
         val answered = Channel<String>(Channel.UNLIMITED)
+        val uploadedImages = mutableListOf<ByteArray>()
         val repo = AiAgentRepository(object : AiAgentApi {
             override suspend fun fetchConfig() = api.fetchConfig()
             override suspend fun exchangeOffer(offer: AiCallOffer): AiCallAnswer {
@@ -54,6 +60,7 @@ class OmniPhotoQaLiveTest {
             override suspend fun sessionLease(id: String, operation: DirectAILeaseOperation) = api.sessionLease(id, operation)
             override suspend fun photoQa(request: PhotoQaRequest): PhotoQaAnswer {
                 val jpeg = android.util.Base64.decode(request.image, android.util.Base64.NO_WRAP)
+                uploadedImages += jpeg
                 val bitmap = BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size)
                 assertNotNull("Must upload an actual JPEG", bitmap)
                 assertTrue(jpeg.size <= 512_000); assertTrue(bitmap.width > 0 && bitmap.height > 0)
@@ -106,6 +113,7 @@ class OmniPhotoQaLiveTest {
                 assertEquals("user", photoRows.single().role)
                 assertTrue(vm!!.state.value.transcriptRows.indexOf(photoRows.single()) < vm!!.state.value.transcriptRows.indexOfFirst { it.role == "assistant" })
                 val uploadedPhoto = photoRows.single().photo as com.we.meet.feature.assistant.history.AssistantHistoryPhoto.Memory
+                assertArrayEquals("Viewer and model must receive the same JPEG", uploadedImages.single(), uploadedPhoto.jpeg)
                 assertNotNull(BitmapFactory.decodeByteArray(uploadedPhoto.jpeg, 0, uploadedPhoto.jpeg.size)?.also { it.recycle() })
                 android.util.Log.i("OmniPhotoQaLive", "transport=$transport voice photo and realtime audio passed")
                 for ((index, asset) in repeatPhotoAssets.withIndex()) {
@@ -138,6 +146,8 @@ class OmniPhotoQaLiveTest {
                     assertTrue(client.cameraEnabled!!); assertEquals(AiCallMode.Video, vm!!.state.value.mode)
                     assertEquals(voicePhotos + 1, photos.get()); assertEquals(1, allocations.get())
                     assertEquals(voicePhotos + 1, vm!!.state.value.transcriptRows.count { it.photo != null })
+                    val sharedPhotos = vm!!.state.value.transcriptRows.mapNotNull { it.photo as? com.we.meet.feature.assistant.history.AssistantHistoryPhoto.Memory }
+                    sharedPhotos.forEachIndexed { index, photo -> assertArrayEquals(uploadedImages[index], photo.jpeg) }
                     delay(4000); input!!.say("camera-close.pcm")
                     withTimeout(30_000) { while (vm!!.state.value.isCameraEnabled || vm!!.state.value.cameraPending) delay(50) }
                     assertTrue("Close ended call: reason=${vm!!.state.value.errorToastRes} result=${vm!!.state.value.cameraResult?.code}", vm!!.state.value.status is AiCallStatus.Active)

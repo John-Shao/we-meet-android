@@ -25,15 +25,24 @@ class CallPhotoCameraTest {
             withContext(Dispatchers.Main) {
                 val client = OmniAoqClient(context, {}, {}, onTranscript = { rows += it })
                 try {
-                    val jpeg = withTimeout(20_000) { client.capturePhoto() }
-                    assertEquals(1, rows.size)
-                    assertEquals("user", rows.single().role)
-                    assertArrayEquals(jpeg, (rows.single().photo as AssistantHistoryPhoto.Memory).jpeg)
-                    val bitmap = BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size)
-                    assertNotNull(bitmap); assertTrue(bitmap.width > 0 && bitmap.height > 0)
-                    bitmap.recycle()
-                    assertEquals(false, client.cameraEnabled)
-                    assertTrue(jpeg.size <= 512_000)
+                    repeat(3) { index ->
+                        val jpeg = withTimeout(25_000) { client.capturePhoto() }
+                        assertEquals(index + 1, rows.size)
+                        assertEquals("user", rows.last().role)
+                        assertArrayEquals(jpeg, (rows.last().photo as AssistantHistoryPhoto.Memory).jpeg)
+                        val bitmap = BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size)
+                        assertNotNull(bitmap); assertTrue(bitmap.width > 0 && bitmap.height > 0)
+                        assertTrue(maxOf(bitmap.width, bitmap.height) <= 1920)
+                        assertTrue(bitmap.width.toLong() * bitmap.height <= 2_100_000)
+                        bitmap.recycle()
+                        assertEquals(false, client.cameraEnabled)
+                        assertTrue(jpeg.size <= 512_000)
+                        if (index == 0) {
+                            val cancelled = launch { client.capturePhoto() }
+                            delay(100); cancelled.cancelAndJoin()
+                            assertEquals("Cancelled capture must not publish a late image", 1, rows.size)
+                        }
+                    }
                 } finally { client.close() }
             }
         }

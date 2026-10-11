@@ -90,14 +90,20 @@ fun CallTranscriptBubble(row: AssistantHistoryRow, animateText: Boolean = false,
     val colors = WeMeetTheme.extras.aiCall
     val text = if (animateText && !user && row.photo == null) typewriterText(row, onTyping) else row.text
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        if (row.photo != null) {
-            CallTranscriptPhoto(row.photo, row.id, Modifier.align(if (user) Alignment.CenterEnd else Alignment.CenterStart).width(maxWidth * 0.66f))
-        } else Surface(modifier = Modifier.align(if (user) Alignment.CenterEnd else Alignment.CenterStart)
-            .widthIn(max = maxWidth * 0.88f), shape = RoundedCornerShape(Dimens.CornerXl),
-            color = if (user) colors.transcriptUser else colors.transcriptAi, contentColor = colors.onTranscript) {
-            SelectionContainer {
-                Text(text, modifier = Modifier.testTag("call-text-${row.id}").padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceM),
-                    style = MaterialTheme.typography.bodyLarge)
+        val photoMaxWidth = maxWidth * 0.66f
+        val textMaxWidth = maxWidth * 0.88f
+        Column(Modifier.align(if (user) Alignment.CenterEnd else Alignment.CenterStart),
+            horizontalAlignment = if (user) Alignment.End else Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)) {
+            row.photo?.let { CallTranscriptPhoto(it, row.id, Modifier.widthIn(max = photoMaxWidth)) }
+            if (text.isNotBlank() || row.photo == null) {
+                Surface(modifier = Modifier.widthIn(max = textMaxWidth), shape = RoundedCornerShape(Dimens.CornerXl),
+                    color = if (user) colors.transcriptUser else colors.transcriptAi, contentColor = colors.onTranscript) {
+                    SelectionContainer {
+                        Text(text, modifier = Modifier.testTag("call-text-${row.id}").padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceM),
+                            style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
             }
         }
     }

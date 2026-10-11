@@ -8,8 +8,6 @@ import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -26,6 +24,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.window.Dialog
@@ -64,11 +63,15 @@ fun CallTranscriptPhoto(photo: AssistantHistoryPhoto, id: String, modifier: Modi
     val bitmap by photoBitmap(photo, thumbnail = true)
     var expanded by rememberSaveable(id) { mutableStateOf(false) }
     val label = stringResource(R.string.assistant_photo_view)
-    Surface(modifier.clip(RoundedCornerShape(Dimens.CornerL)).clickable(onClickLabel = label) { expanded = true }
-        .testTag("call-photo-$id"), color = MaterialTheme.colorScheme.surfaceVariant) {
-        // Keep a stable size while decoding so arriving images do not shift the scroll position.
-        Box(Modifier.aspectRatio(1f), contentAlignment = Alignment.Center) {
-            if (bitmap != null) Image(checkNotNull(bitmap), contentDescription = label,
+    BoxWithConstraints(modifier) {
+        val image = bitmap
+        val ratio = image?.let { it.width.toFloat() / it.height } ?: 1f
+        val width = minOf(maxWidth, Dimens.Chat.ImageMaxWidth, Dimens.Chat.ImageMaxHeight * ratio)
+        // The thumbnail itself defines the bounds; no colored surface or letterboxing.
+        Box(Modifier.width(width).aspectRatio(ratio).clip(RoundedCornerShape(Dimens.CornerL))
+            .clickable(onClickLabel = label) { expanded = true }.testTag("call-photo-$id"),
+            contentAlignment = Alignment.Center) {
+            if (image != null) Image(image, contentDescription = label,
                 modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
             else Text(stringResource(R.string.assistant_photo_attachment), Modifier.padding(Dimens.SpaceL))
         }
@@ -79,6 +82,8 @@ fun CallTranscriptPhoto(photo: AssistantHistoryPhoto, id: String, modifier: Modi
 @Composable
 private fun CallPhotoViewer(photo: AssistantHistoryPhoto, onClose: () -> Unit) {
     val bitmap by photoBitmap(photo, thumbnail = false)
+    val close by rememberUpdatedState(onClose)
+    val closeLabel = stringResource(R.string.assistant_photo_close)
     var zoom by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     var viewport by remember { mutableStateOf(IntSize.Zero) }
@@ -100,20 +105,20 @@ private fun CallPhotoViewer(photo: AssistantHistoryPhoto, onClose: () -> Unit) {
                 Box(Modifier.fillMaxSize().clip(RoundedCornerShape(Dimens.SpaceNone))
                     .onSizeChanged { viewport = it; offset = bounded(offset) }
                     .transformable(gestures)
-                    .pointerInput(photo) { detectTapGestures(onDoubleTap = {
+                    .pointerInput(photo) { detectTapGestures(onTap = { close() }, onDoubleTap = {
                         zoom = if (zoom > 1f) 1f else 2.5f
                         offset = Offset.Zero
                     }) }
-                    .semantics { stateDescription = "${(zoom * 100).toInt()}%" }
+                    .semantics {
+                        stateDescription = "${(zoom * 100).toInt()}%"
+                        onClick(label = closeLabel) { close(); true }
+                    }
                     .testTag("call-photo-zoom"), contentAlignment = Alignment.Center) {
                     if (bitmap != null) Image(checkNotNull(bitmap), stringResource(R.string.assistant_photo_attachment),
                         modifier = Modifier.fillMaxSize().graphicsLayer {
                             scaleX = zoom; scaleY = zoom; translationX = offset.x; translationY = offset.y
                         }, contentScale = ContentScale.Fit)
                     else Text(stringResource(R.string.assistant_photo_attachment))
-                }
-                FilledIconButton(onClick = onClose, modifier = Modifier.align(Alignment.TopEnd).padding(Dimens.SpaceL)) {
-                    Icon(Icons.Default.Close, stringResource(R.string.assistant_photo_close))
                 }
             }
         }

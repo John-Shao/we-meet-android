@@ -351,8 +351,15 @@ class OmniAoqClient(
     fun detachPreview(sink: VideoSink) = camera.detachPreview(sink)
     override suspend fun capturePhoto(): ByteArray {
         check(!closed)
-        val jpeg = if (cameraStarted) photos.capture(cameraFront, camera::attachPreview, camera::detachPreview)
-            else photos.capture(front = false)
+        val jpeg = withPhotoVideoPause(cameraStarted, { !closed }, pause = {
+            camera.stopFrames()
+            ok(checkNotNull(engine).enableSendMediaStream(video, false))
+            camera.stop()
+        }, resume = {
+            camera.start(cameraFront)
+            check(!closed)
+            ok(checkNotNull(engine).enableSendMediaStream(video, true))
+        }) { photos.capture(front = if (cameraStarted) cameraFront else false) }
         kotlinx.coroutines.currentCoroutineContext().ensureActive()
         check(!closed)
         transcript.photo(jpeg)

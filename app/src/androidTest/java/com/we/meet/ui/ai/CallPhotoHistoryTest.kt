@@ -13,8 +13,8 @@ import kotlinx.coroutines.*
 import org.junit.Assert.*
 import org.junit.Test
 
-internal fun historyTestJpeg(): ByteArray {
-    val bitmap = Bitmap.createBitmap(128, 96, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.RED) }
+internal fun historyTestJpeg(width: Int = 128, height: Int = 96): ByteArray {
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.RED) }
     return ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it); bitmap.recycle() }.toByteArray()
 }
 

@@ -68,7 +68,8 @@ internal class CameraActionController(
             if (!video) withTimeout(10_000) { foregroundUpgraded = true; foregroundCamera(true) }
             if (!active()) return@withLock result("cancelled", enabled(), false)
             if (!visible()) return@withLock result("foreground_required", enabled(), false)
-            val image = withTimeout(15_000) { capture() }
+            // Still capture may temporarily lend the video camera, then restore it.
+            val image = withTimeout(35_000) { capture() }
             if (!active()) return@withLock result("cancelled", enabled(), false)
             if (foregroundUpgraded) {
                 withTimeout(10_000) { foregroundCamera(false) }

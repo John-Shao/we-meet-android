@@ -33,7 +33,7 @@ class AiCallTranscriptUiTest {
     @Test fun callHistoryAndVideoPanelKeepCurrentCallAndBackClosesPanels() {
         val account = "call-ui-${UUID.randomUUID()}"
         val store = AssistantHistoryStore.get(context, account) { account }
-        val photo = AssistantHistoryPhoto.Memory(historyTestJpeg())
+        val photo = AssistantHistoryPhoto.Memory(historyTestJpeg(96, 128))
         store.begin("call")!!.apply {
             put(AssistantHistoryRow("h", 0, "user", "saved phone conversation"))
             put(AssistantHistoryRow("h-photo", 1, "user", "", photo = photo)); close()
@@ -113,7 +113,10 @@ class AiCallTranscriptUiTest {
             capture("call-chat-dark.png")
             compose.onNodeWithTag("call-photo-photo").performClick()
             capture("call-photo-expanded-dark.png")
-            compose.onNodeWithContentDescription(context.getString(R.string.assistant_photo_close)).performClick()
+            compose.onNodeWithContentDescription(context.getString(R.string.assistant_photo_close)).assertDoesNotExist()
+            compose.onNodeWithTag("call-photo-zoom").performTouchInput { click() }
+            compose.waitUntil(5000) { compose.onAllNodesWithTag("call-photo-viewer").fetchSemanticsNodes().isEmpty() }
+            compose.runOnIdle { assertEquals(AiCallStatus.Active(AiCallMode.Voice), vm.state.value.status) }
             compose.runOnIdle { state.value = state.value.copy(photoPending = true, cameraPending = true) }
             compose.onNodeWithText(context.getString(R.string.assistant_photo_working)).assertIsDisplayed()
             compose.onNodeWithText(context.getString(R.string.assistant_call_interrupt)).assertDoesNotExist()

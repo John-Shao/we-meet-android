@@ -421,8 +421,26 @@ class OmniWebRtcClient(
 
     override suspend fun capturePhoto(): ByteArray {
         check(!closed && handshake.ready)
-        val jpeg = if (cameraStarted) photos.capture(cameraFront, cameraFrames::attach, cameraFrames::detach)
-            else photos.capture(front = false)
+        val jpeg = withPhotoVideoPause(cameraStarted, { !closed }, pause = {
+            check(checkNotNull(videoSender).setTrack(null, false))
+            cameraFrames.stop()
+            val stopped = CompletableDeferred<Unit>().also { videoStopped = it }
+            try {
+                withContext(Dispatchers.IO) { checkNotNull(capturer).stopCapture() }
+                withTimeout(8_000) { stopped.await() }
+                captureActive = false
+            } finally { videoStopped = null }
+        }, resume = {
+            firstVideoFrame = CompletableDeferred()
+            try {
+                captureActive = true
+                cameraFrames.start()
+                checkNotNull(capturer).startCapture(1280, 720, videoSettings.captureFps)
+                withTimeout(8_000) { checkNotNull(firstVideoFrame).await() }
+                check(!closed)
+                check(checkNotNull(videoSender).setTrack(videoTrack, false))
+            } finally { firstVideoFrame = null }
+        }) { photos.capture(front = if (cameraStarted) cameraFront else false) }
         kotlinx.coroutines.currentCoroutineContext().ensureActive()
         check(!closed)
         transcript.photo(jpeg)
