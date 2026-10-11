@@ -16,6 +16,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -30,6 +33,50 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationUiTest {
+    @Test fun chatKeepsLanguageSidesAndPairsOriginalWithTranslation() {
+        val state = BilingualState(rows = listOf(
+            BilingualRow("one", "早上好", "Good morning", "zh", "en"),
+            BilingualRow("two", "我想去火车站，请问应该坐哪一路公交车？", "I'd like to go to the train station. Which bus should I take?", "zh", "en"),
+            BilingualRow("three", "Take bus number ten.", "乘坐十路公交车。", "en", "zh"),
+        ))
+        compose.setContent { WeMeetTheme(darkTheme = false) { BilingualChatTranscript(state) } }
+        val chat = compose.onNodeWithTag("bilingual-chat").fetchSemanticsNode().boundsInRoot
+        val first = compose.onNodeWithTag("bilingual-chat-one").fetchSemanticsNode().boundsInRoot
+        val second = compose.onNodeWithTag("bilingual-chat-two").fetchSemanticsNode().boundsInRoot
+        val third = compose.onNodeWithTag("bilingual-chat-three").fetchSemanticsNode().boundsInRoot
+        assertEquals(chat.right, first.right, 1f)
+        assertEquals(chat.right, second.right, 1f)
+        assertEquals(chat.left, third.left, 1f)
+        state.rows.forEach {
+            compose.onNodeWithText(it.source).assertIsDisplayed()
+            compose.onNodeWithText(it.text).assertIsDisplayed()
+        }
+        screenshot("bilingual-chat.png")
+    }
+
+    @Test fun chatPreservesHistoryPositionAndResumesFollowingAtBottom() {
+        val state = mutableStateOf(BilingualState(rows = (1..30).map {
+            BilingualRow("row-$it", "Original $it", "Translation $it", "zh", "en")
+        }))
+        compose.setContent { WeMeetTheme(darkTheme = false) { BilingualChatTranscript(state.value) } }
+        val chat = compose.onNodeWithTag("bilingual-chat")
+        // A real drag pauses following; then move further back in a long history.
+        chat.performTouchInput { swipeDown() }
+        chat.performScrollToIndex(20)
+        compose.onNodeWithText("Translation 10").assertIsDisplayed()
+        compose.runOnIdle {
+            state.value = state.value.copy(rows = state.value.rows + BilingualRow("new", "New original", "New translation", "en", "zh"))
+        }
+        compose.onNodeWithText("Translation 10").assertIsDisplayed()
+        compose.onNodeWithText("New translation").assertDoesNotExist()
+        chat.performScrollToIndex(0)
+        compose.onNodeWithText("New translation").assertIsDisplayed()
+        compose.runOnIdle {
+            state.value = state.value.copy(rows = state.value.rows + BilingualRow("latest", "Latest original", "Latest translation", "zh", "en"))
+        }
+        compose.onNodeWithText("Latest translation").assertIsDisplayed()
+    }
+
     @Test fun translationVoiceCanBeSelectedAndIsLockedDuringSession() {
         val state = mutableStateOf(BilingualState())
         compose.setContent { WeMeetTheme(darkTheme = false) {

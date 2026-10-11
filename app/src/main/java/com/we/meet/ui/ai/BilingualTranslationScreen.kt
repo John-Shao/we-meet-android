@@ -9,8 +9,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -57,10 +55,6 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
         else { controller.stop(); onBack() }
     }
     BackHandler(onBack = back)
-    val listState = rememberLazyListState()
-    LaunchedEffect(state.rows.lastOrNull()?.id, facing, showSettings) {
-        if (!showSettings && !facing && state.rows.isNotEmpty()) listState.animateScrollToItem(state.rows.lastIndex)
-    }
     LaunchedEffect(showSettings) { if (showSettings) controller.refreshVoices() }
     if (showSettings) {
         BilingualTranslationSettingsScreen(
@@ -123,24 +117,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                         textAlign = TextAlign.Center)
                 }
             } else {
-                LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState,
-                    contentPadding = PaddingValues(vertical = Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-                    items(state.rows, key = { it.id }) { row ->
-                        Card(Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                                Text(stringResource(R.string.bilingual_direction,
-                                    stringResource(BilingualLanguages.label(row.sourceLanguage)), stringResource(BilingualLanguages.label(row.targetLanguage))),
-                                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                SelectionContainer {
-                                    Text(row.source, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                SelectionContainer {
-                                    Text(row.text, style = MaterialTheme.typography.bodyLarge)
-                                }
-                            }
-                        }
-                    }
-                }
+                BilingualChatTranscript(state, Modifier.weight(1f).fillMaxWidth())
             }
             Row(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceL),
                 horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
