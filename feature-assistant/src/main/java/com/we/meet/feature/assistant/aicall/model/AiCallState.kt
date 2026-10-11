@@ -28,6 +28,7 @@ data class AiCallSelection(
     val sceneId: String? = null,
     val transport: AiCallTransport = AiCallTransport.AOQ,
     val vadMode: AiCallVadMode = AiCallVadMode.Server,
+    val videoSettings: AiCallVideoSettings = AiCallVideoSettings(),
 )
 
 data class AiCallUiState(

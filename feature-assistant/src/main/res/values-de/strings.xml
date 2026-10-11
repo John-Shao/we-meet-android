@@ -147,4 +147,7 @@
     <string name="assistant_call_vad_server">Akustische Erkennung (server_vad)</string>
     <string name="assistant_call_vad_semantic">Semantische Erkennung (semantic_vad)</string>
     <string name="assistant_call_vad_hint">Vor dem Anruf auswählen. Wird für Sprach- und Videoanrufe über AOQ und WebRTC gespeichert. Beide Modi verwenden dieselbe Empfindlichkeit und Stille-Dauer.</string>
+    <string name="assistant_call_preview_fps">Bildrate der lokalen Vorschau</string>
+    <string name="assistant_call_upload_fps">Bildrate der Modellübertragung</string>
+    <string name="assistant_call_fps_hint">Vorschau: 10–30 fps. Übertragung: 1–10 fps. Unabhängig für AOQ und WebRTC gespeichert; gilt ab dem nächsten Gespräch. Die tatsächliche Bildrate hängt von Gerät und Netzwerk ab.</string>
 </resources>

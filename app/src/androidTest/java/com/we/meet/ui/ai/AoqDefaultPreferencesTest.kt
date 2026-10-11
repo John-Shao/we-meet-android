@@ -11,6 +11,7 @@ import com.we.meet.feature.assistant.aicall.model.AiCallOffer
 import com.we.meet.feature.assistant.aicall.model.AiCallSelection
 import com.we.meet.feature.assistant.aicall.model.AiCallTransport
 import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
+import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
 import java.security.MessageDigest
 import java.util.UUID
 import org.junit.After
@@ -143,6 +144,29 @@ class AoqDefaultPreferencesTest {
         prefs.save(fallback)
         repeat(2) { assertEquals(fallback, BilingualPreferences(context, "one").load()) }
         assertTrue(BilingualPreferences(context, "two").load().directAoq)
+    }
+
+    @Test fun videoSettingsPersistAcrossTransportsAndRecreatedPreferences() {
+        val prefs = AiCallPreferences(context)
+        assertEquals(AiCallVideoSettings(), prefs.load().videoSettings)
+        for (transport in AiCallTransport.entries) {
+            val selected = prefs.load().copy(transport = transport, videoSettings = AiCallVideoSettings(30, 3))
+            prefs.save(selected)
+            assertEquals(selected, AiCallPreferences(context).load())
+        }
+    }
+
+    @Test fun invalidOrMissingFrameRatesRecoverAndPreserveOtherSelections() {
+        val prefs = AiCallPreferences(context)
+        val selected = prefs.load().copy(voiceId = "voice", transport = AiCallTransport.WebRTC,
+            vadMode = AiCallVadMode.Semantic)
+        prefs.save(selected)
+        callStore().edit().remove("call_local_preview_fps").remove("call_model_upload_fps").commit()
+        assertEquals(selected, AiCallPreferences(context).load())
+        callStore().edit().putInt("call_local_preview_fps", 31).putInt("call_model_upload_fps", 0).commit()
+        assertEquals(selected, AiCallPreferences(context).load())
+        callStore().edit().putInt("call_local_preview_fps", 10).putInt("call_model_upload_fps", 11).commit()
+        assertEquals(selected.copy(videoSettings = AiCallVideoSettings(10, 2)), AiCallPreferences(context).load())
     }
 
     private fun callStore() = context.getSharedPreferences("we_meet_ai_call_prefs", Context.MODE_PRIVATE)

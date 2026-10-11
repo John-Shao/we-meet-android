@@ -5,9 +5,10 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class AiCallConfigTest {
-    @Test fun catalogResolutionPreservesVadAndTransportForBothCameraStates() {
+    @Test fun catalogResolutionPreservesVadTransportAndFrameRatesForBothCameraStates() {
         for (transport in AiCallTransport.entries) for (vad in AiCallVadMode.entries) {
-            val selection = AiCallSelection("ryan-id", "prompt-id", transport = transport, vadMode = vad)
+            val selection = AiCallSelection("ryan-id", "prompt-id", transport = transport, vadMode = vad,
+                videoSettings = AiCallVideoSettings(30, 3))
             for (mode in AiCallMode.entries) {
                 assertEquals(selection, config.resolveSelection(AiCallUiState(mode = mode, selection = selection).selection))
             }

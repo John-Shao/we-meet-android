@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import com.we.meet.feature.assistant.aicall.rtc.OmniWebRtcClient
+import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
 import kotlinx.coroutines.*
 import livekit.org.webrtc.*
 import org.junit.Assert.*
@@ -20,7 +21,8 @@ class OmniWebRtcCameraLifecycleTest {
         instrumentation.uiAutomation.grantRuntimePermission(context.packageName, Manifest.permission.RECORD_AUDIO)
         ActivityScenario.launch(ComponentActivity::class.java).use {
             val failures = AtomicInteger(); val frames = AtomicInteger()
-            val client = OmniWebRtcClient(context, {}, { failures.incrementAndGet() })
+            val settings = AiCallVideoSettings(10, 3)
+            val client = OmniWebRtcClient(context, {}, { failures.incrementAndGet() }, videoSettings = settings)
             fun field(name: String) = client.javaClass.getDeclaredField(name).apply { isAccessible = true }
             val preview = VideoSink { frames.incrementAndGet() }
             try {
@@ -44,6 +46,11 @@ class OmniWebRtcCameraLifecycleTest {
                     val before = frames.get()
                     withTimeout(3000) { while (frames.get() <= before) delay(20) }
                     assertEquals(true, client.cameraEnabled)
+                    val sender = field("videoSender").get(client) as RtpSender
+                    assertTrue(sender.parameters.encodings.isNotEmpty())
+                    sender.parameters.encodings.forEach { encoding ->
+                        assertEquals(settings.modelUploadFps, encoding.maxFramerate)
+                    }
                     val started = android.os.SystemClock.elapsedRealtime()
                     withContext(Dispatchers.Main) { client.setCameraEnabled(false); client.setCameraEnabled(false) }
                     assertEquals(false, client.cameraEnabled)

@@ -39,6 +39,8 @@ class AiCallFailureUiTest {
                 selection = selection.value, historyStore = null, historyEnabled = enabled.value,
                 onSelectTransport = { selection.value = selection.value.copy(transport = it) },
                 onSelectVadMode = { selection.value = selection.value.copy(vadMode = it) },
+                onSelectLocalPreviewFps = { selection.value = selection.value.copy(videoSettings = selection.value.videoSettings.withLocalPreviewFps(it)) },
+                onSelectModelUploadFps = { selection.value = selection.value.copy(videoSettings = selection.value.videoSettings.copy(modelUploadFps = it)) },
                 onSelectVoice = {}, onSelectPrompt = {}, onSelectScene = {}, onDismiss = {})
         } }
         compose.onNodeWithText("AOQ").performScrollTo().performClick()

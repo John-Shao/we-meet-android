@@ -147,4 +147,7 @@
     <string name="assistant_call_vad_server">Détection acoustique (server_vad)</string>
     <string name="assistant_call_vad_semantic">Détection sémantique (semantic_vad)</string>
     <string name="assistant_call_vad_hint">Choisissez avant de lancer un appel. Le choix est enregistré pour les appels audio et vidéo via AOQ et WebRTC. Les deux modes utilisent la même sensibilité et la même durée de silence.</string>
+    <string name="assistant_call_preview_fps">Fréquence de l’aperçu local</string>
+    <string name="assistant_call_upload_fps">Fréquence d’envoi au modèle</string>
+    <string name="assistant_call_fps_hint">Aperçu : 10–30 fps. Envoi : 1–10 fps. Enregistrés indépendamment pour AOQ et WebRTC ; appliqués au prochain appel. La fréquence réelle dépend de l’appareil et du réseau.</string>
 </resources>

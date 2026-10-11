@@ -67,14 +67,18 @@ AOQ SDK 1.3.0 的内部 Camera1 采集在当前模拟器上停止后无法可靠
 
 AOQ 和 WebRTC 均使用共享 EGL 上下文的 `TextureViewRenderer` 直接预览 Camera2 原始帧，保留帧自带方向并随前后镜头设置预览镜像；预览不再依赖 AOQ SDK 本地渲染或 WebRTC 的低帧率模型轨道。默认本地预览为 15fps，模型上传为 2fps，WebRTC 的 VideoSource 和 RTP 编码上限使用同一上传参数。每次停止屏蔽新帧，解除预览绑定等待已有回调返回后才释放渲染器。AOQ 摄像头、纹理采集资源每次关闭释放；共享 EGL 根上下文保留到当前通话挂断，确保快速重开及页面旋转仍使用兼容上下文，挂断时统一释放。实际帧率仍受设备、曝光与运行负载影响。
 
-帧率为两个独立的构建配置，统一适用于 AOQ、WebRTC、Debug 和 Release，在 `gradle.properties` 中设置：
+帧率是两个独立的用户设置，在「AI 工具 → 打电话 → 设置」选择，统一适用于 AOQ、WebRTC、Debug 和 Release。默认值保持 15／2 fps，升级安装无需迁移旧偏好。
 
 | 参数 | 默认值 | 配置范围 | 生效位置 |
 | --- | --- | --- | --- |
-| `AI_CALL_LOCAL_PREVIEW_FPS` | 15 | 1–30 的整数 | 本地原始帧预览上限；硬件采集目标为 `max(15, 配置值)`，保持低预览帧率下的 Camera2 兼容性 |
-| `AI_CALL_MODEL_UPLOAD_FPS` | 2 | 1–本地预览帧率的整数 | 模型分支提交上限、AOQ 编码 fps、WebRTC RTP maxFramerate |
+| 本地预览帧率（`call_local_preview_fps`） | 15 fps | 10–30 的整数 | 本地原始帧预览上限；硬件采集目标为 `max(15, 设置值)`，保持低预览帧率下的 Camera2 兼容性 |
+| 模型上传帧率（`call_model_upload_fps`） | 2 fps | 1–10 的整数 | 模型分支提交上限、AOQ 编码 fps、WebRTC RTP maxFramerate |
 
-也可执行 `./gradlew.bat :app:assembleDebug -PAI_CALL_LOCAL_PREVIEW_FPS=30 -PAI_CALL_MODEL_UPLOAD_FPS=3` 覆盖。参数在构建时校验，修改后需重新构建并安装 APK；不是用户设置或云端热配置。`AiCallVideoConfig` 汇总配置，分流器使用纳秒时钟独立计算两个分支的最小帧间隔，不再写死 500ms；摄像头实际输出高于请求值时，本地预览也按配置限帧。模型上传不依赖预览是否已绑定，帧率配置不改变分辨率、码率、媒体连接或语音控制发布开关。
+`AiCallPreferences` 在 `we_meet_ai_call_prefs` 保存这两个整数，`AiCallSelection.videoSettings` 携带不可变的 `AiCallVideoSettings`。缺失或非法值回到各自默认值；两个参数可独立选择，不因修改预览而改变上传。连接中和通话中禁止修改，下次拨号将设置快照传给 AOQ／WebRTC 客户端，同一通话内开关摄像头、切换镜头保持一致。无需重新构建 APK；原 `AI_CALL_LOCAL_PREVIEW_FPS`／`AI_CALL_MODEL_UPLOAD_FPS` Gradle 属性和 BuildConfig 字段已移除，`-P` 不再控制帧率。
+
+分流器使用纳秒时钟独立计算两个分支的最小帧间隔，不再写死 500ms；摄像头实际输出高于请求值时，本地预览也按设置限帧。模型上传不依赖预览是否已绑定，帧率设置不改变分辨率、码率、媒体连接或语音控制发布开关。实际采集、发送和模型处理帧率受设备、曝光、编码和网络影响，设置值是目标上限。
+
+对比时先保持模型上传为 2 fps，在通话结束后分别设置预览 15／30 fps；再保持预览为 15 fps，对比上传 2／3 fps。分别检查 AOQ 和 WebRTC 的本地流畅度、画面理解速度、温度和流量；切换传输和重新打开设置后应保留相同值。
 
 这是相对原方案“AOQ 内部采集首帧观察接口”的设备兼容性调整。[AOQ 官方外部视频输入](https://www.alibabacloud.com/help/zh/model-studio/aoq-custom-video-input)支持此类自定义采集，编码和媒体传输仍由 AOQ SDK 完成。WebRTC 使用 CameraEventsHandler 首帧及关闭回调。已有支持 H264 的 WebRTC 连接预先协商视频发送器，开启只附加轨道，关闭移除轨道；不重新协商业务会话。
 

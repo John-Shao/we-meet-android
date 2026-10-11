@@ -1,6 +1,7 @@
 package com.we.meet.feature.assistant.aicall.rtc
 
 import android.content.Context
+import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
 import com.alibaba.aoq.clientsdk.AoqClientEngine.*
 import kotlinx.coroutines.*
 import livekit.org.webrtc.*
@@ -11,8 +12,9 @@ internal class AoqCameraCapture(
     private val context: Context,
     private val push: (AoqVideoFrame) -> Unit,
     private val failed: () -> Unit,
+    private val videoSettings: AiCallVideoSettings,
 ) {
-    private val frames = CameraFrameRouter(upload = ::pushFrame)
+    private val frames = CameraFrameRouter(previewFps = videoSettings.localPreviewFps, uploadFps = videoSettings.modelUploadFps, upload = ::pushFrame)
     private var capturer: CameraVideoCapturer? = null
     private var texture: SurfaceTextureHelper? = null
     private var egl: EglBase? = null
@@ -55,7 +57,7 @@ internal class AoqCameraCapture(
         frames.start()
         try {
             // Hardware cadence and the two output branches use the shared video configuration.
-            capturer!!.startCapture(1280, 720, AiCallVideoConfig.captureFps)
+            capturer!!.startCapture(1280, 720, videoSettings.captureFps)
             withTimeout(8_000) { ready.await() }
         } finally { first = null }
     }

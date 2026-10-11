@@ -4,14 +4,6 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-// Shared by AOQ and WebRTC; override with -P when building either variant.
-val aiCallPreviewFps = providers.gradleProperty("AI_CALL_LOCAL_PREVIEW_FPS").orElse("15").get().toInt()
-val aiCallUploadFps = providers.gradleProperty("AI_CALL_MODEL_UPLOAD_FPS").orElse("2").get().toInt()
-require(aiCallPreviewFps in 1..30) { "AI_CALL_LOCAL_PREVIEW_FPS must be between 1 and 30" }
-require(aiCallUploadFps in 1..aiCallPreviewFps) {
-    "AI_CALL_MODEL_UPLOAD_FPS must be between 1 and AI_CALL_LOCAL_PREVIEW_FPS"
-}
-
 android {
     namespace = "com.we.meet.feature.assistant"
     compileSdk = 34
@@ -21,8 +13,6 @@ android {
         // that the assistant app shipped at minSdk 29; the host app is bumped
         // to match.
         minSdk = 29
-        buildConfigField("int", "AI_CALL_LOCAL_PREVIEW_FPS", aiCallPreviewFps.toString())
-        buildConfigField("int", "AI_CALL_MODEL_UPLOAD_FPS", aiCallUploadFps.toString())
         // Independent of camera-control acceptance; applies to both build variants.
         buildConfigField("boolean", "AI_CALL_VOICE_HANGUP",
             providers.gradleProperty("AI_CALL_VOICE_HANGUP").orElse("true").get().toBooleanStrict().toString())

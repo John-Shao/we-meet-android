@@ -6,6 +6,7 @@ import android.graphics.Rect
 import android.graphics.YuvImage
 import android.os.SystemClock
 import com.we.meet.feature.assistant.aicall.model.PhotoCleanupException
+import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
 import kotlinx.coroutines.*
 import livekit.org.webrtc.VideoFrame
 import livekit.org.webrtc.VideoSink
@@ -30,7 +31,7 @@ internal class CallPhotoCapture(private val context: Context) {
                 frame.retain(); selected = frame; ready.complete(Unit)
             }
         } }
-        val camera = if (attach == null) AoqCameraCapture(context, {}, { ready.completeExceptionally(IllegalStateException("Photo capture failed")) })
+        val camera = if (attach == null) AoqCameraCapture(context, {}, { ready.completeExceptionally(IllegalStateException("Photo capture failed")) }, AiCallVideoSettings())
             .also { temporary = it } else null
         try {
             if (camera != null) camera.attachPreview(sink) else checkNotNull(attach).invoke(sink)

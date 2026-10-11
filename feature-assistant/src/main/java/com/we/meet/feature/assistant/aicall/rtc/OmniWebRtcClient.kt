@@ -8,6 +8,7 @@ import com.twilio.audioswitch.AudioDevice
 import com.twilio.audioswitch.AudioSwitch
 import com.we.meet.feature.assistant.aicall.model.AiCallAnswer
 import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
+import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
 import com.we.meet.feature.assistant.aicall.model.CameraToolHandler
 import com.we.meet.feature.assistant.aicall.model.CameraActionResult
 import com.we.meet.feature.assistant.aicall.model.CameraFeedbackFailure
@@ -45,6 +46,7 @@ class OmniWebRtcClient(
     onEndCall: (() -> Unit)? = null,
     photoHandler: PhotoToolHandler? = null,
     private val vadMode: AiCallVadMode = AiCallVadMode.Server,
+    private val videoSettings: AiCallVideoSettings = AiCallVideoSettings(),
 ) : OmniCallClient {
     private val playbackDiagnostics = OmniPlaybackDiagnostics(context, "WebRTC", "inbound_rtp_audio_level")
     private val transcript = OmniTranscript(onTranscript)
@@ -57,7 +59,7 @@ class OmniWebRtcClient(
     private val iceComplete = CompletableDeferred<Unit>()
     private val ready = CompletableDeferred<Unit>()
     private val channels = mutableSetOf<DataChannel>()
-    private val cameraFrames = CameraFrameRouter { videoSource?.capturerObserver?.onFrameCaptured(it) }
+    private val cameraFrames = CameraFrameRouter(previewFps = videoSettings.localPreviewFps, uploadFps = videoSettings.modelUploadFps) { videoSource?.capturerObserver?.onFrameCaptured(it) }
     private var eventChannel: DataChannel? = null
     private var egl: EglBase? = null
     val eglContext: EglBase.Context? get() = egl?.eglBaseContext
@@ -374,12 +376,12 @@ class OmniWebRtcClient(
             // Preview raw frames before the separately throttled model branch and native adaptation.
             captureActive = true
             cameraFrames.start()
-            capturer!!.startCapture(1280, 720, AiCallVideoConfig.captureFps)
+            capturer!!.startCapture(1280, 720, videoSettings.captureFps)
             withTimeout(8000) { firstVideoFrame!!.await() }
             check(!closed)
             check(videoSender!!.setTrack(videoTrack, false))
             val parameters = videoSender!!.parameters
-            parameters.encodings.forEach { it.maxFramerate = AiCallVideoConfig.modelUploadFps; it.maxBitrateBps = 1_000_000 }
+            parameters.encodings.forEach { it.maxFramerate = videoSettings.modelUploadFps; it.maxBitrateBps = 1_000_000 }
             videoSender!!.parameters = parameters
             cameraStarted = true; cameraCertain = true
         } finally { firstVideoFrame = null }

@@ -51,6 +51,8 @@ fun AiSettingsSheet(
     onSelectScene: (String?) -> Unit,
     onDismiss: () -> Unit,
     onSelectVadMode: (AiCallVadMode) -> Unit,
+    onSelectLocalPreviewFps: (Int) -> Unit,
+    onSelectModelUploadFps: (Int) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -90,6 +92,35 @@ fun AiSettingsSheet(
             )
             Text(
                 text = stringResource(R.string.assistant_call_vad_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS),
+            )
+            Spacer(modifier = Modifier.height(Dimens.SpaceM))
+            SectionLabel(stringResource(R.string.assistant_call_preview_fps))
+            val previewRates = (10..30).toList()
+            val previewLabels = previewRates.map { stringResource(R.string.assistant_call_fps_value, it) }
+            CallSettingsDropdown(
+                value = previewLabels[selection.videoSettings.localPreviewFps - 10],
+                options = previewLabels,
+                onSelect = { onSelectLocalPreviewFps(previewRates[it]) },
+                enabled = historyEnabled,
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl).testTag("call-preview-fps-picker"),
+                optionTag = { "call-preview-fps-${previewRates[it]}" },
+            )
+            SectionLabel(stringResource(R.string.assistant_call_upload_fps))
+            val uploadRates = (1..10).toList()
+            val uploadLabels = uploadRates.map { stringResource(R.string.assistant_call_fps_value, it) }
+            CallSettingsDropdown(
+                value = uploadLabels[selection.videoSettings.modelUploadFps - 1],
+                options = uploadLabels,
+                onSelect = { onSelectModelUploadFps(uploadRates[it]) },
+                enabled = historyEnabled,
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl).testTag("call-upload-fps-picker"),
+                optionTag = { "call-upload-fps-${uploadRates[it]}" },
+            )
+            Text(
+                text = stringResource(R.string.assistant_call_fps_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS),

@@ -154,3 +154,19 @@ adb shell am instrument -w -e liveBackend true -e class 'com.we.meet.ui.ai.OmniC
 荣耀手机分别选择 AOQ 和 WebRTC，验收四种指令、自然表达、否定／引用／假设、首次授权和拒绝、锁屏与后台、静音与打断、镜头保持、10 轮开关、关闭后无新画面发送、音色与准确提示。记录语音结束到工具请求、执行完成和播报开始的耗时，并检查设备执行不超过 3 秒（不计授权等待）。
 
 通过这些条件后，再将 Release 默认语音控制开关改为开启；AOQ 传输默认开启与摄像头语音工具默认关闭是两个独立开关。回退语音功能可使用 `-PAI_CALL_CAMERA_VOICE_CONTROL=false` 或保留 Release 默认值，摄像头按钮继续工作。
+
+## 2026-10-11：帧率改为运行时设置
+
+原 `AI_CALL_LOCAL_PREVIEW_FPS`／`AI_CALL_MODEL_UPLOAD_FPS` Gradle 属性与 BuildConfig 字段已移除。「打电话 → 设置」保存本地预览和模型上传帧率，默认 15／2 fps；连接中／通话中锁定，下次拨号生效。预览可选 10–30 fps，上传可选 1–10 fps，两项独立保存，修改预览不改变上传。AOQ、WebRTC 以及语音／视频共用同一偏好；具体实现见 `AiCallVideoSettings` 和 `AiCallPreferences`。
+
+自动化证据：
+
+- `:feature-assistant:testDebugUnitTest`：117 项通过，包含配置范围、非法偏好恢复、两项独立选择与范围边界和目录解析保留设置。
+- `emulator-5558`：6 项 instrumentation 通过，覆盖帧率选项、禁用状态、VAD 回归、偏好保存／重建及缺失／非法值恢复、原生 AOQ 采集分支与渲染器、WebRTC 原生摄像头生命周期。
+- 内部 Release 安装到同一模拟器后，2 项偏好测试通过，确认保存／重建和非法值恢复在实际 Release 包中可用；签名与已有内部测试包一致。
+- `CameraPreviewTest` 使用非默认 10／3 fps，3002 ms 内预览／实际渲染各 24 帧，模型输入分支 8 帧（见候选目录 `native-camera.log`）；实际节奏低于设置上限，不将上限宣称为固定帧率。关闭后无新帧，重新开启可继续使用同一渲染器。
+- `OmniWebRtcCameraLifecycleTest` 同样使用 10／3 fps，连续 10 轮开启／关闭通过，每轮原生 RTP sender 的 `maxFramerate` 为 3，关闭耗时 321–339 ms，无故障回调。
+- 多语言资源检查：0 错误、0 警告。
+- Debug／内部 Release 构建、Release lintVital、设计规范、签名及对齐检查通过。
+
+以上设备测试没有分配付费模型会话；模型输入分支计数和本地 RTP 参数不能代替真实模型接收帧率。荣耀实机仍需分别用 AOQ／WebRTC 对比 15／2、30／2 和 15／3，确认设置保留、开关摄像头后的流畅度、画面理解速度、音频连续性和流量。候选 APK 与日志归档于 `release/0.3.0-work.2-video-settings-20261011/`。

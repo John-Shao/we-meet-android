@@ -382,6 +382,8 @@ fun AssistantCallScreen(
                     historyEnabled = !callInProgress,
                     onSelectTransport = vm::selectTransport,
                     onSelectVadMode = vm::selectVadMode,
+                    onSelectLocalPreviewFps = vm::selectLocalPreviewFps,
+                    onSelectModelUploadFps = vm::selectModelUploadFps,
                     onSelectVoice = vm::selectVoice,
                     onSelectPrompt = vm::selectPrompt,
                     onSelectScene = vm::selectScene,

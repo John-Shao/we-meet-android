@@ -3,6 +3,7 @@ package com.we.meet.feature.assistant.aicall.data
 import android.content.Context
 import com.we.meet.feature.assistant.aicall.model.AiCallSelection
 import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
+import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
 
 /** One set of preferences shared by microphone-only and camera-enabled calls. */
 class AiCallPreferences(context: Context) {
@@ -35,6 +36,8 @@ class AiCallPreferences(context: Context) {
             transport = com.we.meet.feature.assistant.aicall.model.AiCallTransport.entries.firstOrNull { it.name == prefs.getString("call_transport", null) } ?: com.we.meet.feature.assistant.aicall.model.AiCallTransport.AOQ,
             sceneId = com.we.meet.feature.assistant.scenes.AssistantScene.find(prefs.getString("call_scene_id", null))?.id,
             vadMode = AiCallVadMode.fromStored(prefs.getString("call_vad_mode", null)),
+            videoSettings = AiCallVideoSettings.fromStored(
+                prefs.getInt("call_local_preview_fps", 15), prefs.getInt("call_model_upload_fps", 2)),
         )
     }
 
@@ -47,6 +50,8 @@ class AiCallPreferences(context: Context) {
             putString("call_scene_id", selection.sceneId)
             putString("call_transport", selection.transport.name)
             putString("call_vad_mode", selection.vadMode.wireValue)
+            putInt("call_local_preview_fps", selection.videoSettings.localPreviewFps)
+            putInt("call_model_upload_fps", selection.videoSettings.modelUploadFps)
             for (prefix in listOf("voice", "video")) {
                 for (suffix in listOf("profile_code", "voice_id", "prompt_id")) {
                     remove("${prefix}_${suffix}")

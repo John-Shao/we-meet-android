@@ -147,4 +147,7 @@
     <string name="assistant_call_vad_server">Akoestische detectie (server_vad)</string>
     <string name="assistant_call_vad_semantic">Semantische detectie (semantic_vad)</string>
     <string name="assistant_call_vad_hint">Kies vóór het bellen. De keuze wordt opgeslagen voor spraak- en videogesprekken via AOQ en WebRTC. Beide modi gebruiken dezelfde gevoeligheid en stilteduur.</string>
+    <string name="assistant_call_preview_fps">Framesnelheid van lokaal voorbeeld</string>
+    <string name="assistant_call_upload_fps">Framesnelheid voor modelupload</string>
+    <string name="assistant_call_fps_hint">Voorbeeld: 10–30 fps. Upload: 1–10 fps. Onafhankelijk opgeslagen voor AOQ en WebRTC; geldt vanaf het volgende gesprek. De werkelijke snelheid hangt af van apparaat en netwerk.</string>
 </resources>

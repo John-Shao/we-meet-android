@@ -1,14 +1,15 @@
 package com.we.meet.feature.assistant.aicall.rtc
 
 import android.os.SystemClock
+import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
 import livekit.org.webrtc.VideoFrame
 import livekit.org.webrtc.VideoSink
 
 /** Independently throttle original preview frames and model input before conversion/encoding. */
 internal class CameraFrameRouter(
     private val clock: () -> Long = SystemClock::elapsedRealtimeNanos,
-    previewFps: Int = AiCallVideoConfig.localPreviewFps,
-    uploadFps: Int = AiCallVideoConfig.modelUploadFps,
+    previewFps: Int = AiCallVideoSettings().localPreviewFps,
+    uploadFps: Int = AiCallVideoSettings().modelUploadFps,
     private val upload: (VideoFrame) -> Unit,
 ) {
     init { require(previewFps > 0 && uploadFps > 0) }

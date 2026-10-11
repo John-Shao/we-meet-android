@@ -7,7 +7,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.platform.app.InstrumentationRegistry
 import com.alibaba.aoq.clientsdk.AoqClientEngine.AoqVideoFrame
-import com.we.meet.feature.assistant.BuildConfig as AssistantBuildConfig
+import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
 import io.livekit.android.renderer.TextureViewRenderer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -43,7 +43,8 @@ class CameraPreviewTest {
         val type = Class.forName("com.we.meet.feature.assistant.aicall.rtc.AoqCameraCapture")
         val push: (AoqVideoFrame) -> Unit = { uploaded.incrementAndGet(); Unit }
         val failure: () -> Unit = { failed.set(true) }
-        val camera = type.constructors.single().newInstance(context, push, failure)
+        val settings = AiCallVideoSettings(localPreviewFps = 10, modelUploadFps = 3)
+        val camera = type.constructors.single().newInstance(context, push, failure, settings)
         suspend fun operation(name: String, vararg args: Any?): Any? = suspendCoroutine { continuation ->
             try {
                 val method = type.methods.single { it.name == name && it.parameterCount == args.size + 1 }
@@ -82,8 +83,8 @@ class CameraPreviewTest {
             val renders = rendered.get() - beforeRender
             android.util.Log.i("OmniCameraPreviewTest", "Native preview: ${SystemClock.elapsedRealtime() - started}ms captured=$previews rendered=$renders uploaded=$modelFrames")
             assertFalse(failed.get())
-            val previewFps = AssistantBuildConfig.AI_CALL_LOCAL_PREVIEW_FPS
-            val uploadFps = AssistantBuildConfig.AI_CALL_MODEL_UPLOAD_FPS
+            val previewFps = settings.localPreviewFps
+            val uploadFps = settings.modelUploadFps
             assertTrue("Preview must follow configured cadence: $previews frames", previews >= maxOf(1, previewFps * 4 / 5))
             assertTrue("Preview must stay below configured limit: $previews frames", previews <= previewFps * 3 + 2)
             assertTrue("Renderer must receive preview frames: $renders frames", renders >= maxOf(1, previewFps * 2 / 3))

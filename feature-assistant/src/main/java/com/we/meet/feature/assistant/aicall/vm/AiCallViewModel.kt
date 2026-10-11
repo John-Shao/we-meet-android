@@ -133,6 +133,7 @@ class AiCallViewModel(
                 }
             },
             selection.vadMode,
+            selection.videoSettings,
         )
         rtcClient = client
         owner = CameraActionController(
@@ -308,6 +309,16 @@ class AiCallViewModel(
 
     fun selectTransport(value: AiCallTransport) = updateSelection(_state.value.selection.copy(transport = value))
     fun selectVadMode(value: AiCallVadMode) = updateSelection(_state.value.selection.copy(vadMode = value))
+    fun selectLocalPreviewFps(value: Int) {
+        if (value !in 10..30) return
+        val selection = _state.value.selection
+        updateSelection(selection.copy(videoSettings = selection.videoSettings.withLocalPreviewFps(value)))
+    }
+    fun selectModelUploadFps(value: Int) {
+        val selection = _state.value.selection
+        if (value !in 1..10) return
+        updateSelection(selection.copy(videoSettings = selection.videoSettings.copy(modelUploadFps = value)))
+    }
     fun selectVoice(id: String?) = updateSelection(_state.value.selection.copy(voiceId = id))
     fun selectPrompt(id: String?) = updateSelection(_state.value.selection.copy(promptId = id, sceneId = null))
     fun selectScene(id: String?) {

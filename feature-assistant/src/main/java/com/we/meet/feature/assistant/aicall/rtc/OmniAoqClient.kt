@@ -14,6 +14,7 @@ import com.alibaba.aoq.clientsdk.AoqClientEngine.*
 import com.alibaba.aoq.clientsdk.AoqClientListener
 import com.we.meet.feature.assistant.aicall.model.AiCallAnswer
 import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
+import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
 import com.we.meet.feature.assistant.aicall.model.AiCallSetupException
 import com.we.meet.feature.assistant.aicall.model.CameraToolHandler
 import com.we.meet.feature.assistant.aicall.model.CameraActionResult
@@ -37,6 +38,7 @@ class OmniAoqClient(
     onEndCall: (() -> Unit)? = null,
     photoHandler: PhotoToolHandler? = null,
     private val vadMode: AiCallVadMode = AiCallVadMode.Server,
+    private val videoSettings: AiCallVideoSettings = AiCallVideoSettings(),
 ) : OmniCallClient {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val playbackDiagnostics = OmniPlaybackDiagnostics(context, "AOQ", "decoded_pcm_rms")
@@ -57,7 +59,7 @@ class OmniAoqClient(
     private var cameraCertain = true
     private val camera = AoqCameraCapture(context, { frame ->
         ok(checkNotNull(engine).pushExternalVideoCapturedFrame(video, frame))
-    }, { dispatch { if (cameraStarted) fail() } })
+    }, { dispatch { if (cameraStarted) fail() } }, videoSettings)
     val eglContext: EglBase.Context? get() = camera.eglContext
     override val cameraEnabled: Boolean? get() = if (cameraCertain) cameraStarted else null
     private var responding = false
@@ -321,7 +323,7 @@ class OmniAoqClient(
             cameraCertain = false
             ok(sdk.setVideoEncoderConfig(AoqVideoCodecConfig().apply {
                 trackType = video; codecType = AoqEncoderType.AoqEncoderTypeVideoH264
-                width = 1280; height = 720; fps = AiCallVideoConfig.modelUploadFps; bitrate = 500_000; minBitrate = 128_000; keyframeInterval = 2
+                width = 1280; height = 720; fps = videoSettings.modelUploadFps; bitrate = 500_000; minBitrate = 128_000; keyframeInterval = 2
                 isExternal = false // SDK encodes raw external frames.
             }))
             captureActive = true
