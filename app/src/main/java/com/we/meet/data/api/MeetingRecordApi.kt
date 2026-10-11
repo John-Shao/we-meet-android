@@ -2,6 +2,8 @@ package com.we.meet.data.api
 
 import com.we.meet.data.api.dto.RecordAttributionCandidatePageDto
 import com.we.meet.data.api.dto.RecordAttributionRequest
+import com.we.meet.data.api.dto.RecordSpeakerContactPageDto
+import com.we.meet.data.api.dto.RecordIdentityDecisionRequest
 import com.we.meet.data.api.dto.RecordCorrectionDto
 import com.we.meet.data.api.dto.RecordCorrectionRequest
 import com.we.meet.data.api.dto.RecordDto
@@ -164,6 +166,13 @@ interface MeetingRecordApi {
     ): RecordPageDto<RecordOriginalSegmentDto>
 
     @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/meeting-records/{record}/original-segments/")
+    suspend fun captureOriginals(@Path("record") recordId: String, @Query("expected_revision") revision: Int,
+        @Query("q") query: String?, @Query("speaker") speakerId: String?, @Query("cursor") cursor: String?,
+        @Query("at_ms") atMs: Long?, @Query("transcription_job_id") asrId: String,
+        @Query("diarization_job_id") diarizationId: String?): RecordPageDto<RecordOriginalSegmentDto> = error("Pinned capture originals unavailable")
+
+    @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/{record}/speakers/")
     suspend fun speakers(
         @Path("record") recordId: String,
@@ -191,6 +200,24 @@ interface MeetingRecordApi {
         @Path("record") recordId: String,
         @Query("q") query: String?,
     ): RecordAttributionCandidatePageDto
+
+    @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/meeting-records/{record}/speaker-contacts/")
+    suspend fun speakerContacts(
+        @Path("record") recordId: String,
+        @Query("q") query: String?,
+        @Query("kind") kind: String,
+        @Query("department_id") departmentId: String?,
+        @Query("offset") offset: Int,
+    ): RecordSpeakerContactPageDto = throw UnsupportedOperationException()
+
+    @Headers("Cache-Control: no-store")
+    @POST("api/v1.0/meeting-records/{record}/speakers/{speaker}/identity-decision/")
+    suspend fun speakerIdentityDecision(
+        @Path("record") recordId: String,
+        @Path("speaker") speakerId: String,
+        @Body body: RecordIdentityDecisionRequest,
+    ): RecordSpeakerDto = throw UnsupportedOperationException()
 
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/meeting-records/resolve/")

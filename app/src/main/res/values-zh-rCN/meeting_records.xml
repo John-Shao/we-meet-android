@@ -115,4 +115,5 @@
     <string name="records_actions">行动建议</string>
     <string name="records_questions">待确认问题</string>
     <string name="records_back_to_playback">回到播放位置</string>
+    <string name="records_identity_updated">身份已更新，可重新生成。此版本保留原有内容。</string>
 </resources>

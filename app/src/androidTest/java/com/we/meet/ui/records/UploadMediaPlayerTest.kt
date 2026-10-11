@@ -58,6 +58,7 @@ class UploadMediaPlayerTest {
     private val reported = CopyOnWriteArrayList<Long>()
     private val durations = CopyOnWriteArrayList<Long?>()
     private val seek = mutableStateOf<CaptureAudioSeek?>(null)
+    private val previewStop = mutableStateOf<String?>(null)
     private var engine: FakeEngine? = null
     private val follow = TranscriptFollowState()
 
@@ -73,6 +74,7 @@ class UploadMediaPlayerTest {
                         followState = follow,
                         positionMs = null,
                         seek = seek.value,
+                        previewStop = previewStop.value,
                         onSeekConsumed = { seek.value = null },
                         onPosition = { reported += it },
                         onDuration = { durations += it },
@@ -98,6 +100,72 @@ class UploadMediaPlayerTest {
     }
 
     @Test fun firstForwardSkipPreparesVideoAtFifteenSeconds() = checkFirstVideoSkip(collapsed = false)
+
+    @Test fun sourceClipStopsAtTheVerifiedEndInsteadOfContinuingTheRecording() {
+        show()
+        compose.runOnIdle { seek.value = CaptureAudioSeek(1000, endMs = 5000) }
+        compose.waitUntil(8000) { engine?.lastPlayFrom == 1000L }
+        compose.runOnIdle { engine!!.clock = 5600 }
+        compose.waitUntil(8000) { engine?.playing == false && engine?.clock == 5000L }
+        assertEquals(5000L, reported.last())
+    }
+
+    @Test fun closingAClipStopsPreparationAndAnOrdinarySeekReplacesItsBound() {
+        show()
+        compose.runOnIdle { seek.value = CaptureAudioSeek(1000, endMs = 5000) }
+        compose.waitUntil(8000) { engine?.lastPlayFrom == 1000L }
+        compose.runOnIdle { previewStop.value = "stop-first" }
+        compose.waitUntil(8000) { engine?.playing == false }
+        compose.runOnIdle { seek.value = CaptureAudioSeek(1000, endMs = 5000) }
+        compose.waitUntil(8000) { engine?.playing == true }
+        compose.runOnIdle { seek.value = CaptureAudioSeek(10000) }
+        compose.waitUntil(8000) { engine?.lastPlayFrom == 10000L }
+        compose.runOnIdle { engine!!.clock = 11000 }
+        compose.waitUntil(8000) { reported.lastOrNull() == 11000L }
+        assertEquals(true, engine?.playing)
+    }
+
+    @Test fun anInvalidSourceClipDoesNotOpenMedia() {
+        show()
+        for ((start, end) in listOf(-1L to 4000L, 0L to 12000L, 1000L to 2000L, 7199000L to 7205000L)) {
+            compose.runOnIdle { seek.value = CaptureAudioSeek(start, endMs = end) }
+            compose.waitUntil(8000) { seek.value == null }
+        }
+        assertTrue(openedUrls.isEmpty())
+    }
+
+    @Test fun backgroundingAnAuditionStopsItWhileItsClockSamplerIsSuspended() {
+        show()
+        compose.runOnIdle { seek.value = CaptureAudioSeek(1000, endMs = 5000) }
+        compose.waitUntil(8000) { engine?.playing == true }
+        compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
+        compose.waitUntil(8000) { engine?.playing == false }
+        compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+    }
+
+    @Test fun realSyntheticWavAuditionStopsBeforeTheSourceRecordingEnds() {
+        val file = File.createTempFile("identity-preview-", ".wav", context.cacheDir)
+        val pcmBytes = 24000 * 2 * 8
+        val buffer = java.nio.ByteBuffer.allocate(44 + pcmBytes).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        buffer.put("RIFF".toByteArray()); buffer.putInt(36 + pcmBytes); buffer.put("WAVEfmt ".toByteArray())
+        buffer.putInt(16); buffer.putShort(1); buffer.putShort(1); buffer.putInt(24000)
+        buffer.putInt(48000); buffer.putShort(2); buffer.putShort(16); buffer.put("data".toByteArray()); buffer.putInt(pcmBytes)
+        file.writeBytes(buffer.array())
+        var real: com.we.meet.data.capture.UploadMediaEngine? = null
+        val clocks = CopyOnWriteArrayList<Long>()
+        try {
+            compose.setContent { WeMeetTheme { Surface {
+                UploadMediaPlayer(media, null, seek.value, onSeekConsumed = { seek.value = null }, onPosition = { clocks += it },
+                    createEngine = { _, interrupted -> com.we.meet.data.capture.UploadMediaEngine(context, file.absolutePath, interrupted).also { real = it } })
+            } } }
+            compose.runOnIdle { seek.value = CaptureAudioSeek(1000, endMs = 4000) }
+            compose.waitUntil(10000) { real?.isPlaying() == true && clocks.lastOrNull()?.let { it > 1100 } == true }
+            compose.waitUntil(10000) { real?.isPlaying() == false && clocks.lastOrNull() == 4000L }
+            assertEquals(null, real?.failure())
+            assertTrue(requireNotNull(real).durationMs() >= 8000)
+            compose.waitUntil(8000) { kotlin.math.abs(real!!.positionMs() - 4000) < 200 }
+        } finally { compose.runOnIdle { real?.close() }; file.delete() }
+    }
 
     @Test fun firstForwardSkipPreparesCollapsedVideoAtFifteenSeconds() = checkFirstVideoSkip(collapsed = true)
 

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_diarization_title">Distinguer les voix enregistrées</string>
+    <string name="capture_diarization_hint">Créer une version des locuteurs en conservant le texte original et les corrections. Confirmer ensuite les identités dans Locuteurs. Chaque nouvelle version nécessite une nouvelle confirmation ; aucune empreinte vocale automatique.</string>
+    <string name="capture_diarization_accept">Je confirme ce traitement, qui peut entraîner des frais. L’annulation ne garantit pas de remboursement.</string>
+    <string name="capture_diarization_start">Distinguer les voix</string>
+    <string name="capture_diarization_retry">Distinguer à nouveau</string>
+    <string name="capture_diarization_recover">Reprendre la même demande</string>
+    <string name="capture_diarization_cancel">Annuler le traitement</string>
+    <string name="capture_diarization_refresh">Actualiser le statut</string>
+    <string name="capture_diarization_history">Historique des versions</string>
+    <string name="capture_diarization_version">Version des locuteurs %1$d</string>
+    <string name="capture_diarization_unknown">Le résultat est incertain. Reprendre la même demande pour éviter une double facturation.</string>
+    <string name="capture_diarization_conflict">Le document a changé. Actualiser et confirmer à nouveau.</string>
+    <string name="capture_diarization_denied">Traitement indisponible. Vérifier l’accès et la conservation audio, puis actualiser.</string>
+    <string name="capture_diarization_storage">Impossible d’enregistrer la demande en sécurité. Recharger avant de réessayer.</string>
+    <string name="capture_diarization_cancel_unknown">L’annulation est incertaine. Actualiser pour vérifier.</string>
+    <string name="capture_diarization_editing">Enregistrer ou annuler d’abord les modifications du texte.</string>
+    <string name="capture_diarization_queued">En attente</string>
+    <string name="capture_diarization_running">En cours</string>
+    <string name="capture_diarization_succeeded">Terminé</string>
+    <string name="capture_diarization_failed">Échec</string>
+    <string name="capture_diarization_canceled">Annulé</string>
+</resources>

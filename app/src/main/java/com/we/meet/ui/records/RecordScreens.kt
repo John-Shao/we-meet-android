@@ -66,6 +66,7 @@ import com.we.meet.data.api.dto.RecordDto
 import com.we.meet.data.api.dto.RecordReferenceDto
 import com.we.meet.data.api.dto.RecordSummaryVersionDto
 import com.we.meet.data.repository.MeetingRecordRepository
+import com.we.meet.data.repository.MeetingReviewRepository
 import com.we.meet.data.repository.RecordScope
 import com.we.meet.data.repository.RecordSource
 import com.we.meet.ui.components.WeMeetInlineEmptyState
@@ -107,10 +108,12 @@ internal fun <T> visibleRead(vararg keys: Any?, intervalMs: Long = 15_000, refre
 }
 
 @Composable
-fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null, onTask: ((String) -> Unit)? = null, onDocument: ((String) -> Unit)? = null, initialSummary: Boolean = false, initialReview: Boolean = false, onRemoved: () -> Unit = onBack) {
+fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, recordId: String, onBack: () -> Unit, summaryVersionId: String? = null, onTask: ((String) -> Unit)? = null, onDocument: ((String) -> Unit)? = null, initialSummary: Boolean = false, initialReview: Boolean = false, onRemoved: () -> Unit = onBack, humanVersionId: String? = null, reviewRepository: MeetingReviewRepository? = null) {
     val viewStates = androidx.compose.runtime.key(viewer, recordId) { rememberSaveableStateHolder() }
     val app = LocalContext.current.applicationContext as? WeMeetApp
+    val humanRepository = reviewRepository ?: app?.meetingReviewRepository
     var audioSeek by remember(viewer, recordId) { mutableStateOf<CaptureAudioSeek?>(null) }
+    var identityPreviewStop by remember(viewer, recordId) { mutableStateOf<String?>(null) }
     /**
      * Playback position, lifted here because the player and the transcript are
      * separate regions: the player owns the clock, the transcript owns the text,
@@ -120,20 +123,20 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     var playbackPositionMs by remember(viewer, recordId) { mutableStateOf<Long?>(null) }
     var trashSelection by remember(viewer, recordId) { mutableStateOf<RecordLifecycleDto?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
-    var selectedHuman by remember(viewer, recordId) { mutableStateOf<String?>(null) }
+    var selectedHuman by remember(viewer, recordId, humanVersionId) { mutableStateOf(humanVersionId) }
     var selectedVersion by remember(viewer, recordId, summaryVersionId) { mutableStateOf(summaryVersionId) }
     var cursors by remember(viewer, recordId, selectedVersion) { mutableStateOf(listOf<String?>(null)) }
-    var citation by remember(viewer, recordId, summaryVersionId) { mutableStateOf<Pair<String, RecordReferenceDto>?>(null) }
-    var tool by remember(viewer, recordId, summaryVersionId, initialReview) { mutableStateOf<String?>(if (initialReview) "manage" else null) }
+    var citation by remember(viewer, recordId, summaryVersionId, humanVersionId) { mutableStateOf<Pair<String, RecordReferenceDto>?>(null) }
+    var tool by remember(viewer, recordId, summaryVersionId, humanVersionId, initialReview) { mutableStateOf<String?>(if (initialReview) "manage" else null) }
     var history by remember(viewer, recordId, summaryVersionId) { mutableStateOf(false) }
-    var detailTab by remember(viewer, recordId, summaryVersionId, initialSummary) { mutableStateOf(if (summaryVersionId != null || initialSummary) "summary" else "text") }
-    val initialDocument = summaryVersionId != null || initialSummary || initialReview
-    var document by remember(viewer, recordId, summaryVersionId, initialSummary, initialReview) { mutableStateOf(initialDocument) }
+    var detailTab by remember(viewer, recordId, summaryVersionId, humanVersionId, initialSummary) { mutableStateOf(if (summaryVersionId != null || humanVersionId != null || initialSummary) "summary" else "text") }
+    val initialDocument = summaryVersionId != null || humanVersionId != null || initialSummary || initialReview
+    var document by remember(viewer, recordId, summaryVersionId, humanVersionId, initialSummary, initialReview) { mutableStateOf(initialDocument) }
     val navigateBack: () -> Unit = {
         if (document != initialDocument) {
             document = initialDocument
             detailTab = if (initialDocument) "summary" else "overview"
-            selectedHuman = null; selectedVersion = summaryVersionId
+            selectedHuman = humanVersionId; selectedVersion = summaryVersionId
             tool = null; history = false; citation = null; cursors = listOf(null)
         } else onBack()
     }
@@ -142,6 +145,18 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     val exportTranslation = app?.let { rememberTranslationExporter(it.uploadTranslationRepository, viewer, recordId) }
     val detail = visibleRead(viewer, recordId, refresh) { repository.record(viewer, recordId) }
     val record = detail?.getOrNull()
+    var generationRetry by remember(viewer, recordId) { mutableIntStateOf(0) }
+    var transcriptEditing by remember(viewer, recordId) { mutableStateOf(false) }
+    val pinCapture = app != null && record?.sourceType == "audio_recording" && record.capabilities.controlCapture && record.captureId != null
+    val captureGenerationRead = visibleRead(viewer, recordId, record?.revision, generationRetry, pinCapture, intervalMs = 5000) {
+        if (!pinCapture) return@visibleRead Result.failure(IllegalStateException("No owned capture"))
+        requireNotNull(app).captureTranscriptionRepository.state(viewer, requireNotNull(record?.captureId))
+    }
+    val captureGeneration = captureGenerationRead?.getOrNull()
+    val captureVersion = captureGeneration?.activeJobId?.let { com.we.meet.data.repository.CaptureOriginalVersion(it, captureGeneration.activeDiarizationJobId) }
+    LaunchedEffect(captureGeneration?.activeJobId, captureGeneration?.activeDiarizationJobId) {
+        if (captureGeneration != null) refresh++
+    }
     val canPlay = !document && app != null && record?.sourceType == "audio_recording" && record.capabilities.readTranscript && record.capabilities.playMedia
     /**
      * An import is replayed from its sealed object, not from a capture playlist,
@@ -160,7 +175,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
     val uploadPlayer: @Composable () -> Unit = {
         uploadedMedia?.let { read ->
             UploadMediaPlayer(read, playbackPositionMs, audioSeek, onDuration = { playerDuration = it }, sourceId = recordId,
-                onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow)
+                onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow,
+                previewStop = identityPreviewStop)
         }
     }
     // 二级页的页面层级规范(docs/page-backgrounds.md §1):白色固定头 + 浅灰滚动区。
@@ -186,6 +202,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             onTranslations = if (!document && record.capabilities.readTranscript && (record.sourceType in listOf("meeting", "upload") || record.sourceType == "audio_recording" && record.captureId != null && record.capabilities.controlCapture)) ({ detailTab = "translations" }) else null,
                             onInfo = if (!document) ({ detailTab = "info" }) else null,
                             onTrash = if (!document && record.capabilities.trash && record.lifecycleRevision != null) ({ trashSelection = RecordLifecycleDto(record.id, record.title, record.sourceType, null, record.lifecycleRevision) }) else null,
+                            summaryId = if (document && selectedHuman == null) selectedVersion else null,
+                            humanId = if (document) selectedHuman else null,
                         )
                     }
                 }
@@ -218,7 +236,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                         // 这里只在需要时留一条分隔线,不再另起一条按钮条。
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = Dimens.DividerThin)
                     }
-                    if (canPlay) NativeCaptureAudioPlayer(viewer, recordId, requireNotNull(app).capturePlaybackRepository, { app.captureAccount }, audioSeek, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow)
+                    if (canPlay) NativeCaptureAudioPlayer(viewer, recordId, requireNotNull(app).capturePlaybackRepository, { app.captureAccount }, audioSeek, onSeekConsumed = { audioSeek = null }, onPosition = { playbackPositionMs = it }, followState = transcriptFollow,
+                        previewStopToken = identityPreviewStop, currentSession = { app.tokenStore.authSnapshot().session })
                     uploadPlayer()
                     val canReadTranslations = record.capabilities.readTranscript && app != null && (record.sourceType == "meeting" || record.sourceType == "upload" || record.sourceType == "audio_recording" && record.captureId != null && record.capabilities.controlCapture)
                     val tabs = buildList {
@@ -279,6 +298,11 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             }
                         } else if (selectedTab == "speakers") {
                             RecordSpeakers(repository, viewer, record, Modifier.weight(1f),
+                                onRecordChanged = { refresh++ },
+                                identification = app?.speakerIdentificationRepository,
+                                onIdentityPreview = { start, end -> if (canPlayImport || canPlay) audioSeek = CaptureAudioSeek(start, endMs = end) },
+                                captureDiarizationId = captureGeneration?.activeDiarizationJobId,
+                                onIdentityPreviewStop = { audioSeek = null; identityPreviewStop = java.util.UUID.randomUUID().toString() },
                                 fullDuration = fullDuration, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null)
                         } else if (showTranslations) {
                             Column(Modifier.weight(1f).fillMaxWidth()) {
@@ -298,7 +322,9 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                 var replacementOpen by remember(viewer, recordId) { mutableStateOf(false) }
                                 val pendingReplacement = visibleRead(viewer, recordId) { repository.pendingReplacement(viewer, recordId) }
                                 LaunchedEffect(pendingReplacement?.getOrNull() != null) { if (pendingReplacement?.getOrNull() != null) replacementOpen = true }
-                                RecordOriginals(repository, viewer, record, followState = transcriptFollow, onRefresh = { refresh++ }, onExport = exportTranscript, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport },
+                                if (pinCapture && captureGenerationRead?.isFailure == true && !transcriptEditing) WeMeetInlineErrorState(onRetry = { generationRetry++ }, message = stringResource(R.string.records_unavailable))
+                                else if (pinCapture && captureGeneration == null && !transcriptEditing) WeMeetInlineLoading()
+                                else RecordOriginals(repository, viewer, record, captureVersion = captureVersion, onEditingChanged = { transcriptEditing = it }, followState = transcriptFollow, onRefresh = { refresh++ }, onExport = exportTranscript, onSource = if (canPlay || canPlayImport) ({ audioSeek = CaptureAudioSeek(it) }) else null, positionMs = playbackPositionMs.takeIf { canPlay || canPlayImport },
                                     onWordSource = if (canPlayImport) ({ audioSeek = CaptureAudioSeek(it, preservePlayback = true) }) else null,
                                     // 只给纯文本:菜单项整行可点,套按钮会带出主色和按钮内边距,
                                     // 与旁边几项的普通 Text 既不同色也不同缩进。
@@ -308,7 +334,8 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                                     onManageReplacement = if (record.capabilities.batchCorrect) ({ replacementOpen = true }) else null)
                                 if (transcriptionOpen && canManageTranscription) RecordCaptureToolsSheet(
                                     viewer, record, requireNotNull(app).captureRepository, app.captureTranscriptionRepository,
-                                    { app.captureAccount }, onClose = { transcriptionOpen = false; refresh++ })
+                                    { app.captureAccount }, onClose = { transcriptionOpen = false; refresh++ },
+                                    diarization = app.captureDiarizationRepository, editing = transcriptEditing, onChanged = { refresh++; generationRetry++ })
                                 if (replacementOpen && record.capabilities.batchCorrect) TranscriptReplacementDialog(
                                     repository, viewer, recordId, open = true,
                                     onClose = { replacementOpen = false }, onChanged = { refresh++ })
@@ -320,10 +347,11 @@ fun RecordDetailScreen(repository: MeetingRecordRepository, viewer: String, reco
                             else RecordOverview(viewer, record, app.meetingSummaryRepository, { app.captureAccount }, Modifier.weight(1f),
                                 onOpenMinutes = if (record.capabilities.readSummary) ({ document = true; selectedVersion = null; selectedHuman = null; cursors = listOf(null); tool = null; citation = null; history = false }) else null,
                             ) { snapshot, ref -> citation = snapshot to ref }
-                        } else if (selectedHuman != null && document && app != null) {
+                        } else if (selectedHuman != null && document) {
                             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                                 TextButton(onClick = { selectedHuman = null; selectedVersion = null; citation = null }) { Text(stringResource(R.string.records_all_versions)) }
-                                HumanSummaryRevision(viewer, record, app.meetingReviewRepository, selectedHuman!!) { snapshot, reference -> citation = snapshot to reference }
+                                if (humanRepository == null) WeMeetEmptyState(stringResource(R.string.records_unavailable))
+                                else HumanSummaryRevision(viewer, record, humanRepository, selectedHuman!!) { snapshot, reference -> citation = snapshot to reference }
                             }
                         } else {
                             val cursor = if (overviewOnly) null else cursors.last()
@@ -484,6 +512,7 @@ internal fun SummaryCard(version: RecordSummaryVersionDto, originals: Boolean, c
         ).joinToString(" · "),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (version.stage != "final") Text(stringResource(R.string.records_provisional), style = MaterialTheme.typography.bodySmall)
+        if (version.identityUpdated) Text(stringResource(R.string.records_identity_updated), style = MaterialTheme.typography.bodySmall)
         if (version.asrStatus == "incomplete") Text(stringResource(R.string.records_incomplete), style = MaterialTheme.typography.bodySmall)
         if (!chaptersOnly) Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = MaterialTheme.shapes.large) {
             Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {

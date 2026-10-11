@@ -118,4 +118,5 @@
     <string name="records_actions">Actions suggérées</string>
     <string name="records_questions">Questions ouvertes</string>
     <string name="records_back_to_playback">Retour à la lecture</string>
+    <string name="records_identity_updated">Les identités des intervenants ont changé. Vous pouvez régénérer le compte rendu ; cette version conserve son contenu initial.</string>
 </resources>

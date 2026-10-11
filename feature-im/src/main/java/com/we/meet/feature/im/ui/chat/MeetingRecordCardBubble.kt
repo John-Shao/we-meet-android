@@ -32,20 +32,24 @@ import org.json.JSONObject
 internal fun MeetingRecordCardBubble(content: MessageContent.MeetingRecordCard, onLongPress: (() -> Unit)?, onOpen: ((String) -> Unit)?) {
     val deps = LocalContext.current.applicationContext as? ImDeps
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    var preview by remember(content.recordId, content.scope) { mutableStateOf<JSONObject?>(null) }
-    var thumbnail by remember(content.recordId, content.scope) { mutableStateOf<ImageBitmap?>(null) }
-    var unavailable by remember(content.recordId, content.scope) { mutableStateOf(false) }
+    var preview by remember(content) { mutableStateOf<JSONObject?>(null) }
+    var thumbnail by remember(content) { mutableStateOf<ImageBitmap?>(null) }
+    var unavailable by remember(content) { mutableStateOf(false) }
     val base = deps?.baseUrl?.trimEnd('/')
-    LaunchedEffect(content.recordId, content.scope, lifecycle, deps) {
+    LaunchedEffect(content, lifecycle, deps) {
         if (deps == null) return@LaunchedEffect
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             try {
                 while (true) {
                     val result = withContext(Dispatchers.IO) {
                         runCatching {
-                            deps.authedOkHttp.newCall(Request.Builder().url("$base/api/v1.0/meeting-records/${content.recordId}/collaboration/${content.scope}/preview/").header("Cache-Control", "no-store").build()).execute().use {
+                            deps.authedOkHttp.newCall(Request.Builder().url("$base/api/v1.0/meeting-records/${content.recordId}/collaboration/${content.scope}/preview/${content.previewSelector()}").header("Cache-Control", "no-store").build()).execute().use {
                                 check(it.isSuccessful)
-                                JSONObject(requireNotNull(it.body).string()).also { value -> check(value.getString("record_id") == content.recordId && value.getString("scope") == content.scope) }
+                                JSONObject(requireNotNull(it.body).string()).also { value ->
+                                    check(value.getString("record_id") == content.recordId && value.getString("scope") == content.scope)
+                                    content.summaryId?.let { id -> check(value.optString("summary_id") == id) }
+                                    content.humanId?.let { id -> check(value.optString("human_id") == id) }
+                                }
                             }
                         }.getOrNull()
                     }
@@ -69,7 +73,7 @@ internal fun MeetingRecordCardBubble(content: MessageContent.MeetingRecordCard, 
     Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surface,
         border = androidx.compose.foundation.BorderStroke(Dimens.BorderThin, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier.widthIn(min = Dimens.Chat.CardMinWidth, max = Dimens.Chat.CardMaxWidth).combinedClickable(
-            onClick = { if (base != null) onOpen?.invoke("$base/meeting/records/${content.recordId}?tab=${if (content.scope == "minutes") "summary" else "overview"}") }, onLongClick = onLongPress,
+            onClick = { if (base != null) onOpen?.invoke(base + content.relativeLink()) }, onLongClick = onLongPress,
         )) {
         Column(Modifier.padding(Dimens.SpaceM), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
             Text(stringResource(if (content.scope == "minutes") R.string.im_material_minutes else R.string.im_material_record), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)

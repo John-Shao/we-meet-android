@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_identity_enable">Identifier les personnes</string>
+    <string name="import_identity_enable_hint">Sépare aussi les personnes qui parlent. L’audio est vérifié avant la transcription ; les identités sont proposées ensuite.</string>
+    <string name="import_identity_limit">L’identification accepte les fichiers jusqu’à 512 MiB et les audios de deux heures maximum. La transcription ordinaire reste disponible.</string>
+    <string name="import_identity_unavailable">L’identification est indisponible. Désactivez cette option pour continuer avec la transcription ordinaire.</string>
+    <string name="import_identity_scope">Bibliothèque d’empreintes vocales</string>
+    <string name="import_identity_personal">Ma bibliothèque personnelle</string>
+    <string name="import_identity_selected_scope">Organisation sélectionnée</string>
+    <string name="import_identity_more_scopes">Autres organisations</string>
+    <string name="import_identity_search">Rechercher des membres</string>
+    <string name="import_identity_search_action">Rechercher</string>
+    <string name="import_identity_selected">%1$d sélectionnés (jusqu’à %2$d)</string>
+    <string name="import_identity_remove">Retirer %1$s</string>
+    <string name="import_identity_directory_error">Les membres sont indisponibles. Actualisez avant de continuer.</string>
+    <string name="import_identity_loading">Chargement des membres…</string>
+    <string name="import_identity_empty">Aucun membre correspondant</string>
+    <string name="import_identity_previous">Page précédente</string>
+    <string name="import_identity_next">Page suivante</string>
+    <string name="import_identity_hint">Sélectionnez explicitement les personnes candidates. Seules leurs empreintes actuellement autorisées sont utilisées. Vérifiez les propositions avant de confirmer l’identité.</string>
+    <string name="import_preflight_stopped">Vérification préalable de l’identification arrêtée</string>
+    <string name="import_preflight_pending">Vérification préalable en cours. La transcription n’a pas été demandée.</string>
+    <string name="import_preflight_ready">Vérification préalable terminée. En attente de la transcription.</string>
+    <string name="import_preflight_failed">L’audio, la bibliothèque ou les autorisations n’ont pas passé la vérification préalable. La transcription n’a pas été demandée. Choisissez comment continuer.</string>
+    <string name="import_preflight_retry">Réessayer la vérification préalable</string>
+    <string name="import_preflight_continue">Continuer avec la transcription ordinaire</string>
+    <string name="import_identity_request_queued">Transcription terminée. Planification de l’identification.</string>
+    <string name="import_identity_request_submitted">Identification demandée. Ouvrez « Identifier les personnes » pour consulter la progression et les propositions.</string>
+    <string name="import_identity_request_unavailable">Transcription terminée. L’identification est indisponible ; vous pouvez nommer les personnes manuellement.</string>
+</resources>

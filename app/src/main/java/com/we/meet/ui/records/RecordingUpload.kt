@@ -13,6 +13,10 @@ import androidx.compose.material.icons.outlined.SaveAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.listSaver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -24,6 +28,7 @@ import com.we.meet.R
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.data.api.RecordingUploadCapabilities
 import com.we.meet.data.api.RecordingUploadTicket
+import com.we.meet.data.api.RecordingImportIdentity
 import com.we.meet.data.repository.RecordingUploadCancelled
 import com.we.meet.data.repository.RecordingUploadRepository
 import com.we.meet.ui.components.WeMeetInlineLoading
@@ -34,6 +39,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.withContext
 import java.util.UUID
 import retrofit2.HttpException
@@ -54,6 +61,26 @@ private val ImportIcon: ImageVector = Icons.Outlined.SaveAlt
  * import switches to resumable parts. Mirrors the Web reader's threshold.
  */
 private const val CHUNK_THRESHOLD = 100L * 1024 * 1024
+
+/** Saved command IDs only; directory names, biometric availability and credentials are not saved. */
+private val ImportIdentitySaver = listSaver<RecordingImportIdentity?, String>(
+    save = { if (it == null) listOf("off") else listOf(it.organizationId ?: "personal") + it.candidateUserIds },
+    restore = { if (it.firstOrNull() == "off") null else RecordingImportIdentity(it.firstOrNull()?.takeUnless { id -> id == "personal" }, it.drop(1)) },
+)
+
+@Composable
+private fun boundUploadRepository(repository: RecordingUploadRepository, viewer: String): RecordingUploadRepository? {
+    val bound = remember(repository, viewer) { runCatching { repository.open(viewer) }.getOrNull() }
+    var active by remember(bound) { mutableStateOf(bound?.allowed(viewer) == true) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(bound, lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (bound?.allowed(viewer) == true) delay(250)
+            active = false
+        }
+    }
+    return bound?.takeIf { active && it.allowed(viewer) }
+}
 
 /**
  * Advance a stream to a byte offset.
@@ -96,14 +123,25 @@ private fun ImportEntry(enabled: Boolean, onChoose: () -> Unit, modifier: Modifi
 
 @Composable
 internal fun RecordingUploadAction(repository: RecordingUploadRepository, viewer: String, onRecord: (String) -> Unit, modifier: Modifier = Modifier, tile: Boolean = false) {
+    val bound = boundUploadRepository(repository, viewer) ?: return
+    key(viewer, bound.loginId) { RecordingUploadBoundAction(bound, viewer, onRecord, modifier, tile) }
+}
+
+@Composable
+private fun RecordingUploadBoundAction(repository: RecordingUploadRepository, viewer: String, onRecord: (String) -> Unit, modifier: Modifier, tile: Boolean) {
     // 入口先按上一次已知的能力表立刻画出来,再拉一次权威值纠正。能力表只说明允许的
     // 后缀与大小上限(不含任何记录内容),但「导入」入口画不画全靠它 —— 若每次都等
     // 一轮网络,每次进入「AI 录音」都会看到右侧空半格,入口迟到才冒出来。
     var config by remember(repository, viewer) { mutableStateOf(repository.lastCapabilities(viewer)) }
     var settled by remember(repository, viewer) { mutableStateOf(false) }
-    LaunchedEffect(repository, viewer) {
-        config = repository.capabilities(viewer).getOrNull()
-        settled = true
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(repository, viewer, lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            val current = repository.capabilities(viewer).getOrNull()
+            if (current != null || config == null) config = current
+            settled = true
+            awaitCancellation()
+        }
     }
     val limits = config?.takeIf { it.available }
     if (limits == null) {
@@ -136,6 +174,8 @@ private fun RecordingImportEntry(
     var context by rememberSaveable(viewer) { mutableStateOf("") }
     var hotwords by rememberSaveable(viewer) { mutableStateOf("") }
     var diarization by rememberSaveable(viewer) { mutableStateOf(false) }
+    var identity by rememberSaveable(viewer, stateSaver = ImportIdentitySaver) { mutableStateOf<RecordingImportIdentity?>(null) }
+    var identityReady by remember(viewer) { mutableStateOf(false) }
     var advanced by rememberSaveable(viewer) { mutableStateOf(false) }
     // An unanswered request may already have committed. Keep its key AND options for retries.
     var submitted by rememberSaveable(viewer) { mutableStateOf(false) }
@@ -154,10 +194,19 @@ private fun RecordingImportEntry(
     var transfer by remember(viewer) { mutableStateOf<Job?>(null) }
     var busy by remember(viewer) { mutableStateOf(false) }
     var error by remember(viewer) { mutableStateOf(false) }
+    var savedLogin by rememberSaveable(viewer) { mutableStateOf(repository.loginId) }
     val resolver = LocalContext.current.contentResolver
     val jobs = rememberCoroutineScope()
+    LaunchedEffect(repository, savedLogin) {
+        if (savedLogin != repository.loginId) {
+            transfer?.cancel(); open = false; uri = null; name = ""; size = null; key = UUID.randomUUID().toString()
+            context = ""; hotwords = ""; identity = null; identityReady = false; diarization = false
+            submitted = false; uncertain = false; ticket = null; sessionId = null; busy = false; error = false
+            savedLogin = repository.loginId
+        }
+    }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { selected ->
-        if (selected != null) jobs.launch {
+        if (selected != null && repository.allowed(viewer)) jobs.launch {
             try {
                 val metadata = withContext(Dispatchers.IO) {
                     resolver.query(selected, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { rows ->
@@ -167,10 +216,12 @@ private fun RecordingImportEntry(
                             if (length >= 0 && !rows.isNull(length)) rows.getLong(length).takeIf { it >= 0 } else null
                     } ?: error("Missing document")
                 }
+                if (!repository.allowed(viewer)) return@launch
                 if (uri != selected.toString() || name != metadata.first || size != metadata.second) {
                     key = UUID.randomUUID().toString(); submitted = false; uncertain = false
                     // A ticket belongs to one file's bytes.
                     ticket = null
+                    identity = null; identityReady = false; sessionId = null
                 }
                 name = metadata.first; size = metadata.second; uri = selected.toString()
                 error = false; stopped = false; cancelled = false; open = true
@@ -178,11 +229,14 @@ private fun RecordingImportEntry(
             } catch (_: Exception) { uri = null; error = true; open = true }
         }
     }
-    val valid = uri != null && name.substringAfterLast('.', "").lowercase() in config.extensions &&
+    val validFile = uri != null && name.substringAfterLast('.', "").lowercase() in config.extensions &&
         (size == null || size!! in 1..repository.maxBytes(config))
+    val identityEligible = config.identityPreflight?.available == true && (size == null || size!! in 1..config.identityPreflight.maxBytes)
+    val valid = validFile && (identity == null || submitted || (identityReady && identityEligible && identity!!.candidateUserIds.size in 1..(config.identityPreflight?.maxCandidates ?: 0)))
     val video = name.substringAfterLast('.', "").lowercase() in setOf("avi", "flv", "mkv", "mov", "mp4", "mpeg", "webm", "wmv")
     val mimeTypes = remember(config.extensions) { recordingImportMimeTypes(config.extensions) }
-    val choose = { picker.launch(mimeTypes) }
+    val choose = { if (repository.allowed(viewer)) picker.launch(mimeTypes) }
+    if (savedLogin != repository.loginId) return
     ImportEntry(enabled = !busy, onChoose = choose, modifier = modifier, tile = tile)
     if (open) AlertDialog(onDismissRequest = { if (!busy) open = false },
         title = { Text(stringResource(R.string.record_upload_title)) },
@@ -199,13 +253,31 @@ private fun RecordingImportEntry(
                     Text(size?.let { android.text.format.Formatter.formatFileSize(LocalContext.current, it) }
                         ?: stringResource(R.string.record_import_size_unknown))
                     if (video) Text(stringResource(R.string.record_import_video_hint))
-                    if (uri != null && !valid) Text(stringResource(R.string.record_import_invalid), color = MaterialTheme.colorScheme.error)
+                    if (uri != null && !validFile) Text(stringResource(R.string.record_import_invalid), color = MaterialTheme.colorScheme.error)
+                    if (config.identityPreflight?.available == true || identity != null) {
+                        val identityLabel = stringResource(R.string.import_identity_enable)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(identityLabel, Modifier.weight(1f))
+                            Switch(checked = identity != null, enabled = !busy && !submitted && (identity != null || identityEligible),
+                                onCheckedChange = { enabled ->
+                                    identity = if (enabled) RecordingImportIdentity(null, emptyList()) else null
+                                    if (enabled) diarization = true
+                                    key = UUID.randomUUID().toString()
+                                }, modifier = Modifier.semantics { contentDescription = identityLabel })
+                        }
+                        Text(stringResource(R.string.import_identity_enable_hint), style = MaterialTheme.typography.bodySmall)
+                        if (!identityEligible) Text(stringResource(if (config.identityPreflight?.available == true) R.string.import_identity_limit else R.string.import_identity_unavailable))
+                        identity?.let { intent -> ImportIdentityChoices(repository, viewer, intent, busy || submitted || !identityEligible,
+                            config.identityPreflight?.maxCandidates ?: 0,
+                            onIntent = { if (!busy && !submitted && identity != it) { identity = it; key = UUID.randomUUID().toString() } },
+                            onReady = { identityReady = it }) }
+                    }
                     TextButton(onClick = { advanced = !advanced }) { Text(stringResource(R.string.record_upload_advanced)) }
                     if (advanced) {
                         val speakerLabel = stringResource(R.string.record_upload_diarization)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(speakerLabel, Modifier.weight(1f))
-                            Switch(checked = diarization, onCheckedChange = { diarization = it }, enabled = !busy && !submitted,
+                            Switch(checked = diarization, onCheckedChange = { diarization = it; if (!it) identity = null; key = UUID.randomUUID().toString() }, enabled = !busy && !submitted,
                                 modifier = Modifier.semantics { contentDescription = speakerLabel })
                         }
                         Text(stringResource(R.string.record_upload_diarization_hint), style = MaterialTheme.typography.bodySmall)
@@ -250,7 +322,7 @@ private fun RecordingImportEntry(
         confirmButton = {
             TextButton(enabled = valid && !busy, onClick = {
                 val document = Uri.parse(uri ?: return@TextButton)
-                if (busy) return@TextButton
+                if (busy || !valid || !repository.allowed(viewer)) return@TextButton
                 busy = true; error = false; submitted = true
                 cancelRequested = false; cancelled = false; stopped = false
                 uploadedBytes = 0; uploadedTotal = 0
@@ -280,6 +352,7 @@ private fun RecordingImportEntry(
                                     context = context,
                                     hotwords = hotwords,
                                     diarization = diarization,
+                                    identity = identity,
                                     contentType = contentTypeFor(name, resolver.getType(document)),
                                     // A remembered session is a hint; the server
                                     // still decides which parts already exist.
@@ -306,17 +379,19 @@ private fun RecordingImportEntry(
                                 onProgress = { sent, total -> uploadedBytes = sent; uploadedTotal = total },
                                 onTicket = { ticket = it },
                                 diarization = diarization,
+                                identity = identity,
                             )
                         } else {
-                            repository.uploadWithProgress(viewer, key, name, size, config, context, hotwords, bytes, diarization) { sent, total ->
+                            repository.uploadWithProgress(viewer, key, name, size, config, context, hotwords, bytes, diarization, identity) { sent, total ->
                                 uploadedBytes = sent; uploadedTotal = total
                             }
                         }
                         }
                         transfer = if (chunked) null else task
                         val result = task.await()
+                        if (!repository.allowed(viewer)) return@launch
                         if (result.isSuccess) {
-                            open = false; ticket = null; uri = null; name = ""; submitted = false; uncertain = false
+                            open = false; ticket = null; uri = null; name = ""; submitted = false; uncertain = false; identity = null
                             onRecord(result.getOrThrow().recordId)
                         } else if (result.exceptionOrNull() is RecordingUploadCancelled) {
                             // A deliberate stop is its own outcome. Folding it into
@@ -362,29 +437,51 @@ private fun RecordingImportEntry(
 
 @Composable
 internal fun RecordingUploadStatus(repository: RecordingUploadRepository, viewer: String, recordId: String) {
+    val bound = boundUploadRepository(repository, viewer) ?: return
+    key(viewer, bound.loginId, recordId) { RecordingUploadBoundStatus(bound, viewer, recordId) }
+}
+
+@Composable
+private fun RecordingUploadBoundStatus(repository: RecordingUploadRepository, viewer: String, recordId: String) {
     var refresh by remember(viewer, recordId) { mutableIntStateOf(0) }
     var busy by remember(viewer, recordId) { mutableStateOf(false) }
     var error by remember(viewer, recordId) { mutableStateOf(false) }
     val jobs = rememberCoroutineScope()
     val state = visibleRead(repository, viewer, recordId, refresh, intervalMs = 5_000,
-        stopWhen = { it.status == "succeeded" || it.status == "failed" }) { repository.state(viewer, recordId) }
+        stopWhen = { it.status == "failed" || (it.status == "succeeded" && it.identityRequest?.status !in setOf("queued", "running")) }) { repository.state(viewer, recordId) }
     val result = state?.getOrNull()
-    if (result?.status == "succeeded") return
+    if (result?.status == "succeeded" && result.identityRequest == null) return
     Column(Modifier.fillMaxWidth().padding(Dimens.ScreenPadding), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
         when {
             state == null -> WeMeetInlineLoading()
             state.isFailure -> Text(stringResource(R.string.records_unavailable))
+            result?.identityPreflight?.canContinueWithoutIdentity == true -> Text(stringResource(R.string.import_preflight_stopped))
+            result?.status == "succeeded" -> Text(stringResource(when (result.identityRequest?.status) {
+                "submitted" -> R.string.import_identity_request_submitted
+                "unavailable" -> R.string.import_identity_request_unavailable
+                else -> R.string.import_identity_request_queued
+            }))
             else -> Text(stringResource(when (result?.status) {
                 "failed" -> R.string.record_upload_failed
                 "queued" -> R.string.record_upload_queued
                 else -> R.string.record_upload_transcribing
             }))
         }
-        if (result?.status == "failed" && result.retryable) TextButton(enabled = !busy, onClick = {
+        if (result?.status == "queued" && result.identityPreflight?.status in setOf("pending", "preflighting", "ready"))
+            Text(stringResource(if (result.identityPreflight?.status == "ready") R.string.import_preflight_ready else R.string.import_preflight_pending))
+        if (result?.identityPreflight?.canContinueWithoutIdentity == true) {
+            Text(stringResource(R.string.import_preflight_failed))
+            listOf("retry_identity" to R.string.import_preflight_retry, "continue_without_identity" to R.string.import_preflight_continue).forEach { (action, label) ->
+                TextButton(enabled = !busy, onClick = { busy = true; error = false
+                    jobs.launch { try { error = repository.decidePreflight(viewer, recordId, result.attempt, action).isFailure; refresh++ } finally { busy = false } }
+                }) { Text(stringResource(label)) }
+            }
+        }
+        if (result?.status == "failed" && result.retryable && result.identityPreflight?.canContinueWithoutIdentity != true) TextButton(enabled = !busy, onClick = {
             busy = true; error = false
             jobs.launch { try { error = repository.retry(viewer, recordId, result.attempt).isFailure; refresh++ } finally { busy = false } }
         }) { Text(stringResource(R.string.record_upload_retry)) }
-        if (state?.isFailure == true) TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
+        if (state?.isFailure == true || error) TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.records_refresh)) }
         if (error) Text(stringResource(R.string.record_upload_error), color = MaterialTheme.colorScheme.error)
     }
 }

@@ -91,6 +91,11 @@ class ApiClient(tokenStore: TokenStore) {
     val recordingUploadApi: RecordingUploadApi = retrofit.newBuilder()
         .client(recordingUploadHttp(okHttp))
         .build().create(RecordingUploadApi::class.java)
+    val recordingImportApi: RecordingImportApi = retrofit.newBuilder()
+        .client(recordingUploadHttp(okHttp))
+        .apply { converterFactories().clear() }
+        .addConverterFactory(MoshiConverterFactory.create(moshi).withNullSerialization())
+        .build().create(RecordingImportApi::class.java)
     val userApi: UserApi = retrofit.create(UserApi::class.java)
     val qrLoginApi: QrLoginApi = retrofit.create(QrLoginApi::class.java)
     val imBridgeApi: ImBridgeApi = retrofit.create(ImBridgeApi::class.java)
@@ -115,6 +120,15 @@ class ApiClient(tokenStore: TokenStore) {
         .client(meetingPrivateHttp)
         .build()
     val meetingRecordApi: MeetingRecordApi = meetingPrivateRetrofit.create(MeetingRecordApi::class.java)
+    // Personal submissions require an explicit JSON null for organization_id.
+    val speakerIdentificationApi: SpeakerIdentificationApi = meetingPrivateRetrofit.newBuilder()
+        .apply { converterFactories().clear() }
+        .addConverterFactory(MoshiConverterFactory.create(moshi).withNullSerialization())
+        .build().create(SpeakerIdentificationApi::class.java)
+    val voiceprintApi: VoiceprintApi = meetingPrivateRetrofit.newBuilder()
+        .apply { converterFactories().clear() }
+        .addConverterFactory(MoshiConverterFactory.create(moshi).withNullSerialization())
+        .build().create(VoiceprintApi::class.java)
     val workApi: WorkApi = meetingPrivateRetrofit.create(WorkApi::class.java)
     val uploadTranslationApi: UploadTranslationApi = meetingPrivateRetrofit.create(UploadTranslationApi::class.java)
     val translationArchiveApi: TranslationArchiveApi = meetingPrivateRetrofit.newBuilder()

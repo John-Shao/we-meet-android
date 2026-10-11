@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speaker_identity_mark">Sprechende Person benennen</string>
+    <string name="speaker_identity_current">Aktueller Name: %1$s</string>
+    <string name="speaker_identity_manual_hint">Der Name gilt nur für diese Person in dieser Aufzeichnung. Es wird kein Stimmprofil erstellt und keine Berechtigung erteilt.</string>
+    <string name="speaker_identity_listen">Ab %1$s anhören</string>
+    <string name="speaker_identity_contacts">Kontakte</string>
+    <string name="speaker_identity_label">Eigener Name</string>
+    <string name="speaker_identity_label_hint">1–64 Zeichen in einer Zeile. Der Name ist für Lesende dieser Aufzeichnung sichtbar.</string>
+    <string name="speaker_identity_all">Alle Kontakte</string>
+    <string name="speaker_identity_members">Mitglieder</string>
+    <string name="speaker_identity_external">Externe Kontakte</string>
+    <string name="speaker_identity_departments">Abteilungen</string>
+    <string name="speaker_identity_department">Abteilung: %1$s</string>
+    <string name="speaker_identity_selected">Ausgewählt: %1$s</string>
+    <string name="speaker_identity_external_hint">Beim Speichern wird der Name mit den Lesenden geteilt. Telefon, E-Mail und private Notizen bleiben privat. Die Stimme bestätigt die Identität dadurch nicht.</string>
+    <string name="speaker_identity_retry">Erneut versuchen</string>
+    <string name="speaker_identity_conflict">Die Aufzeichnung wurde geändert. Dein Entwurf bleibt erhalten. Kopiere ihn bei Bedarf und lade vor dem Benennen neu.</string>
+    <string name="speaker_identity_access">Die Aufzeichnung oder das Bearbeitungsrecht ist nicht verfügbar. Lade neu, um den Zugriff zu prüfen.</string>
+    <string name="speaker_identity_reload">Aufzeichnung neu laden</string>
+</resources>

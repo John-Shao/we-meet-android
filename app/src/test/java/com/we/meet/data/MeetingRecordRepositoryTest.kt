@@ -254,6 +254,29 @@ class MeetingRecordRepositoryTest {
         assertEquals(3, requests.size)
     }
 
+    @Test fun captureOriginalsPinBothVersionsAndVerifyTheReturnedDerivation() = runBlocking {
+        val repo = repository { request ->
+            if (!request.url.encodedPath.endsWith("/original-segments/")) 200 to record()
+            else {
+                assertEquals(recordId, request.url.queryParameter("transcription_job_id"))
+                assertEquals(sourceId, request.url.queryParameter("diarization_job_id"))
+                assertEquals("opaque", request.url.queryParameter("cursor"))
+                200 to """{"results":[{"id":"$recordId","revision":1,"capture_session_id":"$snapshotId","speaker_id":"$sourceId","speaker_label":"Speaker 1","start_ms":0,"end_ms":1000,"text":"Derived","diarization_job_id":"$sourceId"}],"next_cursor":null}"""
+            }
+        }
+        val version=com.we.meet.data.repository.CaptureOriginalVersion(recordId,sourceId)
+        assertEquals("Derived",repo.originals("reader",recordId,3,cursor="opaque",captureVersion=version).getOrThrow().results.single().text)
+    }
+    @Test fun captureOriginalsRejectRowsFromAnUnrelatedOrMissingDerivation() = runBlocking {
+        for (derivation in listOf("null","\"$snapshotId\"")) {
+            val repo=repository { request ->
+                if (!request.url.encodedPath.endsWith("/original-segments/")) 200 to record()
+                else 200 to """{"results":[{"id":"$recordId","revision":1,"capture_session_id":"$snapshotId","speaker_id":"$sourceId","start_ms":0,"text":"Wrong","diarization_job_id":$derivation}]}"""
+            }
+            assertTrue(repo.originals("reader",recordId,3,captureVersion=com.we.meet.data.repository.CaptureOriginalVersion(recordId,sourceId)).isFailure)
+        }
+    }
+
     @Test fun originalWindowEndIsCarriedSoPlaybackCanDetectGaps() = runBlocking {
         // The active-row rule needs both edges: without end_ms a reader cannot tell
         // "this row is done" from "this recording has a hole here".

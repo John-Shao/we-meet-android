@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speaker_identity_mark">Nommer la personne</string>
+    <string name="speaker_identity_current">Nom actuel : %1$s</string>
+    <string name="speaker_identity_manual_hint">Ce nom concerne cette personne dans cet enregistrement. Il ne crée aucune empreinte vocale et ne donne aucune autorisation.</string>
+    <string name="speaker_identity_listen">Écouter à partir de %1$s</string>
+    <string name="speaker_identity_contacts">Contacts</string>
+    <string name="speaker_identity_label">Nom personnalisé</string>
+    <string name="speaker_identity_label_hint">1 à 64 caractères sur une ligne. Le nom est visible par les lecteurs de cet enregistrement.</string>
+    <string name="speaker_identity_all">Tous les contacts</string>
+    <string name="speaker_identity_members">Membres</string>
+    <string name="speaker_identity_external">Contacts externes</string>
+    <string name="speaker_identity_departments">Services</string>
+    <string name="speaker_identity_department">Service : %1$s</string>
+    <string name="speaker_identity_selected">Sélection : %1$s</string>
+    <string name="speaker_identity_external_hint">Enregistrer partage le nom du contact avec les lecteurs. Téléphone, e-mail et notes privées restent confidentiels. Ce choix ne vérifie pas son identité vocale.</string>
+    <string name="speaker_identity_retry">Réessayer</string>
+    <string name="speaker_identity_conflict">L’enregistrement a changé. Votre brouillon est conservé. Copiez-le si nécessaire, puis actualisez avant de recommencer.</string>
+    <string name="speaker_identity_access">L’enregistrement ou le droit de modification est indisponible. Actualisez pour vérifier les droits actuels.</string>
+    <string name="speaker_identity_reload">Actualiser l’enregistrement</string>
+</resources>

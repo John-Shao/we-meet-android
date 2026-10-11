@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_diarization_title">录音说话人分离</string>
+    <string name="capture_diarization_hint">生成独立的说话人版本，保留原文及人工修订。完成后可在说话人页识别并确认身份。新版本需重新确认身份，不会自动登记声纹。</string>
+    <string name="capture_diarization_accept">我确认进行说话人处理，可能产生费用。取消任务不保证退费。</string>
+    <string name="capture_diarization_start">开始分人</string>
+    <string name="capture_diarization_retry">重新分人</string>
+    <string name="capture_diarization_recover">恢复同一请求</string>
+    <string name="capture_diarization_cancel">取消处理</string>
+    <string name="capture_diarization_refresh">刷新状态</string>
+    <string name="capture_diarization_history">分人版本</string>
+    <string name="capture_diarization_version">分人版本 %1$d</string>
+    <string name="capture_diarization_unknown">请求结果尚未确认，请恢复同一请求，避免重复计费。</string>
+    <string name="capture_diarization_conflict">记录已变化，请刷新后重新确认。</string>
+    <string name="capture_diarization_denied">暂时无法处理，请确认访问权限及音频保留状态后刷新。</string>
+    <string name="capture_diarization_storage">无法安全保存请求，请重新加载页面后再试。</string>
+    <string name="capture_diarization_cancel_unknown">取消结果尚未确认，请刷新状态核实。</string>
+    <string name="capture_diarization_editing">请先保存或取消当前的文本编辑。</string>
+    <string name="capture_diarization_queued">等待处理</string>
+    <string name="capture_diarization_running">处理中</string>
+    <string name="capture_diarization_succeeded">已完成</string>
+    <string name="capture_diarization_failed">失败</string>
+    <string name="capture_diarization_canceled">已取消</string>
+</resources>

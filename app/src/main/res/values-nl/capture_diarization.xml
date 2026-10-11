@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_diarization_title">Opgenomen sprekers onderscheiden</string>
+    <string name="capture_diarization_hint">Maak een aparte sprekerversie met behoud van oorspronkelijke tekst en correcties. Bevestig daarna de identiteit bij Sprekers. Bevestig opnieuw bij elke nieuwe versie; geen automatische stemregistratie.</string>
+    <string name="capture_diarization_accept">Ik bevestig de verwerking, waarvoor kosten kunnen gelden. Annulering garandeert geen terugbetaling.</string>
+    <string name="capture_diarization_start">Sprekers onderscheiden</string>
+    <string name="capture_diarization_retry">Opnieuw onderscheiden</string>
+    <string name="capture_diarization_recover">Dezelfde aanvraag hervatten</string>
+    <string name="capture_diarization_cancel">Verwerking annuleren</string>
+    <string name="capture_diarization_refresh">Status vernieuwen</string>
+    <string name="capture_diarization_history">Sprekerversies</string>
+    <string name="capture_diarization_version">Sprekerversie %1$d</string>
+    <string name="capture_diarization_unknown">Het resultaat is onzeker. Hervat dezelfde aanvraag om dubbele kosten te voorkomen.</string>
+    <string name="capture_diarization_conflict">Het document is gewijzigd. Vernieuw en bevestig opnieuw.</string>
+    <string name="capture_diarization_denied">Verwerking niet beschikbaar. Controleer toegang en audiobewaring en vernieuw.</string>
+    <string name="capture_diarization_storage">De aanvraag kan niet veilig worden opgeslagen. Herlaad voordat je opnieuw probeert.</string>
+    <string name="capture_diarization_cancel_unknown">Annulering is onzeker. Vernieuw om te controleren.</string>
+    <string name="capture_diarization_editing">Sla tekstwijzigingen eerst op of annuleer ze.</string>
+    <string name="capture_diarization_queued">In wachtrij</string>
+    <string name="capture_diarization_running">In verwerking</string>
+    <string name="capture_diarization_succeeded">Voltooid</string>
+    <string name="capture_diarization_failed">Mislukt</string>
+    <string name="capture_diarization_canceled">Geannuleerd</string>
+</resources>

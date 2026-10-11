@@ -8,6 +8,7 @@ import com.we.meet.data.repository.CapturePlaylist
 import java.util.UUID
 import java.io.IOException
 import kotlinx.coroutines.*
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -25,6 +26,7 @@ class CapturePlaybackEngineTest {
         var position = 0L
         var onPosition: (() -> Unit)? = null
         val starts = mutableListOf<Pair<Long, Float>>()
+        val durations = mutableListOf<Long>()
         var mutedOutput = false
         val mutedAtStart = mutableListOf<Boolean>()
         override fun setMuted(muted: Boolean) { mutedOutput = muted }
@@ -32,6 +34,7 @@ class CapturePlaybackEngineTest {
             check(!closed)
             assertTrue(wave.any { it != 0.toByte() })
             starts += offsetMs to rate
+            durations += CaptureWave.inspect(wave).durationMs
             mutedAtStart += mutedOutput
             position = offsetMs
         }
@@ -52,6 +55,48 @@ class CapturePlaybackEngineTest {
         assertTrue(arrays.all { it.all { value -> value == 0.toByte() } })
         assertTrue(sink.closed)
         assertEquals(2000L, positions.last())
+    }
+    @Test fun previewCutsActualOutputSamplesAndNeverPrefetchesBeyondItsEnd() = runBlocking {
+        val sink = Sink()
+        val arrays = mutableListOf<ByteArray>()
+        val downloads = mutableListOf<Int>()
+        val engine = CapturePlaybackEngine({ _, i -> downloads += i; wave.copyOf().also { arrays += it } }, {}, { sink }, { true })
+        val positions = mutableListOf<Long>()
+        assertEquals(CapturePlaybackEnd(1500,false), engine.play(playlist(count=3),500,endMs=1500) { positions += it })
+        assertEquals(listOf(0,1),downloads)
+        assertEquals(listOf(1000L,500L),sink.durations)
+        assertEquals(listOf(500L to 1f,0L to 1f),sink.starts)
+        assertEquals(1500L,positions.last())
+        assertTrue(sink.closed && arrays.all { it.all { byte -> byte == 0.toByte() } })
+    }
+    @Test fun previewRejectsGapsAndOversizedRangesBeforeAnyDownload() = runBlocking {
+        var downloads = 0
+        fun engine() = CapturePlaybackEngine({ _, _ -> downloads++; wave.copyOf() }, {}, { Sink() }, { true })
+        assertTrue(runCatching { engine().play(playlist(gap=true),900,endMs=2100) {} }.isFailure)
+        assertTrue(runCatching { engine().play(playlist(count=20),0,endMs=10001) {} }.isFailure)
+        assertEquals(0,downloads)
+    }
+    @Test fun previewWithinOneChunkPassesOnlyItsAudioPrefixToOutput() = runBlocking {
+        val sink = Sink()
+        val engine = CapturePlaybackEngine({ _, _ -> wave.copyOf() }, {}, { sink }, { true })
+        assertEquals(CapturePlaybackEnd(700,false),engine.play(playlist(count=1),100,endMs=700) {})
+        assertEquals(listOf(700L),sink.durations)
+        assertEquals(100L,sink.starts.single().first)
+    }
+    @Test fun previewDeadlineReportsFailureInsteadOfSilentlyCancelingThePlayer() = runTest {
+        var opened = false
+        val engine = CapturePlaybackEngine({ _, _ -> wave.copyOf() }, { awaitCancellation() },
+            { opened = true; Sink() }, { true })
+        val failure = runCatching { engine.play(playlist(count = 1), 0, endMs = 500) {} }.exceptionOrNull()
+        assertNotNull(failure)
+        assertFalse(failure is CancellationException)
+        assertFalse(opened)
+    }
+    @Test fun externallyCanceledPreviewStillPropagatesCancellation() = runTest {
+        val engine = CapturePlaybackEngine({ _, _ -> wave.copyOf() }, { awaitCancellation() },
+            { error("No output before access verification") }, { true })
+        val failure = runCatching { withTimeout(100) { engine.play(playlist(count = 1), 0, endMs = 500) {} } }.exceptionOrNull()
+        assertTrue(failure is TimeoutCancellationException)
     }
     @Test fun gapStopsBeforePrefetchAndMissingSeekNeverDownloadsAnotherSegment() = runBlocking {
         var downloads = 0

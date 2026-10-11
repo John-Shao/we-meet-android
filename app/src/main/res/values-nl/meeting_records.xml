@@ -118,4 +118,5 @@
     <string name="records_actions">Voorgestelde acties</string>
     <string name="records_questions">Openstaande vragen</string>
     <string name="records_back_to_playback">Terug naar de afspeelpositie</string>
+    <string name="records_identity_updated">De sprekeridentiteiten zijn gewijzigd. U kunt de notulen opnieuw genereren; deze versie behoudt de oorspronkelijke inhoud.</string>
 </resources>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="identity_title">Sprecher identifizieren</string>
+    <string name="identity_open">Kandidaten wählen und identifizieren</string>
+    <string name="identity_hint">Nur die ausgewählten Personen werden verglichen. Ein Vorschlag wird erst nach menschlicher Bestätigung zum endgültigen Namen.</string>
+    <string name="identity_cancel">Diese Identifizierung abbrechen</string>
+    <string name="identity_conflict">Aufnahme oder Kontext haben sich geändert. Aktualisieren Sie vor einer weiteren Entscheidung.</string>
+    <string name="identity_failed">Identifizierung fehlgeschlagen</string>
+    <string name="identity_request_error">Die Anfrage kann nicht geprüft werden. Namen bleiben bis zur Aktualisierung verborgen.</string>
+    <string name="identity_uncertain">Die Anfrage hat den Server möglicherweise erreicht. Prüfen Sie den Status oder wiederholen Sie genau dieselbe Anfrage.</string>
+    <string name="identity_retry_same">Dieselbe Anfrage wiederholen</string>
+    <string name="identity_bank">Stimmenbibliothek</string>
+    <string name="identity_personal">Meine persönliche Bibliothek</string>
+    <string name="identity_bank_disabled">Stimmabdrücke deaktiviert</string>
+    <string name="identity_more_banks">Weitere Organisationen</string>
+    <string name="identity_targets">Zu identifizierende Sprecher</string>
+    <string name="identity_no_targets">Keine noch unbenannten Sprecher stehen zur Identifizierung bereit.</string>
+    <string name="identity_people">Ausgewählte Personen: %1$d / 50</string>
+    <string name="identity_people_hint">Wählen Sie Personen ausdrücklich aus. Die persönliche Bibliothek gilt nur für Sie; eine Organisationsbibliothek nutzt deren aktuelle Mitglieder.</string>
+    <string name="identity_find">Person suchen</string>
+    <string name="identity_search">Suchen</string>
+    <string name="identity_no_people">Keine Person passt zu dieser Suche.</string>
+    <string name="identity_remove">%1$s entfernen</string>
+    <string name="identity_submit">Ausgewählte Sprecher identifizieren</string>
+    <string name="identity_processing">Die Identifizierung läuft. Vorschläge können bestätigt oder abgelehnt werden, sobald die gesamte Anfrage abgeschlossen ist.</string>
+    <string name="identity_unverified">Dieser Vorschlag kann derzeit nicht geprüft werden. Der Kandidatenname ist verborgen.</string>
+    <string name="identity_suggested">Vorgeschlagene Identität: %1$s</string>
+    <string name="identity_preview">Ausschnitt %1$d anhören</string>
+    <string name="identity_confirm">Identität bestätigen</string>
+    <string name="identity_reject">Vorschlag ablehnen</string>
+    <string name="identity_queued">Wartet auf Identifizierung</string>
+    <string name="identity_running">Identifizierung läuft</string>
+    <string name="identity_succeeded">Identifizierung abgeschlossen</string>
+    <string name="identity_canceled">Identifizierung abgebrochen</string>
+    <string name="identity_expired">Identifizierung abgelaufen</string>
+    <string name="identity_confirmed">Identität bestätigt</string>
+    <string name="identity_rejected">Vorschlag abgelehnt</string>
+    <string name="identity_invalidated">Vorschlag nicht mehr gültig</string>
+    <string name="identity_found">Eine mögliche Identität wurde gefunden.</string>
+    <string name="identity_unknown">Keine zuverlässige Übereinstimmung.</string>
+    <string name="identity_mixed">Diese Spur enthält möglicherweise mehrere Sprecher.</string>
+    <string name="identity_ambiguous">Mehrere Kandidaten kommen infrage.</string>
+    <string name="identity_short">Zu wenig verwertbare Sprache.</string>
+    <string name="identity_unavailable">Keine nutzbaren autorisierten Stimmabdrücke oder geprüften Audiodaten verfügbar.</string>
+</resources>

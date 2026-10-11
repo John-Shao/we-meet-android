@@ -12,6 +12,8 @@ import com.we.meet.data.api.dto.RecordReferenceDto
 import com.we.meet.data.api.dto.RecordSnapshotSegmentDto
 import com.we.meet.data.api.dto.RecordSummaryVersionDto
 import com.we.meet.data.api.dto.RecordSpeakerDto
+import com.we.meet.data.api.dto.RecordSpeakerContactPageDto
+import com.we.meet.data.api.dto.RecordIdentityDecisionRequest
 import kotlinx.coroutines.CancellationException
 import okhttp3.ResponseBody
 import java.util.UUID
@@ -59,6 +61,8 @@ data class RecordOriginalRow(
     val canCorrect: Boolean = false,
     val playbackAlignment: com.we.meet.data.api.dto.PlaybackAlignmentDto? = null,
 )
+
+data class CaptureOriginalVersion(val asrId: String, val diarizationId: String?)
 
 /** No disk cache or cross-account memory; every response is checked against its reader. */
 class MeetingRecordRepository(
@@ -243,6 +247,7 @@ class MeetingRecordRepository(
         speakerId: String? = null,
         cursor: String? = null,
         atMs: Long? = null,
+        captureVersion: CaptureOriginalVersion? = null,
     ): Result<RecordPageDto<RecordOriginalRow>> = scoped(viewer) {
         requireUuid(recordId)
         require(revision > 0 && (query == null || query.length <= 200))
@@ -250,6 +255,10 @@ class MeetingRecordRepository(
         speakerId?.let(::requireUuid)
         validateCursor(cursor)
         val record = originalRecord(recordId, revision)
+        captureVersion?.let {
+            require(record.sourceType == "audio_recording")
+            requireUuid(it.asrId); it.diarizationId?.let(::requireUuid)
+        }
         val page = when (record.sourceType) {
             "meeting" -> {
                 require(speakerId == null && record.meetingSessionId != null)
@@ -262,7 +271,8 @@ class MeetingRecordRepository(
                 }, rows.nextCursor)
             }
             "audio_recording", "upload" -> {
-                val rows = api.originals(recordId, revision, query, speakerId, cursor, atMs)
+                val rows = if (captureVersion == null) api.originals(recordId, revision, query, speakerId, cursor, atMs)
+                else api.captureOriginals(recordId, revision, query, speakerId, cursor, atMs, captureVersion.asrId, captureVersion.diarizationId)
                 validatePage(rows)
                 RecordPageDto(rows.results.map {
                     requireUuid(it.id)
@@ -270,6 +280,7 @@ class MeetingRecordRepository(
                     requireUuid(it.speakerId)
                     require(it.revision > 0 && it.startMs >= 0 && (it.endMs == null || it.endMs >= it.startMs))
                     require(record.captureId == null || it.captureSessionId == record.captureId)
+                    if (captureVersion != null) require(it.diarizationJobId == captureVersion.diarizationId)
                     require(speakerId == null || speakerId == it.speakerId)
                     RecordOriginalRow(
                         it.id, it.speakerLabel, it.text, it.language,
@@ -416,11 +427,12 @@ class MeetingRecordRepository(
         userId?.let(::requireUuid)
         require(revision > 0)
         require(originalRecord(recordId, revision).sourceType in listOf("audio_recording", "upload"))
+        require(currentViewer() == viewer)
         val bound = api.attributeSpeaker(recordId, speakerId, RecordAttributionRequest(userId))
         require(bound.id == speakerId)
         require(bound.attributedUserId == userId)
         // Re-read so an attribution is never reported from a stale revision.
-        originalRecord(recordId, revision)
+        require(readableOriginalRecord(recordId).revision >= (bound.recordRevision ?: revision))
         bound
     }
 
@@ -446,6 +458,94 @@ class MeetingRecordRepository(
             require(it.name.length <= 200)
         }
         page.results
+    }
+
+    suspend fun speakerContacts(
+        viewer: String, recordId: String, query: String? = null, kind: String = "all",
+        departmentId: String? = null, offset: Int = 0,
+    ): Result<RecordSpeakerContactPageDto> = scoped(viewer) {
+        requireUuid(recordId)
+        require(query == null || query.length <= 80)
+        require(kind in setOf("all", "member", "external", "departments"))
+        require(offset in 0..10000)
+        departmentId?.let(::requireUuid)
+        val page = api.speakerContacts(recordId, query, kind, departmentId, offset)
+        require(page.results.size <= 25)
+        page.nextOffset?.let { require(it == offset + 25 && it <= 10000) }
+        page.results.forEach {
+            require(it.name.codePointCount(0, it.name.length) <= 255)
+            require(it.organizationName.codePointCount(0, it.organizationName.length) <= 255)
+            require(it.departmentName.codePointCount(0, it.departmentName.length) <= 255)
+            it.departmentId?.let(::requireUuid)
+            if (kind == "departments") {
+                require(it.kind == "department")
+                requireUuid(it.ref)
+                require(it.departmentId == it.ref)
+            } else {
+                require(it.kind in setOf("member", "external"))
+                validateContactRef(it.ref)
+                require(it.ref.substringBefore(":") == it.kind)
+                require(kind == "all" || it.kind == kind)
+                require(departmentId == null || (it.kind == "member" && it.departmentId == departmentId))
+            }
+        }
+        page
+    }
+
+    suspend fun speakerIdentityDecision(
+        viewer: String, recordId: String, speakerId: String, request: RecordIdentityDecisionRequest,
+    ): Result<RecordSpeakerDto> = scoped(viewer) {
+        requireUuid(recordId); requireUuid(speakerId); require(request.expectedRevision > 0)
+        when (request.action) {
+            "select_contact" -> { require(request.label == null); validateContactRef(requireNotNull(request.contactRef)) }
+            "set_label" -> {
+                require(request.contactRef == null)
+                val value = requireNotNull(request.label)
+                require(value == value.trim() && value.isNotBlank() && value.codePointCount(0, value.length) <= 64)
+                require(value.codePoints().noneMatch { Character.getType(it) in setOf(
+                    Character.CONTROL.toInt(), Character.FORMAT.toInt(),
+                    Character.SURROGATE.toInt(),
+                    Character.LINE_SEPARATOR.toInt(), Character.PARAGRAPH_SEPARATOR.toInt(),
+                ) })
+            }
+            "clear" -> require(request.contactRef == null && request.label == null)
+            else -> error("unsupported identity decision")
+        }
+        require(originalRecord(recordId, request.expectedRevision).sourceType in listOf("audio_recording", "upload"))
+        // A suspend read may complete after an account switch. Never submit the
+        // previous viewer's edit with the new viewer's current credentials.
+        require(currentViewer() == viewer)
+        val updated = api.speakerIdentityDecision(recordId, speakerId, request)
+        require(updated.id == speakerId)
+        val newRevision = requireNotNull(updated.recordRevision)
+        require(newRevision.toLong() in request.expectedRevision.toLong()..request.expectedRevision.toLong() + 1)
+        require(updated.manualLabel.codePointCount(0, updated.manualLabel.length) <= 128)
+        require(updated.attributedUserId == null || updated.manualLabel.isEmpty())
+        updated.attributedUserId?.let(::requireUuid)
+        when (request.action) {
+            "set_label" -> require(updated.attributionKind == "custom" && updated.manualLabel == request.label && updated.attributedUserId == null)
+            "clear" -> require(updated.attributionKind == "none" && updated.manualLabel.isEmpty() && updated.attributedUserId == null)
+            "select_contact" -> {
+                require(
+                    (updated.attributionKind == "member" && updated.attributedUserId != null) ||
+                    (updated.attributionKind == "contact" && updated.manualLabel.isNotBlank() && updated.attributedUserId == null)
+                )
+                if (request.contactRef!!.startsWith("member:")) {
+                    require(updated.attributionKind == "member")
+                    require(updated.attributedUserId.equals(request.contactRef.substringAfter(":"), ignoreCase = true))
+                }
+            }
+        }
+        // A later editor can advance the record while the successful response
+        // is in flight. Reauthorize without rejecting our own accepted edit.
+        require(readableOriginalRecord(recordId).revision >= newRevision)
+        updated
+    }
+
+    private fun validateContactRef(reference: String) {
+        val parts = reference.split(":", limit = 2)
+        require(parts.size == 2 && parts[0] in setOf("member", "external"))
+        requireUuid(parts[1])
     }
 
     private suspend fun originalRecord(recordId: String, revision: Int): RecordDto {

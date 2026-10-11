@@ -62,4 +62,16 @@ class RecordLinksTest {
         assertNull(RecordLinks.parse("$base$path?tab=summary&tab=overview", base))
     }
 
+    @Test fun pinnedHumanAndAiMaterialsPreserveTheirSelectors() {
+        val human = "33333333-3333-4333-8333-333333333333"
+        assertEquals(RecordLink(record, humanId = human), RecordLinks.parse(RecordLinks.share(record, base, humanId = human), base))
+        assertEquals(RecordLink(record, summary), RecordLinks.parse(RecordLinks.material(record, base, "minutes", summaryId = summary), base))
+        assertEquals(RecordLink(record, humanId = human), RecordLinks.parse(RecordLinks.material(record, base, "minutes", humanId = human), base))
+        assertThrows(IllegalArgumentException::class.java) { RecordLinks.material(record, base, "record", humanId = human) }
+        assertThrows(IllegalArgumentException::class.java) { RecordLinks.share(record, base, summary, human) }
+        listOf("?human=", "?human=bad", "?human=$human&human=$human", "?human=$human&summary=$summary", "?human=$human&tab=summary").forEach {
+            assertNull(it, RecordLinks.parse("$base$path$it", base))
+        }
+    }
+
 }

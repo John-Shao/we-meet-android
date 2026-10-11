@@ -21,6 +21,7 @@ data class RecordCapabilitiesDto(
     @Json(name = "download_media") val downloadMedia: Boolean = false,
     @Json(name = "batch_correct") val batchCorrect: Boolean = false,
     val trash: Boolean = false,
+    val edit: Boolean = false,
 )
 
 data class RecordTitleRequestDto(val title: String, @Json(name = "expected_title") val expectedTitle: String)
@@ -109,6 +110,7 @@ data class RecordSummaryVersionDto(
     @Json(name = "asr_status") val asrStatus: String = "unverified",
     @Json(name = "source_through_ms") val sourceThroughMs: Long? = null,
     val content: RecordSummaryContentDto,
+    @Json(name = "identity_updated") val identityUpdated: Boolean = false,
 )
 
 data class RecordSnapshotSegmentDto(
@@ -155,6 +157,7 @@ data class RecordOriginalSegmentDto(
     @Json(name = "can_correct") val canCorrect: Boolean = false,
     // An optional enhancement must not break the entire page on a malformed shape.
     @Json(name = "playback_alignment") val playbackAlignment: Any? = null,
+    @Json(name = "diarization_job_id") val diarizationJobId: String? = null,
 )
 
 /** The result of correcting one segment, or of restoring its original text. */
@@ -216,6 +219,9 @@ data class RecordSpeakerDto(
     @Json(name = "display_name") val displayName: String? = null,
     /** The bound person, or null while the track is still only "Speaker 1". */
     @Json(name = "attributed_user_id") val attributedUserId: String? = null,
+    @Json(name = "manual_label") val manualLabel: String = "",
+    @Json(name = "attribution_kind") val attributionKind: String = "none",
+    @Json(name = "record_revision") val recordRevision: Int? = null,
     /**
      * Whether this reader may change the binding. Only an editor may, so the
      * control is absent rather than disabled when this is false.
@@ -241,4 +247,25 @@ data class RecordAttributionRequest(
  */
 data class RecordAttributionCandidatePageDto(
     val results: List<RecordAttributionCandidateDto> = emptyList(),
+)
+
+data class RecordSpeakerContactDto(
+    val ref: String,
+    val kind: String,
+    val name: String,
+    @Json(name = "organization_name") val organizationName: String = "",
+    @Json(name = "department_name") val departmentName: String = "",
+    @Json(name = "department_id") val departmentId: String? = null,
+)
+
+data class RecordSpeakerContactPageDto(
+    val results: List<RecordSpeakerContactDto> = emptyList(),
+    @Json(name = "next_offset") val nextOffset: Int? = null,
+)
+
+data class RecordIdentityDecisionRequest(
+    val action: String,
+    @Json(name = "expected_revision") val expectedRevision: Int,
+    @Json(name = "contact_ref") val contactRef: String? = null,
+    val label: String? = null,
 )

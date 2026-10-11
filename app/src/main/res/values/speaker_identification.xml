@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="identity_title">Identify speakers</string>
+    <string name="identity_open">Choose candidates and identify</string>
+    <string name="identity_hint">Match only the people you select. A suggestion becomes a final name only after a person confirms it.</string>
+    <string name="identity_cancel">Cancel this identification request</string>
+    <string name="identity_conflict">The record or identification context changed. Refresh before making another decision.</string>
+    <string name="identity_failed">Identification failed</string>
+    <string name="identity_request_error">The request could not be verified. Names are hidden until you refresh.</string>
+    <string name="identity_uncertain">The submission may have reached the server. Check its status or retry the exact same request.</string>
+    <string name="identity_retry_same">Retry the same request</string>
+    <string name="identity_bank">Voiceprint library</string>
+    <string name="identity_personal">My personal library</string>
+    <string name="identity_bank_disabled">Voiceprints disabled</string>
+    <string name="identity_more_banks">More organizations</string>
+    <string name="identity_targets">Speaker tracks to identify</string>
+    <string name="identity_no_targets">No unlabelled speaker tracks are available for identification.</string>
+    <string name="identity_people">Selected people: %1$d / 50</string>
+    <string name="identity_people_hint">Select people explicitly. Personal matching is limited to you; organization matching uses current members of that organization.</string>
+    <string name="identity_find">Find a person</string>
+    <string name="identity_search">Search</string>
+    <string name="identity_no_people">No people match this search.</string>
+    <string name="identity_remove">Remove %1$s</string>
+    <string name="identity_submit">Identify selected speakers</string>
+    <string name="identity_processing">Identification is still processing. You can confirm or reject suggestions when the whole request finishes.</string>
+    <string name="identity_unverified">This suggestion cannot currently be verified. Its candidate name is hidden.</string>
+    <string name="identity_suggested">Suggested identity: %1$s</string>
+    <string name="identity_preview">Listen to clip %1$d</string>
+    <string name="identity_confirm">Confirm identity</string>
+    <string name="identity_reject">Reject suggestion</string>
+    <string name="identity_queued">Waiting to identify</string>
+    <string name="identity_running">Identifying</string>
+    <string name="identity_succeeded">Identification finished</string>
+    <string name="identity_canceled">Identification canceled</string>
+    <string name="identity_expired">Identification expired</string>
+    <string name="identity_confirmed">Identity confirmed</string>
+    <string name="identity_rejected">Suggestion rejected</string>
+    <string name="identity_invalidated">Suggestion is no longer valid</string>
+    <string name="identity_found">A candidate identity was found.</string>
+    <string name="identity_unknown">No reliable identity match.</string>
+    <string name="identity_mixed">This track may contain multiple speakers.</string>
+    <string name="identity_ambiguous">More than one candidate is plausible.</string>
+    <string name="identity_short">Not enough usable speech.</string>
+    <string name="identity_unavailable">No usable authorized voiceprints or verified audio are available.</string>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speaker_identity_mark">Label speaker</string>
+    <string name="speaker_identity_current">Current name: %1$s</string>
+    <string name="speaker_identity_manual_hint">This label applies to this speaker in this record. It does not enroll a voiceprint or grant voiceprint permission.</string>
+    <string name="speaker_identity_listen">Listen from %1$s</string>
+    <string name="speaker_identity_contacts">Contacts</string>
+    <string name="speaker_identity_label">Custom label</string>
+    <string name="speaker_identity_label_hint">1–64 characters, one line. The name is shown to readers of this record.</string>
+    <string name="speaker_identity_all">All contacts</string>
+    <string name="speaker_identity_members">Members</string>
+    <string name="speaker_identity_external">External contacts</string>
+    <string name="speaker_identity_departments">Departments</string>
+    <string name="speaker_identity_department">Department: %1$s</string>
+    <string name="speaker_identity_selected">Selected: %1$s</string>
+    <string name="speaker_identity_external_hint">Saving shares this contact’s name with readers of the record. Phone numbers, email and private notes stay private. This does not verify identity by voice.</string>
+    <string name="speaker_identity_retry">Retry</string>
+    <string name="speaker_identity_conflict">The record changed. Your draft is kept. Copy it if needed, then reload before labeling again.</string>
+    <string name="speaker_identity_access">The record or editing permission is unavailable. Reload to check current access.</string>
+    <string name="speaker_identity_reload">Reload record</string>
+</resources>

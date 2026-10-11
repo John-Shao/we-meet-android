@@ -58,6 +58,10 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
     lateinit var meetingDetailRepository: MeetingDetailRepository
         private set
     lateinit var meetingRecordRepository: MeetingRecordRepository
+    lateinit var speakerIdentificationRepository: com.we.meet.data.repository.SpeakerIdentificationRepository
+        private set
+    lateinit var voiceprintRepository: com.we.meet.data.repository.VoiceprintRepository
+        private set
     lateinit var recordingUploadRepository: com.we.meet.data.repository.RecordingUploadRepository
         private set
     lateinit var translationArchiveRepository: com.we.meet.data.repository.TranslationArchiveRepository
@@ -70,6 +74,8 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         get() = if (tokenStore.isLoggedIn()) tokenStore.userId else null
     override val assistantAccount: String? get() = captureAccount
     lateinit var captureTranscriptionRepository: com.we.meet.data.repository.CaptureTranscriptionRepository
+        private set
+    lateinit var captureDiarizationRepository: com.we.meet.data.repository.CaptureDiarizationRepository
         private set
     lateinit var meetingSummaryRepository: com.we.meet.data.repository.MeetingSummaryRepository
         private set
@@ -199,6 +205,10 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
         roomRepository = RoomRepository(apiClient.roomApi)
         meetingDetailRepository = MeetingDetailRepository(apiClient.roomApi)
         meetingRecordRepository = MeetingRecordRepository(apiClient.meetingRecordApi, this) { tokenStore.userId }
+        speakerIdentificationRepository = com.we.meet.data.repository.SpeakerIdentificationRepository(
+            apiClient.speakerIdentificationApi, { captureAccount }, { tokenStore.authSnapshot().session })
+        voiceprintRepository = com.we.meet.data.repository.VoiceprintRepository(
+            apiClient.voiceprintApi, { captureAccount }, { tokenStore.authSnapshot().session })
         recordingUploadRepository = com.we.meet.data.repository.RecordingUploadRepository(
             apiClient.recordingUploadApi,
             currentViewer = { tokenStore.userId },
@@ -208,11 +218,15 @@ class WeMeetApp : Application(), ImageLoaderFactory, AssistantDeps, ImDeps, Docs
             // Part PUTs additionally need to report progress and return the ETag
             // that completion requires.
             partStorage = com.we.meet.data.api.OkHttpPartStorage(),
+            importApi = apiClient.recordingImportApi,
+            currentSession = { tokenStore.authSnapshot().session },
         )
         translationArchiveRepository = com.we.meet.data.repository.TranslationArchiveRepository(apiClient.translationArchiveApi) { captureAccount }
         uploadTranslationRepository = com.we.meet.data.repository.UploadTranslationRepository(apiClient.uploadTranslationApi) { captureAccount }
         captureRepository = com.we.meet.data.repository.CaptureRepository(apiClient.captureApi) { tokenStore.userId }
         captureTranscriptionRepository = com.we.meet.data.repository.CaptureTranscriptionRepository(apiClient.captureTranscriptionApi) { captureAccount }
+        captureDiarizationRepository = com.we.meet.data.repository.CaptureDiarizationRepository(
+            apiClient.captureTranscriptionApi, { captureAccount }, { tokenStore.authSnapshot().session })
         meetingSummaryRepository = com.we.meet.data.repository.MeetingSummaryRepository(apiClient.meetingSummaryApi) { captureAccount }
         meetingReviewRepository = com.we.meet.data.repository.MeetingReviewRepository(apiClient.meetingReviewApi) { captureAccount }
         meetingQuestionRepository = com.we.meet.data.repository.MeetingQuestionRepository(apiClient.meetingQuestionApi) { captureAccount }

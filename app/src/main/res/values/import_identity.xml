@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_identity_enable">Identify speakers</string>
+    <string name="import_identity_enable_hint">Also separates speakers. Audio is checked before transcription; identity suggestions follow transcription.</string>
+    <string name="import_identity_limit">Identity recognition supports files up to 512 MiB and audio no longer than two hours. Ordinary transcription remains available.</string>
+    <string name="import_identity_unavailable">Identity recognition is unavailable. Turn this option off to continue with ordinary transcription.</string>
+    <string name="import_identity_scope">Voiceprint library</string>
+    <string name="import_identity_personal">My personal library</string>
+    <string name="import_identity_selected_scope">Selected organization</string>
+    <string name="import_identity_more_scopes">More organizations</string>
+    <string name="import_identity_search">Search members</string>
+    <string name="import_identity_search_action">Search</string>
+    <string name="import_identity_selected">%1$d selected (up to %2$d)</string>
+    <string name="import_identity_remove">Remove %1$s</string>
+    <string name="import_identity_directory_error">Members are unavailable. Refresh before continuing.</string>
+    <string name="import_identity_loading">Loading members…</string>
+    <string name="import_identity_empty">No matching members</string>
+    <string name="import_identity_previous">Previous page</string>
+    <string name="import_identity_next">Next page</string>
+    <string name="import_identity_hint">Choose candidates explicitly. Only their currently authorized voiceprints are used. Review suggestions before confirming identity.</string>
+    <string name="import_preflight_stopped">Identity preflight stopped</string>
+    <string name="import_preflight_pending">Checking identity preflight. Transcription has not been submitted.</string>
+    <string name="import_preflight_ready">Identity preflight completed. Waiting for transcription.</string>
+    <string name="import_preflight_failed">Audio, voiceprint library or authorization did not pass preflight. Transcription has not been submitted. Choose how to continue.</string>
+    <string name="import_preflight_retry">Retry identity preflight</string>
+    <string name="import_preflight_continue">Continue ordinary transcription</string>
+    <string name="import_identity_request_queued">Transcription completed. Scheduling identity recognition.</string>
+    <string name="import_identity_request_submitted">Identity recognition submitted. Open Identify speakers to see progress and suggestions.</string>
+    <string name="import_identity_request_unavailable">Transcription completed. Identity recognition is unavailable; speakers can be labeled manually.</string>
+</resources>

@@ -63,6 +63,7 @@ fun SettingsScreen(
     onOpenTaskSettings: () -> Unit,
     /** 「通知」页 —— 免打扰时段/星标穿透等消息通知设置都在里面。 */
     onOpenNotificationSettings: () -> Unit,
+    onOpenVoiceprint: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as WeMeetApp
     val settingsStore = app.settingsStore
@@ -129,6 +130,8 @@ fun SettingsScreen(
             Spacer(Modifier.height(Dimens.SpaceL))
 
             SettingsGroup {
+                SettingsRow(label = stringResource(R.string.voiceprint_title), onClick = onOpenVoiceprint)
+                SettingsDivider()
                 SettingsRow(
                     label = stringResource(R.string.settings_account_security),
                     onClick = onOpenAccountSecurity,

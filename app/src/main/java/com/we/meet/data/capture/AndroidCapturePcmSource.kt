@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class AndroidCapturePcmSource private constructor(
     private val record: AudioRecord,
     context: Context,
+    private val sampleRate: Int,
 ) : CapturePcmSource {
     private val failed = AtomicBoolean()
     private val released = AtomicBoolean()
@@ -28,7 +29,7 @@ class AndroidCapturePcmSource private constructor(
     private val recordingCallback = object : AudioManager.AudioRecordingCallback() {
         override fun onRecordingConfigChanged(configs: MutableList<AudioRecordingConfiguration>) {
             if (configs.any { it.clientAudioSessionId == record.audioSessionId &&
-                    (it.isClientSilenced || it.clientFormat.sampleRate != CaptureWave.SAMPLE_RATE ||
+                    (it.isClientSilenced || it.clientFormat.sampleRate != sampleRate ||
                         it.clientFormat.channelCount != 1 || it.clientFormat.encoding != AudioFormat.ENCODING_PCM_16BIT) }) interrupt()
         }
     }
@@ -86,20 +87,21 @@ class AndroidCapturePcmSource private constructor(
     }
 
     companion object {
-        fun open(context: Context): AndroidCapturePcmSource {
+        fun open(context: Context, sampleRate: Int = CaptureWave.SAMPLE_RATE): AndroidCapturePcmSource {
+            require(sampleRate in listOf(CaptureWave.SAMPLE_RATE, 24000))
             check(ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
-            val minimum = AudioRecord.getMinBufferSize(CaptureWave.SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
+            val minimum = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
             check(minimum > 0)
             val record = AudioRecord.Builder()
                 .setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
-                .setAudioFormat(AudioFormat.Builder().setSampleRate(CaptureWave.SAMPLE_RATE)
+                .setAudioFormat(AudioFormat.Builder().setSampleRate(sampleRate)
                     .setChannelMask(AudioFormat.CHANNEL_IN_MONO).setEncoding(AudioFormat.ENCODING_PCM_16BIT).build())
-                .setBufferSizeInBytes(maxOf(minimum * 2, CaptureWave.SAMPLE_RATE * 2))
+                .setBufferSizeInBytes(maxOf(minimum * 2, sampleRate * 2))
                 .build()
             try {
-                check(record.state == AudioRecord.STATE_INITIALIZED && record.sampleRate == CaptureWave.SAMPLE_RATE &&
+                check(record.state == AudioRecord.STATE_INITIALIZED && record.sampleRate == sampleRate &&
                     record.channelCount == 1 && record.audioFormat == AudioFormat.ENCODING_PCM_16BIT)
-                return AndroidCapturePcmSource(record, context)
+                return AndroidCapturePcmSource(record, context, sampleRate)
             } catch (error: Exception) { runCatching { record.release() }; throw error }
         }
     }

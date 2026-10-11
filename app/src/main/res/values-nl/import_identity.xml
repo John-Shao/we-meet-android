@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_identity_enable">Sprekers identificeren</string>
+    <string name="import_identity_enable_hint">Scheidt ook de sprekers. Audio wordt vóór de transcriptie gecontroleerd; identiteitsvoorstellen volgen daarna.</string>
+    <string name="import_identity_limit">Identificatie ondersteunt bestanden tot 512 MiB en audio van maximaal twee uur. Gewone transcriptie blijft beschikbaar.</string>
+    <string name="import_identity_unavailable">Identificatie is niet beschikbaar. Schakel deze optie uit om door te gaan met gewone transcriptie.</string>
+    <string name="import_identity_scope">Stemprofielbibliotheek</string>
+    <string name="import_identity_personal">Mijn persoonlijke bibliotheek</string>
+    <string name="import_identity_selected_scope">Geselecteerde organisatie</string>
+    <string name="import_identity_more_scopes">Meer organisaties</string>
+    <string name="import_identity_search">Leden zoeken</string>
+    <string name="import_identity_search_action">Zoeken</string>
+    <string name="import_identity_selected">%1$d geselecteerd (maximaal %2$d)</string>
+    <string name="import_identity_remove">%1$s verwijderen</string>
+    <string name="import_identity_directory_error">Leden zijn niet beschikbaar. Vernieuw voordat je doorgaat.</string>
+    <string name="import_identity_loading">Leden laden…</string>
+    <string name="import_identity_empty">Geen overeenkomende leden</string>
+    <string name="import_identity_previous">Vorige pagina</string>
+    <string name="import_identity_next">Volgende pagina</string>
+    <string name="import_identity_hint">Kies kandidaten uitdrukkelijk. Alleen hun stemprofielen met geldige toestemming worden gebruikt. Controleer de voorstellen voordat je een identiteit bevestigt.</string>
+    <string name="import_preflight_stopped">Voorcontrole voor identificatie gestopt</string>
+    <string name="import_preflight_pending">Voorcontrole bezig. De transcriptie is nog niet aangevraagd.</string>
+    <string name="import_preflight_ready">Voorcontrole voltooid. Wachten op de transcriptie.</string>
+    <string name="import_preflight_failed">Audio, stemprofielbibliotheek of toestemming hebben de voorcontrole niet doorstaan. De transcriptie is niet aangevraagd. Kies hoe je wilt doorgaan.</string>
+    <string name="import_preflight_retry">Voorcontrole opnieuw proberen</string>
+    <string name="import_preflight_continue">Doorgaan met gewone transcriptie</string>
+    <string name="import_identity_request_queued">Transcriptie voltooid. Identificatie wordt ingepland.</string>
+    <string name="import_identity_request_submitted">Identificatie aangevraagd. Open Sprekers identificeren om de voortgang en voorstellen te bekijken.</string>
+    <string name="import_identity_request_unavailable">Transcriptie voltooid. Identificatie is niet beschikbaar; je kunt sprekers handmatig benoemen.</string>
+</resources>

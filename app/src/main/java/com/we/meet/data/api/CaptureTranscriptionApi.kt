@@ -15,6 +15,27 @@ import retrofit2.http.Query
 
 interface CaptureTranscriptionApi {
     @Headers("Cache-Control: no-store")
+    @GET("api/v1.0/capture-sessions/{capture}/diarization/")
+    suspend fun diarizationState(@Path("capture") capture: String,
+        @Header("X-Voiceprint-Owner") owner: String,
+        @retrofit2.http.Tag login: com.we.meet.data.auth.PrivateLogin): com.we.meet.data.api.dto.CaptureDiarizationStateDto = error("Diarization unavailable")
+
+    @Headers("Cache-Control: no-store")
+    @POST("api/v1.0/capture-sessions/{capture}/diarization/")
+    suspend fun requestDiarization(@Path("capture") capture: String,
+        @Header("X-Voiceprint-Owner") owner: String,
+        @retrofit2.http.Tag login: com.we.meet.data.auth.PrivateLogin,
+        @Header("Idempotency-Key") key: String,
+        @Body body: com.we.meet.data.api.dto.CaptureDiarizationRequestDto): com.we.meet.data.api.dto.CaptureDiarizationCreatedDto = error("Diarization unavailable")
+
+    @Headers("Cache-Control: no-store")
+    @POST("api/v1.0/capture-sessions/{capture}/diarization/{job}/cancel/")
+    suspend fun cancelDiarization(@Path("capture") capture: String, @Path("job") job: String,
+        @Header("X-Voiceprint-Owner") owner: String,
+        @retrofit2.http.Tag login: com.we.meet.data.auth.PrivateLogin,
+        @Body body: com.we.meet.data.api.dto.CaptureDiarizationRequestDto): com.we.meet.data.api.dto.CaptureDiarizationCanceledDto = error("Diarization unavailable")
+
+    @Headers("Cache-Control: no-store")
     @GET("api/v1.0/capture-sessions/{capture}/transcription/")
     suspend fun state(@Path("capture") capture: String): CaptureAsrStateDto
 

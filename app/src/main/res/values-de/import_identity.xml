@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_identity_enable">Sprechende Personen identifizieren</string>
+    <string name="import_identity_enable_hint">Trennt auch die sprechenden Personen. Die Audiodatei wird vor der Transkription geprüft; Identitätsvorschläge folgen danach.</string>
+    <string name="import_identity_limit">Die Identitätserkennung unterstützt Dateien bis 512 MiB und Audio bis zu zwei Stunden. Die normale Transkription bleibt verfügbar.</string>
+    <string name="import_identity_unavailable">Die Identitätserkennung ist nicht verfügbar. Deaktiviere diese Option, um mit der normalen Transkription fortzufahren.</string>
+    <string name="import_identity_scope">Stimmprofilbibliothek</string>
+    <string name="import_identity_personal">Meine persönliche Bibliothek</string>
+    <string name="import_identity_selected_scope">Ausgewählte Organisation</string>
+    <string name="import_identity_more_scopes">Weitere Organisationen</string>
+    <string name="import_identity_search">Mitglieder suchen</string>
+    <string name="import_identity_search_action">Suchen</string>
+    <string name="import_identity_selected">%1$d ausgewählt (bis zu %2$d)</string>
+    <string name="import_identity_remove">%1$s entfernen</string>
+    <string name="import_identity_directory_error">Mitglieder sind nicht verfügbar. Aktualisiere vor dem Fortfahren.</string>
+    <string name="import_identity_loading">Mitglieder werden geladen…</string>
+    <string name="import_identity_empty">Keine passenden Mitglieder</string>
+    <string name="import_identity_previous">Vorherige Seite</string>
+    <string name="import_identity_next">Nächste Seite</string>
+    <string name="import_identity_hint">Wähle mögliche Personen ausdrücklich aus. Nur ihre aktuell freigegebenen Stimmprofile werden verwendet. Prüfe die Vorschläge, bevor du die Identität bestätigst.</string>
+    <string name="import_preflight_stopped">Vorprüfung der Identitätserkennung beendet</string>
+    <string name="import_preflight_pending">Die Vorprüfung läuft. Die Transkription wurde noch nicht angefordert.</string>
+    <string name="import_preflight_ready">Vorprüfung abgeschlossen. Warten auf die Transkription.</string>
+    <string name="import_preflight_failed">Audio, Stimmprofilbibliothek oder Berechtigung haben die Vorprüfung nicht bestanden. Die Transkription wurde nicht angefordert. Wähle, wie du fortfahren möchtest.</string>
+    <string name="import_preflight_retry">Vorprüfung erneut versuchen</string>
+    <string name="import_preflight_continue">Mit normaler Transkription fortfahren</string>
+    <string name="import_identity_request_queued">Transkription abgeschlossen. Die Identitätserkennung wird eingeplant.</string>
+    <string name="import_identity_request_submitted">Identitätserkennung angefordert. Öffne „Sprechende Personen identifizieren“, um Fortschritt und Vorschläge zu sehen.</string>
+    <string name="import_identity_request_unavailable">Transkription abgeschlossen. Die Identitätserkennung ist nicht verfügbar; du kannst sprechende Personen manuell benennen.</string>
+</resources>

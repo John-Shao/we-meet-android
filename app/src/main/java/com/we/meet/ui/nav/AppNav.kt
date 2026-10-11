@@ -116,16 +116,19 @@ object Routes {
     const val RECORD_LIBRARY = "meeting_records?summaries={summaries}"
     const val CAPTURE = "meeting_capture"
     const val RECORDING_DETAIL = "recording_detail/{recordId}"
-    const val RECORD_DETAIL = "meeting_record/{recordId}?summary={summary}&tab={tab}"
-    fun recordDetail(recordId: String, summaryId: String? = null, summaryView: Boolean = false, reviewed: Boolean = false): String {
+    const val RECORD_DETAIL = "meeting_record/{recordId}?summary={summary}&tab={tab}&human={human}"
+    fun recordDetail(recordId: String, summaryId: String? = null, summaryView: Boolean = false, reviewed: Boolean = false, humanId: String? = null): String {
+        require(summaryId == null || humanId == null)
         val query = listOfNotNull(
             summaryId?.let { "summary=${URLEncoder.encode(it, StandardCharsets.UTF_8.name())}" },
+            humanId?.let { "human=${URLEncoder.encode(it, StandardCharsets.UTF_8.name())}" },
             if (reviewed) "tab=review" else if (summaryView) "tab=summary" else null,
         ).joinToString("&")
         return "meeting_record/${URLEncoder.encode(recordId, StandardCharsets.UTF_8.name())}" +
             if (query.isEmpty()) "" else "?$query"
     }
     const val SETTINGS = "settings"
+    const val VOICEPRINT_SETTINGS = "voiceprint_settings"
     const val ACCOUNT_SECURITY = "account_security"
     const val MEETING_SETTINGS = "meeting_settings"
     const val TASK_SETTINGS = "task_settings"
@@ -475,7 +478,7 @@ fun AppNav() {
             null
         }
         if (material != null) {
-            navController.navigate(Routes.recordDetail(material.recordId, material.summaryId, summaryView = material.summaryView))
+            navController.navigate(Routes.recordDetail(material.recordId, material.summaryId, summaryView = material.summaryView, humanId = material.humanId))
         } else if (docId != null) {
             navController.navigate(Routes.docsDetail(docId))
         } else {
@@ -506,7 +509,7 @@ fun AppNav() {
         }
         if (!app.tokenStore.isLoggedIn() || currentEntry == null || currentEntry?.destination?.route == Routes.LOGIN) return@LaunchedEffect
         app.pendingRecordLink.value = null
-        navController.navigate(Routes.recordDetail(link.recordId, link.summaryId, summaryView = link.summaryView)) { launchSingleTop = true }
+        navController.navigate(Routes.recordDetail(link.recordId, link.summaryId, summaryView = link.summaryView, humanId = link.humanId)) { launchSingleTop = true }
     }
 
     // Set by RoomScreen when the server disconnected us because the host
@@ -1593,6 +1596,7 @@ fun AppNav() {
                     }
                 },
                 onOpenAccountSecurity = { navController.navigate(Routes.ACCOUNT_SECURITY) },
+                onOpenVoiceprint = { navController.navigate(Routes.VOICEPRINT_SETTINGS) },
                 // P8 设置收敛:模块设置从用户设置进,模块内齿轮是同页快捷入口。
                 onOpenMeetingSettings = { navController.navigate(Routes.MEETING_SETTINGS) },
                 onOpenCalendarSettings = { navController.navigate(Routes.CALENDAR_SETTINGS) },
@@ -1603,6 +1607,9 @@ fun AppNav() {
             )
         }
 
+        composable(Routes.VOICEPRINT_SETTINGS) {
+            com.we.meet.ui.voiceprint.VoiceprintSettingsScreen(app.voiceprintRepository, app.tokenStore.userId.orEmpty(), onBack = rememberOnceOnly(safePop))
+        }
         composable(Routes.CAPTURE) {
             CaptureScreen(app.tokenStore.userId.orEmpty(), onBack = rememberOnceOnly(safePop),
                 onSummaryRecord = { id -> navController.navigate(Routes.recordDetail(id, summaryView = true)) },
@@ -1625,11 +1632,13 @@ fun AppNav() {
         composable(Routes.RECORD_DETAIL, arguments = listOf(
             navArgument("recordId") { type = NavType.StringType },
             navArgument("summary") { type = NavType.StringType; nullable = true; defaultValue = null },
+            navArgument("human") { type = NavType.StringType; nullable = true; defaultValue = null },
             navArgument("tab") { type = NavType.StringType; nullable = true; defaultValue = null },
         )) { entry ->
             RecordDetailScreen(app.meetingRecordRepository, app.tokenStore.userId.orEmpty(),
                 entry.arguments?.getString("recordId").orEmpty(), onBack = rememberOnceOnly(safePop),
                 summaryVersionId = entry.arguments?.getString("summary"), initialReview = entry.arguments?.getString("tab") == "review", initialSummary = entry.arguments?.getString("tab") in listOf("summary", "review"), onTask = { navController.navigate(Routes.taskDetail(it)) },
+                humanVersionId = entry.arguments?.getString("human"),
                 onDocument = { navController.navigate(Routes.docsDetail(it)) },
                 onRemoved = rememberOnceOnly { navController.openLibraryAfterRecordRemoval() })
         }

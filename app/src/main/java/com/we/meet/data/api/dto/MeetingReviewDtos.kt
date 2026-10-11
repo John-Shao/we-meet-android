@@ -12,7 +12,8 @@ data class HumanContentDto(val overview: String, val decisions: List<HumanPointD
 data class HumanReviewDto(val id: String, val revision: Int, @Json(name = "base_summary_id") val baseSummaryId: String,
     @Json(name = "previous_id") val previousId: String?, @Json(name = "input_snapshot_id") val inputSnapshotId: String,
     @Json(name = "author_id") val authorId: String?, @Json(name = "created_at") val createdAt: String, val content: HumanContentDto,
-    val origin: String, @Json(name = "source_revision") val sourceRevision: Int)
+    val origin: String, @Json(name = "source_revision") val sourceRevision: Int,
+    @Json(name = "identity_updated") val identityUpdated: Boolean = false)
 data class HumanReviewStateDto(val current: HumanReviewDto?, @Json(name = "can_edit") val canEdit: Boolean = false)
 data class HumanReviewRequestDto(@Json(name = "base_summary_id") val baseSummaryId: String,
     @Json(name = "expected_revision") val expectedRevision: Int, @Json(name = "replace_base") val replaceBase: Boolean, val content: HumanContentDto)

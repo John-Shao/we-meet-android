@@ -43,7 +43,7 @@ internal fun RecordHumanSummary(viewer: String, record: RecordDto, base: RecordS
     var draft by remember(viewer, record.id) { mutableStateOf<HumanReviewRequestDto?>(null) }
     var history by remember(viewer, record.id) { mutableStateOf(false) }
     var replace by remember(viewer, record.id) { mutableStateOf(false) }
-    val read = visibleRead(viewer, record.id, refresh) { repository.current(viewer, record.id) }
+    val read = visibleRead(viewer, record.id, record.revision, refresh) { repository.current(viewer, record.id) }
     val state = read?.getOrNull()
     LaunchedEffect(viewer, record.id, lifecycle, storageRetry) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
@@ -132,13 +132,20 @@ internal fun RecordHumanSummary(viewer: String, record: RecordDto, base: RecordS
 private fun HumanSummaryBody(review: HumanReviewDto, originals: Boolean, onSource: (String, RecordReferenceDto) -> Unit) {
     Text(stringResource(R.string.human_summary_version, review.revision), style = MaterialTheme.typography.labelLarge)
     Text(recordTime(review.createdAt), style = MaterialTheme.typography.bodySmall)
+    if (review.identityUpdated) Text(stringResource(R.string.records_identity_updated), style = MaterialTheme.typography.bodySmall)
     Text(review.content.overview)
     val groups = listOf(R.string.human_summary_decisions to review.content.decisions, R.string.human_summary_chapters to review.content.chapters,
         R.string.human_summary_actions to review.content.actionItems.map { HumanPointDto(it.text, it.sourceRefs) }, R.string.human_summary_questions to review.content.openQuestions)
     groups.filter { it.second.isNotEmpty() }.forEach { (label, points) ->
         Text(stringResource(label), style = MaterialTheme.typography.titleSmall)
-        points.forEach { point ->
+        points.forEachIndexed { index, point ->
             Text(point.text)
+            if (label == R.string.human_summary_actions) {
+                val action = review.content.actionItems[index]
+                listOf(action.ownerText, action.dueText).filter { it.isNotBlank() }.joinToString(" · ").takeIf { it.isNotBlank() }?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall)
+                }
+            }
             if (originals) point.sourceRefs.forEach { reference -> TextButton(onClick = { onSource(review.inputSnapshotId, reference) }) {
                 Text(stringResource(R.string.records_source) + " · " + sourceTime(reference.startMs))
             } }

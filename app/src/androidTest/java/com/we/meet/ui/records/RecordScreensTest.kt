@@ -94,6 +94,7 @@ class RecordScreensTest {
         val originalQueries = mutableListOf<Pair<String?, String?>>()
         var playbackRows: List<RecordOriginalSegmentDto>? = null
         val originalAnchors = mutableListOf<Long?>()
+        val captureVersions = mutableListOf<Triple<String,String?,String?>>()
         val summarySelectors = mutableListOf<String?>()
         var missingVersion = false
         var chapters = false
@@ -198,6 +199,14 @@ class RecordScreensTest {
             }
             return RecordPageDto(listOf(RecordOriginalSegmentDto(segmentId, 1, snapshotId, versionId, "Speaker 1", 1000, 3000,
                 if (query == null) "Full original text" else "Search matched original", correctionRevision = correctionVersion, canCorrect = canCorrect)))
+        }
+        override suspend fun captureOriginals(recordId: String,revision: Int,query: String?,speakerId: String?,cursor: String?,atMs: Long?,asrId: String,diarizationId: String?): RecordPageDto<RecordOriginalSegmentDto> {
+            checkAccess()
+            captureVersions += Triple(asrId,diarizationId,cursor)
+            val old=diarizationId == segmentId
+            return RecordPageDto(listOf(RecordOriginalSegmentDto(if(old) segmentId else versionId,1,snapshotId,versionId,"Speaker 1",0,1000,
+                if(old) "Old derived text" else "New derived text",correctionRevision=correctionVersion,canCorrect=canCorrect,diarizationJobId=diarizationId)),
+                if(old && cursor == null) "old-cursor" else null)
         }
         override suspend fun speakers(recordId: String, cursor: String?): RecordPageDto<RecordSpeakerDto> =
             RecordPageDto(listOf(RecordSpeakerDto(versionId, "Speaker 1", "diarized")))
@@ -336,6 +345,52 @@ class RecordScreensTest {
         awaitText(label(R.string.records_correction_conflict))
         compose.onNodeWithText("My unsaved draft").assertIsDisplayed()
         assertEquals(2, fixture.corrections.single().expectedRevision)
+    }
+    @Test fun newCaptureGenerationResetsItsPagesWithoutUsingOldCursors() {
+        val fixture=Fixture()
+        val repository=MeetingRecordRepository(fixture) { "reader" }
+        val current=mutableStateOf(RecordDto(recordId,"audio_recording","Versions","2026-09-13T00:00:00Z",3,RecordCapabilitiesDto(readTranscript=true)))
+        val version=mutableStateOf(com.we.meet.data.repository.CaptureOriginalVersion(snapshotId,segmentId))
+        compose.setContent { WeMeetTheme { RecordOriginals(repository,"reader",current.value,{},onExport={},captureVersion=version.value) } }
+        awaitText("Old derived text")
+        compose.runOnIdle { fixture.revision=4; current.value=current.value.copy(revision=4); version.value=version.value.copy(diarizationId=versionId) }
+        awaitText("New derived text")
+        compose.onNodeWithText("Old derived text").assertDoesNotExist()
+        assertTrue(fixture.captureVersions.any { it.first == snapshotId && it.second == versionId })
+        assertTrue(fixture.captureVersions.filter { it.second == versionId }.all { it.third == null })
+    }
+    @Test fun publishedCaptureGenerationPreservesDraftUntilExplicitCancel() {
+        val fixture=Fixture().apply { canCorrect=true }
+        val repository=MeetingRecordRepository(fixture) { "reader" }
+        val current=mutableStateOf(RecordDto(recordId,"audio_recording","Draft versions","2026-09-13T00:00:00Z",3,RecordCapabilitiesDto(readTranscript=true)))
+        val version=mutableStateOf(com.we.meet.data.repository.CaptureOriginalVersion(snapshotId,segmentId))
+        compose.setContent { WeMeetTheme { RecordOriginals(repository,"reader",current.value,{},onExport={},captureVersion=version.value) } }
+        awaitText(label(R.string.records_correction_edit))
+        compose.onNodeWithText(label(R.string.records_correction_edit)).performClick()
+        compose.onNodeWithText("Old derived text").performTextReplacement("Unsaved speaker correction")
+        compose.runOnIdle { fixture.revision=4; current.value=current.value.copy(revision=4); version.value=version.value.copy(diarizationId=versionId) }
+        awaitText("Unsaved speaker correction")
+        assertTrue(fixture.captureVersions.none { it.second == versionId })
+        compose.onNodeWithText(label(R.string.records_correction_cancel)).performClick()
+        awaitText("New derived text")
+        assertTrue(fixture.captureVersions.filter { it.second == versionId }.all { it.third == null })
+    }
+    @Test fun publishedCaptureGenerationCannotSaveAnOldDraftAsTheNewVersion() {
+        val fixture=Fixture().apply { canCorrect=true }
+        val repository=MeetingRecordRepository(fixture) { "reader" }
+        val current=mutableStateOf(RecordDto(recordId,"audio_recording","Draft versions","2026-09-13T00:00:00Z",3,RecordCapabilitiesDto(readTranscript=true)))
+        val version=mutableStateOf(com.we.meet.data.repository.CaptureOriginalVersion(snapshotId,segmentId))
+        compose.setContent { WeMeetTheme { RecordOriginals(repository,"reader",current.value,{},onExport={},captureVersion=version.value) } }
+        awaitText(label(R.string.records_correction_edit))
+        compose.onNodeWithText(label(R.string.records_correction_edit)).performClick()
+        compose.onNodeWithText("Old derived text").performTextReplacement("Keep my old-generation draft")
+        compose.runOnIdle { fixture.revision=4; current.value=current.value.copy(revision=4); version.value=version.value.copy(diarizationId=versionId) }
+        awaitText("Keep my old-generation draft")
+        compose.onNodeWithText(label(R.string.records_correction_save)).performClick()
+        awaitText(label(R.string.records_correction_conflict))
+        compose.onNodeWithText("Keep my old-generation draft").assertIsDisplayed()
+        assertTrue(fixture.corrections.isEmpty())
+        assertTrue(fixture.captureVersions.none { it.second == versionId })
     }
 
     @Test fun pendingCorrectionSurvivesPageDisposalAndCannotBeSentTwice() {
@@ -668,17 +723,19 @@ class RecordScreensTest {
         openPageActions()
         compose.onNodeWithText(label(id)).performClick()
     }
-    private fun detail(fixture: Fixture, dark: Boolean = false): Owner {
+    private fun detail(fixture: Fixture, dark: Boolean = false, minutes: Boolean = false): Owner {
         val owner = Owner()
         compose.runOnUiThread { owner.registry.currentState = Lifecycle.State.RESUMED }
         val repo = MeetingRecordRepository(fixture) { "reader" }
         compose.setContent {
             CompositionLocalProvider(LocalLifecycleOwner provides owner) {
-                WeMeetTheme(darkTheme = dark) { RecordDetailScreen(repo, "reader", recordId, {}) }
+                WeMeetTheme(darkTheme = dark) { RecordDetailScreen(repo, "reader", recordId, {}, initialSummary = minutes) }
             }
         }
-        awaitText(label(R.string.records_minutes))
-        compose.onNodeWithText(label(R.string.records_minutes)).performClick()
+        if (!minutes) {
+            awaitText(label(R.string.records_minutes))
+            compose.onNodeWithText(label(R.string.records_minutes)).performClick()
+        }
         awaitText("Confirm release scope")
         return owner
     }
@@ -897,7 +954,7 @@ class RecordScreensTest {
 
     @Test fun backgroundClearsPrivateBodyAndRevocationFailsClosedOnReturn() {
         val fixture = Fixture()
-        val owner = detail(fixture)
+        val owner = detail(fixture, minutes = true)
         compose.runOnUiThread { owner.registry.currentState = Lifecycle.State.CREATED }
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Confirm release scope").fetchSemanticsNodes().isEmpty() }
         fixture.revoked = true
@@ -908,7 +965,7 @@ class RecordScreensTest {
 
     @Test fun exactCitationOpensAndDoesNotSurviveRevocation() {
         val fixture = Fixture()
-        val owner = detail(fixture)
+        val owner = detail(fixture, minutes = true)
         compose.onNodeWithText(context.getString(R.string.records_source_at, "0:01")).performScrollTo().performClick()
         awaitText("Exact recorded evidence")
         assertEquals(1, fixture.snapshotReads)
@@ -921,7 +978,7 @@ class RecordScreensTest {
 
     @Test fun summaryOnlyAccessHasNoSourceControl() {
         val fixture = Fixture().apply { originals = false }
-        detail(fixture)
+        detail(fixture, minutes = true)
         compose.onNodeWithText(context.getString(R.string.records_source_at, "0:01")).assertDoesNotExist()
         assertEquals(0, fixture.snapshotReads)
         screenshot("records-summary-only-light")
@@ -929,7 +986,7 @@ class RecordScreensTest {
 
     @Test fun unknownStageIsNotMislabelledFinalAndIncompleteIsExplicit() {
         val fixture = Fixture().apply { stage = "future-stage"; asr = "incomplete" }
-        detail(fixture, dark = true)
+        detail(fixture, dark = true, minutes = true)
         compose.onNodeWithText(label(R.string.records_final)).assertDoesNotExist()
         compose.onNodeWithText(label(R.string.records_incomplete)).assertIsDisplayed()
         screenshot("records-summary-dark")

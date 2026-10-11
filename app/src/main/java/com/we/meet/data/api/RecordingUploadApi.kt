@@ -14,6 +14,7 @@ data class RecordingUploadCapabilities(
     /** The direct branch's ceiling; 0 when direct uploads are off. */
     @Json(name = "direct_max_bytes") val directMaxBytes: Long = 0,
     @Json(name = "personal_hotwords_available") val personalHotwordsAvailable: Boolean = false,
+    @Json(name = "identity_preflight") val identityPreflight: RecordingIdentityCapability? = null,
 )
 
 data class PersonalHotwordsDto(val words: List<String>, val revision: Int)
@@ -24,6 +25,9 @@ data class RecordingUploadState(
     val status: String,
     val attempt: Int,
     val retryable: Boolean = false,
+    @Json(name = "error_code") val errorCode: String = "",
+    @Json(name = "identity_preflight") val identityPreflight: RecordingIdentityPreflight? = null,
+    @Json(name = "identity_request") val identityRequest: RecordingIdentityRequest? = null,
 )
 
 data class RecordingUploadRetry(val attempt: Int)
@@ -37,6 +41,7 @@ data class RecordingUploadPresign(
     val context: String,
     val hotwords: String,
     val diarization: Boolean = false,
+    val identity: RecordingImportIdentity? = null,
 )
 
 /** One signed PUT, valid for one exact object. */
@@ -59,9 +64,14 @@ data class RecordingUploadComplete(
     val context: String,
     val hotwords: String,
     val diarization: Boolean = false,
+    val identity: RecordingImportIdentity? = null,
 )
 
 interface RecordingUploadApi {
+    @Multipart @POST("api/v1.0/recording-uploads/")
+    suspend fun uploadIdentity(@Part("key") key: RequestBody, @Part audio: MultipartBody.Part, @Part("context") context: RequestBody,
+        @Part("hotwords") hotwords: RequestBody, @Part("diarization") diarization: RequestBody,
+        @Part("identity") identity: RequestBody): RecordingUploadState = error("Identity import is not configured")
     @Headers("Cache-Control: no-store")
     @GET("api/v1.0/recording-hotwords/")
     suspend fun personalHotwords(): PersonalHotwordsDto = error("Personal vocabulary not implemented")
@@ -141,6 +151,7 @@ data class RecordingUploadBegin(
     val context: String,
     val hotwords: String,
     val diarization: Boolean = false,
+    val identity: RecordingImportIdentity? = null,
 )
 
 /** One signed part PUT. */

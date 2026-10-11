@@ -562,6 +562,17 @@ fun RoomScreen(
                 }
             }
         }
+        if (state.phase == RoomUiState.Phase.Connected) {
+            com.we.meet.ui.voiceprint.VoiceprintCallRoomHost(
+                app = app as WeMeetApp, room = viewModel.room,
+                routes = viewModel.callAudioDeviceModule.voiceprintRouteRevision,
+                microphoneEnabled = state.micEnabled, compact = isInPip,
+                modifier = Modifier.align(Alignment.TopStart).then(
+                    if (isInPip) Modifier.padding(Dimens.SpaceXs)
+                    else Modifier.statusBarsPadding().padding(start = Dimens.ScreenPadding, top = Dimens.SpaceXxxxl),
+                ),
+            )
+        }
     }
 }
 
