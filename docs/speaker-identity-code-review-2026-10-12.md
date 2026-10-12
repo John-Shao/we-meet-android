@@ -14,6 +14,8 @@
 
 相关 11 组 JVM 回归共 136 项通过，无失败、错误或跳过；设计 token 检查通过。编译及 Retrofit／OkHttp 契约覆盖此次改动，使用合成夹具，不使用相机或真人录音。原始日志为工作区 `work/speaker-identity-review-android-final-20261012.log`，JUnit 汇总为 `work/speaker-identity-review-android-results-20261012.json`，不入库。
 
+后续[Android 16 隔离验收](speaker-identity-api36-validation-2026-10-12.md)已在最新修复源码上构建独立测试包，66 项仪器回归通过；API 31 以上原生通信路由监听器的注册／移除与未授权麦克风状态通过。五张中文暗色／大字号截图已检查，测试包已卸载；真实设备／蓝牙切换及真人效果继续待验收。
+
 本轮修改整理到 `main`，没有修改版本号或重新发布 APK。此前 `0.3.0-work.3` 内部安装包保持原样；交付本轮客户端修复需另行构建、签名并发布新包。本轮没有变更生产声纹匹配和采样开关。
 
 后端／Web 的同期走查记录见 `we-meet/docs/research/voiceprint-participant-identity-code-review-2026-10-12.md`。
