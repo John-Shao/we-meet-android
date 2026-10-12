@@ -245,6 +245,7 @@ fun TaskScreen(
     onRegisterTaskNav: (TaskNavController) -> Unit = {},
     onFullScreenVisibilityChanged: (Boolean) -> Unit = {},
     onOpenSearch: (() -> Unit)? = null,
+    onBackToApps: (() -> Unit)? = null,
     initialTaskId: String? = null,
     onClose: (() -> Unit)? = null,
 ) {
@@ -350,8 +351,11 @@ fun TaskScreen(
     androidx.activity.compose.BackHandler(enabled = page == TaskPage.Create) {
         page = TaskPage.List
     }
-    androidx.activity.compose.BackHandler(enabled = initialTaskId != null && page == TaskPage.Detail) {
+    androidx.activity.compose.BackHandler(enabled = page == TaskPage.Detail) {
         backFromDetail()
+    }
+    androidx.activity.compose.BackHandler(enabled = page == TaskPage.Search || page == TaskPage.Activity) {
+        page = TaskPage.List
     }
     LaunchedEffect(selectedTask?.id) {
         if (initialTaskId != null && detailBackStack.isEmpty() && selectedTask != null) {
@@ -419,6 +423,7 @@ fun TaskScreen(
     Box(Modifier.fillMaxSize()) {
         when (page) {
             TaskPage.List -> TaskListPage(
+                onBackToApps = onBackToApps,
                 tasks = ui.tasks,
                 taskGroups = ui.taskGroups,
                 view = ui.view,
@@ -1267,6 +1272,7 @@ fun TaskScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TaskListPage(
+    onBackToApps: (() -> Unit)? = null,
     tasks: List<TaskItem>,
     taskGroups: List<TaskGroupItem>,
     view: TaskView,
@@ -1348,6 +1354,7 @@ private fun TaskListPage(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             TaskHomeHeader(
+                onBackToApps = onBackToApps,
                 view = view,
                 selectedList = selectedList?.name
                     ?: standaloneLabel.takeIf { view == TaskView.Standalone },
@@ -1373,7 +1380,7 @@ private fun TaskListPage(
 
             LazyColumn(
                 modifier = Modifier.fillMaxWidth().weight(1f)
-                    .background(MaterialTheme.colorScheme.surface).testTag(TASK_LIST_TEST_TAG),
+                    .background(if (onBackToApps == null) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background).testTag(TASK_LIST_TEST_TAG),
                 contentPadding = PaddingValues(bottom = Dimens.Calendar.FabClearance),
             ) {
                 if (!loading && visible.isEmpty() && !grouping.showsSectionHeaders()) {
@@ -1440,6 +1447,7 @@ internal fun TaskGrouping.showsSectionHeaders(): Boolean = this != TaskGrouping.
 
 @Composable
 private fun TaskHomeHeader(
+    onBackToApps: (() -> Unit)? = null,
     view: TaskView,
     selectedList: String?,
     selectedGroup: String?,
@@ -1455,13 +1463,18 @@ private fun TaskHomeHeader(
         TaskView.Standalone -> stringResource(R.string.task_standalone)
     }
     Row(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().background(if (onBackToApps == null) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.surface)
             // 同云文档头部：左右两端的按钮都从 SpaceXs(4dp) 起，24dp 图标在 48dp 热区里
             // 居中后字形落在 16dp，左右对称。
             .padding(horizontal = Dimens.SpaceXs)
             .padding(vertical = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        onBackToApps?.let { back ->
+            IconButton(onClick = back) {
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(com.we.meet.design.R.string.cd_back))
+            }
+        }
         IconButton(onClick = onOpenDrawer) {
             Icon(Icons.Outlined.Menu, stringResource(R.string.task_navigation))
         }

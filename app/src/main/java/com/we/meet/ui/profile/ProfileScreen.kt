@@ -78,9 +78,6 @@ private data class CropRequest(
 @Composable
 fun ProfileScreen(
     onSettingsClick: () -> Unit,
-    onOpenAiHub: () -> Unit,
-    onOpenApproval: () -> Unit,
-    onOpenWork: () -> Unit = {},
     // When hosted in a drawer this is false while closed: the composable must stay
     // in the tree (gating its composition breaks the drawer's drag anchors), but
     // its /users/me/ fetch should follow the user actually opening the page.
@@ -278,20 +275,6 @@ fun ProfileScreen(
         // Routing through onSettingsClick keeps the existing SettingsScreen
         // as the single host for these knobs.
         SettingsGroup {
-            // AI hub moved here when its bottom tab was replaced by 日历/通讯录.
-            SettingsRow(
-                label = stringResource(R.string.profile_ai_entry),
-                onClick = onOpenAiHub,
-            )
-            SettingsDivider()
-            // Approval lives here rather than a 6th bottom tab (Feishu-style workbench app).
-            SettingsRow(
-                label = stringResource(R.string.profile_approval_entry),
-                onClick = onOpenApproval,
-            )
-            SettingsDivider()
-            SettingsRow(label = stringResource(R.string.work_title), onClick = onOpenWork)
-            SettingsDivider()
             SettingsRow(
                 label = stringResource(R.string.profile_settings),
                 onClick = onSettingsClick,

@@ -53,10 +53,11 @@ fun CalendarPrimaryToolbar(
     onSelect: (CalendarPrimaryPage) -> Unit,
     onOpenManagement: () -> Unit,
     calendarViewMode: CalendarViewMode = CalendarViewMode.AGENDA,
+    secondary: Boolean = false,
 ) {
     val actionIsSettings = current == CalendarPrimaryPage.MEETING_ROOMS
     val calendarColors = WeMeetTheme.extras.calendar
-    Column(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
+    Column(modifier = Modifier.background(if (secondary) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier

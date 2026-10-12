@@ -2,6 +2,7 @@ package com.we.meet.ui.calendar
 
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -128,6 +129,7 @@ fun CalendarTabScreen(
     onOpenManagement: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
     onFullScreenVisibilityChanged: (Boolean) -> Unit = {},
+    onBack: (() -> Unit)? = null,
 ) {
     val vm: CalendarViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
@@ -140,8 +142,12 @@ fun CalendarTabScreen(
         app.settingsStore.calendarZoneId()
     }
     var primaryPage by rememberSaveable { mutableStateOf(CalendarPrimaryPage.CALENDAR) }
+    androidx.activity.compose.BackHandler(enabled = primaryPage == CalendarPrimaryPage.MEETING_ROOMS) {
+        if (onBack != null) onBack() else primaryPage = CalendarPrimaryPage.CALENDAR
+    }
     if (primaryPage == CalendarPrimaryPage.MEETING_ROOMS) {
         MeetingRoomsCalendarScreen(
+            onBackToApps = onBack,
             selectedDate = ui.selectedDate,
             onSelectedDateChange = vm::selectDate,
             onShowCalendar = { primaryPage = CalendarPrimaryPage.CALENDAR },
@@ -249,11 +255,12 @@ fun CalendarTabScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface),
+            .background(if (onBack == null) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // 首页只保留年月跳转、今天和日历/会议室主 Tab；视图切换位于管理页。
             CalendarHeader(
+                onBack = onBack,
                 ui = ui,
                 onToday = { vm.goToToday() },
                 onPickDate = { showDatePicker = true },
@@ -645,6 +652,7 @@ internal fun MonthViewBody(
 /** 飞书式首页头部：年月快速跳转、回到今天、主页面 Tab 与管理入口。 */
 @Composable
 private fun CalendarHeader(
+    onBack: (() -> Unit)? = null,
     ui: CalendarUiState,
     onToday: () -> Unit,
     onPickDate: () -> Unit,
@@ -654,7 +662,7 @@ private fun CalendarHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background),
+            .background(if (onBack == null) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.surface),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -665,6 +673,11 @@ private fun CalendarHeader(
                 .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
                 .padding(vertical = Dimens.SpaceS),
         ) {
+            onBack?.let { back ->
+                IconButton(onClick = back) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(com.we.meet.design.R.string.cd_back))
+                }
+            }
             // TextButton 自带 M3 的 12dp 水平 contentPadding，会让日期文字比其它
             // 页面标题多缩进 12dp（28dp vs 16dp）。去掉水平内边距，让日期文字左缘
             // 对齐 ScreenPadding；48dp 最小触控热区由 minimumInteractiveComponentSize 保留。
@@ -685,6 +698,7 @@ private fun CalendarHeader(
             TextButton(onClick = onToday) { Text(stringResource(R.string.calendar_today)) }
         }
         CalendarPrimaryToolbar(
+            secondary = onBack != null,
             current = CalendarPrimaryPage.CALENDAR,
             calendarViewMode = ui.viewMode,
             onSelect = { page ->

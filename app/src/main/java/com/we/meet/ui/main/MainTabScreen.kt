@@ -13,6 +13,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.activity.compose.BackHandler
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.lifecycle.createSavedStateHandle
+import androidx.compose.material.icons.filled.Work
+import androidx.compose.material.icons.outlined.WorkOutline
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.outlined.Apps
+import com.we.meet.ui.work.WorkScreen
+import com.we.meet.ui.work.WorkViewModel
+import com.we.meet.data.repository.WorkRepository
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChatBubble
@@ -50,6 +62,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -101,14 +114,10 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
-/**
- * Bottom tabs, in bar order. Feishu-style: 消息 · 日历 · 会议 · 通讯录.
- *
- * There is deliberately no 我的 tab — the profile page lives behind the avatar
- * in the 消息 header (see the [ModalNavigationDrawer] below), matching Feishu.
- * That means 消息 is the ONLY route to the profile page.
- */
-enum class MainTab { Messages, Calendar, Meeting, Contacts, Docs, Tasks }
+/** Primary destinations in bottom navigation order. */
+enum class MainTab { Messages, Meeting, Work, Docs, Apps }
+
+enum class AppModule(val destinationIndex: Int) { Calendar(1), Contacts(3), Tasks(5) }
 
 private data class TabItem(
     val labelRes: Int,
@@ -135,8 +144,9 @@ fun MainTabScreen(
     onRecordingDetail: (recordId: String) -> Unit,
     onOpenSummaryRecord: (String) -> Unit = onOpenRecord,
     onOpenAiHub: () -> Unit,
+    onOpenAssistantCall: () -> Unit,
+    onOpenBilingualTranslation: () -> Unit,
     onOpenApproval: () -> Unit,
-    onOpenWork: () -> Unit = {},
     onOpenChat: (cid: String) -> Unit,
     onNewChat: () -> Unit,
     onOpenSearch: () -> Unit,
@@ -174,7 +184,12 @@ fun MainTabScreen(
     onOpenDocEditor: (docId: String) -> Unit,
 ) {
     // Default to the Messages tab.
-    var selectedTab by rememberSaveable { mutableIntStateOf(MainTab.Messages.ordinal) }
+    var selectedTabName by rememberSaveable(key = "main-primary-tab-v2") { mutableStateOf(MainTab.Messages.name) }
+    val selectedTab = MainTab.entries.indexOfFirst { it.name == selectedTabName }.coerceAtLeast(0)
+    var appModuleName by rememberSaveable { mutableStateOf<String?>(null) }
+    val appModule = if (selectedTab == MainTab.Apps.ordinal) AppModule.entries.find { it.name == appModuleName } else null
+    val closeAppModule: () -> Unit = { appModuleName = null }
+    BackHandler(enabled = appModule != null) { closeAppModule() }
     val ctx = LocalContext.current
     val app = ctx.applicationContext as WeMeetApp
 
@@ -276,11 +291,9 @@ fun MainTabScreen(
     val reminderNearest =
         if (reminderEnabled) reminderWindow?.nearest(reminderNow) else null
 
-    // rememberSaveable can restore an index from a build that had more tabs (我的
-    // used to be ordinal 4). Normalize ONCE here and use `safeTab` at every read
-    // site: coercing only where the content is looked up would still leave
-    // CompactTabBar's `selectedTab == index` highlight matching nothing.
+    // Persist names rather than ordinals so reordering destinations cannot restore the wrong page.
     val safeTab = selectedTab.coerceIn(MainTab.entries.indices)
+    val tabState = rememberSaveableStateHolder()
 
     // Profile drawer, opened by tapping the avatar in the 消息 header.
     //
@@ -299,20 +312,12 @@ fun MainTabScreen(
     val taskNavDrawerState = rememberDrawerState(DrawerValue.Closed)
     val taskNavScope = rememberCoroutineScope()
     var taskNavController by remember { mutableStateOf<TaskNavController?>(null) }
-    var taskFullScreenVisible by remember { mutableStateOf(false) }
-    var calendarFullScreenVisible by remember { mutableStateOf(false) }
-    val fullScreenPageVisible = when (safeTab) {
-        MainTab.Tasks.ordinal -> taskFullScreenVisible
-        MainTab.Calendar.ordinal -> calendarFullScreenVisible
-        else -> false
-    }
-    // Close the task drawer when the user leaves the Tasks tab.
-    LaunchedEffect(safeTab) {
-        if (safeTab != MainTab.Tasks.ordinal && taskNavDrawerState.isOpen) {
-            taskNavDrawerState.close()
-        }
-        if (safeTab != MainTab.Tasks.ordinal) taskFullScreenVisible = false
-        if (safeTab != MainTab.Calendar.ordinal) calendarFullScreenVisible = false
+    var workFullScreenVisible by remember { mutableStateOf(false) }
+    var appsFullScreenVisible by remember { mutableStateOf(false) }
+    val fullScreenPageVisible = appModule != null || (safeTab == MainTab.Work.ordinal && workFullScreenVisible) ||
+        (safeTab == MainTab.Apps.ordinal && appsFullScreenVisible)
+    LaunchedEffect(safeTab, appModule) {
+        if (appModule != AppModule.Tasks) taskNavDrawerState.close()
     }
 
     // 云文档二级导航抽屉 —— 与 task 抽屉同款提升到本层(遮罩覆盖底部导航栏),
@@ -386,7 +391,7 @@ fun MainTabScreen(
     // Single source of truth: each tab pairs its bar appearance with its content, so
     // adding/reordering a tab is one edit and the bar can't drift out of sync with
     // the screen shown.
-    val tabs = listOf(
+    val destinations = listOf(
         TabItem(
             R.string.tab_messages,
             Icons.Filled.ChatBubble,
@@ -418,13 +423,13 @@ fun MainTabScreen(
         },
         TabItem(R.string.tab_calendar, Icons.Filled.CalendarMonth, Icons.Outlined.CalendarMonth) {
             CalendarTabScreen(
+                onBack = closeAppModule,
                 onEventClick = onEventClick,
                 onCreateEvent = onCreateEvent,
                 onCreateEventAt = onCreateEventAt,
                 onCreateEventInRoom = onCreateEventInRoom,
                 onOpenManagement = onOpenCalendarManagement,
                 onOpenSettings = onOpenCalendarSettings,
-                onFullScreenVisibilityChanged = { calendarFullScreenVisible = it },
             )
         },
         TabItem(R.string.tab_meeting, Icons.Filled.Videocam, Icons.Outlined.Videocam) {
@@ -459,6 +464,7 @@ fun MainTabScreen(
         },
         TabItem(R.string.tab_contacts, Icons.Filled.Contacts, Icons.Outlined.Contacts) {
             ContactsTabScreen(
+                onBack = closeAppModule,
                 onOpenSearch = { onOpenContactsSearch(null) },
                 onOpenOrgContacts = onOpenOrgContacts,
                 onOpenStarred = onOpenStarredContacts,
@@ -482,14 +488,44 @@ fun MainTabScreen(
         },
         TabItem(R.string.tab_tasks, Icons.Filled.TaskAlt, Icons.Outlined.TaskAlt) {
             TaskScreen(
+                onBackToApps = closeAppModule,
                 onOpenSearch = onOpenTasksSearch,
                 ownerName = selfName,
                 app = app,
                 onOpenSettings = onOpenTaskSettings,
                 onOpenTaskNav = { taskNavScope.launch { taskNavDrawerState.open() } },
                 onRegisterTaskNav = { taskNavController = it },
-                onFullScreenVisibilityChanged = { taskFullScreenVisible = it },
             )
+        },
+    )
+
+    val tabs = listOf(
+        destinations[0],
+        destinations[2],
+        TabItem(R.string.work_title, Icons.Filled.Work, Icons.Outlined.WorkOutline) {
+            val vm: WorkViewModel = viewModel(key = "main-work", factory = viewModelFactory {
+                initializer {
+                    WorkViewModel(WorkRepository(app.apiClient.workApi) {
+                        if (app.tokenStore.isLoggedIn()) app.tokenStore.authSnapshot().session else null
+                    }, createSavedStateHandle())
+                }
+            })
+            WorkScreen(vm, primary = true, onFullScreenVisibilityChanged = { workFullScreenVisible = it },
+                onOpenAiTools = onOpenAiHub, onBack = {})
+        },
+        destinations[4],
+        TabItem(R.string.tab_apps, Icons.Filled.Apps, Icons.Outlined.Apps) {
+            if (appModule != null) {
+                destinations[appModule.destinationIndex].content()
+            } else {
+                AppsScreen(
+                    onFullScreenVisibilityChanged = { appsFullScreenVisible = it },
+                    onOpenModule = { appModuleName = it.name },
+                    onOpenApproval = onOpenApproval,
+                    onOpenAssistantCall = onOpenAssistantCall,
+                    onOpenBilingualTranslation = onOpenBilingualTranslation,
+                )
+            }
         },
     )
 
@@ -522,9 +558,6 @@ fun MainTabScreen(
                 // start and — never being disposed — never re-fetch on reopen.
                 ProfileScreen(
                     onSettingsClick = onSettingsClick,
-                    onOpenAiHub = onOpenAiHub,
-                    onOpenApproval = onOpenApproval,
-                    onOpenWork = onOpenWork,
                     active = drawerState.isOpen || drawerState.isAnimationRunning,
                 )
             }
@@ -543,7 +576,7 @@ fun MainTabScreen(
                     modifier = Modifier.width(drawerWidth),
                 ) {
                     taskNavController
-                        ?.takeIf { safeTab == MainTab.Tasks.ordinal }
+                        ?.takeIf { appModule == AppModule.Tasks }
                         ?.let { c ->
                             val ui by c.vm.ui.collectAsStateWithLifecycle()
                             TaskNavigationDrawer(
@@ -667,7 +700,7 @@ fun MainTabScreen(
                                 CompactTabBar(
                                     tabs = tabs,
                                     selectedTab = safeTab,
-                                    onTabSelected = { selectedTab = it },
+                                    onTabSelected = { appModuleName = null; selectedTabName = MainTab.entries[it].name },
                                 )
                             }
                         },
@@ -677,7 +710,9 @@ fun MainTabScreen(
                                 .padding(padding)
                                 .consumeWindowInsets(padding),
                         ) {
-                            tabs[safeTab].content()
+                            tabState.SaveableStateProvider("${MainTab.entries[safeTab].name}:${appModule?.name.orEmpty()}") {
+                                tabs[safeTab].content()
+                            }
                         }
                     }
                 }

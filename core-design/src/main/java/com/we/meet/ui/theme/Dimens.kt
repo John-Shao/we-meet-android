@@ -14,6 +14,12 @@ import androidx.compose.ui.unit.dp
  */
 object Dimens {
 
+    object Apps {
+        val IconContainer = 48.dp
+        val CellMinHeight = 112.dp
+        val CellMinWidth = 80.dp
+    }
+
     // ---- Spacing (8dp grid; xs/xxs are the sanctioned sub-grid exceptions
     // for tight icon–text gaps) ----
     /** 显式的「无间距」。动画目标值收起到 0 时用它,别写裸 `0.dp`。 */

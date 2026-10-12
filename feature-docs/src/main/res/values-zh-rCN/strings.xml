@@ -53,7 +53,7 @@
     <string name="cd_docs_back">返回</string>
     <string name="cd_docs_expand">展开文件夹</string>
     <string name="cd_docs_collapse">收起文件夹</string>
-    <string name="docs_screen_title">云文档</string>
+    <string name="docs_screen_title">文档</string>
     <string name="docs_cancel">取消</string>
     <string name="docs_reader_pending">正文阅读将在下一版本支持</string>
     <string name="docs_reader_pending_desc">可先用网页版查看内容</string>

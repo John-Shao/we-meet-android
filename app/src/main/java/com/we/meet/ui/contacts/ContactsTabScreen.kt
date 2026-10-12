@@ -1,5 +1,6 @@
 package com.we.meet.ui.contacts
 
+import com.we.meet.ui.components.WeMeetTopBar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -67,6 +68,7 @@ import com.we.meet.ui.theme.WeMeetTheme
  * 列表页的 VM 跟着 `org_contacts` 那条路由走 —— 退出那一页,下钻状态就该清掉
  * (下次进来从组织根开始)。
  */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun ContactsTabScreen(
     /** 顶部工具栏的搜索入口:没有部门范围,跳到全局搜索的联系人分类。 */
@@ -75,6 +77,7 @@ fun ContactsTabScreen(
     onOpenOrgContacts: () -> Unit,
     onOpenStarred: () -> Unit,
     onOpenMyGroups: () -> Unit,
+    onBack: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as WeMeetApp
@@ -89,42 +92,17 @@ fun ContactsTabScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // 一级页的固定头部:浅灰(见 docs/page-backgrounds.md 的层级表)。
-        // 标题 + 右侧搜索入口,与「会议」tab 的头部同一个形状。
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background)
-                // 左侧标题顶到 ScreenPadding;右侧按钮自带 12dp 内缩,外侧只留
-                // SpaceXs,使右侧图标字形与左侧标题同为 16dp(左右对称)。
-                .padding(start = Dimens.ScreenPadding, end = Dimens.SpaceXs)
-                .padding(vertical = Dimens.SpaceS),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(R.string.contacts_title),
-                style = MaterialTheme.typography.titleLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(Modifier.weight(1f))
-            IconButton(onClick = onOpenSearch) {
-                Icon(
-                    imageVector = Icons.Outlined.Search,
-                    contentDescription = stringResource(R.string.contacts_search_hint),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        }
-
-        // 一级页的滚动内容区:白色,一直延续到底部模块导航栏。
-        //
-        // 分组用**灰缝**表达(飞书那种「一块一块」的读法),而不是给每块套一个白卡片:
-        // 这一页本来就是白的,再套白卡片看不出来。
+        WeMeetTopBar(title = stringResource(R.string.contacts_title), onBack = onBack,
+            containerColor = if (onBack == null) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.surface,
+            actions = {
+                IconButton(onClick = onOpenSearch) {
+                    Icon(Icons.Outlined.Search, contentDescription = stringResource(R.string.contacts_search_hint))
+                }
+            })
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface)
+                .background(if (onBack == null) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState()),
         ) {
             // 当前组织:内容区的第一行。只说「你在哪个组织的名册里」,不是入口 ——

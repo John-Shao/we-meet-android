@@ -30,8 +30,18 @@ fun workStatus(status: String, local: Boolean): Int = when (status) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WorkScreen(vm: WorkViewModel, onBack: () -> Unit) {
+fun WorkScreen(
+    vm: WorkViewModel,
+    primary: Boolean = false,
+    onFullScreenVisibilityChanged: (Boolean) -> Unit = {},
+    onOpenAiTools: (() -> Unit)? = null,
+    onBack: () -> Unit,
+) {
     val ui by vm.ui.collectAsStateWithLifecycle()
+    val detailVisible = ui.selected != null
+    LaunchedEffect(detailVisible) { onFullScreenVisibilityChanged(detailVisible) }
+    DisposableEffect(Unit) { onDispose { onFullScreenVisibilityChanged(false) } }
+    androidx.activity.compose.BackHandler(enabled = primary && detailVisible) { vm.closeDetail() }
     var goal by rememberSaveable { mutableStateOf(vm.pendingGoal) }
     var folder by rememberSaveable { mutableStateOf(vm.pendingWorkspace) }
     val lifecycle = LocalLifecycleOwner.current
@@ -40,9 +50,13 @@ fun WorkScreen(vm: WorkViewModel, onBack: () -> Unit) {
             while (true) { delay(10000); vm.poll() }
         }
     }
-    Scaffold(containerColor = MaterialTheme.colorScheme.background, topBar = {
+    val rootPage = primary && !detailVisible
+    Scaffold(containerColor = if (rootPage) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background, topBar = {
         WeMeetTopBar(
-            title = stringResource(R.string.work_title), onBack = onBack,
+            title = stringResource(if (rootPage) R.string.work_title else R.string.work_ai_detail),
+            subtitle = if (rootPage) stringResource(R.string.work_ai_subtitle) else null,
+            containerColor = if (rootPage) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.surface,
+            onBack = if (detailVisible) vm::closeDetail else if (primary) null else onBack,
             actions = { TextButton(onClick = vm::refresh, enabled = !ui.loading && !ui.acting) { Text(stringResource(R.string.work_refresh)) } },
         )
     }) { padding ->
@@ -67,6 +81,7 @@ fun WorkScreen(vm: WorkViewModel, onBack: () -> Unit) {
                     if (run.status == "succeeded") WorkReviews(ui)
                 }
             } else {
+                onOpenAiTools?.let { open -> TextButton(onClick = open) { Text(stringResource(R.string.ai_hub_title)) } }
                 Text(stringResource(R.string.work_dispatch_title), style = MaterialTheme.typography.titleLarge)
                 Text(stringResource(R.string.work_dispatch_help))
                 if (!ui.enabled && !ui.loading) Text(stringResource(R.string.work_remote_disabled))
@@ -82,12 +97,24 @@ fun WorkScreen(vm: WorkViewModel, onBack: () -> Unit) {
                 Button(onClick = { vm.dispatch(folder, goal) }, enabled = ui.enabled && !ui.acting && (ui.uncertain || (folder.isNotEmpty() && goal.isNotBlank()))) { Text(stringResource(if (ui.uncertain) R.string.work_confirm_request else R.string.work_dispatch)) }
                 HorizontalDivider()
                 Text(stringResource(R.string.work_my_tasks), style = MaterialTheme.typography.titleLarge)
-                ui.tasks.forEach { entry ->
-                    OutlinedButton(onClick = { vm.select(entry.id) }, enabled = !ui.acting, modifier = Modifier.fillMaxWidth()) {
-                        Column {
-                            Text(entry.goal)
-                            entry.runs.lastOrNull()?.let {
-                                Text(stringResource(workStatus(it.status, it.executionTarget == "local")), style = MaterialTheme.typography.bodySmall)
+                val activeStatuses = setOf("queued", "running", "disconnected")
+                val grouped = ui.tasks.groupBy { task ->
+                    when (task.runs.lastOrNull()?.status) {
+                        in activeStatuses -> R.string.work_ai_in_progress
+                        "failed" -> R.string.work_ai_needs_attention
+                        else -> R.string.work_ai_recent_results
+                    }
+                }
+                listOf(R.string.work_ai_in_progress, R.string.work_ai_needs_attention, R.string.work_ai_recent_results).forEach { section ->
+                    val entries = grouped[section].orEmpty()
+                    if (entries.isNotEmpty()) Text(stringResource(section), style = MaterialTheme.typography.titleSmall)
+                    entries.forEach { entry ->
+                        OutlinedButton(onClick = { vm.select(entry.id) }, enabled = !ui.acting, modifier = Modifier.fillMaxWidth()) {
+                            Column {
+                                Text(entry.goal)
+                                entry.runs.lastOrNull()?.let {
+                                    Text(stringResource(workStatus(it.status, it.executionTarget == "local")), style = MaterialTheme.typography.bodySmall)
+                                }
                             }
                         }
                     }

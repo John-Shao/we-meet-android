@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -197,6 +198,7 @@ fun MeetingRoomsCalendarScreen(
     onCreateEventInRoom: (startEpochSecond: Long, endEpochSecond: Long, roomId: String) -> Unit,
     onEventClick: (eventId: String) -> Unit,
     onFullScreenVisibilityChanged: (Boolean) -> Unit = {},
+    onBackToApps: (() -> Unit)? = null,
 ) {
     val vm: MeetingRoomsCalendarViewModel = viewModel()
     val ui by vm.ui.collectAsStateWithLifecycle()
@@ -377,6 +379,7 @@ fun MeetingRoomsCalendarScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         if (selectedRoom == null) {
             MeetingRoomOverview(
+                onBackToApps = onBackToApps,
                 ui = ui,
                 bookingBounds = bookingBounds,
                 rangeStart = rangeStart,
@@ -566,6 +569,7 @@ fun MeetingRoomsCalendarScreen(
 
 @Composable
 private fun MeetingRoomOverview(
+    onBackToApps: (() -> Unit)? = null,
     ui: MeetingRoomsCalendarUiState,
     bookingBounds: Map<String, List<BookingBounds>>,
     rangeStart: Int,
@@ -594,14 +598,16 @@ private fun MeetingRoomOverview(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background),
+                .background(if (onBackToApps == null) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.surface),
         ) {
             RoomDateToolbar(
+                onBack = onBackToApps,
                 date = ui.selectedDate,
                 onSelectDate = onSelectDate,
                 onToday = { onSelectDate(today) },
             )
             CalendarPrimaryToolbar(
+                secondary = onBackToApps != null,
                 current = CalendarPrimaryPage.MEETING_ROOMS,
                 onSelect = { page ->
                     if (page == CalendarPrimaryPage.CALENDAR) onShowCalendar()
@@ -982,6 +988,7 @@ private fun RoomScheduleToolbar(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RoomDateToolbar(
+    onBack: (() -> Unit)? = null,
     date: LocalDate,
     onSelectDate: (LocalDate) -> Unit,
     onToday: () -> Unit,
@@ -999,6 +1006,11 @@ private fun RoomDateToolbar(
         // TextButton 自带 M3 的 12dp 水平 contentPadding，会让日期文字比其它页面标题
         // 多缩进 12dp（28dp vs 16dp）。去掉水平内边距让日期左缘对齐 ScreenPadding；
         // 48dp 最小触控热区由 minimumInteractiveComponentSize 保留。
+        onBack?.let { back ->
+            IconButton(onClick = back) {
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(com.we.meet.design.R.string.cd_back))
+            }
+        }
         TextButton(
             onClick = { showDatePicker = true },
             contentPadding = PaddingValues(Dimens.SpaceNone),
