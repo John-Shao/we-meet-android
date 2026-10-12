@@ -38,15 +38,29 @@ class SpeakerIdentificationContractTest {
     private inner class Fixture(val login: Login = Login(), reply: (Request) -> String = { responseAdapter.toJson(response()) }) {
         val requests = mutableListOf<Pair<Request, String>>()
         var response: (Request) -> String = reply
+        var status = 200
         val api = Retrofit.Builder().baseUrl("https://fixture.invalid/").client(OkHttpClient.Builder().addInterceptor { chain ->
             val request = chain.request()
             requirePrivateLogin(request, login.session)
             requests += request to request.body?.let { Buffer().also(it::writeTo).readUtf8() }.orEmpty()
-            Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(200).message("Fixture")
+            Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(status).message("Fixture")
                 .body(response(request).toResponseBody("application/json".toMediaType())).build()
         }.build()).addConverterFactory(MoshiConverterFactory.create(moshi).withNullSerialization()).build().create(SpeakerIdentificationApi::class.java)
         val repository = SpeakerIdentificationRepository(api, { login.viewer }, { login.session })
         val client = repository.open(OWNER, RECORD)
+    }
+    @Test fun aMissingSpecificBatchIsDistinguishedFromRecordAccessFailure() = runBlocking {
+        val f = Fixture(reply = { """{"code":"voiceprint_identity_request_unavailable"}""" }); f.status = 404
+        val missing = f.client.read(KEY).exceptionOrNull()
+        assertNotNull(missing); assertFalse(missing is retrofit2.HttpException)
+        assertEquals("voiceprint_identity_request_unavailable", missing!!.message)
+        assertTrue(f.client.read().exceptionOrNull() is retrofit2.HttpException)
+        for (body in listOf("{}", """{"code":"meeting_record_unavailable"}""", "not JSON", """{"code":"voiceprint_identity_request_unavailable","padding":"${"x".repeat(8192)}"}""")) {
+            f.response = { body }
+            assertTrue(f.client.read(KEY).exceptionOrNull() is retrofit2.HttpException)
+        }
+        f.response = { """{"code":"voiceprint_identity_request_unavailable"}""" }; f.status = 403
+        assertTrue(f.client.read(KEY).exceptionOrNull() is retrofit2.HttpException)
     }
     @Test fun personalSubmissionIncludesExplicitNullAndOnlyBoundIds() = runBlocking {
         val f = Fixture(reply = { responseAdapter.toJson(response(processing = true)) })

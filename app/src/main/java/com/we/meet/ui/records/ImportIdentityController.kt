@@ -80,9 +80,15 @@ internal class ImportIdentityController(private val operations: ImportIdentityOp
         result.exceptionOrNull()?.let { if (it is CancellationException) throw it }
         if (!active || epoch != scopesEpoch) return
         val page = result.getOrNull()
-        val scopes = if (page == null) state.value.scopes else if (more) (state.value.scopes + page.results).distinctBy { it.id }
+        if (page == null) {
+            directoryEpoch++
+            mutable.value = state.value.copy(scopes = emptyList(), nextScopes = null, scopeLoading = false, scopeFailure = true,
+                page = null, names = emptyMap(), loading = false)
+            return
+        }
+        val scopes = if (more) (state.value.scopes + page.results).distinctBy { it.id }
             else page.results + state.value.scopes.filter { it.id == state.value.organization && page.results.none { fresh -> fresh.id == it.id } }
-        mutable.value = state.value.copy(scopes = scopes, nextScopes = page?.nextOffset, scopeLoading = false, scopeFailure = page == null)
+        mutable.value = state.value.copy(scopes = scopes, nextScopes = page.nextOffset, scopeLoading = false, scopeFailure = false)
     }
     suspend fun reload() {
         if (!active || !visible) return
@@ -94,6 +100,6 @@ internal class ImportIdentityController(private val operations: ImportIdentityOp
         if (!active || epoch != directoryEpoch) return
         val page = result.getOrNull()
         mutable.value = state.value.copy(page = page, loading = false, failure = page == null,
-            names = state.value.names + page?.results.orEmpty().associate { it.id to it.name })
+            names = if (page == null) emptyMap() else state.value.names + page.results.associate { it.id to it.name })
     }
 }

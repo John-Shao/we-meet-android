@@ -1,5 +1,6 @@
 package com.we.meet.data.repository
 
+import com.squareup.moshi.Moshi
 import com.we.meet.data.api.SpeakerIdentificationApi
 import com.we.meet.data.api.dto.*
 import com.we.meet.data.auth.PrivateLogin
@@ -7,9 +8,20 @@ import java.time.OffsetDateTime
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
+import retrofit2.HttpException
 
 class IdentityLoginChangedException : IllegalStateException("authentication_changed")
 class IdentityRequestTimeoutException : IllegalStateException("voiceprint_request_timeout")
+class IdentityRequestUnavailableException : IllegalStateException("voiceprint_identity_request_unavailable")
+
+private val identityErrorAdapter = Moshi.Builder().build().adapter(Map::class.java)
+private fun missingIdentityRequest(error: HttpException): Boolean = runCatching {
+    error.response()?.errorBody()?.use { body ->
+        val source = body.source()
+        source.request(8193)
+        source.buffer.size <= 8192 && identityErrorAdapter.fromJson(source.buffer.clone().readUtf8())?.get("code") == "voiceprint_identity_request_unavailable"
+    } ?: false
+}.getOrDefault(false)
 
 /** The application's only retained commands contain IDs, never candidate names or credentials. */
 class SpeakerIdentificationRepository(
@@ -99,7 +111,12 @@ class IdentificationSession internal constructor(
     }
     suspend fun read(key: String? = null) = repository.request(this) { api, login ->
         key?.let(::identityUuid)
-        api.read(recordId, viewerId, login, key).also { validateIdentityResponse(it, key) }
+        try {
+            api.read(recordId, viewerId, login, key).also { validateIdentityResponse(it, key) }
+        } catch (error: HttpException) {
+            if (key != null && error.code() == 404 && missingIdentityRequest(error)) throw IdentityRequestUnavailableException()
+            throw error
+        }
     }
     suspend fun submit(body: IdentitySubmissionDto) = repository.request(this) { api, login ->
         validateIdentitySubmission(body)

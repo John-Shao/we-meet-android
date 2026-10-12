@@ -92,6 +92,41 @@ class SpeakerIdentificationControllerTest {
         controller.poll(); assertEquals(1, ops.submissions.size)
         controller.submit(retry = true); assertEquals(ops.submissions[0], ops.submissions[1])
     }
+    @Test fun aRefresh400CannotDiscardAnUncertainSubmission() = runBlocking {
+        val ops = Operations(); ops.intent = F.submission()
+        val controller = SpeakerIdentificationController(ops, 1)
+        ops.reads = { Result.failure(HttpException(Response.error<Any>(400, "{}".toResponseBody()))) }
+        controller.refresh()
+        assertEquals(F.submission(), ops.intent); assertEquals(F.submission(), controller.state.value.retry)
+        controller.submit(retry = true); assertEquals(listOf(F.submission()), ops.submissions)
+    }
+    @Test fun invalidSubmission400DiscardsTheDefinitivelyRejectedCommand() = runBlocking {
+        val ops = Operations(); val controller = SpeakerIdentificationController(ops, 1)
+        controller.refresh(); controller.person(controller.state.value.people!!.results.single(), true)
+        ops.write = { Result.failure(HttpException(Response.error<Any>(400, "{}".toResponseBody()))) }; controller.submit()
+        assertNull(ops.intent); assertNull(controller.state.value.retry); assertFalse(controller.canCancel)
+    }
+    @Test fun accessFailureBlocksRetryEvenWhenAnUncertainCommandExists() = runBlocking {
+        for (status in listOf(401, 403, 404, 410)) {
+            val ops = Operations(); ops.intent = F.submission()
+            val controller = SpeakerIdentificationController(ops, 1)
+            ops.reads = { Result.failure(HttpException(Response.error<Any>(status, "{}".toResponseBody()))) }
+            controller.refresh()
+            assertEquals(IdentificationFailure.ACCESS, controller.state.value.failure)
+            assertEquals(F.submission(), ops.intent)
+            controller.submit(retry = true); controller.cancel()
+            assertTrue(ops.submissions.isEmpty()); assertEquals(0, ops.cancellations)
+        }
+    }
+    @Test fun aVerifiedMissingBatchStillAllowsExplicitRetryOfTheOriginalCommand() = runBlocking {
+        val ops = Operations(); ops.intent = F.submission()
+        val controller = SpeakerIdentificationController(ops, 1)
+        ops.reads = { Result.failure(com.we.meet.data.repository.IdentityRequestUnavailableException()) }
+        controller.refresh()
+        assertEquals(IdentificationFailure.REQUEST, controller.state.value.failure)
+        assertEquals(F.submission(), controller.state.value.retry)
+        controller.submit(retry = true); assertEquals(listOf(F.submission()), ops.submissions)
+    }
     @Test fun aSecondPanelRecoversTheOriginalCommandWithoutSendingAnotherRequest() = runBlocking {
         val ops = Operations(); ops.write = { Result.failure(IOException("uncertain")) }
         val first = SpeakerIdentificationController(ops, 1)

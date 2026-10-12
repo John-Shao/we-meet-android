@@ -75,26 +75,26 @@ internal class SpeakerIdentificationController(private val operations: Identific
         value.request?.let { operations.acknowledge(it.requestKey) }
         mutable.value = state.value.copy(revision = value.recordRevision, response = value, retry = null, failure = null)
     }
-    private fun fail(error: Throwable) {
+    private fun fail(error: Throwable, rejectedSubmission: Boolean = false) {
         operations.stopPreview()
         val status = (error as? HttpException)?.code()
-        if (status in setOf(400, 409)) { key?.let(operations::acknowledge); key = null }
+        if (status == 409 || rejectedSubmission && status == 400) { key?.let(operations::acknowledge); key = null }
         val retry = operations.pending()
         if (retry != null) key = retry.requestKey
         mutable.value = state.value.copy(response = null, people = null, selected = emptyMap(), loadingPeople = false, retry = retry,
             failure = when {
                 status == 409 -> IdentificationFailure.CONFLICT
-                error is IdentityLoginChangedException || status in setOf(401, 403, 410) || status == 404 && retry == null -> IdentificationFailure.ACCESS
+                error is IdentityLoginChangedException || status in setOf(401, 403, 404, 410) -> IdentificationFailure.ACCESS
                 else -> IdentificationFailure.REQUEST
             })
     }
-    private suspend fun run(action: suspend () -> Unit) {
+    private suspend fun run(rejectedSubmission: Boolean = false, action: suspend () -> Unit) {
         if (!live() || state.value.busy) return
         epoch++
         mutable.value = state.value.copy(busy = true, loadingPeople = false)
         try { action() }
         catch (error: CancellationException) { throw error }
-        catch (error: Exception) { if (live()) fail(error) }
+        catch (error: Exception) { if (live()) fail(error, rejectedSubmission) }
         finally { if (live()) mutable.value = state.value.copy(busy = false) }
     }
     private suspend fun sync() {
@@ -176,7 +176,7 @@ internal class SpeakerIdentificationController(private val operations: Identific
         if (!live() || if (retry) before.retry == null || before.busy || before.failure == IdentificationFailure.ACCESS else !before.canSubmit) return
         val body = if (retry) requireNotNull(before.retry) else IdentitySubmissionDto(UUID.randomUUID().toString(), before.revision,
             before.scope.takeUnless { it == "personal" }, before.selected.keys.toList(), before.targets.toList())
-        run {
+        run(rejectedSubmission = true) {
             operations.remember(body); key = body.requestKey
             adopt(operations.submit(body).getOrThrow())
         }

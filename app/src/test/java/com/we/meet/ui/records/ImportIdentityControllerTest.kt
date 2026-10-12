@@ -37,6 +37,27 @@ class ImportIdentityControllerTest {
         ops.people = { _, _, _ -> Result.failure(IllegalStateException()) }; c.reload()
         assertFalse(c.state.value.ready); assertNull(c.state.value.page); assertEquals(listOf(F.OWNER), c.state.value.intent.candidateUserIds)
     }
+    @Test fun failedDirectoryRefreshClearsPreviouslySelectedPrivateNames() = runBlocking {
+        val ops = Operations(); val c = controller(ops); c.scopes(); c.reload(); c.choose(F.OWNER, 2)
+        assertEquals("Synthetic", c.state.value.names[F.OWNER])
+        ops.people = { _, _, _ -> Result.failure(IllegalStateException("access denied")) }; c.reload()
+        assertTrue(c.state.value.names.isEmpty()); assertFalse(c.state.value.ready)
+        assertEquals(listOf(F.OWNER), c.state.value.intent.candidateUserIds)
+        ops.people = { org, _, _ -> Result.success(RecordingImportCandidates(org, listOf(IdentityPersonDto(F.OWNER, "Fresh")), null)) }
+        c.reload(); assertEquals("Fresh", c.state.value.names[F.OWNER]); assertTrue(c.state.value.ready)
+    }
+    @Test fun failedScopeRefreshDiscardsPrivateDataAndFencesAnInFlightDirectory() = runBlocking {
+        val ops = Operations(); val c = controller(ops); c.scopes(); c.reload(); c.choose(F.OWNER, 2)
+        val started = CompletableDeferred<Unit>(); val pending = CompletableDeferred<Result<RecordingImportCandidates>>()
+        ops.people = { _, _, _ -> started.complete(Unit); pending.await() }
+        val load = async { c.reload() }; started.await()
+        ops.libraries = { Result.failure(IllegalStateException("access denied")) }; c.scopes()
+        assertTrue(c.state.value.names.isEmpty()); assertTrue(c.state.value.scopes.isEmpty()); assertNull(c.state.value.page)
+        assertFalse(c.state.value.ready); assertFalse(c.state.value.loading)
+        pending.complete(Result.success(RecordingImportCandidates(null, listOf(IdentityPersonDto(F.OWNER, "Late")), null))); load.await()
+        assertTrue(c.state.value.names.isEmpty()); assertNull(c.state.value.page)
+        assertEquals(listOf(F.OWNER), c.state.value.intent.candidateUserIds)
+    }
     @Test fun aLatePageFromThePreviousScopeCannotOverwriteTheNewScope() = runBlocking {
         val ops = Operations(); val c = controller(ops); c.scopes()
         val pending = CompletableDeferred<Result<RecordingImportCandidates>>(); val started = CompletableDeferred<Unit>()
