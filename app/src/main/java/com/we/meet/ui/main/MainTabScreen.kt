@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.activity.compose.BackHandler
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -74,6 +76,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.R
@@ -119,7 +123,7 @@ enum class MainTab { Messages, Meeting, Work, Docs, Apps }
 
 enum class AppModule(val destinationIndex: Int) { Calendar(1), Contacts(3), Tasks(5) }
 
-private data class TabItem(
+internal data class TabItem(
     val labelRes: Int,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,
@@ -773,40 +777,56 @@ private fun replyDocsHostHello(webView: android.webkit.WebView) {
 }
 
 @Composable
-private fun CompactTabBar(
+internal fun CompactTabBar(
     tabs: List<TabItem>,
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
 ) {
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-        tabs.forEachIndexed { index, tab ->
-            val selected = selectedTab == index
-            NavigationBarItem(
-                modifier = Modifier.testTag("main-tab-${MainTab.entries[index].name.lowercase()}"),
-                selected = selected,
-                onClick = { onTabSelected(index) },
-                icon = {
-                    BadgedBox(
-                        badge = {
-                            if (tab.badgeCount > 0) {
-                                Badge {
-                                    Text(if (tab.badgeCount > 99) "99+" else tab.badgeCount.toString())
-                                }
+        BoxWithConstraints(Modifier.weight(1f)) {
+            // Use each slot's width, including the space M3 reserves around labels.
+            // Keep a small gap between labels without squeezing English words onto two lines.
+            val labelWidth = (maxWidth / tabs.size - Dimens.SpaceXs * 2).coerceAtLeast(Dimens.SpaceXs)
+            Row(Modifier.fillMaxWidth()) {
+                tabs.forEachIndexed { index, tab ->
+                    val selected = selectedTab == index
+                    NavigationBarItem(
+                        modifier = Modifier.testTag("main-tab-${MainTab.entries[index].name.lowercase()}"),
+                        selected = selected,
+                        onClick = { onTabSelected(index) },
+                        icon = {
+                            BadgedBox(
+                                badge = {
+                                    if (tab.badgeCount > 0) {
+                                        Badge {
+                                            Text(if (tab.badgeCount > 99) "99+" else tab.badgeCount.toString())
+                                        }
+                                    }
+                                },
+                            ) {
+                                Icon(
+                                    imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
+                                    contentDescription = null,
+                                )
                             }
                         },
-                    ) {
-                        Icon(
-                            imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
-                            contentDescription = null,
-                        )
-                    }
-                },
-                label = { Text(stringResource(tab.labelRes)) },
-                alwaysShowLabel = true,
-                colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                ),
-            )
+                        label = {
+                            Text(
+                                text = stringResource(tab.labelRes),
+                                modifier = Modifier.requiredWidth(labelWidth),
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        alwaysShowLabel = true,
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                        ),
+                    )
+                }
+            }
         }
     }
 }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compact grid labels only; page and list titles retain the full names. -->
+    <string name="apps_grid_translate">Translate</string>
+    <string name="apps_grid_add">Add</string>
+</resources>

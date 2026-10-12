@@ -2,6 +2,7 @@ package com.we.meet.ui.main
 
 import android.content.ContentValues
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.provider.MediaStore
 import androidx.compose.runtime.*
@@ -10,8 +11,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
@@ -21,6 +25,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.util.Locale
 
 class AppsScreenTest {
     @get:Rule val compose = createComposeRule()
@@ -127,16 +132,26 @@ class AppsScreenTest {
 
     @Test fun lightAndDarkGridAndAddFavoritesScreenshots() {
         var dark by mutableStateOf(false)
+        val english = context.createConfigurationContext(Configuration(context.resources.configuration).apply {
+            setLocale(Locale.ENGLISH)
+        })
         compose.setContent {
             var pinned by remember { mutableStateOf(listOf("calendar", "tasks", "approval")) }
-            WeMeetTheme(darkTheme = dark) {
-                AppsContent(pinned, 3, {}, {}, {}, {}, onPinnedChange = { pinned = it })
+            CompositionLocalProvider(LocalContext provides english, LocalConfiguration provides english.resources.configuration) {
+                WeMeetTheme(darkTheme = dark) {
+                    AppsContent(pinned, 3, {}, {}, {}, {}, onPinnedChange = { pinned = it })
+                }
             }
         }
+        compose.onNodeWithTag("apps-add-favorite").assertTextContains("Add")
+        compose.onNodeWithTag("app-catalog-bilingual").performScrollTo().assertTextContains("Translate")
+        compose.onNodeWithTag("apps-add-favorite").performScrollTo()
         screenshot("apps-grid-light-verified.png")
         compose.onNodeWithTag("apps-add-favorite").performClick()
+        compose.onNodeWithText("Add favorites").assertExists()
+        compose.onNodeWithText("Bilingual translation").performScrollTo().assertExists()
         screenshot("apps-add-light-verified.png")
-        compose.onNodeWithContentDescription(context.getString(com.we.meet.design.R.string.cd_back)).performClick()
+        compose.onNodeWithContentDescription(english.getString(com.we.meet.design.R.string.cd_back)).performClick()
         compose.runOnIdle { dark = true }
         screenshot("apps-grid-dark-verified.png")
         compose.onNodeWithTag("apps-add-favorite").performClick()
@@ -245,7 +260,7 @@ class AppsScreenTest {
     private fun screenshot(name: String) {
         compose.mainClock.advanceTimeBy(1500)
         compose.waitForIdle()
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
         val values = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, name)
             put(MediaStore.Downloads.MIME_TYPE, "image/png")
@@ -253,7 +268,7 @@ class AppsScreenTest {
         }
         val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)!!
         context.contentResolver.openOutputStream(uri)!!.use {
-            instrumentation.uiAutomation.takeScreenshot().compress(Bitmap.CompressFormat.PNG, 100, it)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
     }
 }

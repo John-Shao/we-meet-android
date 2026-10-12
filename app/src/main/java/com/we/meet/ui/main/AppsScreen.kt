@@ -287,7 +287,11 @@ private fun AppGridRow(
     Row(Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS)) {
         entries.forEach { entry ->
             val add = entry == null
-            val title = stringResource(entry?.title ?: R.string.apps_add_favorite)
+            val title = stringResource(when (entry?.id) {
+                null -> R.string.apps_grid_add
+                "bilingual" -> R.string.apps_grid_translate
+                else -> entry.title
+            })
             Column(Modifier.weight(1f).heightIn(min = Dimens.Apps.CellMinHeight)
                 .testTag(if (add) "apps-add-favorite" else "app-$section-${entry!!.id}")
                 .clickable(role = Role.Button, onClick = {
@@ -315,7 +319,7 @@ private fun AppGridRow(
                 }
                 Spacer(Modifier.height(Dimens.SpaceS))
                 Text(title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(horizontal = Dimens.SpaceXs))
             }
         }
