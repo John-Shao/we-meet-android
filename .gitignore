@@ -64,12 +64,8 @@ Thumbs.db
 .claude/settings.local.json
 /.temp
 
-# Local AOQ validation results
-/artifacts/aoq-translation/verification.json
-/artifacts/aoq-translation/aoq-translation-connected.png
-
-# Local direct ASR validation results
-/artifacts/direct-asr/verification.json
+# Local build and verification artifacts
+/artifacts/
 
 # Translation backfill bundles (scripts/i18n.py plan)
 /.i18n-work/
