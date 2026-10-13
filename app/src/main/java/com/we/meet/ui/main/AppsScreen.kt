@@ -273,8 +273,8 @@ internal fun AppSymbol(entry: AppEntry?, compact: Boolean = false) {
 
 @Composable
 private fun AppGroupTitle(title: Int) {
-    Text(stringResource(title), style = if (title == R.string.apps_all_title) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleSmall,
-        color = if (title == R.string.apps_all_title) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+    Text(stringResource(title), style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding)
             .padding(top = Dimens.SpaceXl, bottom = Dimens.SpaceS))
 }
