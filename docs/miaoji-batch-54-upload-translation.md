@@ -10,4 +10,4 @@
 
 ## 2026-09-21 生产后续
 
-第 55 批已确认 Helm 385 / backend、frontend `a616ec42e`，Android `48af303a` debug APK 在 Pixel 8 上完成真实生成、对照/回听、三个格式保存、旧版提示和重生成；API 验证权限撤销与回收恢复。专用样本永久删除 pending，北京时间 13:21:35 后复核。完整证据与未覆盖项见 we-meet 仓库 `docs/research/miaoji-batch-55-upload-translation-acceptance.md`。上述“待发布”是本批实施时的历史状态；正式 APK 分发仍待完成。
+第 55 批已确认 Helm 385 / backend、frontend `a616ec42e`，Android `48af303a` debug APK 在 Pixel 8 上完成真实生成、对照/回听、三个格式保存、旧版提示和重生成；API 验证权限撤销与回收恢复。专用样本永久删除 pending，北京时间 13:21:35 后复核。完整证据与未覆盖项见 we-meet 仓库 `docs/archive/miaoji/miaoji-batch-55-upload-translation-acceptance.md`。上述“待发布”是本批实施时的历史状态；正式 APK 分发仍待完成。

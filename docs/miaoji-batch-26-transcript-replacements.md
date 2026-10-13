@@ -6,4 +6,4 @@
 
 验证：45 项相关单元测试通过；Pixel 8 / Android 16 的 5 项仪器测试通过，包括预览不提交/输入变化、响应丢失同请求重试、409、两步撤回、加密标识跨仓库重建和账号隔离。正式分发及本批生产验收待完成。
 
-需先发布 we-meet 的 backend + frontend，迁移 `core.0183_transcript_replacement` 由现有 Helm pre-upgrade hook 执行。完整合同与部署后验收清单位于主仓库 `docs/research/miaoji-batch-26-transcript-replacements.md`。个人/组织热词库仍未实现，大文件恢复和长录音生产跨页仍延后。
+需先发布 we-meet 的 backend + frontend，迁移 `core.0183_transcript_replacement` 由现有 Helm pre-upgrade hook 执行。完整合同与部署后验收清单位于主仓库 `docs/archive/miaoji/miaoji-batch-26-transcript-replacements.md`。个人/组织热词库仍未实现，大文件恢复和长录音生产跨页仍延后。

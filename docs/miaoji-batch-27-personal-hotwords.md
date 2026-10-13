@@ -4,6 +4,6 @@
 
 38 项相关单元测试、Pixel 8 / Android 16 的 6 项仪器测试通过。系统选择器集成测试覆盖应用词表后的首次上传、相同文件重选、未知结果重试及提交后锁定。设计 token 检查和 debug 构建通过；正式分发与生产验收待完成。
 
-需更新主仓库 backend/frontend，应用 `core.0184_personal_hotwords`，旧后端不显示入口。现有 Helm pre-upgrade hook 执行迁移；第 26 批的 `0183` 也会在缺失时先执行。完整说明见主仓库 `docs/research/miaoji-batch-27-personal-hotwords.md`。
+需更新主仓库 backend/frontend，应用 `core.0184_personal_hotwords`，旧后端不显示入口。现有 Helm pre-upgrade hook 执行迁移；第 26 批的 `0183` 也会在缺失时先执行。完整说明见主仓库 `docs/archive/miaoji/miaoji-batch-27-personal-hotwords.md`。
 
 本批仅接入文件上传转写；组织词表、多个词表、实时录音热词与历史记录自动纠错未实现，不声称识别准确率已获验证。
