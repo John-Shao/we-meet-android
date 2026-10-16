@@ -23,7 +23,7 @@
     <string name="bilingual_speaking">Lecture de la traduction · Veuillez patienter avant de parler</string>
     <string name="bilingual_finishing">Finalisation de la dernière traduction…</string>
     <string name="bilingual_error">Traduction interrompue. Appuyez sur Démarrer pour vous reconnecter.</string>
-    <string name="bilingual_expired">La session de 15 minutes est terminée. Appuyez sur Démarrer pour continuer.</string>
+    <string name="bilingual_expired">Traduction terminée après une période sans conversation ou la durée limite. Appuyez sur Démarrer pour continuer.</string>
     <string name="bilingual_empty">Les paroles d’origine et les traductions apparaissent ici</string>
     <string name="bilingual_zh_en">Chinois → anglais</string>
     <string name="bilingual_en_zh">Anglais → chinois</string>

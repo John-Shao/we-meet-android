@@ -41,6 +41,19 @@ class AndroidTranslationOutput(
     private var focused = false
     @get:Synchronized
     val pendingSamples: Long get() = (written - ((track?.playbackHeadPosition?.toLong() ?: 0L) and 0xffffffffL)).coerceAtLeast(0)
+    /** Playback head precedes the physical output; keep a route-specific acoustic guard. */
+    @get:Synchronized
+    val echoTailMs: Long get() = when (track?.routedDevice?.type) {
+        android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+        android.media.AudioDeviceInfo.TYPE_BLE_HEADSET,
+        android.media.AudioDeviceInfo.TYPE_BLE_SPEAKER -> 600L
+        android.media.AudioDeviceInfo.TYPE_WIRED_HEADSET,
+        android.media.AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
+        android.media.AudioDeviceInfo.TYPE_USB_HEADSET -> 100L
+        android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
+        android.media.AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> 300L
+        else -> 400L
+    }
     @get:Synchronized
     internal val underrunCount: Int get() = track?.underrunCount ?: 0
     private val focus = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT).setAudioAttributes(attributes)

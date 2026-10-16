@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -19,6 +20,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
@@ -41,6 +46,11 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
     val vm: BilingualTranslationViewModel = viewModel(key = "bilingual:$user",
         factory = BilingualTranslationViewModel.Factory(app, user))
     val controller = vm.controller
+    DisposableEffect(controller) {
+        onDispose {
+            if ((context as? android.app.Activity)?.isChangingConfigurations != true) controller.leavePage()
+        }
+    }
     val state by controller.state.collectAsStateWithLifecycle()
     var permissionDenied by remember { mutableStateOf(false) }
     val facing = state.facing
@@ -63,7 +73,6 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
             history = controller.history,
             onSelectLanguage = controller::selectLanguage,
             onSelectScene = controller::selectScene,
-            onDirectAoqChange = controller::directAoq,
             onFixedSourceChange = controller::fixedSource,
             onVoiceChange = controller::voice,
             onFacingChange = controller::facing,
@@ -84,6 +93,9 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
             Spacer(Modifier.height(Dimens.SpaceM))
             val status = when {
                 permissionDenied -> R.string.bilingual_permission
+                !state.active && state.unavailableReason == "upgrade_required" -> R.string.bilingual_upgrade_required
+                !state.active && (state.unavailableReason != null || state.voiceConfig?.enabled == false) -> R.string.bilingual_unavailable
+                state.finishIncomplete -> R.string.bilingual_finish_incomplete
                 state.inputPaused && state.active -> AssistantR.string.assistant_background_paused
                 state.unknownLanguage -> R.string.bilingual_unknown
                 else -> when (state.phase) {
@@ -140,7 +152,8 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                             if (needed.isEmpty()) controller.start() else permission.launch(needed.toTypedArray())
                         }
                     },
-                    enabled = state.phase != BilingualPhase.FINISHING && (state.active || state.voiceConfig?.voices?.isEmpty() != true),
+                    enabled = state.phase != BilingualPhase.FINISHING && (state.active ||
+                        state.unavailableReason == null && state.voiceConfig?.enabled != false && state.voiceConfig?.voices?.isEmpty() != true),
                     modifier = Modifier.weight(1f).height(Dimens.ButtonHeight),
                 ) { Text(stringResource(if (state.active) R.string.bilingual_stop else R.string.bilingual_start)) }
             }
@@ -157,8 +170,10 @@ internal fun BilingualLanguageSelectors(state: BilingualState, select: (Boolean,
             modifier = Modifier.weight(1f).testTag("bilingual-first-language")) {
             Text(stringResource(BilingualLanguages.label(state.pair.source)), fontWeight = FontWeight.Bold)
         }
-        Text(if (state.fixedSource == null) "⇄" else "→", style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.testTag("bilingual-language-arrow"))
+        val directionLabel = stringResource(if (state.fixedSource == null) R.string.bilingual_direction_auto else R.string.bilingual_direction_manual)
+        val rtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
+        Text(if (state.fixedSource == null) "⇄" else if (rtl) "←" else "→", style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.testTag("bilingual-language-arrow").clearAndSetSemantics { contentDescription = directionLabel })
         OutlinedButton(onClick = { choosingFirst = false }, enabled = !state.active,
             modifier = Modifier.weight(1f).testTag("bilingual-second-language")) {
             Text(stringResource(BilingualLanguages.label(state.pair.target)), fontWeight = FontWeight.Bold)
@@ -172,10 +187,10 @@ internal fun BilingualLanguageSelectors(state: BilingualState, select: (Boolean,
             text = {
                 LazyColumn(Modifier.testTag("bilingual-language-list")) {
                     items(BilingualLanguages.labels.keys.toList(), key = { it }) { code ->
-                        TextButton(onClick = { select(first, code); choosingFirst = null }, modifier = Modifier.fillMaxWidth()) {
+                        TextButton(onClick = { select(first, code); choosingFirst = null }, modifier = Modifier.fillMaxWidth().semantics { selected = code == current }) {
                             Text(stringResource(BilingualLanguages.label(code)), modifier = Modifier.weight(1f),
                                 fontWeight = if (code == current) FontWeight.Bold else FontWeight.Normal)
-                            if (code == current) Text("✓")
+                            if (code == current) Icon(Icons.Default.Check, contentDescription = null)
                         }
                     }
                 }

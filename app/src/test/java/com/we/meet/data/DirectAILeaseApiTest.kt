@@ -3,7 +3,6 @@ package com.we.meet.data
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.we.meet.data.api.AssistantTranscriptionApi
-import com.we.meet.data.api.AssistantTranslationApi
 import com.we.meet.data.api.DirectAsrCredentials
 import com.we.meet.feature.assistant.aicall.data.AiAgentApi
 import com.we.meet.feature.assistant.aicall.data.DirectAILeaseOperation
@@ -37,7 +36,7 @@ class DirectAILeaseApiTest {
 
     private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
 
-    @Test fun allThreeFeaturesSendLifecycleRequestsThroughRetrofit() = runBlocking {
+    @Test fun directCallAndTranscriptionSendLifecycleRequestsThroughRetrofit() = runBlocking {
         val id = UUID.randomUUID().toString()
         val operations = mutableListOf<String>()
         val client = OkHttpClient.Builder().addInterceptor { chain ->
@@ -52,9 +51,8 @@ class DirectAILeaseApiTest {
         val retrofit = Retrofit.Builder().baseUrl("https://fixture.invalid/").client(client)
             .addConverterFactory(MoshiConverterFactory.create(moshi)).build()
         retrofit.create(AiAgentApi::class.java).sessionLease(id, DirectAILeaseOperation("heartbeat"))
-        retrofit.create(AssistantTranslationApi::class.java).sessionLease(id, DirectAILeaseOperation("close"))
-        retrofit.create(AssistantTranscriptionApi::class.java).sessionLease(id, DirectAILeaseOperation("heartbeat"))
-        assertEquals(listOf("heartbeat", "close", "heartbeat"), operations)
+        retrofit.create(AssistantTranscriptionApi::class.java).sessionLease(id, DirectAILeaseOperation("close"))
+        assertEquals(listOf("heartbeat", "close"), operations)
     }
 
     @Test fun allocationMetadataIsOptionalForOlderServersAndDecodesEnforcement() {

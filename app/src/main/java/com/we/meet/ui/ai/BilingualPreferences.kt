@@ -15,22 +15,24 @@ internal class BilingualPreferences(context: Context, account: String) {
         .joinToString("") { "%02x".format(it) }
     private val prefs = context.getSharedPreferences("bilingual-settings-$key", Context.MODE_PRIVATE)
 
-    fun load(): BilingualState {
-        // Migrate the former cloud default once without overwriting later user choices.
-        if (!prefs.getBoolean("aoq_default_v1", false)) {
-            prefs.edit().putBoolean("direct-aoq", true).putBoolean("aoq_default_v1", true).apply()
+    init {
+        // A one-time removal of obsolete transport keys preserves all product choices.
+        if (!prefs.getBoolean("websocket_v2", false)) {
+            prefs.edit().remove("direct-aoq").remove("aoq_default_v1").putBoolean("websocket_v2", true).apply()
         }
+    }
+
+    fun load(): BilingualState {
         val pair = AssistantTranslationPair(prefs.getString("source", "zh") ?: "zh", prefs.getString("target", "en") ?: "en")
             .takeIf(BilingualLanguages::valid) ?: AssistantTranslationPair()
         val sound = prefs.getBoolean("sound", true)
         val scene = TranslationScene.find(prefs.getString("scene", null))
-        val direct = prefs.getBoolean("direct-aoq", true)
         val fixed = prefs.getString("fixed-source", null)?.takeIf { it in setOf(pair.source, pair.target) }
         // Preserve legacy reverse directions by placing the chosen source on the left.
         val orderedPair = if (fixed == pair.target) AssistantTranslationPair(pair.target, pair.source) else pair
         val catalog = loadVoiceConfig()
         return BilingualState(pair = orderedPair, sound = sound, facing = prefs.getBoolean("facing", true),
-            sceneId = scene?.id, directAoq = direct, fixedSource = fixed,
+            sceneId = scene?.id, fixedSource = fixed,
             voice = BilingualVoices.resolve(prefs.getString("voice", null), catalog), voiceConfig = catalog)
     }
 
@@ -39,7 +41,11 @@ internal class BilingualPreferences(context: Context, account: String) {
         val voices = json.getJSONArray("voices")
         TranslationVoiceConfig(json.getString("model"),
             if (json.isNull("default_voice")) null else json.getString("default_voice"),
-            List(voices.length()) { index -> voices.getJSONObject(index).let { TranslationVoice(it.getString("value"), it.getString("label")) } })
+            List(voices.length()) { index -> voices.getJSONObject(index).let { TranslationVoice(it.getString("value"), it.getString("label")) } },
+            protocolVersion = json.optInt("protocol_version", 1),
+            enabled = json.optBoolean("enabled", true),
+            reason = if (json.isNull("reason")) null else json.optString("reason"),
+            languages = json.optJSONArray("languages")?.let { values -> List(values.length()) { values.getString(it) } } ?: emptyList())
             .takeIf(BilingualVoices::valid)
     }.getOrNull()
 
@@ -48,15 +54,17 @@ internal class BilingualPreferences(context: Context, account: String) {
         val voices = JSONArray()
         config.voices.forEach { voices.put(JSONObject().put("value", it.value).put("label", it.label)) }
         prefs.edit().putString("voice-config", JSONObject().put("model", config.model)
-            .put("default_voice", config.defaultVoice ?: JSONObject.NULL).put("voices", voices).toString()).apply()
+            .put("default_voice", config.defaultVoice ?: JSONObject.NULL).put("voices", voices)
+            .put("protocol_version", config.protocolVersion).put("enabled", config.enabled)
+            .put("reason", config.reason ?: JSONObject.NULL).put("languages", JSONArray(config.languages)).toString()).apply()
     }
 
     fun save(state: BilingualState) {
         prefs.edit().putString("source", state.pair.source).putString("target", state.pair.target)
-            .putBoolean("aoq_default_v1", true)
+            .remove("aoq_default_v1").remove("direct-aoq")
             .putBoolean("facing", state.facing)
             .putString("fixed-source", state.fixedSource)
             .putString("voice", BilingualVoices.resolve(state.voice, state.voiceConfig))
-            .putBoolean("direct-aoq", state.directAoq).putBoolean("sound", state.sound).putString("scene", state.sceneId).apply()
+            .putBoolean("sound", state.sound).putString("scene", state.sceneId).apply()
     }
 }

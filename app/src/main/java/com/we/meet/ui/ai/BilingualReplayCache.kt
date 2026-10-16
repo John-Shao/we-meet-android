@@ -10,9 +10,12 @@ internal class BilingualReplayCache(private val budget: Int = 120 * 48000, priva
     private val items = linkedMapOf<String, Audio>()
     private val discarded = mutableSetOf<String>()
     private var bytes = 0
+    private var accepting = true
+
+    @Synchronized fun beginSession() { discarded.clear(); accepting = true }
 
     @Synchronized fun append(id: String, pcm: ByteArray) {
-        if (id in discarded || pcm.isEmpty() || pcm.size % 2 != 0) return
+        if (!accepting || id in discarded || pcm.isEmpty() || pcm.size % 2 != 0) return
         val item = items.getOrPut(id) { Audio() }
         if (item.complete) return
         if (item.bytes + pcm.size > perReply) { discard(id); return }
@@ -28,7 +31,16 @@ internal class BilingualReplayCache(private val budget: Int = 120 * 48000, priva
     @Synchronized fun finish(id: String) { items[id]?.complete = true }
     @Synchronized fun ids(): Set<String> = items.filterValues { it.complete && it.bytes > 0 }.keys.toSet()
     @Synchronized fun get(id: String): List<ByteArray>? = items[id]?.takeIf { it.complete }?.chunks?.toList()
-    @Synchronized fun clear() { items.clear(); discarded.clear(); bytes = 0 }
-    @Synchronized fun discardIncomplete() { items.filterValues { !it.complete }.keys.toList().forEach(::discard) }
-    private fun discard(id: String) { items.remove(id)?.let { bytes -= it.bytes }; discarded += id }
+    @Synchronized fun clear() { items.clear(); discarded.clear(); bytes = 0; accepting = false }
+    @Synchronized fun discardIncomplete() {
+        items.filterValues { !it.complete }.keys.toList().forEach(::discard)
+        // Called only after this session stops accepting events.
+        discarded.clear()
+        accepting = false
+    }
+    private fun discard(id: String) {
+        items.remove(id)?.let { bytes -= it.bytes }
+        check(id in discarded || discarded.size < 10000)
+        discarded += id
+    }
 }

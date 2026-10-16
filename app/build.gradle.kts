@@ -49,6 +49,8 @@ val getuiAppSecret = cfg("GETUI_APPSECRET")
 android {
     namespace = "com.we.meet"
     compileSdk = 34
+    testBuildType = providers.gradleProperty("WE_MEET_TEST_BUILD_TYPE")
+        .getOrElse("debug").also { require(it in setOf("debug", "release")) }
 
     defaultConfig {
         applicationId = "com.we.meet"
@@ -56,8 +58,8 @@ android {
         // which uses audio-routing / WebRTC APIs that require API 29+.
         minSdk = 29
         targetSdk = 34
-        versionCode = 5
-        versionName = "0.3.0-work.3"
+        versionCode = 6
+        versionName = "0.3.0-work.4"
         testInstrumentationRunner = providers.gradleProperty("WE_MEET_TEST_RUNNER")
             .getOrElse("androidx.test.runner.AndroidJUnitRunner")
 
@@ -98,6 +100,10 @@ android {
             }
         }
         release {
+            // Opt-in internal distribution keeps the existing installed certificate.
+            if (providers.gradleProperty("WE_MEET_INTERNAL_RELEASE").orNull == "true") {
+                signingConfig = signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

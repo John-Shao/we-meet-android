@@ -1,0 +1,197 @@
+{
+  "date": "2026-10-16",
+  "status": "passed_after_capture_buffer_fix",
+  "before": {
+    "scope": "Android HTTPS/WSS integration",
+    "passed": false,
+    "checks": {
+      "android_integration": false,
+      "bearer_userinfo_authenticated": true,
+      "all_business_sessions_closed": true,
+      "expected_business_session_count": true
+    },
+    "android": {
+      "scope": "Android controller, Retrofit HTTPS, OkHttp WSS, real backend admission and provider; synthetic microphone; Bearer/OIDC with loopback userinfo fixture",
+      "passed": false,
+      "device": "emulator-5586",
+      "physical_microphone": false,
+      "authentication": "bearer",
+      "downstream_delay_ms": 0,
+      "route_results": [],
+      "checks": {
+        "android_integration": false,
+        "actual_packet_loss_exercised": true
+      },
+      "runner_output": "INSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=\ncom.we.meet.ui.ai.BilingualLiveIntegrationTest:\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 1\nINSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stack=java.lang.AssertionError\n\tat org.junit.Assert.fail(Assert.java:87)\n\tat org.junit.Assert.assertTrue(Assert.java:42)\n\tat org.junit.Assert.assertTrue(Assert.java:53)\n\tat com.we.meet.ui.ai.BilingualLiveIntegrationTest.realBusinessAdmissionTranslationFinishAndReplay(BilingualLiveIntegrationTest.kt:177)\n\nINSTRUMENTATION_STATUS: stream=\nError in realBusinessAdmissionTranslationFinishAndReplay(com.we.meet.ui.ai.BilingualLiveIntegrationTest):\njava.lang.AssertionError\n\tat org.junit.Assert.fail(Assert.java:87)\n\tat org.junit.Assert.assertTrue(Assert.java:42)\n\tat org.junit.Assert.assertTrue(Assert.java:53)\n\tat com.we.meet.ui.ai.BilingualLiveIntegrationTest.realBusinessAdmissionTranslationFinishAndReplay(BilingualLiveIntegrationTest.kt:177)\n\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: -2\nINSTRUMENTATION_RESULT: stream=\n\nTime: 16.526\nThere was 1 failure:\n1) realBusinessAdmissionTranslationFinishAndReplay(com.we.meet.ui.ai.BilingualLiveIntegrationTest)\njava.lang.AssertionError\n\tat org.junit.Assert.fail(Assert.java:87)\n\tat org.junit.Assert.assertTrue(Assert.java:42)\n\tat org.junit.Assert.assertTrue(Assert.java:53)\n\tat com.we.meet.ui.ai.BilingualLiveIntegrationTest.realBusinessAdmissionTranslationFinishAndReplay(BilingualLiveIntegrationTest.kt:177)\n\nFAILURES!!!\nTests run: 1,  Failures: 1\n\n\nINSTRUMENTATION_CODE: -1\n",
+      "gateway": {
+        "events": {
+          "ready": 1,
+          "ack": 37,
+          "audio": 4,
+          "translation": 1,
+          "audio_end": 1,
+          "error": 1
+        },
+        "error_codes": [
+          "translation_failed"
+        ]
+      },
+      "network_impairment": {
+        "backend": "docker_tc_netem",
+        "delay_ms": 100,
+        "jitter_ms": 25,
+        "packet_loss_percent": 3,
+        "random_seed": 20261016,
+        "scope": "TCP proxy egress on both legs; WSS data stays encrypted",
+        "applied": true,
+        "removed": true,
+        "qdisc": [
+          {
+            "kind": "netem",
+            "handle": "7b10:",
+            "root": true,
+            "refcnt": 33,
+            "options": {
+              "limit": 1000,
+              "delay": {
+                "delay": 0.1,
+                "jitter": 0.025,
+                "correlation": 0
+              },
+              "loss-random": {
+                "loss": 0.03,
+                "correlation": 0
+              },
+              "seed": 20261016,
+              "ecn": false,
+              "gap": 0
+            },
+            "bytes": 246450,
+            "packets": 361,
+            "drops": 16,
+            "overlimits": 0,
+            "requeues": 0,
+            "backlog": 0,
+            "qlen": 0
+          }
+        ]
+      }
+    },
+    "database_sessions": [
+      "closed"
+    ],
+    "authentication": "bearer",
+    "identity_fixture_requests": {
+      "accepted": 3,
+      "rejected": 0
+    },
+    "runner_returncode": 1
+  },
+  "after": {
+    "scope": "Android HTTPS/WSS integration",
+    "passed": true,
+    "checks": {
+      "android_integration": true,
+      "bearer_userinfo_authenticated": true,
+      "all_business_sessions_closed": true,
+      "expected_business_session_count": true
+    },
+    "android": {
+      "scope": "Android controller, Retrofit HTTPS, OkHttp WSS, real backend admission and provider; synthetic microphone; Bearer/OIDC with loopback userinfo fixture",
+      "passed": true,
+      "device": "emulator-5586",
+      "physical_microphone": false,
+      "authentication": "bearer",
+      "downstream_delay_ms": 0,
+      "route_results": [
+        "route=模拟器 mode=fixed environment=quiet rows=1 explicit_audio_end=true replay=true tails=[300]"
+      ],
+      "checks": {
+        "android_integration": true,
+        "actual_packet_loss_exercised": true
+      },
+      "runner_output": "INSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=\ncom.we.meet.ui.ai.BilingualLiveIntegrationTest:\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 1\nINSTRUMENTATION_STATUS: bilingual_result=route=模拟器 mode=fixed environment=quiet rows=1 explicit_audio_end=true replay=true tails=[300]\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=.\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_RESULT: stream=\n\nTime: 20.129\n\nOK (1 test)\n\n\nINSTRUMENTATION_CODE: -1\n",
+      "gateway": {
+        "events": {
+          "ready": 1,
+          "ack": 50,
+          "audio": 4,
+          "translation": 1,
+          "audio_end": 1,
+          "finished": 1
+        },
+        "error_codes": []
+      },
+      "network_impairment": {
+        "backend": "docker_tc_netem",
+        "delay_ms": 100,
+        "jitter_ms": 25,
+        "packet_loss_percent": 3,
+        "random_seed": 20261016,
+        "scope": "TCP proxy egress on both legs; WSS data stays encrypted",
+        "applied": true,
+        "removed": true,
+        "qdisc": [
+          {
+            "kind": "netem",
+            "handle": "7b10:",
+            "root": true,
+            "refcnt": 33,
+            "options": {
+              "limit": 1000,
+              "delay": {
+                "delay": 0.1,
+                "jitter": 0.025,
+                "correlation": 0
+              },
+              "loss-random": {
+                "loss": 0.03,
+                "correlation": 0
+              },
+              "seed": 20261016,
+              "ecn": false,
+              "gap": 0
+            },
+            "bytes": 294860,
+            "packets": 426,
+            "drops": 19,
+            "overlimits": 0,
+            "requeues": 0,
+            "backlog": 0,
+            "qlen": 0
+          }
+        ]
+      }
+    },
+    "database_sessions": [
+      "closed"
+    ],
+    "authentication": "bearer",
+    "identity_fixture_requests": {
+      "accepted": 3,
+      "rejected": 0
+    },
+    "runner_returncode": 0
+  },
+  "artifacts": {
+    "before_main_apk_sha256": "B4C6F7290A06C463130F3A3D6E1106402C66B4AFCCDB5C48425D5BD255ED669C",
+    "after_main_apk_sha256": "D55E3B67AFF8C8FAC1CC2EEB58E31A2AE486FE57146A48568F957322D1E6BEE1",
+    "after_test_apk_sha256": "1538356FFB31793E58232F33C05433F0827AF5B4742F61AC4CB41BE016985618"
+  },
+  "regression_report": "bilingual-websocket-ack-stall-regression-2026-10-16.json",
+  "limitations": [
+    "Controlled Linux netem packet loss and jitter; not a field test of cellular networks.",
+    "Synthetic microphone on Android emulator; acoustic results are recorded separately.",
+    "Bearer identity uses loopback UserInfo fixture; external identity was tested separately on OPPO.",
+    "The configured loss probability is 3%; actual observed kernel drops are reported without assuming an exact 3% realized rate.",
+    "The earlier 1% configuration had zero actual drops and is not counted as packet-loss acceptance."
+  ],
+  "cleanup_verified": {
+    "remaining_validation_databases": 0,
+    "remaining_netem_containers": 0,
+    "remaining_integration_or_gateway_processes": 0,
+    "remaining_emulator_reverse_mappings": 0,
+    "remaining_physical_reverse_mappings": 0,
+    "netem_image_retained_for_reproduction": true
+  }
+}

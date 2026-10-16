@@ -1,0 +1,122 @@
+{
+  "scope": "real HTTP authentication, PostgreSQL admission, gateway and provider; Bearer/OIDC with loopback userinfo fixture",
+  "checks": {
+    "unauthenticated_ticket_rejected": true,
+    "invalid_bearer_rejected": true,
+    "authenticated_config_v2": true,
+    "fixed_active_quota_rejected": true,
+    "fixed_ordinary_user_cannot_claim": true,
+    "fixed_consumed_ticket_cannot_reopen": true,
+    "automatic_active_quota_rejected": true,
+    "automatic_ordinary_user_cannot_claim": true,
+    "automatic_consumed_ticket_cannot_reopen": true,
+    "idle_active_quota_rejected": true,
+    "idle_ordinary_user_cannot_claim": true,
+    "idle_consumed_ticket_cannot_reopen": true,
+    "real_heartbeat": true,
+    "retired_direct_endpoint": true,
+    "bearer_userinfo_authenticated": true,
+    "all_business_sessions_closed": true,
+    "expected_business_session_count": true
+  },
+  "cases": [
+    {
+      "mode": "fixed",
+      "rows": [
+        {
+          "audio_bytes": 72960,
+          "audio_ended": true,
+          "source_language": "zh",
+          "target_language": "en",
+          "source_chars": 9,
+          "target_chars": 31
+        }
+      ],
+      "passed": true,
+      "granted_idle_seconds": 300,
+      "granted_max_seconds": 900,
+      "ready_ms": 530,
+      "duration_ms": 30786,
+      "provider_connections": 1,
+      "lease_closed": true,
+      "heartbeats": 2,
+      "voice": "Ethan",
+      "input_bytes": 795520,
+      "output_bytes": 101751,
+      "errors": []
+    },
+    {
+      "mode": "automatic",
+      "rows": [
+        {
+          "audio_bytes": 88320,
+          "audio_ended": true,
+          "source_language": "zh",
+          "target_language": "en",
+          "source_chars": 9,
+          "target_chars": 31
+        },
+        {
+          "audio_bytes": 99840,
+          "audio_ended": true,
+          "source_language": "en",
+          "target_language": "zh",
+          "source_chars": 37,
+          "target_chars": 8
+        }
+      ],
+      "passed": true,
+      "granted_idle_seconds": 300,
+      "granted_max_seconds": 900,
+      "ready_ms": 379,
+      "duration_ms": 9698,
+      "provider_connections": 2,
+      "lease_closed": true,
+      "heartbeats": 1,
+      "voice": "Tina",
+      "input_bytes": 176480,
+      "output_bytes": 253108,
+      "errors": []
+    },
+    {
+      "mode": "idle_noise",
+      "rows": [],
+      "passed": true,
+      "granted_idle_seconds": 300,
+      "granted_max_seconds": 900,
+      "ready_ms": 379,
+      "expired_reason": "idle",
+      "expired_at_ms": 303617,
+      "duration_ms": 313685,
+      "provider_connections": 2,
+      "lease_closed": true,
+      "heartbeats": 16,
+      "voice": "Tina",
+      "input_bytes": 8832000,
+      "output_bytes": 41575,
+      "errors": []
+    }
+  ],
+  "passed": true,
+  "database_sessions": [
+    "closed",
+    "closed",
+    "closed"
+  ],
+  "authentication": "bearer",
+  "identity_fixture_requests": {
+    "accepted": 8,
+    "rejected": 1
+  },
+  "runner_returncode": 0,
+  "date": "2026-10-16",
+  "limitations": [
+    "Identity provider is a loopback UserInfo fixture.",
+    "Input bytes count actual gateway PCM; output bytes count JSON payload, excluding WebSocket/TLS/TCP overhead.",
+    "No provider invoice or billing API was read; this is an idle-lifetime and traffic test, not monetary cost verification."
+  ],
+  "billing_acceptance": {
+    "status": "deferred_by_user",
+    "decision": "Record usage for this acceptance round; reconcile monetary charges against provider billing later."
+  }
+}

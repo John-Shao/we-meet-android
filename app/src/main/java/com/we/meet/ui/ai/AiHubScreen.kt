@@ -36,6 +36,7 @@ import com.we.meet.ui.theme.Dimens
 fun AiHubScreen(
     onOpenAssistantCall: () -> Unit,
     onOpenBilingualTranslation: () -> Unit,
+    bilingualEnabled: Boolean = true,
 ) {
     Column(
         modifier = Modifier
@@ -49,13 +50,15 @@ fun AiHubScreen(
             subtitle = stringResource(R.string.ai_hub_call_subtitle),
             onClick = onOpenAssistantCall,
         )
-        Spacer(Modifier.size(Dimens.SpaceL))
-        FeatureCard(
-            icon = Icons.Filled.Translate,
-            title = stringResource(R.string.bilingual_title),
-            subtitle = stringResource(R.string.bilingual_subtitle),
-            onClick = onOpenBilingualTranslation,
-        )
+        if (bilingualEnabled) {
+            Spacer(Modifier.size(Dimens.SpaceL))
+            FeatureCard(
+                icon = Icons.Filled.Translate,
+                title = stringResource(R.string.bilingual_title),
+                subtitle = stringResource(R.string.bilingual_subtitle),
+                onClick = onOpenBilingualTranslation,
+            )
+        }
     }
 }
 

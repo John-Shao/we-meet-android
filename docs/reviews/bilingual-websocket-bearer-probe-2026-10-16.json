@@ -1,0 +1,142 @@
+{
+  "scope": "real HTTP authentication, PostgreSQL admission, gateway and provider; Bearer/OIDC with loopback userinfo fixture",
+  "checks": {
+    "unauthenticated_ticket_rejected": true,
+    "invalid_bearer_rejected": true,
+    "authenticated_config_v2": true,
+    "fixed_active_quota_rejected": true,
+    "fixed_ordinary_user_cannot_claim": true,
+    "fixed_consumed_ticket_cannot_reopen": true,
+    "automatic_active_quota_rejected": true,
+    "automatic_ordinary_user_cannot_claim": true,
+    "automatic_consumed_ticket_cannot_reopen": true,
+    "idle_active_quota_rejected": true,
+    "idle_ordinary_user_cannot_claim": true,
+    "idle_consumed_ticket_cannot_reopen": true,
+    "real_heartbeat": true,
+    "retired_direct_endpoint": true,
+    "android_integration": true,
+    "bearer_userinfo_authenticated": true,
+    "all_business_sessions_closed": true,
+    "expected_business_session_count": true
+  },
+  "cases": [
+    {
+      "mode": "fixed",
+      "rows": [
+        {
+          "audio_bytes": 69120,
+          "audio_ended": true,
+          "source_language": "zh",
+          "target_language": "en",
+          "source_chars": 9,
+          "target_chars": 31
+        }
+      ],
+      "passed": true,
+      "ready_ms": 488,
+      "duration_ms": 30500,
+      "provider_connections": 1,
+      "lease_closed": true,
+      "heartbeats": 2,
+      "voice": "Ethan",
+      "input_bytes": 789120,
+      "output_bytes": 96531,
+      "errors": []
+    },
+    {
+      "mode": "automatic",
+      "rows": [
+        {
+          "audio_bytes": 84480,
+          "audio_ended": true,
+          "source_language": "zh",
+          "target_language": "en",
+          "source_chars": 9,
+          "target_chars": 31
+        },
+        {
+          "audio_bytes": 96000,
+          "audio_ended": true,
+          "source_language": "en",
+          "target_language": "zh",
+          "source_chars": 37,
+          "target_chars": 8
+        }
+      ],
+      "passed": true,
+      "ready_ms": 351,
+      "duration_ms": 9696,
+      "provider_connections": 2,
+      "lease_closed": true,
+      "heartbeats": 1,
+      "voice": "Tina",
+      "input_bytes": 179680,
+      "output_bytes": 242813,
+      "errors": []
+    },
+    {
+      "mode": "idle_noise",
+      "rows": [],
+      "passed": true,
+      "ready_ms": 357,
+      "expired_reason": "idle",
+      "duration_ms": 43532,
+      "provider_connections": 2,
+      "lease_closed": true,
+      "heartbeats": 2,
+      "voice": "Tina",
+      "input_bytes": 886400,
+      "output_bytes": 4329,
+      "errors": []
+    }
+  ],
+  "passed": true,
+  "android": {
+    "scope": "Android controller, Retrofit HTTPS, OkHttp WSS, real backend admission and provider; synthetic microphone; Bearer/OIDC with loopback userinfo fixture",
+    "passed": true,
+    "device": "emulator-5586",
+    "physical_microphone": false,
+    "authentication": "bearer",
+    "downstream_delay_ms": 0,
+    "route_results": [
+      "route=模拟器 rows=1 explicit_audio_end=true replay=true tails=[300]"
+    ],
+    "checks": {
+      "android_integration": true
+    },
+    "runner_output": "INSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=\ncom.we.meet.ui.ai.BilingualLiveIntegrationTest:\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 1\nINSTRUMENTATION_STATUS: bilingual_result=route=模拟器 rows=1 explicit_audio_end=true replay=true tails=[300]\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=.\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_RESULT: stream=\n\nTime: 11.881\n\nOK (1 test)\n\n\nINSTRUMENTATION_CODE: -1\n",
+    "gateway": {
+      "events": {
+        "ready": 1,
+        "ack": 29,
+        "audio": 3,
+        "translation": 1,
+        "audio_end": 1,
+        "finished": 1
+      },
+      "error_codes": []
+    }
+  },
+  "database_sessions": [
+    "closed",
+    "closed",
+    "closed",
+    "closed"
+  ],
+  "authentication": "bearer",
+  "identity_fixture_requests": {
+    "accepted": 11,
+    "rejected": 1
+  },
+  "date": "2026-10-16",
+  "scope_notes": [
+    "Production OIDC authentication and HTTP userinfo lookup run unchanged; userinfo is an isolated loopback identity fixture.",
+    "Android sends Authorization Bearer without Session Cookie; token issuance, SMS delivery, external identity login, token-store refresh and production identity-provider availability are not covered.",
+    "Four sessions use a disposable local database; real provider model connections; no production user, database or deployment mutation."
+  ],
+  "artifacts": {
+    "main_apk_sha256": "B4C6F7290A06C463130F3A3D6E1106402C66B4AFCCDB5C48425D5BD255ED669C",
+    "test_apk_sha256": "D9076257DE005F14A5D51CAC002549A3772055D140BE63A9C235EB6DFB1BA1F0"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "scope": "External Keycloak PKCE phone/OTP form, Android KeycloakOidc, TokenStore encrypted persistence, AuthInterceptor and TokenRefreshAuthenticator; WebView UI not exercised",
+  "passed": true,
+  "runner_returncode": 0,
+  "device": "OPPO PDYM20",
+  "date": "2026-10-16",
+  "test_apk_sha256": "2219AD0DD3F4EF25827B0B03FFDB0035E247D3160EEEFFBEB6C7CAA2563D7A0A",
+  "result": [
+    "pkce=true external_userinfo=true forced_401_refresh=true encrypted_persistence=true identity_preserved=true session_revoked=true"
+  ],
+  "duration_seconds": 3.423,
+  "limitations": [
+    "Phone/OTP form submitted over real HTTPS with real PKCE exchange; WebView rendering and taps were not exercised.",
+    "Uses the user-authorized demo account and fixed demo OTP, not carrier SMS delivery.",
+    "Standalone external identity test; existing translation integration uses isolated business data and its own identity fixture."
+  ],
+  "cleanup": {
+    "identity_session_revoked": true,
+    "isolated_encrypted_preferences_deleted": true,
+    "main_app_token_store_untouched": true
+  },
+  "earlier_attempt": {
+    "device": "emulator-5586",
+    "passed": false,
+    "reason": "UnknownHostException resolving the business API domain; did not reach OTP verification"
+  }
+}

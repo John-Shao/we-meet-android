@@ -35,7 +35,6 @@ internal fun BilingualTranslationSettingsScreen(
     onSoundChange: (Boolean) -> Unit,
     onBack: () -> Unit,
     onSelectScene: (String?) -> Unit,
-    onDirectAoqChange: (Boolean) -> Unit = {},
     onFixedSourceChange: (String?) -> Unit = {},
     onVoiceChange: (String) -> Unit = {},
 ) {
@@ -50,14 +49,6 @@ internal fun BilingualTranslationSettingsScreen(
                     modifier = Modifier.padding(Dimens.ScreenPadding))
             }
             val dropdownPadding = Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceM)
-            SettingsGroupHeader(stringResource(R.string.bilingual_transport))
-            SettingsGroup {
-                val options = listOf(stringResource(R.string.bilingual_transport_aoq), stringResource(R.string.bilingual_transport_webrtc))
-                CallSettingsDropdown(options[if (state.directAoq) 0 else 1], options,
-                    onSelect = { onDirectAoqChange(it == 0) }, enabled = !state.active,
-                    modifier = dropdownPadding.testTag("bilingual-transport-picker"),
-                    optionTag = { if (it == 0) "bilingual-aoq" else "bilingual-webrtc" })
-            }
             SettingsGroupHeader(stringResource(R.string.bilingual_direction_settings))
             SettingsGroup {
                 val options = listOf(stringResource(R.string.bilingual_direction_auto), stringResource(R.string.bilingual_direction_manual))
@@ -86,7 +77,8 @@ internal fun BilingualTranslationSettingsScreen(
             SettingsGroup {
                 val voices = state.voiceConfig?.voices?.map { it.value } ?: BilingualVoices.labels.keys.toList()
                 val labels = state.voiceConfig?.voices?.map { it.label } ?: voices.map { stringResource(BilingualVoices.label(it)) }
-                CallSettingsDropdown(labels.getOrNull(voices.indexOf(state.voice)) ?: "—",
+                val resolved = BilingualVoices.resolve(state.voice, state.voiceConfig)
+                CallSettingsDropdown(labels.getOrNull(voices.indexOf(resolved)) ?: stringResource(R.string.bilingual_unavailable),
                     labels,
                     onSelect = { onVoiceChange(voices[it]) }, enabled = !state.active && voices.isNotEmpty(),
                     modifier = dropdownPadding.testTag("bilingual-voice-picker"),

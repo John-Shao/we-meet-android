@@ -22,7 +22,7 @@
     <string name="bilingual_speaking">Playing translation · Please wait before speaking</string>
     <string name="bilingual_finishing">Finishing the last translation…</string>
     <string name="bilingual_error">Translation interrupted. Tap Start to reconnect.</string>
-    <string name="bilingual_expired">15-minute session ended. Tap Start to continue.</string>
+    <string name="bilingual_expired">Translation ended after inactivity or the session time limit. Tap Start to continue.</string>
     <string name="bilingual_empty">Original speech and translations appear here</string>
     <string name="bilingual_zh_en">Chinese → English</string>
     <string name="bilingual_en_zh">English → Chinese</string>

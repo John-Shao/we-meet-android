@@ -1,5 +1,6 @@
 package com.we.meet.ui.ai
 
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOn
@@ -33,6 +34,15 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationUiTest {
+    @Test fun disabledBilingualFeatureHidesOnlyItsHubEntry() {
+        compose.setContent { WeMeetTheme(darkTheme = false) {
+            AiHubScreen({}, {}, bilingualEnabled = false)
+        } }
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        compose.onNodeWithText(context.getString(R.string.bilingual_title)).assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.ai_hub_call_title)).assertIsDisplayed()
+    }
+
     @Test fun chatKeepsLanguageSidesAndPairsOriginalWithTranslation() {
         val state = BilingualState(rows = listOf(
             BilingualRow("one", "早上好", "Good morning", "zh", "en"),
@@ -95,7 +105,7 @@ class BilingualTranslationUiTest {
     }
     @Test fun remoteCatalogUsesServerLabelsAndDisablesEmptyChoices() {
         val config = com.we.meet.data.api.TranslationVoiceConfig("qwen3.8-livetranslate-flash-realtime", "FutureVoice",
-            listOf(com.we.meet.data.api.TranslationVoice("FutureVoice", "Backend display name")))
+            listOf(com.we.meet.data.api.TranslationVoice("FutureVoice", "Backend display name")), protocolVersion = 2)
         val state = mutableStateOf(BilingualState(voice = "FutureVoice", voiceConfig = config))
         compose.setContent { WeMeetTheme(darkTheme = false) {
             BilingualTranslationSettingsScreen(state.value, true, null, { _, _ -> }, {}, {}, {}, {},
@@ -114,46 +124,29 @@ class BilingualTranslationUiTest {
             BilingualTranslationSettingsScreen(state.value, true, null, { _, _ -> }, {}, {}, {}, {},
                 onFixedSourceChange = { state.value = state.value.copy(fixedSource = it) })
         } }
-        compose.onNodeWithText("⇄").assertIsDisplayed()
+        compose.onNodeWithTag("bilingual-language-arrow").assertContentDescriptionEquals(InstrumentationRegistry.getInstrumentation().targetContext.getString(com.we.meet.R.string.bilingual_direction_auto))
         compose.onNodeWithTag("bilingual-direction-picker").performScrollTo().performClick()
         compose.onNodeWithTag("bilingual-direction-manual").performClick()
-        compose.onNodeWithText("→").assertIsDisplayed()
-        compose.onNodeWithText("⇄").assertDoesNotExist()
+        compose.onNodeWithTag("bilingual-language-arrow").assertContentDescriptionEquals(InstrumentationRegistry.getInstrumentation().targetContext.getString(com.we.meet.R.string.bilingual_direction_manual))
         compose.runOnIdle { assertEquals("zh", state.value.fixedSource); state.value = state.value.copy(phase = BilingualPhase.LISTENING) }
         compose.onNodeWithTag("bilingual-direction-picker").performScrollTo().performClick()
         compose.onNodeWithTag("bilingual-direction-auto").assertDoesNotExist()
         compose.runOnIdle { assertEquals("zh", state.value.fixedSource); state.value = state.value.copy(phase = BilingualPhase.IDLE) }
         compose.onNodeWithTag("bilingual-direction-picker").performClick()
         compose.onNodeWithTag("bilingual-direction-auto").performClick()
-        compose.onNodeWithText("⇄").assertIsDisplayed()
-        compose.onNodeWithText("→").assertDoesNotExist()
+        compose.onNodeWithTag("bilingual-language-arrow").assertContentDescriptionEquals(InstrumentationRegistry.getInstrumentation().targetContext.getString(com.we.meet.R.string.bilingual_direction_auto))
         compose.runOnIdle { assertEquals(null, state.value.fixedSource) }
         screenshot("bilingual-direction-settings.png")
     }
-    @Test fun translationTransportIsAvailableAndLockedDuringActiveSessions() {
-        val state = mutableStateOf(BilingualState())
+    @Test fun translationHasNoTransportSelector() {
         compose.setContent { WeMeetTheme(darkTheme = false) {
-            BilingualTranslationSettingsScreen(state.value, facing = true, history = null,
-                onSelectLanguage = { _, _ -> }, onFacingChange = {}, onSoundChange = {},
-                onBack = {}, onSelectScene = {},
-                onDirectAoqChange = { state.value = state.value.copy(directAoq = it) })
+            BilingualTranslationSettingsScreen(BilingualState(), true, null,
+                { _, _ -> }, {}, {}, {}, {})
         } }
-        compose.onNodeWithTag("bilingual-transport-picker").performClick()
-        compose.onNodeWithTag("bilingual-aoq").assertIsDisplayed()
-        compose.onNodeWithTag("bilingual-webrtc").performClick()
-        compose.runOnIdle {
-            assertEquals(false, state.value.directAoq)
-            state.value = state.value.copy(phase = BilingualPhase.LISTENING)
-        }
-        compose.onNodeWithTag("bilingual-transport-picker").performClick()
+        compose.onNodeWithTag("bilingual-transport-picker").assertDoesNotExist()
         compose.onNodeWithTag("bilingual-aoq").assertDoesNotExist()
-        compose.runOnIdle {
-            assertEquals(false, state.value.directAoq)
-            state.value = state.value.copy(phase = BilingualPhase.IDLE)
-        }
-        compose.onNodeWithTag("bilingual-transport-picker").performClick()
-        compose.onNodeWithTag("bilingual-aoq").performClick()
-        compose.runOnIdle { assertEquals(true, state.value.directAoq) }
+        compose.onNodeWithTag("bilingual-webrtc").assertDoesNotExist()
+        compose.onNodeWithTag("bilingual-direction-picker").performScrollTo().assertIsDisplayed()
     }
 
     @Test fun faceToFaceShowsBothDirectionsInEachParticipantsLanguage() {

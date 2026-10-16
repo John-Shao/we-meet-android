@@ -1,0 +1,333 @@
+{
+  "date": "2026-10-16",
+  "scope": "Physical OPPO microphone, speaker, real HTTPS/WSS business admission and real provider; loopback identity fixture",
+  "status": "completed_with_route_waivers",
+  "cases": [
+    {
+      "route": "speaker",
+      "mode": "automatic",
+      "environment": "quiet",
+      "automated_checks_passed": true,
+      "manual_confirmation": "User confirmed normal function",
+      "route_result": "route=扬声器 mode=automatic environment=quiet rows=2 explicit_audio_end=true replay=true tails=[300]",
+      "status": "passed",
+      "manual_confirmation_source": "User feedback in this conversation"
+    },
+    {
+      "route": "speaker",
+      "mode": "fixed",
+      "environment": "quiet",
+      "status": "passed",
+      "automated_checks_passed": true,
+      "manual_confirmation": "User confirmed clear and complete translated audio and replay, with no obvious echo or repeated translation. Background noise was tapping on the table.",
+      "manual_confirmation_source": "User feedback in this conversation",
+      "route_result": "route=扬声器 mode=fixed environment=quiet rows=1 explicit_audio_end=true replay=true tails=[300]",
+      "runner_duration_seconds": 66.955,
+      "gateway_events": {
+        "ready": 1,
+        "ack": 198,
+        "audio": 8,
+        "translation": 1,
+        "audio_end": 1,
+        "finished": 1
+      },
+      "gateway_error_codes": []
+    },
+    {
+      "route": "speaker",
+      "mode": "automatic",
+      "environment": "background_noise",
+      "status": "passed",
+      "automated_checks_passed": true,
+      "manual_confirmation": "User confirmed clear and complete translated audio and replay, with no obvious echo or repeated translation. Background noise was tapping on the table.",
+      "manual_confirmation_source": "User feedback in this conversation",
+      "route_result": "route=扬声器 mode=automatic environment=background_noise rows=2 explicit_audio_end=true replay=true tails=[300]",
+      "runner_duration_seconds": 65.287,
+      "gateway_events": {
+        "ready": 1,
+        "ack": 354,
+        "audio": 12,
+        "translation": 2,
+        "audio_end": 2,
+        "finished": 1
+      },
+      "gateway_error_codes": [],
+      "background_noise": {
+        "source": "tapping on the table",
+        "confirmed_by": "user",
+        "sound_pressure_level_measured": false
+      }
+    },
+    {
+      "route": "speaker",
+      "mode": "fixed",
+      "environment": "background_noise",
+      "status": "passed",
+      "automated_checks_passed": true,
+      "manual_confirmation": "User confirmed clear and complete translated audio and replay, with no obvious echo or repeated translation. Background noise was tapping on the table.",
+      "manual_confirmation_source": "User feedback in this conversation",
+      "route_result": "route=扬声器 mode=fixed environment=background_noise rows=1 explicit_audio_end=true replay=true tails=[300]",
+      "runner_duration_seconds": 47.455,
+      "gateway_events": {
+        "ready": 1,
+        "ack": 228,
+        "audio": 7,
+        "translation": 1,
+        "audio_end": 1,
+        "finished": 1
+      },
+      "gateway_error_codes": [],
+      "background_noise": {
+        "source": "tapping on the table",
+        "confirmed_by": "user",
+        "sound_pressure_level_measured": false
+      }
+    }
+  ],
+  "waivers": [
+    {
+      "route": "wired",
+      "status": "waived_not_tested",
+      "reason": "User has no available headset and explicitly requested skipping this route for this acceptance run"
+    },
+    {
+      "route": "bluetooth",
+      "status": "waived_not_tested",
+      "reason": "User has no available headset and explicitly requested skipping this route for this acceptance run"
+    }
+  ],
+  "pending_speaker_scenarios": [],
+  "runs": [
+    {
+      "termination": "Stopped by the assistant at the users request to skip unavailable headset routes, after the speaker scenario passed. Process crashed in runner output reflects this intentional stop.",
+      "report": {
+        "scope": "Android HTTPS/WSS integration",
+        "passed": false,
+        "checks": {
+          "android_integration": false,
+          "bearer_userinfo_authenticated": true,
+          "all_business_sessions_closed": true,
+          "expected_business_session_count": false
+        },
+        "android": {
+          "scope": "Android controller, Retrofit HTTPS, OkHttp WSS, real backend admission and provider; physical microphone and audio routes; Bearer/OIDC with loopback userinfo fixture",
+          "passed": false,
+          "device": "AI8LEQROSOEA4LYX",
+          "physical_microphone": true,
+          "authentication": "bearer",
+          "downstream_delay_ms": 0,
+          "route_results": [
+            "route=扬声器 mode=automatic environment=quiet rows=2 explicit_audio_end=true replay=true tails=[300]"
+          ],
+          "checks": {
+            "android_integration": false
+          },
+          "runner_output": "INSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=\ncom.we.meet.ui.ai.BilingualLiveIntegrationTest:\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 1\nINSTRUMENTATION_STATUS: bilingual_result=route=扬声器 mode=automatic environment=quiet rows=2 explicit_audio_end=true replay=true tails=[300]\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_RESULT: shortMsg=Process crashed.\nINSTRUMENTATION_CODE: 0\n",
+          "physical_mode": "automatic",
+          "declared_environment": "quiet",
+          "gateway": {
+            "events": {
+              "ready": 1,
+              "ack": 363,
+              "audio": 12,
+              "translation": 2,
+              "audio_end": 2,
+              "language_unknown": 1,
+              "finished": 1
+            },
+            "error_codes": []
+          }
+        },
+        "database_sessions": [
+          "closed"
+        ],
+        "authentication": "bearer",
+        "identity_fixture_requests": {
+          "accepted": 4,
+          "rejected": 0
+        },
+        "runner_returncode": 1
+      }
+    },
+    {
+      "termination": "Completed normally; all three remaining speaker scenarios passed.",
+      "report": {
+        "scope": "Android HTTPS/WSS integration",
+        "passed": true,
+        "checks": {
+          "android_integration": true,
+          "bearer_userinfo_authenticated": true,
+          "all_business_sessions_closed": true,
+          "expected_business_session_count": true
+        },
+        "android": {
+          "scope": "Android controller, Retrofit HTTPS, OkHttp WSS, real backend admission and provider; physical microphone and audio routes; Bearer/OIDC with loopback userinfo fixture",
+          "passed": true,
+          "device": "AI8LEQROSOEA4LYX",
+          "physical_microphone": true,
+          "authentication": "bearer",
+          "downstream_delay_ms": 0,
+          "route_results": [
+            "route=扬声器 mode=fixed environment=background_noise rows=1 explicit_audio_end=true replay=true tails=[300]"
+          ],
+          "checks": {
+            "android_integration": true
+          },
+          "runner_output": "INSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=\ncom.we.meet.ui.ai.BilingualLiveIntegrationTest:\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 1\nINSTRUMENTATION_STATUS: bilingual_result=route=扬声器 mode=fixed environment=background_noise rows=1 explicit_audio_end=true replay=true tails=[300]\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=.\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_RESULT: stream=\n\nTime: 47.455\n\nOK (1 test)\n\n\nINSTRUMENTATION_CODE: -1\n",
+          "requested_routes": [
+            "speaker"
+          ],
+          "physical_mode": "fixed",
+          "declared_environment": "background_noise",
+          "gateway": {
+            "events": {
+              "ready": 1,
+              "ack": 228,
+              "audio": 7,
+              "translation": 1,
+              "audio_end": 1,
+              "finished": 1
+            },
+            "error_codes": []
+          }
+        },
+        "android_runs": [
+          {
+            "scope": "Android controller, Retrofit HTTPS, OkHttp WSS, real backend admission and provider; physical microphone and audio routes; Bearer/OIDC with loopback userinfo fixture",
+            "passed": true,
+            "device": "AI8LEQROSOEA4LYX",
+            "physical_microphone": true,
+            "authentication": "bearer",
+            "downstream_delay_ms": 0,
+            "route_results": [
+              "route=扬声器 mode=fixed environment=quiet rows=1 explicit_audio_end=true replay=true tails=[300]"
+            ],
+            "checks": {
+              "android_integration": true
+            },
+            "runner_output": "INSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=\ncom.we.meet.ui.ai.BilingualLiveIntegrationTest:\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 1\nINSTRUMENTATION_STATUS: bilingual_result=route=扬声器 mode=fixed environment=quiet rows=1 explicit_audio_end=true replay=true tails=[300]\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=.\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_RESULT: stream=\n\nTime: 66.955\n\nOK (1 test)\n\n\nINSTRUMENTATION_CODE: -1\n",
+            "requested_routes": [
+              "speaker"
+            ],
+            "physical_mode": "fixed",
+            "declared_environment": "quiet",
+            "gateway": {
+              "events": {
+                "ready": 1,
+                "ack": 198,
+                "audio": 8,
+                "translation": 1,
+                "audio_end": 1,
+                "finished": 1
+              },
+              "error_codes": []
+            }
+          },
+          {
+            "scope": "Android controller, Retrofit HTTPS, OkHttp WSS, real backend admission and provider; physical microphone and audio routes; Bearer/OIDC with loopback userinfo fixture",
+            "passed": true,
+            "device": "AI8LEQROSOEA4LYX",
+            "physical_microphone": true,
+            "authentication": "bearer",
+            "downstream_delay_ms": 0,
+            "route_results": [
+              "route=扬声器 mode=automatic environment=background_noise rows=2 explicit_audio_end=true replay=true tails=[300]"
+            ],
+            "checks": {
+              "android_integration": true
+            },
+            "runner_output": "INSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=\ncom.we.meet.ui.ai.BilingualLiveIntegrationTest:\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 1\nINSTRUMENTATION_STATUS: bilingual_result=route=扬声器 mode=automatic environment=background_noise rows=2 explicit_audio_end=true replay=true tails=[300]\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=.\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_RESULT: stream=\n\nTime: 65.287\n\nOK (1 test)\n\n\nINSTRUMENTATION_CODE: -1\n",
+            "requested_routes": [
+              "speaker"
+            ],
+            "physical_mode": "automatic",
+            "declared_environment": "background_noise",
+            "gateway": {
+              "events": {
+                "ready": 1,
+                "ack": 354,
+                "audio": 12,
+                "translation": 2,
+                "audio_end": 2,
+                "finished": 1
+              },
+              "error_codes": []
+            }
+          },
+          {
+            "scope": "Android controller, Retrofit HTTPS, OkHttp WSS, real backend admission and provider; physical microphone and audio routes; Bearer/OIDC with loopback userinfo fixture",
+            "passed": true,
+            "device": "AI8LEQROSOEA4LYX",
+            "physical_microphone": true,
+            "authentication": "bearer",
+            "downstream_delay_ms": 0,
+            "route_results": [
+              "route=扬声器 mode=fixed environment=background_noise rows=1 explicit_audio_end=true replay=true tails=[300]"
+            ],
+            "checks": {
+              "android_integration": true
+            },
+            "runner_output": "INSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=\ncom.we.meet.ui.ai.BilingualLiveIntegrationTest:\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 1\nINSTRUMENTATION_STATUS: bilingual_result=route=扬声器 mode=fixed environment=background_noise rows=1 explicit_audio_end=true replay=true tails=[300]\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=.\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_RESULT: stream=\n\nTime: 47.455\n\nOK (1 test)\n\n\nINSTRUMENTATION_CODE: -1\n",
+            "requested_routes": [
+              "speaker"
+            ],
+            "physical_mode": "fixed",
+            "declared_environment": "background_noise",
+            "gateway": {
+              "events": {
+                "ready": 1,
+                "ack": 228,
+                "audio": 7,
+                "translation": 1,
+                "audio_end": 1,
+                "finished": 1
+              },
+              "error_codes": []
+            }
+          }
+        ],
+        "database_sessions": [
+          "closed",
+          "closed",
+          "closed"
+        ],
+        "authentication": "bearer",
+        "identity_fixture_requests": {
+          "accepted": 9,
+          "rejected": 0
+        },
+        "runner_returncode": 0
+      }
+    }
+  ],
+  "artifacts": {
+    "main_apk_sha256": "B4C6F7290A06C463130F3A3D6E1106402C66B4AFCCDB5C48425D5BD255ED669C",
+    "initial_test_apk_sha256": "29E42D7099C6DD2CC1E0E81781B877B09548B04A51CC41AA4C835B49F56D18F6",
+    "remaining_scenarios_test_apk_sha256": "9CFB7A8E7E1674B26A0219CB3E9C793F0C91EA6ED8906D090186AC939CF245BB"
+  },
+  "summary": {
+    "speaker_scenarios_passed": 4,
+    "speaker_scenarios_total": 4,
+    "translated_rows": 6,
+    "explicit_audio_end_events": 6,
+    "finished_events": 4,
+    "business_sessions_closed": 4,
+    "headset_routes_waived_not_tested": [
+      "wired",
+      "bluetooth"
+    ]
+  },
+  "cleanup": {
+    "remaining_bilingual_validation_databases": 0,
+    "device_adb_reverse_mappings": 0,
+    "live_integration_or_test_gateway_python_processes": 0,
+    "verified_after_final_physical_run": true
+  },
+  "limitations": [
+    "Wired and Bluetooth routes were explicitly waived by the user and remain untested.",
+    "Physical background-noise evidence covers table tapping only; continuous fan or air-conditioning noise was not tested on the physical device.",
+    "Listening quality is user-reported; sound pressure level and playback volume were not measured.",
+    "The identity provider was a loopback UserInfo fixture; this does not validate external login, token issuance or refresh.",
+    "This run does not establish production capacity, real WAN packet-loss tolerance or long-duration provider billing."
+  ]
+}

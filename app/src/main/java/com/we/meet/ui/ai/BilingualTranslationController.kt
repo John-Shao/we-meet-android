@@ -34,11 +34,11 @@ private const val LOG_TAG = "BilingualTranslation"
 // confirmed, so a long playback prebuffer mostly delays the response onset.
 // Keep a short cushion for scheduling jitter instead of the old 200 ms.
 private const val STARTUP_BUFFER_MS = 80
-// Echo protection after the last rendered sample. The framework has already
-// consumed it, so this only covers the device's acoustic tail.
-private const val ECHO_TAIL_MS = 200L
 // One sampled acknowledgment round trip every ten seconds of microphone audio.
 private const val ACK_SAMPLE_INTERVAL = 100
+// Up to five seconds / 160 kB of 100 ms PCM frames. A short TCP retransmission
+// stall must not exhaust capture before the existing five-second ACK watchdog.
+private const val CAPTURE_BUFFER_FRAMES = 50
 
 internal enum class BilingualPhase { IDLE, CONNECTING, LISTENING, SPEAKING, FINISHING, ERROR, EXPIRED }
 internal data class BilingualState(
@@ -52,9 +52,10 @@ internal data class BilingualState(
     val replayable: Set<String> = emptySet(),
     val replaying: Boolean = false,
     val replayError: Boolean = false,
+    val finishIncomplete: Boolean = false,
+    val unavailableReason: String? = null,
     val inputPaused: Boolean = false,
     val sceneId: String? = null,
-    val directAoq: Boolean = true,
     val fixedSource: String? = null,
     val voice: String = BilingualVoices.DEFAULT,
     val voiceConfig: com.we.meet.data.api.TranslationVoiceConfig? = null,
@@ -69,6 +70,7 @@ internal interface BilingualAudioOutput : Closeable {
     fun finishTurn() = Unit
     fun mute(muted: Boolean) = Unit
     val pendingSamples: Long
+    val echoTailMs: Long get() = 200L
 }
 
 /** User-started audio backed by a foreground service across Home and screen lock. */
@@ -87,20 +89,18 @@ internal class BilingualTranslationController(
             override fun finishTurn() = delegate.finishTurn()
             override fun mute(muted: Boolean) = delegate.mute(muted)
             override val pendingSamples get() = delegate.pendingSamples
+            override val echoTailMs get() = delegate.echoTailMs
             override fun close() = delegate.close()
         }
     },
-    private val openWebRtcWire: (AssistantTranslationPair, String?, String, CaptureTranslationWire.Listener) -> CaptureTranslationWire = { pair, source, voice, listener ->
-        DirectBilingualWire(context.applicationContext, api, pair, listener, source, webRtc = true, voice = voice)
+    private val openWire: (String, CaptureTranslationWire.Listener) -> CaptureTranslationWire = { url, listener ->
+        com.we.meet.data.capture.OkHttpCaptureTranslationWire.open(url, listener)
     },
     private val openForeground: suspend (() -> Unit) -> AssistantSessionLease = { stopped ->
         AssistantForegroundSession.start(context, AssistantSessionKind.TRANSLATION, camera = false, stopped = stopped)
     },
     val history: com.we.meet.feature.assistant.history.AssistantHistoryStore? = null,
     private val preferences: BilingualPreferences? = null,
-    private val openAoqWire: (AssistantTranslationPair, String?, String, CaptureTranslationWire.Listener) -> CaptureTranslationWire = { pair, source, voice, listener ->
-        DirectBilingualWire(context.applicationContext, api, pair, listener, source, voice = voice)
-    },
 ) : Closeable {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutable = MutableStateFlow(preferences?.load() ?: BilingualState())
@@ -120,9 +120,15 @@ internal class BilingualTranslationController(
             try {
                 if (!authorized()) return@launch
                 val config = withTimeout(10000) { api.voiceConfig() }
-                if (!authorized() || !BilingualVoices.valid(config)) return@launch
+                ensureActive()
+                if (!authorized()) return@launch
+                if (!BilingualVoices.valid(config)) {
+                    mutable.update { it.copy(unavailableReason = if (config.protocolVersion != 2) "upgrade_required" else "configuration_error") }
+                    return@launch
+                }
                 preferences?.cacheVoiceConfig(config)
                 mutable.update { it.copy(voiceConfig = config,
+                    unavailableReason = if (config.enabled) null else config.reason ?: "disabled",
                     voice = if (it.active) it.voice else BilingualVoices.resolve(it.voice, config)) }
                 if (active == null) preferences?.save(mutable.value)
             } catch (error: Exception) {
@@ -161,6 +167,7 @@ internal class BilingualTranslationController(
                 }
             } catch (error: Exception) {
                 if (error is CancellationException && error !is TimeoutCancellationException) throw error
+                currentCoroutineContext().ensureActive()
                 mutable.update { it.copy(replayError = true) }
             } finally {
                 runCatching { player?.close() }
@@ -179,22 +186,23 @@ internal class BilingualTranslationController(
     }
 
     fun start() {
-        if (active != null || !authorized()) return
+        if (active != null || !authorized() || mutable.value.unavailableReason != null || mutable.value.voiceConfig?.enabled == false) return
         mutable.update { it.copy(voice = BilingualVoices.resolve(it.voice, it.voiceConfig)) }
         if (mutable.value.voice.isEmpty()) return
         stopReplay()
+        replayCache.beginSession()
         val session = Session(mutable.value.pair)
         active = session
-        mutable.update { it.copy(phase = BilingualPhase.CONNECTING, unknownLanguage = false, audioOmitted = false, inputPaused = false) }
+        mutable.update { it.copy(phase = BilingualPhase.CONNECTING, unknownLanguage = false, audioOmitted = false, inputPaused = false, finishIncomplete = false) }
         session.job = scope.launch(start = CoroutineStart.LAZY) {
             try {
                 session.run()
             } catch (canceled: CancellationException) {
-                if (canceled is TimeoutCancellationException && active === session) stop(BilingualPhase.ERROR)
+                if (canceled is TimeoutCancellationException && active === session) session.fail()
                 else throw canceled
             } catch (error: Exception) {
                 Log.w(LOG_TAG, "translation_failed stage=${session.stage} class=${error.javaClass.simpleName}")
-                if (active === session) stop(BilingualPhase.ERROR)
+                if (active === session) session.fail()
             } finally {
                 session.release()
             }
@@ -208,6 +216,7 @@ internal class BilingualTranslationController(
         active = null
         session?.release()
         mutable.update { it.copy(phase = phase, unknownLanguage = false, voice = BilingualVoices.resolve(it.voice, it.voiceConfig)) }
+        preferences?.save(mutable.value)
     }
 
     fun facing(enabled: Boolean) {
@@ -238,11 +247,6 @@ internal class BilingualTranslationController(
         mutable.update { it.copy(voice = value) }
         preferences?.save(mutable.value)
     }
-    fun directAoq(enabled: Boolean) {
-        if (active != null) return
-        mutable.update { it.copy(directAoq = enabled) }
-        preferences?.save(mutable.value)
-    }
     fun fixedSource(language: String?) {
         if (active != null) return
         val pair = mutable.value.pair
@@ -264,11 +268,16 @@ internal class BilingualTranslationController(
         if (mutable.value.phase == BilingualPhase.CONNECTING) stop()
         else active?.finish()
     }
+    fun leavePage() {
+        stop()
+        voiceConfigJob?.cancel()
+        replayCache.clear()
+        mutable.update { it.copy(rows = emptyList(), replayable = emptySet(), replayError = false) }
+    }
     override fun close() { stop(); scope.cancel(); replayCache.clear(); mutable.value = BilingualState() }
 
     private inner class Session(private val pair: AssistantTranslationPair) {
         var stage = "foreground"
-        private val direct = mutable.value.directAoq
         private val sessionId = java.util.UUID.randomUUID().toString()
         private val recording = history?.begin("translation")
         private val rowOrder = linkedMapOf<String, Int>()
@@ -276,11 +285,14 @@ internal class BilingualTranslationController(
         private val closed = AtomicBoolean()
         private val speaking = AtomicBoolean()
         private val finishing = AtomicBoolean()
+        private val serverEnded = AtomicBoolean()
         // Covers a bounded late-ASR audio burst plus its text and ACK events.
         private val events = Channel<String>(256)
         private val window = Semaphore(8)
         private val pending = java.util.ArrayDeque<Long>()
         private val ready = CompletableDeferred<Unit>()
+        private val opened = CompletableDeferred<Unit>()
+        private var nextRowOrder = 0
         private val audio = BilingualPlaybackQueue()
         private val audioReady = Channel<Unit>(Channel.CONFLATED)
         // First time each reply's audio reached this device, for queue latency.
@@ -292,7 +304,14 @@ internal class BilingualTranslationController(
         private var wire: CaptureTranslationWire? = null
         private var foreground: AssistantSessionLease? = null
 
-        private fun failure() { scope.launch { if (active === this@Session) stop(BilingualPhase.ERROR) } }
+        fun fail() {
+            if (active !== this@Session) return
+            if (finishing.get()) {
+                mutable.update { it.copy(finishIncomplete = true) }
+                stop()
+            } else stop(BilingualPhase.ERROR)
+        }
+        private fun failure() { scope.launch { fail() } }
 
         fun replay(chunks: List<ByteArray>) {
             if (mutable.value.phase != BilingualPhase.LISTENING || finishing.get() || speaking.get()) return
@@ -324,24 +343,42 @@ internal class BilingualTranslationController(
             // Resource installation occurs on Main, serialized with stop/disposal.
             stage = "playback"
             val listener = object : CaptureTranslationWire.Listener {
-                override fun opened() = Unit
+                override fun opened() { opened.complete(Unit) }
                 override fun message(text: String) {
                     if (!closed.get() && (text.length > 300_000 || !events.trySend(text).isSuccess)) failure()
                 }
                 override fun failed() {
+                    if (!opened.isCompleted) opened.completeExceptionally(IllegalStateException("Translation connection failed"))
                     // Preserve final translation/finished events ahead of socket closure.
                     if (!closed.get() && !events.trySend("{\"type\":\"disconnected\"}").isSuccess) failure()
                 }
             }
-            stage = if (direct) "aoq_transport" else "webrtc_transport"
-            wire = if (direct) openAoqWire(pair, mutable.value.fixedSource, mutable.value.voice, listener)
-                else openWebRtcWire(pair, mutable.value.fixedSource, mutable.value.voice, listener)
-            launch(Dispatchers.Default) {
+            stage = "websocket_admission"
+            val choices = mutable.value
+            val ticket = withTimeout(10000) { api.ticket(com.we.meet.data.api.AssistantTranslationRequest(
+                pair.source, pair.target, choices.fixedSource, choices.voice)) }
+            ensureActive()
+            check(!closed.get() && authorized())
+            val endpoint = java.net.URI(ticket.url)
+            check(ticket.protocolVersion == 2 && ticket.ticket.isNotBlank() && ticket.ticket.length <= 2048)
+            check(endpoint.scheme == "wss" && !endpoint.host.isNullOrBlank() && endpoint.rawUserInfo == null &&
+                endpoint.rawQuery == null && endpoint.rawFragment == null && endpoint.path == "/capture-translation")
+            stage = "websocket_transport"
+            wire = openWire(ticket.url, listener)
+            withTimeout(10000) { opened.await() }
+            check(!closed.get() && authorized())
+            check(wire!!.send(JSONObject().put("type", "assistant_translation").put("ticket", ticket.ticket).toString()))
+            // Serialize result installation with stop, account changes and page disposal.
+            launch {
                 for (raw in events) {
                     if (closed.get()) break
                     val event = JSONObject(raw)
                     when (event.getString("type")) {
-                        "ready" -> ready.complete(Unit)
+                        "ready" -> {
+                            check(event.getInt("protocol_version") == 2)
+                            check(event.getInt("input_sample_rate") == 16000 && event.getInt("output_sample_rate") == 24000)
+                            ready.complete(Unit)
+                        }
                         "ack" -> {
                             val sentAt = synchronized(pending) { pending.pollFirst() }
                             check(sentAt != null)
@@ -359,13 +396,17 @@ internal class BilingualTranslationController(
                             val row = BilingualRow("$sessionId:${event.getString("id")}", event.getString("source"), event.getString("text"), sourceLanguage, targetLanguage)
                             check(row.source.length <= 20000 && row.text.length <= 20000)
                             mutable.update { value -> value.copy(rows = (value.rows.filterNot { it.id == row.id } + row).takeLast(100), unknownLanguage = false, audioOmitted = event.optBoolean("audio_omitted")) }
+                            if (row.id !in rowOrder && rowOrder.size >= 100) rowOrder.remove(rowOrder.keys.first())
                             recording?.put(com.we.meet.feature.assistant.history.AssistantHistoryRow(row.id,
-                                rowOrder.getOrPut(row.id) { rowOrder.size }, "translation", row.text, row.source, sourceLanguage, targetLanguage))
+                                rowOrder.getOrPut(row.id) { nextRowOrder++ }, "translation", row.text, row.source, sourceLanguage, targetLanguage))
                         }
                         "audio" -> {
                             val id = event.getString("id")
                             val bytes = Base64.decode(event.getString("audio"), Base64.NO_WRAP)
-                            receivedAt.putIfAbsent(id, SystemClock.elapsedRealtime())
+                            if (mutable.value.sound) {
+                                check(receivedAt.size < 100 || receivedAt.containsKey(id))
+                                receivedAt.putIfAbsent(id, SystemClock.elapsedRealtime())
+                            }
                             replayCache.append("$sessionId:$id", bytes)
                             mutable.update { it.copy(replayable = replayCache.ids()) }
                             if (mutable.value.sound) {
@@ -376,15 +417,26 @@ internal class BilingualTranslationController(
                         "audio_end" -> {
                             replayCache.finish("$sessionId:${event.getString("id")}")
                             mutable.update { it.copy(replayable = replayCache.ids()) }
+                            receivedAt.remove(event.getString("id"))
                             audio.finish(event.getString("id"))
                             audioReady.trySend(Unit)
                         }
-                        "expired" -> withContext(Dispatchers.Main.immediate) { if (active === this@Session) stop(BilingualPhase.EXPIRED) }
-                        "finished" -> {
-                            withTimeout(20_000) {
-                                while (!audio.isEmpty() || speaking.get() || (output?.pendingSamples ?: 0) > 0) delay(20)
+                        "expired", "finished" -> {
+                            serverEnded.set(true)
+                            finishing.set(true)
+                            mutable.update { it.copy(phase = BilingualPhase.FINISHING) }
+                            updateControls()
+                            microphone?.stop()
+                            try {
+                                withTimeout(65_000) {
+                                    while (!audio.isEmpty() || speaking.get() || (output?.pendingSamples ?: 0) > 0) delay(20)
+                                }
+                            } catch (timeout: TimeoutCancellationException) {
+                                throw IllegalStateException("Translation finish stalled", timeout)
                             }
-                            withContext(Dispatchers.Main.immediate) { if (active === this@Session) stop() }
+                            withContext(Dispatchers.Main.immediate) {
+                                if (active === this@Session) stop(if (event.getString("type") == "expired") BilingualPhase.EXPIRED else BilingualPhase.IDLE)
+                            }
                         }
                         else -> error("Translation connection failed")
                     }
@@ -392,8 +444,6 @@ internal class BilingualTranslationController(
             }
             withTimeout(60_000) { ready.await() }
             run {
-                // The SDK initializes focus even for external decoding. Acquire
-                // the app player's focus after all native players are ready.
                 output = openOutput(::failure)
                 output!!.open()
                 output!!.mute(!mutable.value.sound)
@@ -407,7 +457,7 @@ internal class BilingualTranslationController(
             launch {
                 while (isActive) {
                     // A missing ACK must fail even when another coroutine is idle.
-                    check(synchronized(pending) { pending.peekFirst()?.let { SystemClock.elapsedRealtime() - it <= 5000 } ?: true })
+                    if (!serverEnded.get()) check(synchronized(pending) { pending.peekFirst()?.let { SystemClock.elapsedRealtime() - it <= 5000 } ?: true })
                     delay(100)
                 }
             }
@@ -421,7 +471,7 @@ internal class BilingualTranslationController(
                             checkNotNull(output).finishTurn()
                             withTimeout(5000) { while (checkNotNull(output).pendingSamples > 0) delay(20) }
                             // Release echo protection only after the complete response and its tail.
-                            if (speaking.get()) delay(ECHO_TAIL_MS)
+                            if (speaking.get()) delay(checkNotNull(output).echoTailMs)
                             speaking.set(false)
                             if (packet.replay) {
                                 checkNotNull(output).mute(!mutable.value.sound)
@@ -457,7 +507,7 @@ internal class BilingualTranslationController(
                     speaking.set(false)
                 }
             }
-            val pcm = Channel<ByteArray>(10)
+            val pcm = Channel<ByteArray>(CAPTURE_BUFFER_FRAMES)
             launch(Dispatchers.IO) {
                 val buffer = ShortArray(1600)
                 val source = checkNotNull(microphone)
@@ -478,11 +528,14 @@ internal class BilingualTranslationController(
                 } finally { source.close(); pcm.close() }
             }
             for (bytes in pcm) {
+                if (serverEnded.get()) awaitCancellation()
                 withTimeout(5000) { window.acquire() }
+                if (serverEnded.get()) awaitCancellation()
                 synchronized(pending) { pending.addLast(SystemClock.elapsedRealtime()) }
                 check(checkNotNull(wire).queuedBytes <= 64000)
                 check(wire?.send(bytes) == true)
             }
+            if (serverEnded.get()) awaitCancellation()
             // Drain every in-flight frame before ordering the provider finish.
             withTimeout(5000) { repeat(8) { window.acquire() } }
             check(finishing.get() && wire?.send("{\"type\":\"finish\"}") == true)
@@ -510,8 +563,8 @@ internal class BilingualTranslationController(
             updateControls()
             microphone?.stop()
             scope.launch {
-                delay(30_000)
-                if (active === this@Session) stop(BilingualPhase.ERROR)
+                delay(95_000)
+                if (active === this@Session) fail()
             }
         }
 
@@ -526,7 +579,8 @@ internal class BilingualTranslationController(
             runCatching { foreground?.close() }
             foreground = null
             job?.invokeOnCompletion { runCatching { microphone?.close() } }
-            events.cancel(); audio.clear(); audioReady.cancel(); ready.cancel()
+            receivedAt.clear(); rowOrder.clear()
+            events.cancel(); audio.clear(); audioReady.cancel(); ready.cancel(); opened.cancel()
         }
     }
 }

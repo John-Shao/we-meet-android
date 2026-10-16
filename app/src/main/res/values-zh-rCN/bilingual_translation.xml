@@ -22,7 +22,7 @@
     <string name="bilingual_speaking">正在播报译文 · 请稍后说话</string>
     <string name="bilingual_finishing">正在完成最后一句翻译…</string>
     <string name="bilingual_error">翻译已中断，请点击开始重新连接。</string>
-    <string name="bilingual_expired">本次 15 分钟翻译已结束，可点击开始继续。</string>
+    <string name="bilingual_expired">翻译因长时间无对话或达到时长上限而结束，可点击开始继续。</string>
     <string name="bilingual_empty">原文和译文将显示在这里</string>
     <string name="bilingual_zh_en">中文 → 英文</string>
     <string name="bilingual_en_zh">英文 → 中文</string>

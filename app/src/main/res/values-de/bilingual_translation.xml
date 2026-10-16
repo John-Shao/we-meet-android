@@ -23,7 +23,7 @@
     <string name="bilingual_speaking">Übersetzung wird vorgelesen · Bitte warten Sie mit dem Sprechen</string>
     <string name="bilingual_finishing">Letzte Übersetzung wird abgeschlossen…</string>
     <string name="bilingual_error">Übersetzung unterbrochen. Tippen Sie auf Start, um erneut zu verbinden.</string>
-    <string name="bilingual_expired">Die 15-minütige Sitzung ist beendet. Tippen Sie auf Start, um fortzufahren.</string>
+    <string name="bilingual_expired">Übersetzung wegen Inaktivität oder Zeitlimit beendet. Tippen Sie auf Start, um fortzufahren.</string>
     <string name="bilingual_empty">Original und Übersetzungen erscheinen hier</string>
     <string name="bilingual_zh_en">Chinesisch → Englisch</string>
     <string name="bilingual_en_zh">Englisch → Chinesisch</string>

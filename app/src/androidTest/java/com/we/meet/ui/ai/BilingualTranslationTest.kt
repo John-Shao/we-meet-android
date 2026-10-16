@@ -3,6 +3,7 @@ package com.we.meet.ui.ai
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.we.meet.data.api.AssistantTranslationApi
+import com.we.meet.data.api.AssistantTranslationRequest
 import com.we.meet.data.api.AssistantTranslationPair
 import com.we.meet.data.api.AssistantTranslationTicket
 import com.we.meet.data.capture.CapturePcmSource
@@ -18,8 +19,27 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationTest {
-    @Test fun fixedDirectionIsPassedToAoqAndLockedUntilTheSessionStops() {
-        val f = Fixture(cloud = false)
+    @Test fun disabledOrIncompatibleConfigurationPreventsTicketAllocation() {
+        for (version in listOf(1, 2)) {
+            val f = Fixture()
+            try {
+                main {
+                    f.api.config = com.we.meet.data.api.TranslationVoiceConfig("future-model", "Tina",
+                        listOf(com.we.meet.data.api.TranslationVoice("Tina", "Tina")),
+                        protocolVersion = version, enabled = version == 1, reason = "feature_disabled")
+                    f.controller.refreshVoices()
+                }
+                waitFor { f.controller.state.value.unavailableReason != null }
+                main { f.controller.start() }
+                assertNull(f.api.selected)
+                assertFalse(f.controller.state.value.active)
+                assertEquals(if (version == 1) "upgrade_required" else "feature_disabled", f.controller.state.value.unavailableReason)
+            } finally { main { f.controller.close() } }
+        }
+    }
+
+    @Test fun fixedDirectionIsPassedToGatewayAndLockedUntilTheSessionStops() {
+        val f = Fixture()
         try {
             main { f.controller.fixedSource("en"); f.controller.voice("Ethan"); f.controller.start() }
             waitFor { f.wire != null }; f.wire!!.ready()
@@ -29,10 +49,10 @@ class BilingualTranslationTest {
             assertEquals(AssistantTranslationPair("en", "zh"), f.controller.state.value.pair)
             main { f.controller.fixedSource("zh"); f.controller.voice("Tina") }
             assertEquals("en", f.controller.state.value.fixedSource)
-            main { f.controller.stop(); f.controller.directAoq(false) }
+            main { f.controller.stop() }
             assertEquals("en", f.controller.state.value.fixedSource)
             main { f.controller.start() }
-            waitFor { f.webRtcOpened && f.wire != null && !f.wire!!.closed.get() }
+            waitFor { f.webSocketOpened && f.wire != null && !f.wire!!.closed.get() }
             assertEquals("Ethan", f.selectedVoice)
             assertEquals("en", f.fixedSource)
             main { f.controller.stop(); f.controller.selectLanguage(true, "ja") }
@@ -45,10 +65,10 @@ class BilingualTranslationTest {
         } finally { main { f.controller.close() } }
     }
     @Test fun backendVoiceChangesReachWireAndRetainActiveSessionSelection() {
-        val f = Fixture(cloud = false)
+        val f = Fixture()
         try {
             val config = com.we.meet.data.api.TranslationVoiceConfig("qwen3.8-livetranslate-flash-realtime", "FutureVoice",
-                listOf(com.we.meet.data.api.TranslationVoice("FutureVoice", "New voice")))
+                listOf(com.we.meet.data.api.TranslationVoice("FutureVoice", "New voice")), protocolVersion = 2)
             main { f.api.config = config; f.controller.refreshVoices() }
             waitFor { f.controller.state.value.voice == "FutureVoice" }
             main { f.controller.start() }
@@ -65,40 +85,39 @@ class BilingualTranslationTest {
         } finally { main { f.controller.close() } }
     }
 
-    @Test fun defaultTranslationUsesAoqWithoutRequestingACloudTicket() {
-        val f = Fixture(cloud = false)
-        try {
-            assertTrue(f.controller.state.value.directAoq)
-            main { f.controller.start() }
-            waitFor { f.wire != null }; f.wire!!.ready()
-            waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
-            assertTrue(f.aoqOpened)
-            assertNull(f.api.selected)
-            main { f.controller.directAoq(false) }
-            assertTrue(f.controller.state.value.directAoq)
-            assertFalse(f.wire!!.closed.get())
-            main { f.controller.stop(); f.controller.directAoq(false); f.controller.start() }
-            waitFor { f.webRtcOpened && f.wire != null && !f.wire!!.closed.get() }
-            f.wire!!.ready()
-            waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
-            assertFalse(f.controller.state.value.directAoq)
-        } finally { main { f.controller.close() } }
-    }
-
-    @Test fun translationTransportCannotChangeDuringAnActiveCloudSession() {
+    @Test fun translationUsesOneAuthenticatedWebSocketAndExplicitRetry() {
         val f = Fixture()
         try {
             main { f.controller.start() }
             waitFor { f.wire != null }; f.wire!!.ready()
             waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
-            main { f.controller.directAoq(true) }
-            assertFalse(f.controller.state.value.directAoq)
-            assertFalse(f.wire!!.closed.get())
+            assertNotNull(f.api.selected)
+            assertEquals(2, f.api.selected!!.protocolVersion)
+            assertEquals("assistant_translation", JSONObject(f.wire!!.sent.first()).getString("type"))
+            main { f.controller.stop(); f.controller.start() }
+            waitFor { f.wire != null && !f.wire!!.closed.get() }
+            f.wire!!.ready()
+            waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+        } finally { main { f.controller.close() } }
+    }
+
+    @Test fun leavingPageReleasesSessionAndPageLocalResults() {
+        val f = Fixture()
+        try {
+            main { f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+            main { f.controller.leavePage() }
+            waitFor { f.microphone.closed.get() }
+            assertTrue(f.wire!!.closed.get())
+            assertTrue(f.output.closed.get())
+            assertTrue(f.controller.state.value.replayable.isEmpty())
+            assertTrue(f.controller.state.value.rows.isEmpty())
         } finally { main { f.controller.close() } }
     }
 
     @Test fun realMutedOutputCanReplayAndReturnToListening() {
-        androidx.test.core.app.ActivityScenario.launch(androidx.activity.ComponentActivity::class.java).use {
+        androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use {
             val f = Fixture(realPlayback = true)
             try {
                 main { f.controller.sound(false); f.controller.start() }
@@ -155,9 +174,11 @@ class BilingualTranslationTest {
             waitFor { !f.controller.state.value.replaying }
             assertEquals(BilingualPhase.LISTENING, f.controller.state.value.phase)
             assertEquals(2400, f.output.played.sumOf { it.size })
-            val before = f.output.played.size
+            val previousOutput = f.output
             main { f.controller.stop(); f.controller.replay(id) }
-            waitFor { f.output.played.size > before && !f.controller.state.value.replaying }
+            waitFor { f.output !== previousOutput && f.output.played.isNotEmpty() && !f.controller.state.value.replaying }
+            assertTrue(previousOutput.closed.get())
+            assertEquals(2400, f.output.played.sumOf { it.size })
             assertFalse(f.controller.state.value.active)
         } finally { main { f.controller.close() } }
     }
@@ -185,10 +206,12 @@ class BilingualTranslationTest {
     private class Microphone : CapturePcmSource {
         val stopped = AtomicBoolean()
         val closed = AtomicBoolean()
+        val framesRead = java.util.concurrent.atomic.AtomicInteger()
         override fun start() = Unit
         override fun read(buffer: ShortArray): Int {
             Thread.sleep(100)
             if (stopped.get()) return 0
+            framesRead.incrementAndGet()
             buffer.fill(123)
             return buffer.size
         }
@@ -206,33 +229,36 @@ class BilingualTranslationTest {
     }
     private class Wire(val listener: CaptureTranslationWire.Listener) : CaptureTranslationWire {
         var ackDelay = 0L
-        var dropAcks = false
+        @Volatile var dropAcks = false
+        private val heldAcks = java.util.concurrent.atomic.AtomicInteger()
         val sent = CopyOnWriteArrayList<String>()
         val pcm = CopyOnWriteArrayList<ByteArray>()
         val closed = AtomicBoolean()
         override val queuedBytes = 0L
         override fun send(text: String): Boolean { sent += text; return true }
-        override fun send(pcm: ByteArray): Boolean { this.pcm += pcm; if (!dropAcks) android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ listener.message("{\"type\":\"ack\"}") }, ackDelay); return true }
+        override fun send(pcm: ByteArray): Boolean { this.pcm += pcm; if (dropAcks) heldAcks.incrementAndGet() else android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ listener.message("{\"type\":\"ack\"}") }, ackDelay); return true }
+        fun releaseAcks() { dropAcks = false; repeat(heldAcks.getAndSet(0)) { listener.message("{\"type\":\"ack\"}") } }
         override fun close() { closed.set(true) }
-        fun ready() { listener.opened(); listener.message("{\"type\":\"ready\"}") }
+        fun ready() { listener.opened(); listener.message("{\"type\":\"ready\",\"protocol_version\":2,\"input_sample_rate\":16000,\"output_sample_rate\":24000}") }
     }
     private class Api : AssistantTranslationApi {
         var config: com.we.meet.data.api.TranslationVoiceConfig? = null
         override suspend fun voiceConfig() = config ?: error("offline")
-        var selected: AssistantTranslationPair? = null
+        var selected: AssistantTranslationRequest? = null
         var wait: CompletableDeferred<Unit>? = null
         var timeout = false
+        var ignoreCancellation = false
         val entered = CompletableDeferred<Unit>()
-        override suspend fun ticket(pair: AssistantTranslationPair): AssistantTranslationTicket {
+        override suspend fun ticket(pair: AssistantTranslationRequest): AssistantTranslationTicket {
             selected = pair
             entered.complete(Unit)
             if (timeout) withTimeout(1) { awaitCancellation() }
-            wait?.await()
-            return AssistantTranslationTicket("wss://test/capture-translation", "opaque")
+            if (ignoreCancellation) withContext(NonCancellable) { wait?.await() } else wait?.await()
+            return AssistantTranslationTicket("wss://test/capture-translation", "opaque", 2)
         }
     }
 
-    @Test fun selectedLanguagesReachWebRtcAndBothDirectionsKeepTheirLabels() {
+    @Test fun selectedLanguagesReachGatewayAndBothDirectionsKeepTheirLabels() {
         val f = Fixture()
         try {
             main {
@@ -243,7 +269,7 @@ class BilingualTranslationTest {
             }
             waitFor { f.wire != null }; f.wire!!.ready()
             assertEquals(AssistantTranslationPair("ja", "fr"), f.selectedPair)
-            assertNull(f.api.selected)
+            assertNotNull(f.api.selected)
             for ((source, target) in listOf("ja" to "fr", "fr" to "ja")) {
                 f.wire!!.listener.message(JSONObject().put("type", "translation").put("id", source)
                     .put("source_language", source).put("target_language", target)
@@ -255,25 +281,25 @@ class BilingualTranslationTest {
             assertEquals(listOf("fr", "ja"), f.controller.state.value.rows.map { it.targetLanguage })
         } finally { main { f.controller.close() } }
     }
-    private class Fixture(val api: Api = Api(), realPlayback: Boolean = false, writeDelayMs: Long = 0, realBackground: Boolean = false, cloud: Boolean = true) {
-        val microphone = Microphone()
-        val output = Output()
+    private class Fixture(val api: Api = Api(), realPlayback: Boolean = false, writeDelayMs: Long = 0, realBackground: Boolean = false,
+                          authorized: () -> Boolean = { true }) {
+        var microphone = Microphone()
+        var output = Output()
         @Volatile var wire: Wire? = null
-        @Volatile var aoqOpened = false
-        @Volatile var webRtcOpened = false
-        @Volatile var selectedVoice = ""
-        @Volatile var fixedSource: String? = null
-        @Volatile var selectedPair: AssistantTranslationPair? = null
+        @Volatile var webSocketOpened = false
+        val selectedVoice get() = api.selected?.voice
+        val fixedSource get() = api.selected?.fixedSource
+        val selectedPair get() = api.selected?.let { AssistantTranslationPair(it.source, it.target) }
         var opened = false
         @Volatile var playbackUnderruns = 0
         val controller = BilingualTranslationController(
-            InstrumentationRegistry.getInstrumentation().targetContext, api, { true },
+            InstrumentationRegistry.getInstrumentation().targetContext, api, authorized,
             { interrupted ->
                 opened = true
                 if (realBackground) com.we.meet.data.capture.AndroidCapturePcmSource.open(InstrumentationRegistry.getInstrumentation().targetContext).also { it.onInterrupted = interrupted }
-                else microphone
+                else Microphone().also { microphone = it }
             }, { interrupted ->
-                if (!realPlayback) output else {
+                if (!realPlayback) Output().also { output = it } else {
                     val delegate = AndroidTranslationOutput(InstrumentationRegistry.getInstrumentation().targetContext, interrupted, startupBufferMs = 200)
                     object : BilingualAudioOutput {
                         override fun open() = delegate.open()
@@ -289,7 +315,7 @@ class BilingualTranslationTest {
                         override fun close() = delegate.close()
                     }
                 }
-            }, { pair, source, voice, listener -> selectedPair = pair; fixedSource = source; selectedVoice = voice; Wire(listener).also { webRtcOpened = true; wire = it } },
+            }, { _, listener -> Wire(listener).also { webSocketOpened = true; wire = it } },
             openForeground = { stopped ->
                 if (realBackground) com.we.meet.feature.assistant.background.AssistantForegroundSession.start(
                     InstrumentationRegistry.getInstrumentation().targetContext,
@@ -299,8 +325,7 @@ class BilingualTranslationTest {
                     override fun close() = Unit
                 }
             },
-            openAoqWire = { _, source, voice, listener -> fixedSource = source; selectedVoice = voice; Wire(listener).also { aoqOpened = true; wire = it } },
-        ).also { if (cloud) it.directAoq(false) }
+        )
     }
 
     @Test fun realMicrophoneAndTranslationContinueWhileBackgroundedAndScreenOff() {
@@ -308,7 +333,7 @@ class BilingualTranslationTest {
         instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.RECORD_AUDIO)
         if (android.os.Build.VERSION.SDK_INT >= 33) instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
         val f = Fixture(realPlayback = true, realBackground = true)
-        androidx.test.core.app.ActivityScenario.launch(androidx.activity.ComponentActivity::class.java).use { activity ->
+        androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use { activity ->
             try {
                 main { f.controller.start() }
                 waitFor { f.wire != null }; f.wire!!.ready()
@@ -337,7 +362,7 @@ class BilingualTranslationTest {
     @Test fun activityRecreationRetainsTranslationButNavigationOwnerDestructionClosesIt() {
         val f = Fixture()
         try {
-            androidx.test.core.app.ActivityScenario.launch(androidx.activity.ComponentActivity::class.java).use { activity ->
+            androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use { activity ->
                 val factory = object : androidx.lifecycle.ViewModelProvider.Factory {
                     @Suppress("UNCHECKED_CAST")
                     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T =
@@ -415,7 +440,7 @@ class BilingualTranslationTest {
         } finally { main { f.controller.close() } }
     }
 
-    @Test fun disposingBeforeWebRtcReadyCannotStartMicrophoneLater() {
+    @Test fun disposingBeforeGatewayReadyCannotStartMicrophoneLater() {
         val f = Fixture()
         main { f.controller.start() }
         waitFor { f.wire != null }
@@ -510,6 +535,114 @@ class BilingualTranslationTest {
             assertEquals(BilingualPhase.ERROR, f.controller.state.value.phase)
             assertTrue(f.wire!!.closed.get())
             assertTrue(f.microphone.closed.get())
+        } finally { main { f.controller.close() } }
+    }
+
+    @Test fun temporaryAckStallPreservesCapturedAudioAndFinishesAfterRecovery() {
+        val f = Fixture()
+        try {
+            main { f.controller.start() }
+            waitFor { f.wire != null }
+            main { f.wire!!.dropAcks = true; f.wire!!.ready() }
+            waitFor { f.wire!!.pcm.size == 8 }
+            // TCP retransmission can hold every later ACK behind a missing packet.
+            Thread.sleep(2200)
+            assertEquals("A short ACK stall must retain captured audio", BilingualPhase.LISTENING, f.controller.state.value.phase)
+            main { f.wire!!.releaseAcks(); f.controller.finish() }
+            waitFor { f.wire!!.sent.any { JSONObject(it).getString("type") == "finish" } }
+            assertEquals("No captured frame may be discarded or sent twice", f.microphone.framesRead.get(), f.wire!!.pcm.size)
+            f.wire!!.listener.message("{\"type\":\"finished\"}")
+            waitFor { f.controller.state.value.phase == BilingualPhase.IDLE }
+            assertFalse(f.controller.state.value.finishIncomplete)
+            assertTrue(f.microphone.closed.get())
+        } finally { main { f.controller.close() } }
+    }
+
+    @Test fun expiredWaitsForPlaybackBeforeReleasingResources() {
+        val f = Fixture()
+        try {
+            main { f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.wire!!.pcm.isNotEmpty() }
+            f.output.stalled = true
+            f.wire!!.listener.message("{\"type\":\"audio\",\"id\":\"last\",\"audio\":\"AAA=\"}")
+            f.wire!!.listener.message("{\"type\":\"audio_end\",\"id\":\"last\"}")
+            f.wire!!.listener.message("{\"type\":\"expired\",\"reason\":\"duration\"}")
+            waitFor { f.controller.state.value.phase == BilingualPhase.FINISHING }
+            assertFalse(f.output.closed.get())
+            assertTrue(f.microphone.stopped.get())
+            f.output.stalled = false
+            waitFor { f.controller.state.value.phase == BilingualPhase.EXPIRED }
+            assertTrue(f.output.closed.get())
+            assertTrue(f.wire!!.closed.get())
+            assertFalse(f.controller.state.value.finishIncomplete)
+        } finally { main { f.controller.close() } }
+    }
+
+    @Test fun disconnectedDuringUserFinishPreservesRowsAndReportsIncomplete() {
+        val f = Fixture()
+        try {
+            main { f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.wire!!.pcm.isNotEmpty() }
+            f.wire!!.listener.message("{\"type\":\"translation\",\"id\":\"last\",\"source_language\":\"zh\",\"source\":\"source\",\"text\":\"saved\"}")
+            waitFor { f.controller.state.value.rows.size == 1 }
+            main { f.controller.finish() }
+            f.wire!!.listener.failed()
+            waitFor { f.controller.state.value.phase == BilingualPhase.IDLE }
+            assertTrue(f.controller.state.value.finishIncomplete)
+            assertEquals("saved", f.controller.state.value.rows.single().text)
+        } finally { main { f.controller.close() } }
+    }
+
+    @Test fun disposedOrLoggedOutTicketResponseCannotOpenSocketOrMicrophone() {
+        for (dispose in listOf(false, true)) {
+            val authorized = AtomicBoolean(true)
+            val api = Api().apply { wait = CompletableDeferred(); ignoreCancellation = true }
+            val f = Fixture(api, authorized = { authorized.get() })
+            try {
+                main { f.controller.start() }
+                waitFor { api.entered.isCompleted }
+                main { if (dispose) f.controller.leavePage() else authorized.set(false) }
+                api.wait!!.complete(Unit)
+                waitFor { f.controller.state.value.phase != BilingualPhase.CONNECTING }
+                assertNull(f.wire)
+                assertFalse(f.opened)
+            } finally { main { f.controller.close() } }
+        }
+    }
+
+    @Test fun logoutStopsAnActiveMicrophoneAndLateEventsCannotRestoreRows() {
+        val authorized = AtomicBoolean(true)
+        val f = Fixture(authorized = { authorized.get() })
+        try {
+            main { f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.wire!!.pcm.isNotEmpty() }
+            authorized.set(false)
+            waitFor { f.wire!!.closed.get() && f.microphone.closed.get() }
+            main { f.controller.leavePage() }
+            f.wire!!.listener.message("{\"type\":\"translation\",\"id\":\"late\",\"source_language\":\"zh\",\"source\":\"old\",\"text\":\"private\"}")
+            instrumentation.waitForIdleSync()
+            assertTrue(f.controller.state.value.rows.isEmpty())
+        } finally { main { f.controller.close() } }
+    }
+
+    @Test fun longAudioGapDoesNotReleaseHalfDuplexUntilExplicitEnd() {
+        val f = Fixture()
+        try {
+            main { f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.wire!!.pcm.isNotEmpty() }
+            f.wire!!.listener.message("{\"type\":\"audio\",\"id\":\"gap\",\"audio\":\"AAA=\"}")
+            waitFor { f.controller.state.value.phase == BilingualPhase.SPEAKING }
+            Thread.sleep(700)
+            assertEquals(BilingualPhase.SPEAKING, f.controller.state.value.phase)
+            assertTrue(f.controller.state.value.replayable.isEmpty())
+            f.wire!!.listener.message("{\"type\":\"audio\",\"id\":\"gap\",\"audio\":\"AAA=\"}")
+            f.wire!!.listener.message("{\"type\":\"audio_end\",\"id\":\"gap\"}")
+            waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+            assertEquals(1, f.controller.state.value.replayable.size)
         } finally { main { f.controller.close() } }
     }
 

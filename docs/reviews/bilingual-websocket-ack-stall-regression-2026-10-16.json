@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-16",
+  "issue": "Capture queue exhausted before the five-second ACK watchdog during a temporary TCP stall",
+  "before": {
+    "main_apk_sha256": "B4C6F7290A06C463130F3A3D6E1106402C66B4AFCCDB5C48425D5BD255ED669C",
+    "test": "BilingualTranslationTest#temporaryAckStallPreservesCapturedAudioAndFinishesAfterRecovery",
+    "duration_seconds": 3.489,
+    "passed": false,
+    "expected_phase": "LISTENING",
+    "actual_phase": "ERROR",
+    "held_ack_window_frames": 8,
+    "additional_stall_ms": 2200,
+    "capture_buffer_frames": 10
+  },
+  "change": {
+    "capture_buffer_frames": 50,
+    "maximum_pcm_bytes": 160000,
+    "ack_timeout_ms": 5000,
+    "automatic_reconnect": false
+  },
+  "status": "passed",
+  "after": {
+    "passed": true,
+    "device": "emulator-5586",
+    "expected_device_tests": 61,
+    "duration_seconds": 81.888,
+    "main_apk_sha256": "D55E3B67AFF8C8FAC1CC2EEB58E31A2AE486FE57146A48568F957322D1E6BEE1",
+    "test_apk_sha256": "1538356FFB31793E58232F33C05433F0827AF5B4742F61AC4CB41BE016985618",
+    "jvm": {
+      "tests": 750,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "network_regression": {
+      "report": "bilingual-websocket-network-probe-2026-10-16.json",
+      "passed": true,
+      "duration_seconds": 20.129,
+      "kernel_packet_drops": 19
+    }
+  }
+}

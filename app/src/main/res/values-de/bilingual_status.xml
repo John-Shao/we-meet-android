@@ -1,0 +1,5 @@
+<resources>
+    <string name="bilingual_unavailable">Die Übersetzung ist derzeit nicht verfügbar.</string>
+    <string name="bilingual_upgrade_required">Aktualisieren Sie die App, um weiter zu übersetzen.</string>
+    <string name="bilingual_finish_incomplete">Übersetzung beendet. Die letzte Antwort ist möglicherweise unvollständig.</string>
+</resources>

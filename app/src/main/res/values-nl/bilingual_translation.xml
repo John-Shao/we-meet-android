@@ -23,7 +23,7 @@
     <string name="bilingual_speaking">Vertaling wordt afgespeeld · wacht even met spreken</string>
     <string name="bilingual_finishing">De laatste vertaling wordt afgerond…</string>
     <string name="bilingual_error">De vertaling is onderbroken. Tik op Start om opnieuw te verbinden.</string>
-    <string name="bilingual_expired">De sessie van 15 minuten is afgelopen. Tik op Start om door te gaan.</string>
+    <string name="bilingual_expired">Vertaling beëindigd wegens inactiviteit of de tijdslimiet. Tik op Start om door te gaan.</string>
     <string name="bilingual_empty">Originele spraak en vertalingen verschijnen hier</string>
     <string name="bilingual_zh_en">Chinees → Engels</string>
     <string name="bilingual_en_zh">Engels → Chinees</string>

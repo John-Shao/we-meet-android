@@ -14,9 +14,6 @@
     <string name="capture_direct_asr_paused">Transcription en pause. Reprenez l’enregistrement pour continuer la reconnaissance.</string>
     <string name="capture_direct_asr_save_failed">Le texte n’est pas encore enregistré. Reconnectez-vous et réessayez l’enregistrement.</string>
     <string name="capture_direct_asr_gap">La transcription ne couvre que l’audio pendant son activation. Pour obtenir le texte complet, utilisez la transcription de l’enregistrement entier une fois celui-ci terminé.</string>
-    <string name="bilingual_transport">Mode de connexion</string>
-    <string name="bilingual_transport_aoq">Connexion directe AOQ</string>
-    <string name="bilingual_transport_webrtc">Connexion directe du client WebRTC</string>
     <string name="app_name">We Meet</string>
 
     <!-- Login screen -->

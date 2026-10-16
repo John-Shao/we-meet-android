@@ -10,7 +10,7 @@ import okio.ByteString
 import okio.ByteString.Companion.toByteString
 
 /** Dedicated credential-free socket client; the single-use ticket goes only in the first frame. */
-class OkHttpCaptureTranslationWire private constructor(url: String, listener: CaptureTranslationWire.Listener) : CaptureTranslationWire {
+class OkHttpCaptureTranslationWire private constructor(url: String, listener: CaptureTranslationWire.Listener, client: OkHttpClient) : CaptureTranslationWire {
     private val socket = client.newWebSocket(Request.Builder().url(url).build(), object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) = listener.opened()
         override fun onMessage(webSocket: WebSocket, text: String) = listener.message(text)
@@ -27,6 +27,7 @@ class OkHttpCaptureTranslationWire private constructor(url: String, listener: Ca
     companion object {
         private val client = OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
             .connectTimeout(5, TimeUnit.SECONDS).writeTimeout(5, TimeUnit.SECONDS).readTimeout(0, TimeUnit.SECONDS).pingInterval(10, TimeUnit.SECONDS).build()
-        fun open(url: String, listener: CaptureTranslationWire.Listener): CaptureTranslationWire = OkHttpCaptureTranslationWire(url, listener)
+        fun open(url: String, listener: CaptureTranslationWire.Listener): CaptureTranslationWire = OkHttpCaptureTranslationWire(url, listener, client)
+        internal fun open(client: OkHttpClient, url: String, listener: CaptureTranslationWire.Listener): CaptureTranslationWire = OkHttpCaptureTranslationWire(url, listener, client)
     }
 }

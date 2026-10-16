@@ -28,7 +28,7 @@ class AssistantSceneTest {
     }
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private val api = object : AssistantTranslationApi {
-        override suspend fun ticket(pair: AssistantTranslationPair): AssistantTranslationTicket = error("No provider calls")
+        override suspend fun ticket(pair: com.we.meet.data.api.AssistantTranslationRequest): AssistantTranslationTicket = error("No provider calls")
     }
 
     @Test fun translationSceneLanguagesAndSoundPersistIndependently() {

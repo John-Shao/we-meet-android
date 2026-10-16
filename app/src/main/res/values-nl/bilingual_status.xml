@@ -1,0 +1,5 @@
+<resources>
+    <string name="bilingual_unavailable">Vertalen is momenteel niet beschikbaar.</string>
+    <string name="bilingual_upgrade_required">Werk de app bij om verder te vertalen.</string>
+    <string name="bilingual_finish_incomplete">Vertaling gestopt. Het laatste antwoord is mogelijk onvolledig.</string>
+</resources>

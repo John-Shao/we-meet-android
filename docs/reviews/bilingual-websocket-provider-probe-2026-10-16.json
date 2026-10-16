@@ -1,0 +1,55 @@
+{
+  "scope": "isolated gateway with real provider; admission is a fixture",
+  "cases": [
+    {
+      "mode": "fixed",
+      "rows": [
+        {
+          "audio_bytes": 84480,
+          "audio_ended": true,
+          "source_language": "zh",
+          "target_language": "en",
+          "source_chars": 9,
+          "target_chars": 31
+        }
+      ],
+      "passed": true,
+      "ready_ms": 336,
+      "duration_ms": 6263,
+      "provider_connections": 1,
+      "lease_closed": true,
+      "input_bytes": 88320,
+      "output_bytes": 113795,
+      "errors": []
+    },
+    {
+      "mode": "automatic",
+      "rows": [
+        {
+          "audio_bytes": 84480,
+          "audio_ended": true,
+          "source_language": "zh",
+          "target_language": "en",
+          "source_chars": 9,
+          "target_chars": 31
+        },
+        {
+          "audio_bytes": 96000,
+          "audio_ended": true,
+          "source_language": "en",
+          "target_language": "zh",
+          "source_chars": 37,
+          "target_chars": 8
+        }
+      ],
+      "passed": true,
+      "ready_ms": 231,
+      "duration_ms": 9333,
+      "provider_connections": 2,
+      "lease_closed": true,
+      "input_bytes": 186080,
+      "output_bytes": 242843,
+      "errors": []
+    }
+  ]
+}

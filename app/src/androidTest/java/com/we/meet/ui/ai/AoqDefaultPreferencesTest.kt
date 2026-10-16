@@ -70,9 +70,7 @@ class AoqDefaultPreferencesTest {
         repeat(2) { assertEquals(fallback, AiCallPreferences(context).load()) }
     }
 
-    @Test fun newTranslationDefaultsToAoq() {
-        assertTrue(BilingualState().directAoq)
-        assertTrue(BilingualPreferences(context, "new").load().directAoq)
+    @Test fun newTranslationHasOnlyProductPreferences() {
         assertEquals("Tina", BilingualPreferences(context, "new").load().voice)
     }
 
@@ -91,7 +89,6 @@ class AoqDefaultPreferencesTest {
                 preferences = BilingualPreferences(context, "display-controller")).use { controller ->
                 controller.facing(false)
                 controller.sound(false)
-                controller.directAoq(false)
                 controller.stop()
                 assertFalse(controller.state.value.facing)
             }
@@ -99,7 +96,6 @@ class AoqDefaultPreferencesTest {
                 preferences = BilingualPreferences(context, "display-controller")).use { controller ->
                 assertFalse(controller.state.value.facing)
                 assertFalse(controller.state.value.sound)
-                assertFalse(controller.state.value.directAoq)
                 controller.facing(true)
             }
         }
@@ -126,10 +122,10 @@ class AoqDefaultPreferencesTest {
     }
     @Test fun translationVoicePersistsIndependentlyAndRejectsOmniOnlyVoice() {
         val prefs = BilingualPreferences(context, "voice")
-        prefs.save(prefs.load().copy(voice = "Ethan", directAoq = false))
+        prefs.save(prefs.load().copy(voice = "Ethan"))
         assertEquals("Ethan", BilingualPreferences(context, "voice").load().voice)
         assertEquals("Tina", BilingualPreferences(context, "other").load().voice)
-        prefs.save(prefs.load().copy(directAoq = true))
+        prefs.save(prefs.load().copy(sound = true))
         assertEquals("Ethan", prefs.load().voice)
         translationStore("voice").edit().putString("voice", "Zane").commit()
         assertEquals("Tina", prefs.load().voice)
@@ -137,7 +133,7 @@ class AoqDefaultPreferencesTest {
     @Test fun remoteVoiceCatalogSurvivesRestartAndIsAccountScoped() {
         val prefs = BilingualPreferences(context, "remote")
         val config = com.we.meet.data.api.TranslationVoiceConfig("qwen3.8-livetranslate-flash-realtime", "FutureVoice",
-            listOf(com.we.meet.data.api.TranslationVoice("FutureVoice", "New voice")))
+            listOf(com.we.meet.data.api.TranslationVoice("FutureVoice", "New voice")), protocolVersion = 2)
         prefs.cacheVoiceConfig(config)
         prefs.save(prefs.load().copy(voice = "FutureVoice"))
         assertEquals("FutureVoice", BilingualPreferences(context, "remote").load().voice)
@@ -148,32 +144,34 @@ class AoqDefaultPreferencesTest {
         assertTrue(prefs.load().voiceConfig!!.voices.isEmpty())
     }
 
-    @Test fun explicitDirectionPersistsForBothDirectTransportsAndValidLanguages() {
+    @Test fun explicitDirectionPersistsWithValidLanguages() {
         val prefs = BilingualPreferences(context, "direction")
         prefs.save(prefs.load().copy(fixedSource = "en"))
         assertEquals("en", prefs.load().fixedSource)
         assertEquals(AssistantTranslationPair("en", "zh"), prefs.load().pair)
-        prefs.save(prefs.load().copy(directAoq = false))
+        prefs.save(prefs.load().copy(sound = false))
         assertEquals("en", prefs.load().fixedSource)
-        prefs.save(prefs.load().copy(directAoq = true, fixedSource = "fr"))
+        prefs.save(prefs.load().copy(fixedSource = "fr"))
         assertNull(prefs.load().fixedSource)
     }
 
-    @Test fun existingCloudTranslationKeepsLanguagesSoundAndScene() {
+    @Test fun legacyTransportMigrationKeepsLanguagesSoundAndScene() {
         translationStore("legacy").edit().putBoolean("direct-aoq", false)
             .putString("source", "de").putString("target", "ja")
             .putBoolean("sound", false).putString("scene", "business").commit()
         assertEquals(BilingualState(pair = AssistantTranslationPair("de", "ja"),
-            sound = false, sceneId = "business", directAoq = true),
+            sound = false, sceneId = "business"),
             BilingualPreferences(context, "legacy").load())
+        assertFalse(translationStore("legacy").contains("direct-aoq"))
+        assertFalse(translationStore("legacy").contains("aoq_default_v1"))
+        assertTrue(translationStore("legacy").getBoolean("websocket_v2", false))
     }
 
-    @Test fun manualCloudChoicePersistsAndDoesNotAffectOtherAccounts() {
+    @Test fun productChoicesPersistAndDoNotAffectOtherAccounts() {
         val prefs = BilingualPreferences(context, "one")
-        val fallback = prefs.load().copy(directAoq = false)
+        val fallback = prefs.load().copy(sound = false)
         prefs.save(fallback)
         repeat(2) { assertEquals(fallback, BilingualPreferences(context, "one").load()) }
-        assertTrue(BilingualPreferences(context, "two").load().directAoq)
     }
 
     @Test fun videoSettingsPersistAcrossTransportsAndRecreatedPreferences() {

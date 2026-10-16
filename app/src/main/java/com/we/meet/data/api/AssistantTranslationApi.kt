@@ -6,9 +6,6 @@ import retrofit2.http.GET
 import retrofit2.http.Body
 import retrofit2.http.Headers
 import retrofit2.http.POST
-import retrofit2.http.Path
-import com.we.meet.feature.assistant.aicall.data.DirectAILeaseInfo
-import com.we.meet.feature.assistant.aicall.data.DirectAILeaseOperation
 
 @JsonClass(generateAdapter = true)
 data class AssistantTranslationPair(
@@ -17,7 +14,8 @@ data class AssistantTranslationPair(
 )
 
 @JsonClass(generateAdapter = true)
-data class AssistantTranslationTicket(val url: String, val ticket: String) {
+data class AssistantTranslationTicket(val url: String, val ticket: String,
+    @Json(name = "protocol_version") val protocolVersion: Int = 1) {
     override fun toString() = "AssistantTranslationTicket(<private>)"
 }
 
@@ -29,6 +27,10 @@ data class TranslationVoiceConfig(
     val model: String,
     @Json(name = "default_voice") val defaultVoice: String?,
     val voices: List<TranslationVoice>,
+    @Json(name = "protocol_version") val protocolVersion: Int = 1,
+    val enabled: Boolean = true,
+    val reason: String? = null,
+    val languages: List<String> = emptyList(),
 )
 
 interface AssistantTranslationApi {
@@ -36,33 +38,16 @@ interface AssistantTranslationApi {
     @GET("api/v1.0/assistant-translation/config/")
     suspend fun voiceConfig(): TranslationVoiceConfig = error("Voice config is unavailable")
 
-    @POST("api/v1.0/direct-ai/sessions/{id}/")
-    suspend fun sessionLease(@Path("id") id: String, @Body operation: DirectAILeaseOperation) = Unit
-    @Headers("Cache-Control: no-store")
-    @POST("api/v1.0/assistant-translation/session/")
-    suspend fun directSession(@Body request: AssistantTranslationDirectRequest): AssistantTranslationDirectSession =
-        error("Direct translation is unavailable")
     @Headers("Cache-Control: no-store")
     @POST("api/v1.0/assistant-translation/ticket/")
-    suspend fun ticket(@Body pair: AssistantTranslationPair): AssistantTranslationTicket
+    suspend fun ticket(@Body request: AssistantTranslationRequest): AssistantTranslationTicket
 }
 
 @JsonClass(generateAdapter = true)
-data class AssistantTranslationDirectRequest(
+data class AssistantTranslationRequest(
     @Json(name = "source_language") val source: String,
     @Json(name = "target_language") val target: String,
-    val purpose: String = "translation",
-    val transport: String = "aoq",
-    val sdp: String? = null,
+    @Json(name = "fixed_source") val fixedSource: String? = null,
+    val voice: String,
+    @Json(name = "protocol_version") val protocolVersion: Int = 2,
 )
-
-@JsonClass(generateAdapter = true)
-data class AssistantTranslationDirectSession(
-    val model: String,
-    val aoq: com.we.meet.feature.assistant.aicall.model.AoqCredentials? = null,
-    @Json(name = "session_lease") val sessionLease: DirectAILeaseInfo? = null,
-    val sdp: String? = null,
-    val instructions: String? = null,
-) {
-    override fun toString() = "AssistantTranslationDirectSession(<private>)"
-}

@@ -1,0 +1,5 @@
+<resources>
+    <string name="bilingual_unavailable">La traduction est momentanément indisponible.</string>
+    <string name="bilingual_upgrade_required">Mettez à jour votre application pour continuer à traduire.</string>
+    <string name="bilingual_finish_incomplete">Traduction arrêtée. La dernière réponse peut être incomplète.</string>
+</resources>

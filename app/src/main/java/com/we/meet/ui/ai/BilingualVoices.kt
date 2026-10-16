@@ -62,7 +62,7 @@ internal object BilingualVoices {
     )
 
     fun valid(config: TranslationVoiceConfig): Boolean =
-        config.model == "qwen3.8-livetranslate-flash-realtime" && config.voices.size <= 500 &&
+        config.protocolVersion == 2 && config.model.isNotBlank() && config.voices.size <= 500 &&
             config.voices.all { it.value.isNotBlank() && it.value.length <= 128 && it.label.isNotBlank() && it.label.length <= 128 } &&
             config.voices.map { it.value }.distinct().size == config.voices.size &&
             (if (config.voices.isEmpty()) config.defaultVoice == null else config.voices.any { it.value == config.defaultVoice })

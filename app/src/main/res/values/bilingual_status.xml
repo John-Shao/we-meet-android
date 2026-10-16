@@ -1,0 +1,5 @@
+<resources>
+    <string name="bilingual_unavailable">Translation is currently unavailable.</string>
+    <string name="bilingual_upgrade_required">Update the app to continue translating.</string>
+    <string name="bilingual_finish_incomplete">Translation stopped. The last response may be incomplete.</string>
+</resources>

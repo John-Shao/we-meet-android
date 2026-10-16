@@ -14,9 +14,6 @@
     <string name="capture_direct_asr_paused">Transcriptie gepauzeerd. Hervat de opname om verder te gaan.</string>
     <string name="capture_direct_asr_save_failed">De tekst wacht op verzending. Herstel de verbinding en probeer het opslaan opnieuw.</string>
     <string name="capture_direct_asr_gap">De transcriptie dekt alleen de audio tijdens het inschakelen. Gebruik voor de volledige tekst de transcriptie van de hele opname nadat de opname is beëindigd.</string>
-    <string name="bilingual_transport">Verbinding</string>
-    <string name="bilingual_transport_aoq">Directe AOQ-verbinding</string>
-    <string name="bilingual_transport_webrtc">Directe WebRTC-clientverbinding</string>
     <string name="app_name">We Meet</string>
 
     <!-- Login screen -->

@@ -1,0 +1,47 @@
+{
+  "scope": "Android HTTPS/WSS integration",
+  "passed": true,
+  "checks": {
+    "android_integration": true,
+    "all_business_sessions_closed": true,
+    "expected_business_session_count": true
+  },
+  "android": {
+    "scope": "Android controller, Retrofit HTTPS, OkHttp WSS, real backend admission and provider; synthetic microphone; fixture login session",
+    "passed": true,
+    "device": "emulator-5586",
+    "physical_microphone": false,
+    "downstream_delay_ms": 250,
+    "route_results": [
+      "route=模拟器 rows=1 explicit_audio_end=true replay=true tails=[300]"
+    ],
+    "checks": {
+      "android_integration": true
+    },
+    "runner_output": "INSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=\ncom.we.meet.ui.ai.BilingualLiveIntegrationTest:\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 1\nINSTRUMENTATION_STATUS: bilingual_result=route=模拟器 rows=1 explicit_audio_end=true replay=true tails=[300]\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=.\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_RESULT: stream=\n\nTime: 17.18\n\nOK (1 test)\n\n\nINSTRUMENTATION_CODE: -1\n",
+    "gateway": {
+      "events": {
+        "ready": 1,
+        "ack": 30,
+        "audio": 3,
+        "translation": 1,
+        "audio_end": 1,
+        "finished": 1
+      },
+      "error_codes": []
+    }
+  },
+  "database_sessions": [
+    "closed"
+  ],
+  "latency_model": "250 ms server-to-client propagation delay; ordered bounded FIFO; close follows queued data; no simulated packet loss or bandwidth limit",
+  "calibration": {
+    "frames": 10,
+    "elapsed_ms": 251,
+    "close_follows_finished": true
+  },
+  "artifacts": {
+    "main_apk_sha256": "B4C6F7290A06C463130F3A3D6E1106402C66B4AFCCDB5C48425D5BD255ED669C",
+    "test_apk_sha256": "CFBB75881FAE09AE9171761A5FC720EAA719FDEB625D6DC0296F7930B63E6C91"
+  }
+}

@@ -1939,6 +1939,20 @@ fun AppNav() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AiHubRoute(onBack: () -> Unit, onOpenAssistantCall: () -> Unit, onOpenBilingualTranslation: () -> Unit, onOpenHistory: () -> Unit) {
+    val app = LocalContext.current.applicationContext as WeMeetApp
+    val account = app.captureAccount
+    val bilingualEnabled by androidx.compose.runtime.produceState(false, account) {
+        if (account != null) {
+            try {
+                val config = kotlinx.coroutines.withTimeout(5000) { app.apiClient.assistantTranslationApi.voiceConfig() }
+                value = app.captureAccount == account && config.enabled
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                value = false
+            }
+        }
+    }
     androidx.compose.material3.Scaffold(
         topBar = {
             WeMeetTopBar(
@@ -1954,7 +1968,7 @@ private fun AiHubRoute(onBack: () -> Unit, onOpenAssistantCall: () -> Unit, onOp
         },
     ) { padding ->
         androidx.compose.foundation.layout.Box(modifier = Modifier.padding(padding)) {
-            com.we.meet.ui.ai.AiHubScreen(onOpenAssistantCall = onOpenAssistantCall, onOpenBilingualTranslation = onOpenBilingualTranslation)
+            com.we.meet.ui.ai.AiHubScreen(onOpenAssistantCall = onOpenAssistantCall, onOpenBilingualTranslation = onOpenBilingualTranslation, bilingualEnabled = bilingualEnabled)
         }
     }
 }

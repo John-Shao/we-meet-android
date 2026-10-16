@@ -1,0 +1,135 @@
+{
+  "date": "2026-10-16",
+  "business": {
+    "scope": "real HTTP session authentication, PostgreSQL admission, gateway and provider; login session is a fixture",
+    "cases": [
+      {
+        "mode": "fixed",
+        "rows": [
+          {
+            "audio_bytes": 72960,
+            "audio_ended": true,
+            "source_language": "zh",
+            "target_language": "en",
+            "source_chars": 9,
+            "target_chars": 31
+          }
+        ],
+        "passed": true,
+        "ready_ms": 545,
+        "duration_ms": 30626,
+        "provider_connections": 1,
+        "lease_closed": true,
+        "heartbeats": 2,
+        "voice": "Ethan",
+        "input_bytes": 795520,
+        "output_bytes": 101750,
+        "errors": []
+      },
+      {
+        "mode": "automatic",
+        "rows": [
+          {
+            "audio_bytes": 80640,
+            "audio_ended": true,
+            "source_language": "zh",
+            "target_language": "en",
+            "source_chars": 9,
+            "target_chars": 31
+          },
+          {
+            "audio_bytes": 99840,
+            "audio_ended": true,
+            "source_language": "en",
+            "target_language": "zh",
+            "source_chars": 37,
+            "target_chars": 8
+          }
+        ],
+        "passed": true,
+        "ready_ms": 357,
+        "duration_ms": 9559,
+        "provider_connections": 2,
+        "lease_closed": true,
+        "heartbeats": 1,
+        "voice": "Tina",
+        "input_bytes": 176480,
+        "output_bytes": 242867,
+        "errors": []
+      },
+      {
+        "mode": "idle_noise",
+        "rows": [],
+        "passed": true,
+        "ready_ms": 340,
+        "expired_reason": "idle",
+        "duration_ms": 43545,
+        "provider_connections": 2,
+        "lease_closed": true,
+        "heartbeats": 2,
+        "voice": "Tina",
+        "input_bytes": 889600,
+        "output_bytes": 4344,
+        "errors": []
+      }
+    ],
+    "checks": {
+      "unauthenticated_ticket_rejected": true,
+      "authenticated_config_v2": true,
+      "fixed_active_quota_rejected": true,
+      "fixed_ordinary_user_cannot_claim": true,
+      "fixed_consumed_ticket_cannot_reopen": true,
+      "automatic_active_quota_rejected": true,
+      "automatic_ordinary_user_cannot_claim": true,
+      "automatic_consumed_ticket_cannot_reopen": true,
+      "idle_active_quota_rejected": true,
+      "idle_ordinary_user_cannot_claim": true,
+      "idle_consumed_ticket_cannot_reopen": true,
+      "real_heartbeat": true,
+      "retired_direct_endpoint": true,
+      "all_business_sessions_closed": true
+    },
+    "database_sessions": [
+      "closed",
+      "closed",
+      "closed"
+    ],
+    "passed": true
+  },
+  "android": {
+    "scope": "Android HTTPS/WSS integration",
+    "passed": true,
+    "checks": {
+      "android_integration": true,
+      "all_business_sessions_closed": true
+    },
+    "android": {
+      "scope": "Android controller, Retrofit HTTPS, OkHttp WSS, real backend admission and provider; synthetic microphone; fixture login session",
+      "passed": true,
+      "device": "emulator-5586",
+      "physical_microphone": false,
+      "route_results": [
+        "route=模拟器 rows=1 explicit_audio_end=true replay=true tails=[300]"
+      ],
+      "checks": {
+        "android_integration": true
+      },
+      "runner_output": "INSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=\ncom.we.meet.ui.ai.BilingualLiveIntegrationTest:\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 1\nINSTRUMENTATION_STATUS: bilingual_result=route=模拟器 rows=1 explicit_audio_end=true replay=true tails=[300]\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_STATUS: class=com.we.meet.ui.ai.BilingualLiveIntegrationTest\nINSTRUMENTATION_STATUS: current=1\nINSTRUMENTATION_STATUS: id=AndroidJUnitRunner\nINSTRUMENTATION_STATUS: numtests=1\nINSTRUMENTATION_STATUS: stream=.\nINSTRUMENTATION_STATUS: test=realBusinessAdmissionTranslationFinishAndReplay\nINSTRUMENTATION_STATUS_CODE: 0\nINSTRUMENTATION_RESULT: stream=\n\nTime: 20.963\n\nOK (1 test)\n\n\nINSTRUMENTATION_CODE: -1\n"
+    },
+    "database_sessions": [
+      "closed"
+    ]
+  },
+  "passed": true,
+  "scope_notes": [
+    "Separate isolated databases; no production users, database or deployment changes.",
+    "HTTP authentication uses a fixture Django login session, not external OIDC login.",
+    "Android uses synthetic PCM with real HTTPS/WSS, controller, AudioTrack playback and provider.",
+    "Physical acoustics, external weak networks and production capacity are recorded separately."
+  ],
+  "earlier_harness_failures": [
+    "Heartbeat wait initially omitted PCM, triggering the intended five-second ingress timeout.",
+    "Idle terminal handling initially waited for server closure instead of retiring the client socket.",
+    "Android test omitted the Kotlin JSON adapter used by the application."
+  ]
+}
