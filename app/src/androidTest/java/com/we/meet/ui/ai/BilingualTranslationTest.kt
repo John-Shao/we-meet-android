@@ -130,7 +130,8 @@ class BilingualTranslationTest {
                 val id = f.controller.state.value.replayable.single()
                 main { f.controller.replay(id) }
                 waitFor { f.controller.state.value.replaying }
-                waitFor { !f.controller.state.value.replaying }
+                // The writer clears replaying before the main-thread phase update.
+                waitFor { !f.controller.state.value.replaying && f.controller.state.value.phase == BilingualPhase.LISTENING }
                 assertEquals(BilingualPhase.LISTENING, f.controller.state.value.phase)
                 assertFalse(f.controller.state.value.sound)
                 main { f.controller.sound(true); f.controller.pauseInput(true) }
