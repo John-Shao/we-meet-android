@@ -23,6 +23,7 @@
     <string name="bilingual_idle">Prêt quand vous voulez</string>
     <string name="bilingual_connecting">Connexion…</string>
     <string name="bilingual_listening">Écoute · Langue détectée automatiquement</string>
+    <string name="bilingual_listening_fixed">Écoute · %1$s → %2$s</string>
     <string name="bilingual_speaking">Lecture de la traduction · Veuillez patienter avant de parler</string>
     <string name="bilingual_finishing">Finalisation de la dernière traduction…</string>
     <string name="bilingual_error">Traduction interrompue. Appuyez sur Démarrer pour vous reconnecter.</string>

@@ -103,16 +103,23 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                 else -> when (state.phase) {
                     BilingualPhase.IDLE -> R.string.bilingual_idle
                     BilingualPhase.CONNECTING -> R.string.bilingual_connecting
-                    BilingualPhase.LISTENING -> R.string.bilingual_listening
+                    BilingualPhase.LISTENING -> if (state.fixedSource == null) R.string.bilingual_listening
+                        else R.string.bilingual_listening_fixed
                     BilingualPhase.SPEAKING -> R.string.bilingual_speaking
                     BilingualPhase.FINISHING -> R.string.bilingual_finishing
                     BilingualPhase.ERROR -> R.string.bilingual_error
                     BilingualPhase.EXPIRED -> R.string.bilingual_expired
                 }
             }
-            Text(if (state.unknownLanguage && !permissionDenied) stringResource(status,
-                stringResource(BilingualLanguages.label(state.pair.source)), stringResource(BilingualLanguages.label(state.pair.target)))
-                else stringResource(status), style = MaterialTheme.typography.bodyMedium,
+            val statusText = when (status) {
+                R.string.bilingual_unknown -> stringResource(status,
+                    stringResource(BilingualLanguages.label(state.pair.source)), stringResource(BilingualLanguages.label(state.pair.target)))
+                R.string.bilingual_listening_fixed -> stringResource(status,
+                    stringResource(BilingualLanguages.label(requireNotNull(state.fixedSource))),
+                    stringResource(BilingualLanguages.label(if (state.fixedSource == state.pair.source) state.pair.target else state.pair.source)))
+                else -> stringResource(status)
+            }
+            Text(statusText, modifier = Modifier.testTag("bilingual-status"), style = MaterialTheme.typography.bodyMedium,
                 color = if (state.phase == BilingualPhase.ERROR || permissionDenied || state.replayError && !state.active) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
             if (state.audioOmitted) Text(stringResource(R.string.bilingual_audio_omitted),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

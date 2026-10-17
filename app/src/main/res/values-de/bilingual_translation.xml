@@ -23,6 +23,7 @@
     <string name="bilingual_idle">Bereit, wenn Sie so weit sind</string>
     <string name="bilingual_connecting">Verbindung wird hergestellt…</string>
     <string name="bilingual_listening">Zuhören · Sprache wird automatisch erkannt</string>
+    <string name="bilingual_listening_fixed">Zuhören · %1$s → %2$s</string>
     <string name="bilingual_speaking">Übersetzung wird vorgelesen · Bitte warten Sie mit dem Sprechen</string>
     <string name="bilingual_finishing">Letzte Übersetzung wird abgeschlossen…</string>
     <string name="bilingual_error">Übersetzung unterbrochen. Tippen Sie auf Start, um erneut zu verbinden.</string>

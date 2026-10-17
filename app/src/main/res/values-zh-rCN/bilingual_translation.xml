@@ -22,6 +22,7 @@
     <string name="bilingual_idle">准备好后，点击开始</string>
     <string name="bilingual_connecting">正在连接…</string>
     <string name="bilingual_listening">正在聆听 · 自动识别语种</string>
+    <string name="bilingual_listening_fixed">正在聆听 · %1$s → %2$s</string>
     <string name="bilingual_speaking">正在播报译文 · 请稍后说话</string>
     <string name="bilingual_finishing">正在完成最后一句翻译…</string>
     <string name="bilingual_error">翻译已中断，请点击开始重新连接。</string>

@@ -22,6 +22,7 @@
     <string name="bilingual_idle">Ready when you are</string>
     <string name="bilingual_connecting">Connecting…</string>
     <string name="bilingual_listening">Listening · Language detected automatically</string>
+    <string name="bilingual_listening_fixed">Listening · %1$s → %2$s</string>
     <string name="bilingual_speaking">Playing translation · Please wait before speaking</string>
     <string name="bilingual_finishing">Finishing the last translation…</string>
     <string name="bilingual_error">Translation interrupted. Tap Start to reconnect.</string>
