@@ -1,0 +1,1241 @@
+{
+  "recorded_at": "2026-10-17T13:18:33.026850+00:00",
+  "status": "internal_release_acceptance_completed_feature_off",
+  "candidate": {
+    "source_commit": "1f6b26e1a1c48d86d3be9ebd6455d22fe0f33d5d",
+    "unit_tests": {
+      "tests": 750,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "suites": 98,
+    "apks": {
+      "main": {
+        "path": "work\\bilingual-release\\we-meet-android\\app\\build\\outputs\\apk\\release\\app-release.apk",
+        "sha256": "60c1e848cda94eaa1a95f33ed0a912042296a8e1bf34e9e070c1bdcc3eb06adb",
+        "bytes": 146168020
+      },
+      "test": {
+        "path": "work\\bilingual-release\\we-meet-android\\app\\build\\outputs\\apk\\androidTest\\release\\app-release-androidTest.apk",
+        "sha256": "1d1f928fa5452288ddd94f39f429b46ad5036b0c995976117978e7651ae1d5ec",
+        "bytes": 5893965
+      }
+    },
+    "final_build_seconds": 263,
+    "build_passed": true,
+    "version_code": 6,
+    "version_name": "0.3.0-work.4",
+    "debuggable": false,
+    "signature": {
+      "verified": true,
+      "scheme_v2": true,
+      "certificate_sha256": "053d9864295c3d3f87b615bacb4872f136bdb1a34af7fe503ca036530141c528",
+      "kind": "existing internal Android Debug certificate"
+    },
+    "installed_main_hash_verified": true,
+    "initial_focused_device_run": {
+      "tests": 4,
+      "passed": 2,
+      "failed": 2,
+      "failure": "Release test APK missing Compose host activity; no product assertion executed in the two UI tests",
+      "log": "normal-ui-replay-focused-device-20261017.log",
+      "test_apk_sha256": "f636223a9eba0d136243d1e63c9c447efe9f0affd5b5800566d15cad0d8dc743"
+    },
+    "test_source_commit": "6507f780df4673f8f42c46c58fea687497c75ba9",
+    "focused_device_tests": {
+      "tests": 4,
+      "passed": 4,
+      "failed": 0,
+      "seconds": 29.359,
+      "log": "normal-ui-replay-focused-device-main-host-20261017.log",
+      "static_fixture_screenshots_reviewed": true,
+      "one_time_vendor_launch_prompts_handled": 2
+    },
+    "second_focused_device_run": {
+      "tests": 4,
+      "passed": 2,
+      "failed": 2,
+      "failure": "Compose host in test APK resolved to a separate process; product UI assertions not executed",
+      "log": "normal-ui-replay-focused-device-host-fixed-20261017.log"
+    },
+    "installed_test_hash_verified": true,
+    "test_signature_verified": true
+  },
+  "normal_ui_windows": [
+    {
+      "run_id": "20261017-204040",
+      "scope": "Normal installed internal app UI, no instrumentation",
+      "maximum_window_seconds": 1200,
+      "main_apk_sha256": "60c1e848cda94eaa1a95f33ed0a912042296a8e1bf34e9e070c1bdcc3eb06adb",
+      "main_source_commit": "1f6b26e1a1c48d86d3be9ebd6455d22fe0f33d5d",
+      "installed_main_hash_verified": true,
+      "test_package_started": false,
+      "state": "closed",
+      "enable": {
+        "previous_revision": "488",
+        "revision": "489",
+        "helm_status": "deployed",
+        "exit": 0
+      },
+      "close_reason": "client_diagnostics_disconnected",
+      "window_seconds": 778.184,
+      "disable": {
+        "previous_revision": "489",
+        "revision": "490",
+        "helm_status": "deployed",
+        "exit": 0
+      }
+    },
+    {
+      "run_id": "20261017-205927",
+      "scope": "Normal installed internal app UI, no instrumentation",
+      "maximum_window_seconds": 1200,
+      "main_apk_sha256": "60c1e848cda94eaa1a95f33ed0a912042296a8e1bf34e9e070c1bdcc3eb06adb",
+      "main_source_commit": "1f6b26e1a1c48d86d3be9ebd6455d22fe0f33d5d",
+      "installed_main_hash_verified": true,
+      "test_package_started": false,
+      "state": "closed",
+      "enable": {
+        "previous_revision": "490",
+        "revision": "491",
+        "helm_status": "deployed",
+        "exit": 0
+      },
+      "close_reason": "operator_completed_or_cancelled",
+      "window_seconds": 848.197,
+      "disable": {
+        "previous_revision": "491",
+        "revision": "492",
+        "helm_status": "deployed",
+        "exit": 0
+      }
+    }
+  ],
+  "speaker_cases": [
+    {
+      "case": "fixed-zh-en-quiet",
+      "since": "2026-10-17T12:45:22.250756Z",
+      "main_apk_sha256": "60c1e848cda94eaa1a95f33ed0a912042296a8e1bf34e9e070c1bdcc3eb06adb",
+      "normal_app_ui": true,
+      "direction_original": "automatic",
+      "direction_selected": "fixed_zh",
+      "language_pair": [
+        "zh",
+        "en"
+      ],
+      "sound_enabled_verified": true,
+      "connectivity_baseline": {
+        "default_network_id": "252",
+        "transports": [
+          "CELLULAR"
+        ],
+        "wifi_on": "1",
+        "mobile_data": "1"
+      },
+      "state": "passed",
+      "human_translation_feedback": "clear_complete_page_normal",
+      "stop_requested_at": "2026-10-17T12:46:30.354655+00:00",
+      "before_stop_controls": [
+        "\u4e2d\u6587",
+        "\u505c\u6b62\u7ffb\u8bd1",
+        "\u53cc\u8bed\u4e92\u8bd1",
+        "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+        "\u56de\u653e\u8bd1\u97f3",
+        "\u6b63\u5728\u8046\u542c \u00b7 \u81ea\u52a8\u8bc6\u522b\u8bed\u79cd",
+        "\u8fd4\u56de"
+      ],
+      "human_replay_feedback": "clear_complete",
+      "after_replay_controls": [
+        "\u4e2d\u6587",
+        "\u51c6\u5907\u597d\u540e\uff0c\u70b9\u51fb\u5f00\u59cb",
+        "\u53cc\u8bed\u4e92\u8bd1",
+        "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+        "\u56de\u653e\u8bd1\u97f3",
+        "\u5f00\u59cb\u7ffb\u8bd1",
+        "\u8fd4\u56de"
+      ],
+      "program_counters": {
+        "since": "2026-10-17T12:45:22.250756Z",
+        "results": [
+          {
+            "timestamp": "2026-10-17T20:45:52.679458893+08:00",
+            "source": "zh",
+            "target": "en",
+            "characters": 54,
+            "correlation": "e6a5205a"
+          }
+        ],
+        "closed": [
+          {
+            "correlation": "e6a5205a",
+            "duration_ms": 63324,
+            "input_bytes": 1859200,
+            "output_bytes": 260643,
+            "translations": 1,
+            "providers": 1
+          }
+        ],
+        "errors": [],
+        "raw_logs_saved": false
+      },
+      "quiet_no_extra_result_between_observations": true,
+      "quiet_first_observation_file_written_at": "2026-10-17T12:45:59.581988+00:00",
+      "replay_scope": "one complete retained translation via normal UI",
+      "new_popup_reported": false
+    },
+    {
+      "case": "automatic-quiet",
+      "since": "2026-10-17T12:48:23.319593Z",
+      "main_apk_sha256": "60c1e848cda94eaa1a95f33ed0a912042296a8e1bf34e9e070c1bdcc3eb06adb",
+      "normal_app_ui": true,
+      "direction_selected": "automatic",
+      "language_pair": [
+        "zh",
+        "en"
+      ],
+      "noise": "quiet",
+      "state": "acoustic_passed",
+      "controls": [
+        "\u4e2d\u6587",
+        "\u505c\u6b62\u7ffb\u8bd1",
+        "\u53cc\u8bed\u4e92\u8bd1",
+        "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+        "\u56de\u653e\u8bd1\u97f3",
+        "\u6b63\u5728\u8046\u542c \u00b7 \u81ea\u52a8\u8bc6\u522b\u8bed\u79cd",
+        "\u8fd4\u56de"
+      ],
+      "human_translation_feedback": "both_directions_clear_complete_page_normal",
+      "after_stop_controls": [
+        "\u4e2d\u6587",
+        "\u51c6\u5907\u597d\u540e\uff0c\u70b9\u51fb\u5f00\u59cb",
+        "\u53cc\u8bed\u4e92\u8bd1",
+        "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+        "\u56de\u653e\u8bd1\u97f3",
+        "\u5f00\u59cb\u7ffb\u8bd1",
+        "\u82f1\u8bed",
+        "\u8fd4\u56de"
+      ],
+      "replay_clicked": true,
+      "human_replay_feedback": "clear_complete",
+      "after_replay_controls": [
+        "\u4e2d\u6587",
+        "\u51c6\u5907\u597d\u540e\uff0c\u70b9\u51fb\u5f00\u59cb",
+        "\u53cc\u8bed\u4e92\u8bd1",
+        "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+        "\u56de\u653e\u8bd1\u97f3",
+        "\u5f00\u59cb\u7ffb\u8bd1",
+        "\u82f1\u8bed",
+        "\u8fd4\u56de"
+      ],
+      "aggregate_no_live_sessions_verified_at_revision": 490,
+      "per_session_closed_usage_counters_available": false,
+      "usage_counter_gap": "Gateway pod rolled after diagnostic disconnect; retained CRI recovery contained no prior session counters. No totals fabricated.",
+      "stop_and_replay_actions_completed_at": "2026-10-17T12:50:13.886616+00:00"
+    },
+    {
+      "case": "automatic-table-tapping",
+      "since": "2026-10-17T12:50:42.160902Z",
+      "main_apk_sha256": "60c1e848cda94eaa1a95f33ed0a912042296a8e1bf34e9e070c1bdcc3eb06adb",
+      "normal_app_ui": true,
+      "direction_selected": "automatic",
+      "language_pair": [
+        "zh",
+        "en"
+      ],
+      "noise": "light_table_tapping",
+      "state": "acoustic_passed",
+      "controls": [
+        "\u4e2d\u6587",
+        "\u505c\u6b62\u7ffb\u8bd1",
+        "\u53cc\u8bed\u4e92\u8bd1",
+        "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+        "\u56de\u653e\u8bd1\u97f3",
+        "\u6b63\u5728\u8046\u542c \u00b7 \u81ea\u52a8\u8bc6\u522b\u8bed\u79cd",
+        "\u82f1\u8bed",
+        "\u8fd4\u56de"
+      ],
+      "human_translation_feedback": "both_directions_clear_complete_no_echo_or_duplicate",
+      "human_feedback_at": "2026-10-17T12:52:05.192145+00:00",
+      "after_stop_controls": [
+        "\u51c6\u5907\u597d\u540e\uff0c\u70b9\u51fb\u5f00\u59cb",
+        "\u53cc\u8bed\u4e92\u8bd1",
+        "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+        "\u56de\u653e\u8bd1\u97f3",
+        "\u5f00\u59cb\u7ffb\u8bd1",
+        "\u82f1\u8bed",
+        "\u8fd4\u56de"
+      ],
+      "replay_clicked": true,
+      "human_replay_feedback": "clear_complete",
+      "quiet_counters": {
+        "first": {
+          "since": "2026-10-17T12:50:42.160902Z",
+          "results": [
+            {
+              "timestamp": "2026-10-17T20:51:16.583638871+08:00",
+              "source": "zh",
+              "target": "en",
+              "characters": 59,
+              "correlation": "4ca52b0b"
+            },
+            {
+              "timestamp": "2026-10-17T20:51:30.751320096+08:00",
+              "source": "en",
+              "target": "zh",
+              "characters": 14,
+              "correlation": "4ca52b0b"
+            }
+          ],
+          "closed": [],
+          "errors": [],
+          "raw_logs_saved": false
+        },
+        "second": {
+          "since": "2026-10-17T12:50:42.160902Z",
+          "results": [
+            {
+              "timestamp": "2026-10-17T20:51:16.583638871+08:00",
+              "source": "zh",
+              "target": "en",
+              "characters": 59,
+              "correlation": "4ca52b0b"
+            },
+            {
+              "timestamp": "2026-10-17T20:51:30.751320096+08:00",
+              "source": "en",
+              "target": "zh",
+              "characters": 14,
+              "correlation": "4ca52b0b"
+            }
+          ],
+          "closed": [],
+          "errors": [],
+          "raw_logs_saved": false
+        },
+        "interval_seconds": 10.893,
+        "no_extra_results": true,
+        "observed_at": "2026-10-17T12:52:11.584852+00:00"
+      },
+      "stop_and_replay_actions_completed_at": "2026-10-17T12:52:41.693383+00:00",
+      "aggregate_no_live_sessions_verified_at_revision": 490,
+      "per_session_closed_usage_counters_available": false,
+      "usage_counter_gap": "Gateway pod rolled after diagnostic disconnect; retained CRI recovery contained no prior session counters. No totals fabricated."
+    },
+    {
+      "case": "fixed-zh-en-table-tapping",
+      "since": "2026-10-17T12:53:23.730356Z",
+      "main_apk_sha256": "60c1e848cda94eaa1a95f33ed0a912042296a8e1bf34e9e070c1bdcc3eb06adb",
+      "normal_app_ui": true,
+      "direction_selected": "fixed_zh",
+      "language_pair": [
+        "zh",
+        "en"
+      ],
+      "noise": "light_table_tapping",
+      "state": "acoustic_passed",
+      "controls": [
+        "\u505c\u6b62\u7ffb\u8bd1",
+        "\u53cc\u8bed\u4e92\u8bd1",
+        "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+        "\u56de\u653e\u8bd1\u97f3",
+        "\u6b63\u5728\u8046\u542c \u00b7 \u81ea\u52a8\u8bc6\u522b\u8bed\u79cd",
+        "\u82f1\u8bed",
+        "\u8fd4\u56de"
+      ],
+      "human_translation_feedback": "clear_complete_no_echo_or_duplicate",
+      "quiet_counters": {
+        "first": {
+          "since": "2026-10-17T12:53:23.730356Z",
+          "results": [
+            {
+              "timestamp": "2026-10-17T20:54:06.188690467+08:00",
+              "source": "zh",
+              "target": "en",
+              "characters": 54,
+              "correlation": "d9a275db"
+            }
+          ],
+          "closed": [],
+          "errors": [],
+          "raw_logs_saved": false
+        },
+        "second": {
+          "since": "2026-10-17T12:53:23.730356Z",
+          "results": [
+            {
+              "timestamp": "2026-10-17T20:54:06.188690467+08:00",
+              "source": "zh",
+              "target": "en",
+              "characters": 54,
+              "correlation": "d9a275db"
+            }
+          ],
+          "closed": [],
+          "errors": [],
+          "raw_logs_saved": false
+        },
+        "interval_seconds": 11.031,
+        "no_extra_results": true,
+        "observed_at": "2026-10-17T12:54:59.670946+00:00"
+      },
+      "stop_requested_at": "2026-10-17T12:56:24.573383+00:00",
+      "after_stop_controls": [
+        "\u51c6\u5907\u597d\u540e\uff0c\u70b9\u51fb\u5f00\u59cb",
+        "\u53cc\u8bed\u4e92\u8bd1",
+        "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+        "\u56de\u653e\u8bd1\u97f3",
+        "\u5f00\u59cb\u7ffb\u8bd1",
+        "\u8fd4\u56de"
+      ],
+      "replay_clicked": true,
+      "human_replay_feedback": "clear_complete",
+      "aggregate_no_live_sessions_verified_at_revision": 490,
+      "per_session_closed_usage_counters_available": false,
+      "usage_counter_gap": "Gateway pod rolled after diagnostic disconnect; retained CRI recovery contained no prior session counters. No totals fabricated."
+    }
+  ],
+  "screen_off": {
+    "main_apk_sha256": "60c1e848cda94eaa1a95f33ed0a912042296a8e1bf34e9e070c1bdcc3eb06adb",
+    "normal_app_ui": true,
+    "real_microphone": true,
+    "real_production_gateway": true,
+    "power_policy_changed": false,
+    "snapshots": {
+      "before": {
+        "assistant_service_present": true,
+        "assistant_wake_lock_present": true,
+        "record_audio_appop_running": true,
+        "main_activity_resumed": true,
+        "display_asleep": false,
+        "raw_diagnostics_saved": false,
+        "ack_sample_count": 30,
+        "at": "2026-10-17T12:54:53.878840+00:00"
+      },
+      "home": {
+        "assistant_service_present": true,
+        "assistant_wake_lock_present": true,
+        "record_audio_appop_running": true,
+        "main_activity_resumed": false,
+        "display_asleep": false,
+        "raw_diagnostics_saved": false,
+        "ack_sample_count": 30,
+        "at": "2026-10-17T12:54:54.386863+00:00"
+      },
+      "asleep_start": {
+        "assistant_service_present": true,
+        "assistant_wake_lock_present": true,
+        "record_audio_appop_running": true,
+        "main_activity_resumed": false,
+        "display_asleep": true,
+        "raw_diagnostics_saved": false,
+        "ack_sample_count": 30,
+        "at": "2026-10-17T12:54:55.777125+00:00"
+      },
+      "asleep_middle": {
+        "assistant_service_present": true,
+        "assistant_wake_lock_present": true,
+        "record_audio_appop_running": true,
+        "main_activity_resumed": false,
+        "display_asleep": true,
+        "raw_diagnostics_saved": false,
+        "ack_sample_count": 33,
+        "at": "2026-10-17T12:55:26.218227+00:00"
+      },
+      "asleep_end": {
+        "assistant_service_present": true,
+        "assistant_wake_lock_present": true,
+        "record_audio_appop_running": true,
+        "main_activity_resumed": false,
+        "display_asleep": true,
+        "raw_diagnostics_saved": false,
+        "ack_sample_count": 35,
+        "at": "2026-10-17T12:55:56.226480+00:00"
+      },
+      "after_wake": {
+        "assistant_service_present": true,
+        "assistant_wake_lock_present": true,
+        "record_audio_appop_running": true,
+        "main_activity_resumed": true,
+        "display_asleep": false,
+        "raw_diagnostics_saved": false,
+        "ack_sample_count": 35,
+        "at": "2026-10-17T12:55:57.138649+00:00"
+      }
+    },
+    "state": "passed",
+    "screen_off_seconds": 60.449,
+    "resource_parser_note": "The initial resource helper matched wake-lock history as well as active locks. The helper is now restricted to the active Wake Locks section. The retained safe ACQ/REL chronology brackets this entire screen-off interval; running mic, foreground service, asleep samples and five additional ACK samples are independently recorded.",
+    "safe_wake_lock_chronology": {
+      "acquired_at": "2026-10-17T20:53:30.833+08:00",
+      "released_at": "2026-10-17T20:56:28.392+08:00",
+      "active_resources_confirmed_released_after_case": true
+    }
+  },
+  "incoming_call": {
+    "main_apk_sha256": "60c1e848cda94eaa1a95f33ed0a912042296a8e1bf34e9e070c1bdcc3eb06adb",
+    "normal_app_ui": true,
+    "since": "2026-10-17T13:02:21.139909Z",
+    "state_changes": [
+      {
+        "states": [
+          0,
+          0
+        ],
+        "at": "2026-10-17T13:02:21.636124+00:00",
+        "resources": {
+          "assistant_service_present": true,
+          "assistant_wake_lock_present": true,
+          "record_audio_appop_running": true,
+          "main_activity_resumed": true,
+          "display_asleep": false,
+          "raw_diagnostics_saved": false
+        }
+      },
+      {
+        "states": [
+          1,
+          0
+        ],
+        "at": "2026-10-17T13:03:20.395304+00:00",
+        "resources": {
+          "assistant_service_present": true,
+          "assistant_wake_lock_present": true,
+          "record_audio_appop_running": true,
+          "main_activity_resumed": true,
+          "display_asleep": false,
+          "raw_diagnostics_saved": false
+        }
+      },
+      {
+        "states": [
+          2,
+          0
+        ],
+        "at": "2026-10-17T13:03:24.828780+00:00",
+        "resources": {
+          "assistant_service_present": false,
+          "assistant_wake_lock_present": false,
+          "record_audio_appop_running": false,
+          "main_activity_resumed": true,
+          "display_asleep": false,
+          "raw_diagnostics_saved": false
+        }
+      },
+      {
+        "states": [
+          0,
+          0
+        ],
+        "at": "2026-10-17T13:03:46.503138+00:00",
+        "resources": {
+          "assistant_service_present": false,
+          "assistant_wake_lock_present": false,
+          "record_audio_appop_running": false,
+          "main_activity_resumed": true,
+          "display_asleep": false,
+          "raw_diagnostics_saved": false
+        }
+      }
+    ],
+    "numbers_or_raw_telephony_saved": false,
+    "state": "passed",
+    "before": {
+      "assistant_service_present": true,
+      "assistant_wake_lock_present": true,
+      "record_audio_appop_running": true,
+      "main_activity_resumed": true,
+      "display_asleep": false,
+      "raw_diagnostics_saved": false
+    },
+    "saw_ringing": true,
+    "saw_offhook": true,
+    "call_returned_idle": true,
+    "after": {
+      "assistant_service_present": false,
+      "assistant_wake_lock_present": false,
+      "record_audio_appop_running": false,
+      "main_activity_resumed": true,
+      "display_asleep": false,
+      "raw_diagnostics_saved": false
+    },
+    "after_controls": [
+      "\u53cc\u8bed\u4e92\u8bd1",
+      "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+      "\u56de\u653e\u8bd1\u97f3",
+      "\u5f00\u59cb\u7ffb\u8bd1",
+      "\u7ffb\u8bd1\u5df2\u4e2d\u65ad\uff0c\u8bf7\u70b9\u51fb\u5f00\u59cb\u91cd\u65b0\u8fde\u63a5\u3002",
+      "\u8fd4\u56de"
+    ],
+    "human_call_completed": true,
+    "manual_restart_requested_at": "2026-10-17T13:04:27.593505+00:00",
+    "human_reported_answered_duration": "about one minute",
+    "sampled_offhook_interval_seconds": 21.674,
+    "duration_note": "Human estimate and sampled telephony-state interval are recorded separately; neither is rewritten to match the other.",
+    "gateway_counters_before_manual_restart": {
+      "since": "2026-10-17T13:01:00Z",
+      "results": [],
+      "closed": [
+        {
+          "correlation": "f9ba9cae",
+          "duration_ms": 77503,
+          "input_bytes": 2198400,
+          "output_bytes": 10443,
+          "translations": 0,
+          "providers": 2
+        }
+      ],
+      "errors": [
+        {
+          "code": "translation_failed",
+          "correlation": "f9ba9cae"
+        }
+      ],
+      "raw_logs_saved": false,
+      "observed_at": "2026-10-17T13:04:19.024305+00:00"
+    },
+    "client_interruption_reason": "OUTPUT_INTERRUPTED",
+    "streaming_stage_label": "microphone",
+    "manual_restart_connected": true,
+    "manual_restart_human_feedback": "clear_complete"
+  },
+  "network_switch": {
+    "case": "wifi-cellular-wifi",
+    "since": "2026-10-17T13:07:07.313887Z",
+    "main_apk_sha256": "60c1e848cda94eaa1a95f33ed0a912042296a8e1bf34e9e070c1bdcc3eb06adb",
+    "normal_app_ui": true,
+    "baseline": {
+      "default_network_id": "317",
+      "transports": [
+        "WIFI"
+      ],
+      "wifi_on": "1",
+      "mobile_data": "1"
+    },
+    "before_resources": {
+      "assistant_service_present": true,
+      "assistant_wake_lock_present": true,
+      "record_audio_appop_running": true,
+      "main_activity_resumed": true,
+      "display_asleep": false,
+      "raw_diagnostics_saved": false
+    },
+    "state": "passed",
+    "wifi_disable_command": {
+      "exit": 0,
+      "security_denied": false
+    },
+    "cellular_after_disable": {
+      "default_network_id": "252",
+      "transports": [
+        "CELLULAR"
+      ],
+      "wifi_on": "0",
+      "mobile_data": "1"
+    },
+    "after_cellular_10s_resources": {
+      "assistant_service_present": false,
+      "assistant_wake_lock_present": false,
+      "record_audio_appop_running": false,
+      "main_activity_resumed": true,
+      "display_asleep": false,
+      "raw_diagnostics_saved": false
+    },
+    "after_cellular_10s_controls": [
+      "\u53cc\u8bed\u4e92\u8bd1",
+      "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+      "\u56de\u653e\u8bd1\u97f3",
+      "\u5f00\u59cb\u7ffb\u8bd1",
+      "\u7ffb\u8bd1\u5df2\u4e2d\u65ad\uff0c\u8bf7\u70b9\u51fb\u5f00\u59cb\u91cd\u65b0\u8fde\u63a5\u3002",
+      "\u8fd4\u56de"
+    ],
+    "cellular_manual_restart_requested_at": "2026-10-17T13:07:44.762958+00:00",
+    "cellular_restart_controls": [
+      "\u505c\u6b62\u7ffb\u8bd1",
+      "\u53cc\u8bed\u4e92\u8bd1",
+      "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+      "\u56de\u653e\u8bd1\u97f3",
+      "\u6b63\u5728\u8046\u542c \u00b7 \u81ea\u52a8\u8bc6\u522b\u8bed\u79cd",
+      "\u8fd4\u56de"
+    ],
+    "cellular_manual_restart_human_feedback": "clear_complete",
+    "before_wifi_restore": {
+      "default_network_id": "252",
+      "transports": [
+        "CELLULAR"
+      ],
+      "wifi_on": "0",
+      "mobile_data": "1"
+    },
+    "after_wifi_restore": {
+      "default_network_id": "252",
+      "transports": [
+        "CELLULAR"
+      ],
+      "wifi_on": "1",
+      "mobile_data": "1"
+    },
+    "after_wifi_restore_resources": {
+      "assistant_service_present": true,
+      "assistant_wake_lock_present": true,
+      "record_audio_appop_running": true,
+      "main_activity_resumed": true,
+      "display_asleep": false,
+      "raw_diagnostics_saved": false
+    },
+    "wifi_restore_observed_at": "2026-10-17T13:10:18.370355+00:00",
+    "after_wifi_restore_controls": [
+      "\u505c\u6b62\u7ffb\u8bd1",
+      "\u53cc\u8bed\u4e92\u8bd1",
+      "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+      "\u56de\u653e\u8bd1\u97f3",
+      "\u6b63\u5728\u8046\u542c \u00b7 \u81ea\u52a8\u8bc6\u522b\u8bed\u79cd",
+      "\u8fd4\u56de"
+    ],
+    "cellular_session_stop_requested_at": "2026-10-17T13:10:45.746898+00:00",
+    "after_cellular_stop_controls": [
+      "\u51c6\u5907\u597d\u540e\uff0c\u70b9\u51fb\u5f00\u59cb",
+      "\u53cc\u8bed\u4e92\u8bd1",
+      "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+      "\u56de\u653e\u8bd1\u97f3",
+      "\u5f00\u59cb\u7ffb\u8bd1",
+      "\u8fd4\u56de"
+    ],
+    "wifi_reconnect_requires_manual_selection": true,
+    "after_manual_wifi_reconnect": {
+      "default_network_id": "318",
+      "transports": [
+        "WIFI"
+      ],
+      "wifi_on": "1",
+      "mobile_data": "1"
+    },
+    "user_confirmed_wifi_reconnected": true,
+    "wifi_restart_human_feedback": "clear_complete_page_normal",
+    "wifi_restart_stop_requested_at": "2026-10-17T13:15:06.007817+00:00",
+    "final_controls": [
+      "\u51c6\u5907\u597d\u540e\uff0c\u70b9\u51fb\u5f00\u59cb",
+      "\u53cc\u8bed\u4e92\u8bd1",
+      "\u53cc\u8bed\u4e92\u8bd1\u8bbe\u7f6e",
+      "\u56de\u653e\u8bd1\u97f3",
+      "\u5f00\u59cb\u7ffb\u8bd1",
+      "\u8fd4\u56de"
+    ],
+    "final_resources": {
+      "assistant_service_present": false,
+      "assistant_wake_lock_present": false,
+      "record_audio_appop_running": false,
+      "main_activity_resumed": true,
+      "display_asleep": false,
+      "raw_diagnostics_saved": false
+    },
+    "final_connectivity": {
+      "default_network_id": "318",
+      "transports": [
+        "WIFI"
+      ],
+      "wifi_on": "1",
+      "mobile_data": "1"
+    },
+    "return_wifi_scope": "Mobile session was manually stopped before user reselected Wi-Fi. Fresh Wi-Fi translation was then verified; this is not a claim of seamless live handoff."
+  },
+  "interruption_counters": {
+    "since": "2026-10-17T13:01:00Z",
+    "results": [
+      {
+        "timestamp": "2026-10-17T21:06:52.143878070+08:00",
+        "source": "zh",
+        "target": "en",
+        "characters": 54,
+        "correlation": "c6138616"
+      },
+      {
+        "timestamp": "2026-10-17T21:09:32.392588423+08:00",
+        "source": "zh",
+        "target": "en",
+        "characters": 54,
+        "correlation": "845b4c6a"
+      },
+      {
+        "timestamp": "2026-10-17T21:12:56.709429899+08:00",
+        "source": "zh",
+        "target": "en",
+        "characters": 75,
+        "correlation": "d082b8e9"
+      },
+      {
+        "timestamp": "2026-10-17T21:14:40.806089612+08:00",
+        "source": "zh",
+        "target": "en",
+        "characters": 54,
+        "correlation": "d082b8e9"
+      }
+    ],
+    "closed": [
+      {
+        "correlation": "f9ba9cae",
+        "duration_ms": 77503,
+        "input_bytes": 2198400,
+        "output_bytes": 10443,
+        "translations": 0,
+        "providers": 2
+      },
+      {
+        "correlation": "c6138616",
+        "duration_ms": 167404,
+        "input_bytes": 5068800,
+        "output_bytes": 275750,
+        "translations": 1,
+        "providers": 2
+      },
+      {
+        "correlation": "845b4c6a",
+        "duration_ms": 182545,
+        "input_bytes": 5646080,
+        "output_bytes": 273289,
+        "translations": 1,
+        "providers": 2
+      },
+      {
+        "correlation": "d082b8e9",
+        "duration_ms": 142919,
+        "input_bytes": 4377600,
+        "output_bytes": 550070,
+        "translations": 2,
+        "providers": 2
+      }
+    ],
+    "errors": [
+      {
+        "code": "translation_failed",
+        "correlation": "f9ba9cae"
+      },
+      {
+        "code": "translation_input_timeout",
+        "correlation": "c6138616"
+      }
+    ],
+    "raw_logs_saved": false,
+    "last_observed_at": "2026-10-17T13:15:27.369630+00:00"
+  },
+  "partial_measured_usage": {
+    "duration_ms": 633695,
+    "input_bytes": 19150080,
+    "output_bytes": 1370195,
+    "translations": 5,
+    "providers": 9,
+    "complete_session_records": 5,
+    "new_candidate_business_sessions": 8,
+    "missing_closed_usage_records": 3,
+    "limitation": "Partial measured counters only. Three speaker sessions lost final counters after an unexpected diagnostic disconnect and gateway rollout; retained CRI recovery was empty. Not full network traffic, provider billable usage or invoice amount."
+  },
+  "production_final": {
+    "date": "2026-10-17",
+    "revision": 492,
+    "helm_status": "deployed",
+    "registry": "jusi-cn-guangzhou.cr.volces.com",
+    "history": [
+      {
+        "revision": 483,
+        "status": "superseded"
+      },
+      {
+        "revision": 484,
+        "status": "superseded"
+      },
+      {
+        "revision": 485,
+        "status": "superseded"
+      },
+      {
+        "revision": 486,
+        "status": "superseded"
+      },
+      {
+        "revision": 487,
+        "status": "superseded"
+      },
+      {
+        "revision": 488,
+        "status": "superseded"
+      },
+      {
+        "revision": 489,
+        "status": "superseded"
+      },
+      {
+        "revision": 490,
+        "status": "superseded"
+      },
+      {
+        "revision": 491,
+        "status": "superseded"
+      },
+      {
+        "revision": 492,
+        "status": "deployed"
+      }
+    ],
+    "workloads": [
+      {
+        "kind": "Deployment",
+        "name": "livekit-livekit-server",
+        "images": [
+          "livekit/livekit-server:v1.12.0"
+        ],
+        "pull_secrets": [],
+        "policies": [
+          "IfNotPresent"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-agent-ai-assistant",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-agents:f12d6c04c"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-agent-capture-asr",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-agents:f12d6c04c"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-agent-capture-live-asr",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-agents:f12d6c04c"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-agent-capture-translation",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-agents:fff8391da"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-agent-interpretation",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-agents:f12d6c04c"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-agent-metadata",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-agents:f12d6c04c"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-agent-subtitles",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-agents:f12d6c04c"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-agent-translation",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-agents:f12d6c04c"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-backend",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-backend:fff8391da"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-backend-ai",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-backend:fff8391da"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-celery-backend",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-backend:fff8391da"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-celery-beat",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-backend:fff8391da"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-celery-summarize",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-summary:f12d6c04c"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-celery-summary-backend",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-summary:f12d6c04c"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-celery-transcribe-default",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-summary:f12d6c04c"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-celery-work",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-backend:fff8391da"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-frontend",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-frontend:f950ba8cc"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-livekit-egress",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/livekit-egress:v1.14.1"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "IfNotPresent"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "Deployment",
+        "name": "meet-summary",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-summary:f12d6c04c"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ],
+        "ready": 1,
+        "desired": 1
+      },
+      {
+        "kind": "CronJob",
+        "name": "meet-backend-docs-profiles",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-backend:fff8391da"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ]
+      },
+      {
+        "kind": "CronJob",
+        "name": "meet-backend-reminders",
+        "images": [
+          "jusi-cn-guangzhou.cr.volces.com/we-meet/meet-backend:fff8391da"
+        ],
+        "pull_secrets": [
+          "meet-dockerconfig"
+        ],
+        "policies": [
+          "Always"
+        ]
+      }
+    ],
+    "all_workloads_ready": true,
+    "all_image_and_pull_secret_references_unchanged": true,
+    "pull_secret_hosts": [
+      "jusi-cn-guangzhou.cr.volces.com"
+    ],
+    "pending_pods": 0,
+    "backend_pull_policy": "Always",
+    "translation_enabled": false,
+    "migration_0227_applied": true,
+    "session_counts": {
+      "expired": 1,
+      "closed": 15
+    },
+    "live_unexpired_sessions": 0,
+    "release_source": "b524f714fe75be3a03758277b692b96a4d1a2358",
+    "release_checkout_clean": true
+  },
+  "limits": [
+    "Headsets unavailable and deferred by user; not passed physical tests.",
+    "Capacity excluded by user. Invoice reconciliation deferred.",
+    "Historical popup/exit root cause not established; it did not recur in these normal-page acoustic cases.",
+    "One-minute screen-off coverage does not establish long-term standby reliability.",
+    "Fixed-direction listening status still uses generic automatic-recognition copy; cosmetic follow-up.",
+    "Existing internal certificate; not a store-signed public release."
+  ],
+  "retained_failures": [
+    "normal-ui-replay-focused-device-20261017.log",
+    "normal-ui-replay-focused-device-host-fixed-20261017.log",
+    "normal-ui-screen-off-initial-probe-20261017.json",
+    "production-speaker-fixed-quiet-20261017-200912.json"
+  ],
+  "privacy": {
+    "actual_user_transcripts_or_recordings_in_exported_evidence": false,
+    "credentials_saved_in_report": false,
+    "screenshots": "Only static UI fixtures; no actual user transcript screenshots."
+  }
+}
