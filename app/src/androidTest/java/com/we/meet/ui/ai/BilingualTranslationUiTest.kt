@@ -1,6 +1,12 @@
 package com.we.meet.ui.ai
 
 import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOn
@@ -49,7 +55,7 @@ class BilingualTranslationUiTest {
             BilingualRow("two", "我想去火车站，请问应该坐哪一路公交车？", "I'd like to go to the train station. Which bus should I take?", "zh", "en"),
             BilingualRow("three", "Take bus number ten.", "乘坐十路公交车。", "en", "zh"),
         ))
-        compose.setContent { WeMeetTheme(darkTheme = false) { BilingualChatTranscript(state) } }
+        compose.setContent { WeMeetTheme(darkTheme = false) { BilingualChatTranscript(state, onReplay = {}) } }
         val chat = compose.onNodeWithTag("bilingual-chat").fetchSemanticsNode().boundsInRoot
         val first = compose.onNodeWithTag("bilingual-chat-one").fetchSemanticsNode().boundsInRoot
         val second = compose.onNodeWithTag("bilingual-chat-two").fetchSemanticsNode().boundsInRoot
@@ -68,7 +74,7 @@ class BilingualTranslationUiTest {
         val state = mutableStateOf(BilingualState(rows = (1..30).map {
             BilingualRow("row-$it", "Original $it", "Translation $it", "zh", "en")
         }))
-        compose.setContent { WeMeetTheme(darkTheme = false) { BilingualChatTranscript(state.value) } }
+        compose.setContent { WeMeetTheme(darkTheme = false) { BilingualChatTranscript(state.value, onReplay = {}) } }
         val chat = compose.onNodeWithTag("bilingual-chat")
         // A real drag pauses following; then move further back in a long history.
         chat.performTouchInput { swipeDown() }
@@ -154,7 +160,7 @@ class BilingualTranslationUiTest {
             BilingualRow("one", "早上好", "Good morning", "zh", "en"),
             BilingualRow("two", "Thank you", "谢谢", "en", "zh"),
         ))
-        compose.setContent { WeMeetTheme(darkTheme = false) { BilingualFaceToFace(state) } }
+        compose.setContent { WeMeetTheme(darkTheme = false) { BilingualFaceToFace(state, onReplay = {}) } }
         compose.onNodeWithTag("bilingual-facing-partner").assertIsDisplayed()
         compose.onNodeWithTag("bilingual-facing-self").assertIsDisplayed()
         compose.onNodeWithText("Good morning").assertIsDisplayed()
@@ -165,6 +171,57 @@ class BilingualTranslationUiTest {
     }
     @get:Rule val compose = createComposeRule()
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test fun chatReplaysOnlyCompleteAudioAndTracksPlaybackAvailability() {
+        val clicked = mutableListOf<String>()
+        val state = mutableStateOf(BilingualState(
+            rows = listOf(BilingualRow("complete", "你好", "Hello", "zh", "en"),
+                BilingualRow("partial", "谢谢", "Thanks", "zh", "en")),
+            replayable = setOf("complete"),
+        ))
+        compose.setContent { WeMeetTheme(darkTheme = false) {
+            BilingualChatTranscript(state.value, onReplay = { clicked.add(it) })
+        } }
+        compose.onNodeWithTag("bilingual-replay-partial").assertDoesNotExist()
+        val button = compose.onNodeWithTag("bilingual-replay-complete")
+        button.assertIsDisplayed().assertIsEnabled()
+        screenshot("bilingual-replay-chat.png")
+        button.performClick()
+        compose.runOnIdle {
+            assertEquals(listOf("complete"), clicked)
+            state.value = state.value.copy(phase = BilingualPhase.SPEAKING)
+        }
+        button.assertIsNotEnabled()
+        compose.runOnIdle { state.value = state.value.copy(phase = BilingualPhase.LISTENING, replaying = true) }
+        button.assertIsNotEnabled()
+        compose.runOnIdle { state.value = state.value.copy(phase = BilingualPhase.IDLE, replaying = false) }
+        button.assertIsEnabled().performClick()
+        compose.runOnIdle {
+            assertEquals(listOf("complete", "complete"), clicked)
+            state.value = state.value.copy(replayable = emptySet())
+        }
+        button.assertDoesNotExist()
+    }
+
+    @Test fun faceToFaceReplaysEachTranslationFromItsTargetLanguagePanel() {
+        val clicked = mutableListOf<String>()
+        val state = BilingualState(
+            rows = listOf(BilingualRow("forward", "你好", "Hello", "zh", "en"),
+                BilingualRow("reverse", "Thanks", "谢谢", "en", "zh")),
+            replayable = setOf("forward", "reverse"),
+        )
+        compose.setContent { WeMeetTheme(darkTheme = false) {
+            BilingualFaceToFace(state, onReplay = { clicked.add(it) })
+        } }
+        compose.onAllNodesWithTag("bilingual-replay-forward").assertCountEquals(1)
+        compose.onAllNodesWithTag("bilingual-replay-reverse").assertCountEquals(1)
+        compose.onNodeWithTag("bilingual-replay-forward")
+            .assert(hasAnyAncestor(hasTestTag("bilingual-facing-partner"))).performClick()
+        compose.onNodeWithTag("bilingual-replay-reverse")
+            .assert(hasAnyAncestor(hasTestTag("bilingual-facing-self"))).performClick()
+        compose.runOnIdle { assertEquals(listOf("forward", "reverse"), clicked) }
+        screenshot("bilingual-replay-face-to-face.png")
+    }
 
     @Test fun hubOpensTranslationWithoutOpeningCall() {
         var calls = 0

@@ -93,6 +93,8 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
             Spacer(Modifier.height(Dimens.SpaceM))
             val status = when {
                 permissionDenied -> R.string.bilingual_permission
+                state.replaying -> R.string.bilingual_replaying
+                state.replayError && !state.active -> R.string.bilingual_replay_error
                 !state.active && state.unavailableReason == "upgrade_required" -> R.string.bilingual_upgrade_required
                 !state.active && (state.unavailableReason != null || state.voiceConfig?.enabled == false) -> R.string.bilingual_unavailable
                 state.finishIncomplete -> R.string.bilingual_finish_incomplete
@@ -111,11 +113,11 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
             Text(if (state.unknownLanguage && !permissionDenied) stringResource(status,
                 stringResource(BilingualLanguages.label(state.pair.source)), stringResource(BilingualLanguages.label(state.pair.target)))
                 else stringResource(status), style = MaterialTheme.typography.bodyMedium,
-                color = if (state.phase == BilingualPhase.ERROR || permissionDenied) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                color = if (state.phase == BilingualPhase.ERROR || permissionDenied || state.replayError && !state.active) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
             if (state.audioOmitted) Text(stringResource(R.string.bilingual_audio_omitted),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (facing) {
-                BilingualFaceToFace(state, Modifier.weight(1f).fillMaxWidth())
+                BilingualFaceToFace(state, onReplay = controller::replay, modifier = Modifier.weight(1f).fillMaxWidth())
             } else if (state.rows.isEmpty()) {
                 Column(Modifier.weight(1f).fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -129,7 +131,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                         textAlign = TextAlign.Center)
                 }
             } else {
-                BilingualChatTranscript(state, Modifier.weight(1f).fillMaxWidth())
+                BilingualChatTranscript(state, onReplay = controller::replay, modifier = Modifier.weight(1f).fillMaxWidth())
             }
             Row(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceL),
                 horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM),

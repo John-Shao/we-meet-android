@@ -1,4 +1,7 @@
 <resources>
+    <string name="bilingual_replay">回放译音</string>
+    <string name="bilingual_replaying">正在回放译音…</string>
+    <string name="bilingual_replay_error">译音回放失败，请重试。</string>
     <string name="bilingual_audio_omitted">该段译音缓冲已达上限，仅显示译文，对话可继续。</string>
     <string name="bilingual_title">双语互译</string>
     <string name="bilingual_settings_title">双语互译设置</string>

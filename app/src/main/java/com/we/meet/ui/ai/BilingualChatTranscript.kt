@@ -20,7 +20,7 @@ import com.we.meet.ui.theme.Dimens
 
 /** Language sides stay fixed even when consecutive messages use the same direction. */
 @Composable
-internal fun BilingualChatTranscript(state: BilingualState, modifier: Modifier = Modifier) {
+internal fun BilingualChatTranscript(state: BilingualState, onReplay: (String) -> Unit, modifier: Modifier = Modifier) {
     val listState = rememberLazyListState()
     var followLatest by remember { mutableStateOf(true) }
     LaunchedEffect(listState) {
@@ -76,6 +76,7 @@ internal fun BilingualChatTranscript(state: BilingualState, modifier: Modifier =
                             if (row.text.isNotBlank()) SelectionContainer {
                                 Text(row.text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                             }
+                            BilingualReplayButton(state, row.id, onReplay)
                         }
                     }
                 }

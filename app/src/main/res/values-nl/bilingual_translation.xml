@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="bilingual_replay">Vertaling opnieuw afspelen</string>
+    <string name="bilingual_replaying">Vertaling wordt opnieuw afgespeeld…</string>
+    <string name="bilingual_replay_error">De vertaling kan niet opnieuw worden afgespeeld. Probeer het opnieuw.</string>
     <string name="bilingual_audio_omitted">De bufferlimiet voor de vertaalde audio van dit fragment is bereikt. Alleen de vertaling wordt weergegeven; het gesprek kan doorgaan.</string>
     <string name="bilingual_title">Tweetalige vertaling</string>
     <string name="bilingual_settings_title">Vertaalinstellingen</string>

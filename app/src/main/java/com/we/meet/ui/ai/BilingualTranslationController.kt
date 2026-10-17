@@ -206,7 +206,7 @@ internal class BilingualTranslationController(
         replayCache.beginSession()
         val session = Session(mutable.value.pair)
         active = session
-        mutable.update { it.copy(phase = BilingualPhase.CONNECTING, unknownLanguage = false, audioOmitted = false, inputPaused = false, finishIncomplete = false, failure = null) }
+        mutable.update { it.copy(phase = BilingualPhase.CONNECTING, unknownLanguage = false, audioOmitted = false, inputPaused = false, finishIncomplete = false, replayError = false, failure = null) }
         session.job = scope.launch(start = CoroutineStart.LAZY) {
             try {
                 session.run()

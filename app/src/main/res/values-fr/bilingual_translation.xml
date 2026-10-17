@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="bilingual_replay">Réécouter la traduction</string>
+    <string name="bilingual_replaying">Lecture de la traduction…</string>
+    <string name="bilingual_replay_error">Impossible de réécouter cette traduction. Réessayez.</string>
     <string name="bilingual_audio_omitted">L’audio de traduction de ce segment a dépassé la limite de mémoire tampon. Seule la traduction est affichée ; la conversation peut se poursuivre.</string>
     <string name="bilingual_title">Traduction bilingue</string>
     <string name="bilingual_settings_title">Paramètres de traduction</string>

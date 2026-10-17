@@ -16,11 +16,11 @@ import com.we.meet.ui.theme.Dimens
 
 /** Each participant reads all turns in their own language; direction remains automatic. */
 @Composable
-internal fun BilingualFaceToFace(state: BilingualState, modifier: Modifier = Modifier) {
+internal fun BilingualFaceToFace(state: BilingualState, onReplay: (String) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier) {
-        LanguagePanel(state.rows, state.pair.target, Modifier.weight(1f).rotate(180f).testTag("bilingual-facing-partner"))
+        LanguagePanel(state, state.pair.target, Modifier.weight(1f).rotate(180f).testTag("bilingual-facing-partner"), onReplay)
         HorizontalDivider(Modifier.padding(vertical = Dimens.SpaceS))
-        LanguagePanel(state.rows, state.pair.source, Modifier.weight(1f).testTag("bilingual-facing-self"))
+        LanguagePanel(state, state.pair.source, Modifier.weight(1f).testTag("bilingual-facing-self"), onReplay)
     }
 }
 
@@ -31,18 +31,21 @@ internal fun BilingualRow.forLanguage(language: String): String? = when (languag
 }
 
 @Composable
-private fun LanguagePanel(rows: List<BilingualRow>, language: String, modifier: Modifier) {
+private fun LanguagePanel(state: BilingualState, language: String, modifier: Modifier, onReplay: (String) -> Unit) {
     val list = rememberLazyListState()
-    val visible = rows.filter { it.forLanguage(language) != null }
+    val visible = state.rows.filter { it.forLanguage(language) != null }
     LaunchedEffect(visible.lastOrNull()) { if (visible.isNotEmpty()) list.animateScrollToItem(visible.lastIndex) }
     Surface(modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surfaceContainer) {
         Column(Modifier.padding(Dimens.SpaceM)) {
             Text(stringResource(BilingualLanguages.label(language)), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             LazyColumn(state = list, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
                 items(visible, key = { it.id }) { row ->
-                    SelectionContainer {
-                        Text(row.forLanguage(language).orEmpty(), style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Normal)
+                    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+                        SelectionContainer {
+                            Text(row.forLanguage(language).orEmpty(), style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Normal)
+                        }
+                        if (language == row.targetLanguage) BilingualReplayButton(state, row.id, onReplay)
                     }
                 }
             }

@@ -1,4 +1,7 @@
 <resources>
+    <string name="bilingual_replay">Replay translation</string>
+    <string name="bilingual_replaying">Replaying translation…</string>
+    <string name="bilingual_replay_error">Couldn’t replay this translation. Try again.</string>
     <string name="bilingual_audio_omitted">Audio for this segment exceeded the buffer limit. Its translation is shown; the conversation can continue.</string>
     <string name="bilingual_title">Bilingual translation</string>
     <string name="bilingual_settings_title">Translation settings</string>

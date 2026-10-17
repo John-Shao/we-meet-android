@@ -184,6 +184,29 @@ class BilingualTranslationTest {
         } finally { main { f.controller.close() } }
     }
 
+    @Test fun startingANewSessionClearsAStoppedReplayFailure() {
+        val f = Fixture(failSecondOutput = true)
+        try {
+            main { f.controller.sound(false); f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.wire!!.pcm.isNotEmpty() }
+            f.wire!!.listener.message(JSONObject().put("type", "translation").put("id", "cached")
+                .put("source_language", "zh").put("source", "你好").put("text", "Hello").toString())
+            f.wire!!.listener.message("{\"type\":\"audio\",\"id\":\"cached\",\"audio\":\"AAA=\"}")
+            f.wire!!.listener.message("{\"type\":\"audio_end\",\"id\":\"cached\"}")
+            waitFor { f.controller.state.value.replayable.size == 1 }
+            val id = f.controller.state.value.rows.single().id
+            main { f.controller.stop(); f.controller.replay(id) }
+            waitFor { f.controller.state.value.replayError && !f.controller.state.value.replaying }
+            main { f.controller.start() }
+            waitFor { f.wire != null && !f.wire!!.closed.get() }
+            assertFalse(f.controller.state.value.replayError)
+            f.wire!!.ready()
+            waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+            assertFalse(f.controller.state.value.replayError)
+        } finally { main { f.controller.close() } }
+    }
+
     @Test fun reconnectingDoesNotOverwritePreviousRowsWithReusedProviderIds() {
         val f = Fixture()
         try {
@@ -301,11 +324,13 @@ class BilingualTranslationTest {
     }
     private class Fixture(val api: Api = Api(), realPlayback: Boolean = false, writeDelayMs: Long = 0, realBackground: Boolean = false,
                           realForeground: Boolean = realBackground,
+                          failSecondOutput: Boolean = false,
                           authorized: () -> Boolean = { true }) {
         var interruptInput: () -> Unit = {}
         val playedSamples = java.util.concurrent.atomic.AtomicLong()
         var microphone = Microphone()
         var output = Output()
+        val outputOpenCount = java.util.concurrent.atomic.AtomicInteger()
         @Volatile var wire: Wire? = null
         @Volatile var webSocketOpened = false
         val selectedVoice get() = api.selected?.voice
@@ -321,7 +346,8 @@ class BilingualTranslationTest {
                 if (realBackground) com.we.meet.data.capture.AndroidCapturePcmSource.open(InstrumentationRegistry.getInstrumentation().targetContext).also { it.onInterrupted = interrupted }
                 else Microphone().also { microphone = it }
             }, { interrupted ->
-                if (!realPlayback) Output().also { output = it } else {
+                val outputNumber = outputOpenCount.incrementAndGet()
+                if (!realPlayback) Output().also { output = it; it.failPlay = failSecondOutput && outputNumber == 2 } else {
                     // Match the production controller's actual 80ms prebuffer.
                     val delegate = AndroidTranslationOutput(InstrumentationRegistry.getInstrumentation().targetContext, interrupted, startupBufferMs = 80)
                     object : BilingualAudioOutput {
