@@ -39,6 +39,9 @@ private const val ACK_SAMPLE_INTERVAL = 100
 // Up to five seconds / 160 kB of 100 ms PCM frames. A short TCP retransmission
 // stall must not exhaust capture before the existing five-second ACK watchdog.
 private const val CAPTURE_BUFFER_FRAMES = 50
+// At 100ms/frame, cover the full five-second ACK budget. Eight permits cap
+// sustained throughput below capture rate once RTT exceeds 800ms.
+private const val IN_FLIGHT_FRAMES = 50
 
 internal enum class BilingualPhase { IDLE, CONNECTING, LISTENING, SPEAKING, FINISHING, ERROR, EXPIRED }
 /** Diagnostics contain fixed enums only, never exception messages or provider payloads. */
@@ -302,7 +305,7 @@ internal class BilingualTranslationController(
         private val serverEnded = AtomicBoolean()
         // Covers a bounded late-ASR audio burst plus its text and ACK events.
         private val events = Channel<String>(256)
-        private val window = Semaphore(8)
+        private val window = Semaphore(IN_FLIGHT_FRAMES)
         private val pending = java.util.ArrayDeque<Long>()
         private val ready = CompletableDeferred<Unit>()
         private val opened = CompletableDeferred<Unit>()
@@ -576,7 +579,7 @@ internal class BilingualTranslationController(
             }
             if (serverEnded.get()) awaitCancellation()
             // Drain every in-flight frame before ordering the provider finish.
-            try { withTimeout(5000) { repeat(8) { window.acquire() } }
+            try { withTimeout(5000) { repeat(IN_FLIGHT_FRAMES) { window.acquire() } }
             } catch (timeout: TimeoutCancellationException) { failed(BilingualFailure.ACK_TIMEOUT, timeout) }
             check(finishing.get())
             if (wire?.send("{\"type\":\"finish\"}") != true) failed(BilingualFailure.SEND_FAILED)

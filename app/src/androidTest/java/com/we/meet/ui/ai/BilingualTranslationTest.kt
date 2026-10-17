@@ -233,15 +233,22 @@ class BilingualTranslationTest {
     }
     private class Wire(val listener: CaptureTranslationWire.Listener) : CaptureTranslationWire {
         var ackDelay = 0L
+        @Volatile var holdWrites = false
+        private val bufferedBytes = java.util.concurrent.atomic.AtomicLong()
         @Volatile var dropAcks = false
         private val heldAcks = java.util.concurrent.atomic.AtomicInteger()
         val sent = CopyOnWriteArrayList<String>()
         val pcm = CopyOnWriteArrayList<ByteArray>()
         val closed = AtomicBoolean()
-        override val queuedBytes = 0L
+        override val queuedBytes get() = bufferedBytes.get()
         override fun send(text: String): Boolean { sent += text; return true }
-        override fun send(pcm: ByteArray): Boolean { this.pcm += pcm; if (dropAcks) heldAcks.incrementAndGet() else android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ listener.message("{\"type\":\"ack\"}") }, ackDelay); return true }
-        fun releaseAcks() { dropAcks = false; repeat(heldAcks.getAndSet(0)) { listener.message("{\"type\":\"ack\"}") } }
+        override fun send(pcm: ByteArray): Boolean {
+            this.pcm += pcm
+            if (holdWrites) bufferedBytes.addAndGet(pcm.size.toLong())
+            if (dropAcks) heldAcks.incrementAndGet() else android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ listener.message("{\"type\":\"ack\"}") }, ackDelay)
+            return true
+        }
+        fun releaseAcks() { holdWrites = false; bufferedBytes.set(0); dropAcks = false; repeat(heldAcks.getAndSet(0)) { listener.message("{\"type\":\"ack\"}") } }
         override fun close() { closed.set(true) }
         fun ready() { listener.opened(); listener.message("{\"type\":\"ready\",\"protocol_version\":2,\"input_sample_rate\":16000,\"output_sample_rate\":24000}") }
     }
@@ -663,6 +670,27 @@ class BilingualTranslationTest {
         } finally { main { f.controller.close() } }
     }
 
+    @Test fun threeSecondUplinkStallRespectsWireBudgetAndDrainsEveryFrame() {
+        val f = Fixture()
+        try {
+            main { f.controller.start() }
+            waitFor { f.wire != null }
+            f.wire!!.holdWrites = true; f.wire!!.dropAcks = true; f.wire!!.ready()
+            runBlocking { withTimeout(5000) {
+                while (f.microphone.framesRead.get() < 30 && f.controller.state.value.active) delay(20)
+            } }
+            assertEquals("A recoverable uplink stall must apply bounded backpressure; reason=${f.controller.state.value.failure}",
+                BilingualPhase.LISTENING, f.controller.state.value.phase)
+            assertTrue("Queued PCM must stay within 64KB", f.wire!!.queuedBytes <= 64000)
+            main { f.wire!!.releaseAcks(); f.controller.finish() }
+            waitFor { f.wire!!.sent.any { JSONObject(it).getString("type") == "finish" } }
+            assertEquals("Queued capture must not be lost or duplicated", f.microphone.framesRead.get(), f.wire!!.pcm.size)
+            f.wire!!.listener.message("{\"type\":\"finished\"}")
+            waitFor { f.controller.state.value.phase == BilingualPhase.IDLE }
+            assertNull(f.controller.state.value.failure)
+        } finally { main { f.controller.close() } }
+    }
+
     @Test fun missingAcknowledgementsTerminateSessionWithinBoundedTime() {
         val f = Fixture()
         try {
@@ -683,7 +711,7 @@ class BilingualTranslationTest {
             main { f.controller.start() }
             waitFor { f.wire != null }
             main { f.wire!!.dropAcks = true; f.wire!!.ready() }
-            waitFor { f.wire!!.pcm.size == 8 }
+            waitFor { f.wire!!.pcm.isNotEmpty() }
             // TCP retransmission can hold every later ACK behind a missing packet.
             Thread.sleep(2200)
             assertEquals("A short ACK stall must retain captured audio", BilingualPhase.LISTENING, f.controller.state.value.phase)

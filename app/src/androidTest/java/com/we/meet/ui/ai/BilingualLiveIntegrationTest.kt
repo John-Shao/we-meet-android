@@ -143,7 +143,15 @@ class BilingualLiveIntegrationTest {
         }
         try {
           for ((route, expectedTail) in routes) {
-            val source = SyntheticSource(pcm)
+            val source = SyntheticSource(pcm,
+                pauseBeforeSample = if (audibleSynthetic) chinese.size / 2 + 32000 else null,
+                mayContinue = {
+                    // Match the physical prompt: wait for the first response to
+                    // drain before speaking English into the half-duplex input.
+                    controller?.state?.value?.let { state ->
+                        state.replayable.isNotEmpty() && playedSamples.get() > 0 && state.phase == BilingualPhase.LISTENING
+                    } == true
+                })
             val closed = AtomicBoolean()
             val tails = ConcurrentHashMap.newKeySet<Long>()
             main {
@@ -387,15 +395,25 @@ class BilingualLiveIntegrationTest {
         }
     }
 
-    private class SyntheticSource(pcm: ByteArray) : CapturePcmSource {
+    private class SyntheticSource(
+        pcm: ByteArray,
+        private val pauseBeforeSample: Int? = null,
+        private val mayContinue: () -> Boolean = { true },
+    ) : CapturePcmSource {
         private val samples = ByteBuffer.wrap(pcm).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+        private var passedBoundary = pauseBeforeSample == null
         val closed = AtomicBoolean()
         override fun start() = Unit
         override fun read(buffer: ShortArray): Int {
             Thread.sleep(buffer.size * 1000L / 16000)
             if (closed.get()) return 0
             buffer.fill(0)
-            val count = minOf(buffer.size, samples.remaining())
+            if (!passedBoundary && samples.position() >= checkNotNull(pauseBeforeSample)) {
+                if (!mayContinue()) return buffer.size
+                passedBoundary = true
+            }
+            val count = minOf(buffer.size, samples.remaining(),
+                if (passedBoundary) buffer.size else checkNotNull(pauseBeforeSample) - samples.position())
             samples.get(buffer, 0, count)
             return buffer.size
         }
