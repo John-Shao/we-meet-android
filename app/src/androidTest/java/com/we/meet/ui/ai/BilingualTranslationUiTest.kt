@@ -14,7 +14,8 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.activity.compose.setContent
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollToNode
@@ -41,7 +42,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationUiTest {
     @Test fun disabledBilingualFeatureHidesOnlyItsHubEntry() {
-        compose.setContent { WeMeetTheme(darkTheme = false) {
+        setContent { WeMeetTheme(darkTheme = false) {
             AiHubScreen({}, {}, bilingualEnabled = false)
         } }
         val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -55,7 +56,7 @@ class BilingualTranslationUiTest {
             BilingualRow("two", "我想去火车站，请问应该坐哪一路公交车？", "I'd like to go to the train station. Which bus should I take?", "zh", "en"),
             BilingualRow("three", "Take bus number ten.", "乘坐十路公交车。", "en", "zh"),
         ))
-        compose.setContent { WeMeetTheme(darkTheme = false) { BilingualChatTranscript(state, onReplay = {}) } }
+        setContent { WeMeetTheme(darkTheme = false) { BilingualChatTranscript(state, onReplay = {}) } }
         val chat = compose.onNodeWithTag("bilingual-chat").fetchSemanticsNode().boundsInRoot
         val first = compose.onNodeWithTag("bilingual-chat-one").fetchSemanticsNode().boundsInRoot
         val second = compose.onNodeWithTag("bilingual-chat-two").fetchSemanticsNode().boundsInRoot
@@ -74,7 +75,7 @@ class BilingualTranslationUiTest {
         val state = mutableStateOf(BilingualState(rows = (1..30).map {
             BilingualRow("row-$it", "Original $it", "Translation $it", "zh", "en")
         }))
-        compose.setContent { WeMeetTheme(darkTheme = false) { BilingualChatTranscript(state.value, onReplay = {}) } }
+        setContent { WeMeetTheme(darkTheme = false) { BilingualChatTranscript(state.value, onReplay = {}) } }
         val chat = compose.onNodeWithTag("bilingual-chat")
         // A real drag pauses following; then move further back in a long history.
         chat.performTouchInput { swipeDown() }
@@ -95,7 +96,7 @@ class BilingualTranslationUiTest {
 
     @Test fun translationVoiceCanBeSelectedAndIsLockedDuringSession() {
         val state = mutableStateOf(BilingualState())
-        compose.setContent { WeMeetTheme(darkTheme = false) {
+        setContent { WeMeetTheme(darkTheme = false) {
             BilingualTranslationSettingsScreen(state.value, true, null, { _, _ -> }, {}, {}, {}, {},
                 onVoiceChange = { state.value = state.value.copy(voice = it) })
         } }
@@ -113,7 +114,7 @@ class BilingualTranslationUiTest {
         val config = com.we.meet.data.api.TranslationVoiceConfig("qwen3.8-livetranslate-flash-realtime", "FutureVoice",
             listOf(com.we.meet.data.api.TranslationVoice("FutureVoice", "Backend display name")), protocolVersion = 2)
         val state = mutableStateOf(BilingualState(voice = "FutureVoice", voiceConfig = config))
-        compose.setContent { WeMeetTheme(darkTheme = false) {
+        setContent { WeMeetTheme(darkTheme = false) {
             BilingualTranslationSettingsScreen(state.value, true, null, { _, _ -> }, {}, {}, {}, {},
                 onVoiceChange = { state.value = state.value.copy(voice = it) })
         } }
@@ -126,7 +127,7 @@ class BilingualTranslationUiTest {
 
     @Test fun fixedDirectionCanBeSelectedAndIsLockedDuringTranslation() {
         val state = mutableStateOf(BilingualState())
-        compose.setContent { WeMeetTheme(darkTheme = false) {
+        setContent { WeMeetTheme(darkTheme = false) {
             BilingualTranslationSettingsScreen(state.value, true, null, { _, _ -> }, {}, {}, {}, {},
                 onFixedSourceChange = { state.value = state.value.copy(fixedSource = it) })
         } }
@@ -145,7 +146,7 @@ class BilingualTranslationUiTest {
         screenshot("bilingual-direction-settings.png")
     }
     @Test fun translationHasNoTransportSelector() {
-        compose.setContent { WeMeetTheme(darkTheme = false) {
+        setContent { WeMeetTheme(darkTheme = false) {
             BilingualTranslationSettingsScreen(BilingualState(), true, null,
                 { _, _ -> }, {}, {}, {}, {})
         } }
@@ -160,7 +161,7 @@ class BilingualTranslationUiTest {
             BilingualRow("one", "早上好", "Good morning", "zh", "en"),
             BilingualRow("two", "Thank you", "谢谢", "en", "zh"),
         ))
-        compose.setContent { WeMeetTheme(darkTheme = false) { BilingualFaceToFace(state, onReplay = {}) } }
+        setContent { WeMeetTheme(darkTheme = false) { BilingualFaceToFace(state, onReplay = {}) } }
         compose.onNodeWithTag("bilingual-facing-partner").assertIsDisplayed()
         compose.onNodeWithTag("bilingual-facing-self").assertIsDisplayed()
         compose.onNodeWithText("Good morning").assertIsDisplayed()
@@ -169,7 +170,12 @@ class BilingualTranslationUiTest {
         compose.onNodeWithText("谢谢").assertIsDisplayed()
         screenshot("bilingual-face-to-face.png")
     }
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<com.we.meet.MainActivity>()
+    // MainActivity exists in both Debug and internal Release; replace only its test content.
+    private fun setContent(content: @androidx.compose.runtime.Composable () -> Unit) {
+        compose.runOnIdle { compose.activity.setContent(content = content) }
+        compose.waitForIdle()
+    }
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test fun chatReplaysOnlyCompleteAudioAndTracksPlaybackAvailability() {
@@ -179,7 +185,7 @@ class BilingualTranslationUiTest {
                 BilingualRow("partial", "谢谢", "Thanks", "zh", "en")),
             replayable = setOf("complete"),
         ))
-        compose.setContent { WeMeetTheme(darkTheme = false) {
+        setContent { WeMeetTheme(darkTheme = false) {
             BilingualChatTranscript(state.value, onReplay = { clicked.add(it) })
         } }
         compose.onNodeWithTag("bilingual-replay-partial").assertDoesNotExist()
@@ -210,7 +216,7 @@ class BilingualTranslationUiTest {
                 BilingualRow("reverse", "Thanks", "谢谢", "en", "zh")),
             replayable = setOf("forward", "reverse"),
         )
-        compose.setContent { WeMeetTheme(darkTheme = false) {
+        setContent { WeMeetTheme(darkTheme = false) {
             BilingualFaceToFace(state, onReplay = { clicked.add(it) })
         } }
         compose.onAllNodesWithTag("bilingual-replay-forward").assertCountEquals(1)
@@ -226,7 +232,7 @@ class BilingualTranslationUiTest {
     @Test fun hubOpensTranslationWithoutOpeningCall() {
         var calls = 0
         var translations = 0
-        compose.setContent { WeMeetTheme(darkTheme = false) { AiHubScreen({ calls++ }, { translations++ }) } }
+        setContent { WeMeetTheme(darkTheme = false) { AiHubScreen({ calls++ }, { translations++ }) } }
         compose.onNodeWithText(context.getString(R.string.bilingual_title)).performClick()
         compose.runOnIdle { assertEquals(0, calls); assertEquals(1, translations) }
         screenshot("bilingual-hub.png")
@@ -234,7 +240,7 @@ class BilingualTranslationUiTest {
 
     @Test fun translationStartsIdleWithAutomaticDirectionAndOneStartButton() {
         var exits = 0
-        compose.setContent {
+        setContent {
             WeMeetTheme(darkTheme = false) {
                 BilingualTranslationScreen(context.applicationContext as WeMeetApp) { exits++ }
             }
@@ -279,7 +285,7 @@ class BilingualTranslationUiTest {
 
     @Test fun languageSelectionIncludesLastLanguageAndIsLockedDuringSession() {
         val state = mutableStateOf(BilingualState())
-        compose.setContent { WeMeetTheme(darkTheme = false) {
+        setContent { WeMeetTheme(darkTheme = false) {
             BilingualLanguageSelectors(state.value) { first, language ->
                 state.value = state.value.copy(pair = BilingualLanguages.select(state.value.pair, first, language))
             }
