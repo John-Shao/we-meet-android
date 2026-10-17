@@ -90,16 +90,29 @@ class BilingualLiveIntegrationTest {
         // Fail directly at the API boundary, rather than timing out on UI state.
         assertEquals(2, runBlocking { api.voiceConfig() }.protocolVersion)
         val physical = args.getString("bilingual_physical") == "true"
-        val automatic = physical && args.getString("bilingual_physical_mode", "automatic") == "automatic"
+        val syntheticPair = args.getString("bilingual_synthetic_pair") == "true"
+        require(!syntheticPair || !physical)
+        val automatic = (physical || syntheticPair) && args.getString("bilingual_physical_mode", "automatic") == "automatic"
         val backgroundNoise = args.getString("bilingual_physical_environment", "quiet") == "background_noise"
         val modeLabel = if (automatic) "自动方向" else "固定中文 → 英文"
         val environmentLabel = if (backgroundNoise) "非语音背景噪声" else "安静环境"
         val routeCatalog = mapOf("speaker" to ("扬声器" to 300L), "wired" to ("有线耳机" to 100L), "bluetooth" to ("蓝牙耳机" to 600L))
         val routes = if (physical) args.getString("bilingual_physical_routes", "speaker,wired,bluetooth")
             .split(',').map { requireNotNull(routeCatalog[it]) { "Unknown physical route" } }
-            else listOf("模拟器" to 300L)
+            else listOf("合成输入" to 300L)
         require(routes.isNotEmpty() && routes.distinct().size == routes.size)
-        val pcm = instrumentation.context.assets.open("aoq-chinese.pcm").use { it.readBytes() }
+        val chinese = instrumentation.context.assets.open("aoq-chinese.pcm").use { it.readBytes() }
+        val pcm = if (syntheticPair) chinese + ByteArray(64000) +
+            instrumentation.context.assets.open("aoq-english.pcm").use { it.readBytes() } else chinese
+        val reads = java.util.concurrent.atomic.AtomicInteger()
+        val lastRead = java.util.concurrent.atomic.AtomicInteger()
+        val sent = java.util.concurrent.atomic.AtomicInteger()
+        val wireFailures = java.util.concurrent.atomic.AtomicInteger()
+        val playbackFailures = java.util.concurrent.atomic.AtomicInteger()
+        val peakQueued = java.util.concurrent.atomic.AtomicLong()
+        val lastAckAt = java.util.concurrent.atomic.AtomicLong()
+        val received = ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicInteger>()
+        val errorCodes = ConcurrentHashMap.newKeySet<String>()
         var controller: BilingualTranslationController? = null
         val activity = ActivityScenario.launch(com.we.meet.MainActivity::class.java)
         if (physical) activity.onActivity {
@@ -131,6 +144,11 @@ class BilingualLiveIntegrationTest {
                     openMicrophone = { interrupted ->
                         val input = if (physical) AndroidCapturePcmSource.open(instrumentation.targetContext).also { it.onInterrupted = interrupted } else source
                         object : CapturePcmSource by input {
+                            override fun read(buffer: ShortArray): Int {
+                                val count = input.read(buffer)
+                                lastRead.set(count); reads.incrementAndGet()
+                                return count
+                            }
                             override fun close() { input.close(); closed.set(true) }
                         }
                     },
@@ -138,7 +156,10 @@ class BilingualLiveIntegrationTest {
                         val output = AndroidTranslationOutput(instrumentation.targetContext, interrupted, startupBufferMs = 80)
                         object : BilingualAudioOutput {
                             override fun open() = output.open()
-                            override fun play(samples: ShortArray) { output.play(samples); tails.add(output.echoTailMs) }
+                            override fun play(samples: ShortArray) {
+                                try { output.play(samples); tails.add(output.echoTailMs) }
+                                catch (error: Exception) { playbackFailures.incrementAndGet(); throw error }
+                            }
                             override fun finishTurn() { output.finishTurn(); tails.add(output.echoTailMs) }
                             override fun mute(muted: Boolean) = output.mute(muted)
                             override val pendingSamples get() = output.pendingSamples
@@ -147,8 +168,32 @@ class BilingualLiveIntegrationTest {
                         }
                     },
                     openWire = { url, listener ->
-                        if (production) OkHttpCaptureTranslationWire.open(url, listener)
-                        else OkHttpCaptureTranslationWire.open(checkNotNull(socketClient), url, listener)
+                        val observed = object : com.we.meet.data.capture.CaptureTranslationWire.Listener by listener {
+                            override fun message(text: String) {
+                                runCatching {
+                                    val event = org.json.JSONObject(text)
+                                    val type = event.optString("type")
+                                    if (type in setOf("ready", "ack", "audio", "audio_end", "translation", "error", "expired", "finished", "language_unknown")) {
+                                        received.computeIfAbsent(type) { java.util.concurrent.atomic.AtomicInteger() }.incrementAndGet()
+                                    }
+                                    if (type == "ack") lastAckAt.set(android.os.SystemClock.elapsedRealtime())
+                                    val code = event.optString("code")
+                                    if (type == "error" && code.matches(Regex("[a-z_]{1,64}"))) errorCodes.add(code)
+                                }
+                                listener.message(text)
+                            }
+                            override fun failed() { wireFailures.incrementAndGet(); listener.failed() }
+                        }
+                        val wire = if (production) OkHttpCaptureTranslationWire.open(url, observed)
+                            else OkHttpCaptureTranslationWire.open(checkNotNull(socketClient), url, observed)
+                        object : com.we.meet.data.capture.CaptureTranslationWire by wire {
+                            override fun send(pcm: ByteArray): Boolean {
+                                val accepted = wire.send(pcm)
+                                if (accepted) sent.incrementAndGet()
+                                return accepted
+                            }
+                            override val queuedBytes get() = wire.queuedBytes.also { size -> peakQueued.accumulateAndGet(size) { a, b -> maxOf(a, b) } }
+                        }
                     },
                     openForeground = { stopped ->
                         if (production) com.we.meet.feature.assistant.background.AssistantForegroundSession.start(
@@ -201,6 +246,12 @@ class BilingualLiveIntegrationTest {
             val row = active.state.value.rows.last()
             assertEquals(if (automatic) setOf("zh", "en") else setOf("zh"), active.state.value.rows.map { it.sourceLanguage }.toSet())
             assertTrue(active.state.value.rows.all { it.source.isNotBlank() && it.text.isNotBlank() && it.id in active.state.value.replayable })
+            if (!physical) {
+                val hold = args.getString("bilingual_hold_seconds", "0").toLong()
+                require(hold in 0..60)
+                runBlocking { delay(hold * 1000) }
+                assertTrue(active.state.value.active)
+            }
             if (physical) {
                 awaitCondition { active.state.value.phase == BilingualPhase.LISTENING || !active.state.value.active }
                 runBlocking { delay(10000) }
@@ -222,6 +273,17 @@ class BilingualLiveIntegrationTest {
             main { active.close(); controller = null }
           }
         } finally {
+            instrumentation.sendStatus(0, android.os.Bundle().apply {
+                putString("bilingual_diagnostics", org.json.JSONObject().apply {
+                    put("reads", reads.get()); put("last_read_samples", lastRead.get())
+                    put("sent_frames", sent.get()); put("wire_failures", wireFailures.get())
+                    put("playback_failures", playbackFailures.get()); put("peak_queued_bytes", peakQueued.get())
+                    put("last_ack_age_ms", if (lastAckAt.get() == 0L) -1 else android.os.SystemClock.elapsedRealtime() - lastAckAt.get())
+                    put("events", org.json.JSONObject(received.mapValues { it.value.get() }))
+                    put("error_codes", org.json.JSONArray(errorCodes.toList()))
+                    put("phase", controller?.state?.value?.phase?.name ?: "CLOSED")
+                }.toString())
+            })
             main { controller?.close() }
             activity.close()
             apiClient?.connectionPool?.evictAll()
