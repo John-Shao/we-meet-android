@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class BilingualAudioTrackTest {
     @Test fun isolatedShortRepliesPlayWithoutWaitingForAnotherUtterance() {
         val interrupted = AtomicBoolean()
-        val output = AndroidTranslationOutput(InstrumentationRegistry.getInstrumentation().targetContext, { interrupted.set(true) }, startupBufferMs = 200)
+        val output = AndroidTranslationOutput(InstrumentationRegistry.getInstrumentation().targetContext, { interrupted.set(true) }, startupBufferMs = 80)
         try {
             output.open()
             repeat(3) {
@@ -32,7 +32,7 @@ class BilingualAudioTrackTest {
     }
 
     @Test fun subBufferReplyAndLongBurstBothDrainAcrossUnderruns() {
-        val output = AndroidTranslationOutput(InstrumentationRegistry.getInstrumentation().targetContext, {}, startupBufferMs = 200)
+        val output = AndroidTranslationOutput(InstrumentationRegistry.getInstrumentation().targetContext, {}, startupBufferMs = 80)
         try {
             output.open()
             for (frames in listOf(480, 24000, 480)) {

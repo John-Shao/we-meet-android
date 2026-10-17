@@ -205,12 +205,14 @@ class BilingualTranslationTest {
     }
 
     private class Microphone : CapturePcmSource {
+        @Volatile var failRead = false
         val stopped = AtomicBoolean()
         val closed = AtomicBoolean()
         val framesRead = java.util.concurrent.atomic.AtomicInteger()
         override fun start() = Unit
         override fun read(buffer: ShortArray): Int {
             Thread.sleep(100)
+            if (failRead) error("private diagnostic fixture")
             if (stopped.get()) return 0
             framesRead.incrementAndGet()
             buffer.fill(123)
@@ -220,10 +222,11 @@ class BilingualTranslationTest {
         override fun close() { stop(); closed.set(true) }
     }
     private class Output : BilingualAudioOutput {
+        @Volatile var failPlay = false
         val closed = AtomicBoolean()
         val played = CopyOnWriteArrayList<ShortArray>()
         override fun open() = Unit
-        override fun play(samples: ShortArray) { played += samples }
+        override fun play(samples: ShortArray) { check(!failPlay) { "private diagnostic fixture" }; played += samples }
         @Volatile var stalled = false
         override val pendingSamples get() = if (stalled) 1L else 0L
         override fun close() { closed.set(true) }
@@ -287,6 +290,7 @@ class BilingualTranslationTest {
     private class Fixture(val api: Api = Api(), realPlayback: Boolean = false, writeDelayMs: Long = 0, realBackground: Boolean = false,
                           authorized: () -> Boolean = { true }) {
         var interruptInput: () -> Unit = {}
+        val playedSamples = java.util.concurrent.atomic.AtomicLong()
         var microphone = Microphone()
         var output = Output()
         @Volatile var wire: Wire? = null
@@ -305,18 +309,21 @@ class BilingualTranslationTest {
                 else Microphone().also { microphone = it }
             }, { interrupted ->
                 if (!realPlayback) Output().also { output = it } else {
-                    val delegate = AndroidTranslationOutput(InstrumentationRegistry.getInstrumentation().targetContext, interrupted, startupBufferMs = 200)
+                    // Match the production controller's actual 80ms prebuffer.
+                    val delegate = AndroidTranslationOutput(InstrumentationRegistry.getInstrumentation().targetContext, interrupted, startupBufferMs = 80)
                     object : BilingualAudioOutput {
                         override fun open() = delegate.open()
                         override fun play(samples: ShortArray) {
                             // Model ordinary writer scheduling/processing overhead.
                             if (writeDelayMs > 0) Thread.sleep(writeDelayMs)
                             delegate.play(samples)
+                            playedSamples.addAndGet(samples.size.toLong())
                             playbackUnderruns = delegate.underrunCount
                         }
                         override fun finishTurn() = delegate.finishTurn()
                         override fun mute(muted: Boolean) = delegate.mute(muted)
                         override val pendingSamples get() = delegate.pendingSamples
+                        override val echoTailMs get() = delegate.echoTailMs
                         override fun close() = delegate.close()
                     }
                 }
@@ -342,12 +349,32 @@ class BilingualTranslationTest {
             val wire = f.wire!!
             main { f.interruptInput() }
             waitFor { f.controller.state.value.phase == BilingualPhase.ERROR && f.microphone.closed.get() }
+            assertEquals(BilingualFailure.INPUT_INTERRUPTED, f.controller.state.value.failure)
             assertTrue(wire.closed.get())
             assertTrue(f.output.closed.get())
             Thread.sleep(300)
             assertEquals(1, f.api.allocations.get())
             assertSame(wire, f.wire)
         } finally { main { f.controller.close() } }
+    }
+
+    @Test fun readAndPlaybackExceptionsRetainDistinctFailureReasonsAndReleaseResources() {
+        for (input in listOf(true, false)) {
+            val f = Fixture()
+            try {
+                main { f.controller.start() }
+                waitFor { f.wire != null }; f.wire!!.ready()
+                waitFor { f.wire!!.pcm.isNotEmpty() }
+                if (input) f.microphone.failRead = true else {
+                    f.output.failPlay = true
+                    f.wire!!.listener.message("{\"type\":\"audio\",\"id\":\"failure\",\"audio\":\"AAA=\"}")
+                }
+                waitFor { f.controller.state.value.phase == BilingualPhase.ERROR && f.microphone.closed.get() }
+                assertEquals(if (input) BilingualFailure.INPUT_FAILED else BilingualFailure.OUTPUT_FAILED, f.controller.state.value.failure)
+                assertTrue(f.wire!!.closed.get())
+                assertTrue(f.output.closed.get())
+            } finally { main { f.controller.close() } }
+        }
     }
 
     @Test fun connectionLossPreservesCompletedRowsAndDiscardsPartialAudioWithoutRetry() {
@@ -366,6 +393,7 @@ class BilingualTranslationTest {
             waitFor { f.controller.state.value.rows.size == 2 && f.controller.state.value.replayable.size == 1 }
             wire.listener.failed()
             waitFor { f.controller.state.value.phase == BilingualPhase.ERROR && f.microphone.closed.get() }
+            assertEquals(BilingualFailure.CONNECTION_FAILED, f.controller.state.value.failure)
             assertTrue(wire.closed.get())
             assertTrue(f.output.closed.get())
             assertEquals(2, f.controller.state.value.rows.size)
@@ -392,6 +420,7 @@ class BilingualTranslationTest {
                 val wire = f.wire!!
                 main { assertEquals(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED, manager.requestAudioFocus(competingFocus)) }
                 waitFor { f.controller.state.value.phase == BilingualPhase.ERROR && f.microphone.closed.get() }
+                assertEquals(BilingualFailure.OUTPUT_INTERRUPTED, f.controller.state.value.failure)
                 assertTrue(wire.closed.get())
                 main { manager.abandonAudioFocusRequest(competingFocus) }
                 Thread.sleep(300)
@@ -400,6 +429,7 @@ class BilingualTranslationTest {
                 main { f.controller.start() }
                 waitFor { f.wire !== wire }; f.wire!!.ready()
                 waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+                assertNull(f.controller.state.value.failure)
                 assertEquals(2, f.api.allocations.get())
             } finally {
                 main { manager.abandonAudioFocusRequest(competingFocus); f.controller.close() }
@@ -596,6 +626,7 @@ class BilingualTranslationTest {
             waitFor { f.output.played.isNotEmpty() }
             Thread.sleep(5600)
             assertEquals("Playback child timeout must reach the owner", BilingualPhase.ERROR, f.controller.state.value.phase)
+            assertEquals(BilingualFailure.PLAYBACK_TIMEOUT, f.controller.state.value.failure)
         } finally { main { f.controller.close() } }
     }
 
@@ -620,6 +651,7 @@ class BilingualTranslationTest {
             waitFor { f.wire!!.pcm.isNotEmpty() }
             Thread.sleep(5600)
             assertEquals(BilingualPhase.ERROR, f.controller.state.value.phase)
+            assertEquals(BilingualFailure.ACK_TIMEOUT, f.controller.state.value.failure)
             assertTrue(f.wire!!.closed.get())
             assertTrue(f.microphone.closed.get())
         } finally { main { f.controller.close() } }
@@ -678,6 +710,7 @@ class BilingualTranslationTest {
             f.wire!!.listener.failed()
             waitFor { f.controller.state.value.phase == BilingualPhase.IDLE }
             assertTrue(f.controller.state.value.finishIncomplete)
+            assertEquals(BilingualFailure.CONNECTION_FAILED, f.controller.state.value.failure)
             assertEquals("saved", f.controller.state.value.rows.single().text)
         } finally { main { f.controller.close() } }
     }
@@ -744,5 +777,76 @@ class BilingualTranslationTest {
             waitFor { f.wire!!.sent.any { JSONObject(it).getString("type") == "finish" } }
             assertEquals(BilingualPhase.FINISHING, f.controller.state.value.phase)
         } finally { main { f.controller.close() } }
+    }
+
+    /** Opt-in single-device playback stability; no microphone, backend or provider. */
+    @Test fun unattendedMixedRepliesPreserveAudioAndExplicitBoundaries() {
+        val args = InstrumentationRegistry.getArguments()
+        org.junit.Assume.assumeTrue(args.getString("bilingual_unattended_soak") == "true")
+        val turns = args.getString("bilingual_soak_turns", "120").toInt().also { require(it in 5..300) }
+        val context = instrumentation.targetContext
+        val started = android.os.SystemClock.elapsedRealtime()
+        var expectedSamples = 0L
+        var replayCount = 0
+        val f = Fixture(realPlayback = true)
+        fun awaitPlayback(test: () -> Boolean) = runBlocking {
+            withTimeout(12000) { while (!test()) delay(20) }
+        }
+        androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use {
+            try {
+                main { f.controller.start() }
+                waitFor { f.wire != null }; f.wire!!.ready()
+                waitFor { f.wire!!.pcm.isNotEmpty() }
+                repeat(turns) { turn ->
+                    val id = "soak-$turn"
+                    val frames = listOf(480, 2400, 7200, 28800, 60000)[turn % 5]
+                    f.wire!!.listener.message(JSONObject().put("type", "translation").put("id", id)
+                        .put("source_language", if (turn % 2 == 0) "zh" else "en")
+                        .put("source", "fixture").put("text", "fixture").toString())
+                    var offset = 0
+                    while (offset < frames) {
+                        val count = minOf(12000, frames - offset)
+                        f.wire!!.listener.message(JSONObject().put("type", "audio").put("id", id)
+                            .put("audio", android.util.Base64.encodeToString(ByteArray(count * 2), android.util.Base64.NO_WRAP)).toString())
+                        offset += count
+                        if (turn % 7 == 0 && offset < frames) {
+                            Thread.sleep(700)
+                            assertEquals("A packet gap is not an audio boundary", BilingualPhase.SPEAKING, f.controller.state.value.phase)
+                            assertFalse(f.controller.state.value.replayable.any { key -> key.endsWith(":$id") })
+                        }
+                    }
+                    f.wire!!.listener.message(JSONObject().put("type", "audio_end").put("id", id).toString())
+                    expectedSamples += frames
+                    awaitPlayback { f.playedSamples.get() >= expectedSamples && f.controller.state.value.phase == BilingualPhase.LISTENING }
+                    assertEquals(expectedSamples, f.playedSamples.get())
+                    assertTrue(f.controller.state.value.active)
+                    assertNull(f.controller.state.value.failure)
+                    if (turn % 10 == 0) {
+                        val row = f.controller.state.value.rows.last()
+                        main { f.controller.replay(row.id) }
+                        expectedSamples += frames; replayCount++
+                        awaitPlayback { f.playedSamples.get() >= expectedSamples && !f.controller.state.value.replaying && f.controller.state.value.phase == BilingualPhase.LISTENING }
+                        assertEquals(expectedSamples, f.playedSamples.get())
+                    }
+                    if (turn % 20 == 19) {
+                        instrumentation.sendStatus(0, android.os.Bundle().apply {
+                            putString("bilingual_soak_progress", "turns=${turn + 1} played_samples=$expectedSamples active=true")
+                        })
+                    }
+                }
+                main { f.controller.finish() }
+                waitFor { f.wire!!.sent.any { message -> JSONObject(message).getString("type") == "finish" } }
+                f.wire!!.listener.message("{\"type\":\"finished\"}")
+                waitFor { f.controller.state.value.phase == BilingualPhase.IDLE }
+                assertFalse(f.controller.state.value.finishIncomplete)
+                assertTrue(f.microphone.closed.get())
+                instrumentation.sendStatus(0, android.os.Bundle().apply {
+                    putString("bilingual_soak_result", "turns=$turns replays=$replayCount played_samples=$expectedSamples" +
+                        " underruns=${f.playbackUnderruns} elapsed_ms=${android.os.SystemClock.elapsedRealtime() - started} provider_calls=0 actual_microphone=false")
+                })
+            } finally {
+                main { f.controller.close() }
+            }
+        }
     }
 }

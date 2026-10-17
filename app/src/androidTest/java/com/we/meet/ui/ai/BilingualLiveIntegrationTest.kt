@@ -91,7 +91,9 @@ class BilingualLiveIntegrationTest {
         assertEquals(2, runBlocking { api.voiceConfig() }.protocolVersion)
         val physical = args.getString("bilingual_physical") == "true"
         val syntheticPair = args.getString("bilingual_synthetic_pair") == "true"
+        val audibleSynthetic = args.getString("bilingual_audible_synthetic") == "true"
         require(!syntheticPair || !physical)
+        require(!audibleSynthetic || syntheticPair && !physical)
         val automatic = (physical || syntheticPair) && args.getString("bilingual_physical_mode", "automatic") == "automatic"
         val backgroundNoise = args.getString("bilingual_physical_environment", "quiet") == "background_noise"
         val modeLabel = if (automatic) "自动方向" else "固定中文 → 英文"
@@ -221,7 +223,7 @@ class BilingualLiveIntegrationTest {
             val active = controller!!
             awaitCondition { active.state.value.voiceConfig != null || active.state.value.unavailableReason != null }
             assertNull(active.state.value.unavailableReason)
-            main { active.fixedSource(if (automatic) null else "zh"); active.voice("Ethan"); active.sound(physical) }
+            main { active.fixedSource(if (automatic) null else "zh"); active.voice("Ethan"); active.sound(physical || audibleSynthetic) }
             if (physical) {
                 activity.onActivity { screen ->
                     val column = LinearLayout(screen).apply { orientation = LinearLayout.VERTICAL; setPadding(28, 48, 28, 28) }
@@ -299,6 +301,7 @@ class BilingualLiveIntegrationTest {
                     put("events", org.json.JSONObject(received.mapValues { it.value.get() }))
                     put("error_codes", org.json.JSONArray(errorCodes.toList()))
                     put("phase", controller?.state?.value?.phase?.name ?: "CLOSED")
+                    put("failure_reason", controller?.state?.value?.failure?.name)
                 }.toString())
             })
             main { controller?.close() }

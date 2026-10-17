@@ -41,6 +41,15 @@ private const val ACK_SAMPLE_INTERVAL = 100
 private const val CAPTURE_BUFFER_FRAMES = 50
 
 internal enum class BilingualPhase { IDLE, CONNECTING, LISTENING, SPEAKING, FINISHING, ERROR, EXPIRED }
+/** Diagnostics contain fixed enums only, never exception messages or provider payloads. */
+internal enum class BilingualFailure {
+    ADMISSION_FAILED, CONNECTION_FAILED, PROTOCOL_ERROR, SERVER_ERROR, EVENT_OVERFLOW,
+    INPUT_INTERRUPTED, INPUT_FAILED, CAPTURE_OVERFLOW, OUTPUT_INTERRUPTED, OUTPUT_FAILED,
+    ACK_TIMEOUT, PLAYBACK_TIMEOUT, FINISH_TIMEOUT, SEND_FAILED, OUTBOUND_BACKPRESSURE,
+    AUTHORITY_LOST, START_TIMEOUT, UNEXPECTED,
+}
+private class BilingualSessionFailure(val reason: BilingualFailure, cause: Throwable? = null) :
+    IllegalStateException(reason.name, cause)
 internal data class BilingualState(
     val phase: BilingualPhase = BilingualPhase.IDLE,
     val rows: List<BilingualRow> = emptyList(),
@@ -53,6 +62,7 @@ internal data class BilingualState(
     val replaying: Boolean = false,
     val replayError: Boolean = false,
     val finishIncomplete: Boolean = false,
+    val failure: BilingualFailure? = null,
     val unavailableReason: String? = null,
     val inputPaused: Boolean = false,
     val sceneId: String? = null,
@@ -193,16 +203,20 @@ internal class BilingualTranslationController(
         replayCache.beginSession()
         val session = Session(mutable.value.pair)
         active = session
-        mutable.update { it.copy(phase = BilingualPhase.CONNECTING, unknownLanguage = false, audioOmitted = false, inputPaused = false, finishIncomplete = false) }
+        mutable.update { it.copy(phase = BilingualPhase.CONNECTING, unknownLanguage = false, audioOmitted = false, inputPaused = false, finishIncomplete = false, failure = null) }
         session.job = scope.launch(start = CoroutineStart.LAZY) {
             try {
                 session.run()
             } catch (canceled: CancellationException) {
-                if (canceled is TimeoutCancellationException && active === session) session.fail()
+                if (canceled is TimeoutCancellationException && active === session) session.fail(BilingualFailure.START_TIMEOUT)
                 else throw canceled
             } catch (error: Exception) {
-                Log.w(LOG_TAG, "translation_failed stage=${session.stage} class=${error.javaClass.simpleName}")
-                if (active === session) session.fail()
+                if (active === session) session.fail(
+                    (error as? BilingualSessionFailure)?.reason ?: when (session.stage) {
+                        "websocket_admission" -> BilingualFailure.ADMISSION_FAILED
+                        "websocket_transport" -> BilingualFailure.CONNECTION_FAILED
+                        else -> BilingualFailure.UNEXPECTED
+                    }, error.javaClass.simpleName)
             } finally {
                 session.release()
             }
@@ -210,12 +224,12 @@ internal class BilingualTranslationController(
         session.job!!.start()
     }
 
-    fun stop(phase: BilingualPhase = BilingualPhase.IDLE) {
+    fun stop(phase: BilingualPhase = BilingualPhase.IDLE, failure: BilingualFailure? = null) {
         stopReplay()
         val session = active
         active = null
         session?.release()
-        mutable.update { it.copy(phase = phase, unknownLanguage = false, voice = BilingualVoices.resolve(it.voice, it.voiceConfig)) }
+        mutable.update { it.copy(phase = phase, failure = failure, unknownLanguage = false, voice = BilingualVoices.resolve(it.voice, it.voiceConfig)) }
         preferences?.save(mutable.value)
     }
 
@@ -303,20 +317,34 @@ internal class BilingualTranslationController(
         private var output: BilingualAudioOutput? = null
         private var wire: CaptureTranslationWire? = null
         private var foreground: AssistantSessionLease? = null
+        private val firstFailure = java.util.concurrent.atomic.AtomicReference<BilingualFailure>()
 
-        fun fail() {
+        fun fail(reason: BilingualFailure, exceptionClass: String = "callback") {
             if (active !== this@Session) return
+            firstFailure.compareAndSet(null, reason)
+            val observed = checkNotNull(firstFailure.get())
+            val oldestAck = synchronized(pending) { pending.peekFirst()?.let { SystemClock.elapsedRealtime() - it } ?: -1L }
+            val pendingAudio = runCatching { output?.pendingSamples ?: 0L }.getOrDefault(-1L)
+            Log.w(LOG_TAG, "translation_failed stage=$stage reason=${observed.name} class=$exceptionClass" +
+                " phase=${mutable.value.phase.name} oldest_ack_ms=$oldestAck pending_audio_samples=$pendingAudio")
             if (finishing.get()) {
                 mutable.update { it.copy(finishIncomplete = true) }
-                stop()
-            } else stop(BilingualPhase.ERROR)
+                stop(failure = observed)
+            } else stop(BilingualPhase.ERROR, observed)
         }
-        private fun failure() { scope.launch { fail() } }
+        private fun failure(reason: BilingualFailure) {
+            firstFailure.compareAndSet(null, reason)
+            scope.launch { fail(reason) }
+        }
+        private fun failed(reason: BilingualFailure, cause: Throwable? = null): Nothing {
+            firstFailure.compareAndSet(null, reason)
+            throw BilingualSessionFailure(reason, cause)
+        }
 
         fun replay(chunks: List<ByteArray>) {
             if (mutable.value.phase != BilingualPhase.LISTENING || finishing.get() || speaking.get()) return
             if (!audio.replay(chunks)) return
-            runCatching { output?.mute(false) }.onFailure { failure(); return }
+            runCatching { output?.mute(false) }.onFailure { failure(BilingualFailure.OUTPUT_FAILED); return }
             // Mark before waking the writer so the microphone cannot capture the replay onset.
             speaking.set(true)
             mutable.update { it.copy(replaying = true, replayError = false, phase = BilingualPhase.SPEAKING) }
@@ -331,7 +359,7 @@ internal class BilingualTranslationController(
         }
 
         fun setSound(enabled: Boolean) {
-            runCatching { output?.mute(!enabled) }.onFailure { failure() }
+            runCatching { output?.mute(!enabled) }.onFailure { failure(BilingualFailure.OUTPUT_FAILED) }
             updateControls()
         }
 
@@ -345,12 +373,12 @@ internal class BilingualTranslationController(
             val listener = object : CaptureTranslationWire.Listener {
                 override fun opened() { opened.complete(Unit) }
                 override fun message(text: String) {
-                    if (!closed.get() && (text.length > 300_000 || !events.trySend(text).isSuccess)) failure()
+                    if (!closed.get() && (text.length > 300_000 || !events.trySend(text).isSuccess)) failure(BilingualFailure.EVENT_OVERFLOW)
                 }
                 override fun failed() {
                     if (!opened.isCompleted) opened.completeExceptionally(IllegalStateException("Translation connection failed"))
                     // Preserve final translation/finished events ahead of socket closure.
-                    if (!closed.get() && !events.trySend("{\"type\":\"disconnected\"}").isSuccess) failure()
+                    if (!closed.get() && !events.trySend("{\"type\":\"disconnected\"}").isSuccess) failure(BilingualFailure.EVENT_OVERFLOW)
                 }
             }
             stage = "websocket_admission"
@@ -432,32 +460,36 @@ internal class BilingualTranslationController(
                                     while (!audio.isEmpty() || speaking.get() || (output?.pendingSamples ?: 0) > 0) delay(20)
                                 }
                             } catch (timeout: TimeoutCancellationException) {
-                                throw IllegalStateException("Translation finish stalled", timeout)
+                                failed(BilingualFailure.FINISH_TIMEOUT, timeout)
                             }
                             withContext(Dispatchers.Main.immediate) {
                                 if (active === this@Session) stop(if (event.getString("type") == "expired") BilingualPhase.EXPIRED else BilingualPhase.IDLE)
                             }
                         }
-                        else -> error("Translation connection failed")
+                        "disconnected" -> failed(BilingualFailure.CONNECTION_FAILED)
+                        "error" -> failed(BilingualFailure.SERVER_ERROR)
+                        else -> failed(BilingualFailure.PROTOCOL_ERROR)
                     }
                 }
             }
             withTimeout(60_000) { ready.await() }
-            run {
-                output = openOutput(::failure)
+            try {
+                output = openOutput { failure(BilingualFailure.OUTPUT_INTERRUPTED) }
                 output!!.open()
                 output!!.mute(!mutable.value.sound)
-            }
+            } catch (error: Exception) { failed(BilingualFailure.OUTPUT_FAILED, error) }
             stage = "microphone"
             check(!closed.get() && authorized())
-            microphone = openMicrophone(::failure)
-            microphone!!.start()
+            try {
+                microphone = openMicrophone { failure(BilingualFailure.INPUT_INTERRUPTED) }
+                microphone!!.start()
+            } catch (error: Exception) { failed(BilingualFailure.INPUT_FAILED, error) }
             mutable.update { it.copy(phase = BilingualPhase.LISTENING) }
             updateControls()
             launch {
                 while (isActive) {
                     // A missing ACK must fail even when another coroutine is idle.
-                    if (!serverEnded.get()) check(synchronized(pending) { pending.peekFirst()?.let { SystemClock.elapsedRealtime() - it <= 5000 } ?: true })
+                    if (!serverEnded.get() && !synchronized(pending) { pending.peekFirst()?.let { SystemClock.elapsedRealtime() - it <= 5000 } ?: true }) failed(BilingualFailure.ACK_TIMEOUT)
                     delay(100)
                 }
             }
@@ -502,7 +534,10 @@ internal class BilingualTranslationController(
                     }
                 } catch (timeout: TimeoutCancellationException) {
                     // Cancellation of a child alone does not fail coroutineScope.
-                    throw IllegalStateException("Translation playback stalled", timeout)
+                    failed(BilingualFailure.PLAYBACK_TIMEOUT, timeout)
+                } catch (error: Exception) {
+                    if (error is CancellationException || error is BilingualSessionFailure) throw error
+                    failed(BilingualFailure.OUTPUT_FAILED, error)
                 } finally {
                     speaking.set(false)
                 }
@@ -513,32 +548,38 @@ internal class BilingualTranslationController(
                 val source = checkNotNull(microphone)
                 try {
                     while (isActive && !closed.get() && !finishing.get()) {
-                        check(authorized())
-                        val count = source.read(buffer)
+                        if (!authorized()) failed(BilingualFailure.AUTHORITY_LOST)
+                        val count = try { source.read(buffer) } catch (error: Exception) {
+                            if (error is CancellationException) throw error
+                            failed(BilingualFailure.INPUT_FAILED, error)
+                        }
                         ensureActive()
                         if (count <= 0 && finishing.get()) break
-                        check(count in 1..buffer.size)
+                        if (count !in 1..buffer.size) failed(BilingualFailure.INPUT_FAILED)
                         val bytes = ByteBuffer.allocate(count * 2).order(ByteOrder.LITTLE_ENDIAN)
                         // Continuous capture, but never feed the assistant its own loudspeaker output.
                         val silence = speaking.get() || mutable.value.inputPaused
                         if (!silence) lastVoiceAt = SystemClock.elapsedRealtime()
                         repeat(count) { bytes.putShort(if (silence) 0 else buffer[it]) }
-                        check(pcm.trySend(bytes.array()).isSuccess)
+                        if (!pcm.trySend(bytes.array()).isSuccess) failed(BilingualFailure.CAPTURE_OVERFLOW)
                     }
                 } finally { source.close(); pcm.close() }
             }
             for (bytes in pcm) {
                 if (serverEnded.get()) awaitCancellation()
-                withTimeout(5000) { window.acquire() }
+                try { withTimeout(5000) { window.acquire() } }
+                catch (timeout: TimeoutCancellationException) { failed(BilingualFailure.ACK_TIMEOUT, timeout) }
                 if (serverEnded.get()) awaitCancellation()
                 synchronized(pending) { pending.addLast(SystemClock.elapsedRealtime()) }
-                check(checkNotNull(wire).queuedBytes <= 64000)
-                check(wire?.send(bytes) == true)
+                if (checkNotNull(wire).queuedBytes > 64000) failed(BilingualFailure.OUTBOUND_BACKPRESSURE)
+                if (wire?.send(bytes) != true) failed(BilingualFailure.SEND_FAILED)
             }
             if (serverEnded.get()) awaitCancellation()
             // Drain every in-flight frame before ordering the provider finish.
-            withTimeout(5000) { repeat(8) { window.acquire() } }
-            check(finishing.get() && wire?.send("{\"type\":\"finish\"}") == true)
+            try { withTimeout(5000) { repeat(8) { window.acquire() } }
+            } catch (timeout: TimeoutCancellationException) { failed(BilingualFailure.ACK_TIMEOUT, timeout) }
+            check(finishing.get())
+            if (wire?.send("{\"type\":\"finish\"}") != true) failed(BilingualFailure.SEND_FAILED)
             awaitCancellation()
         }
 
@@ -564,7 +605,7 @@ internal class BilingualTranslationController(
             microphone?.stop()
             scope.launch {
                 delay(95_000)
-                if (active === this@Session) fail()
+                if (active === this@Session) fail(BilingualFailure.FINISH_TIMEOUT)
             }
         }
 
