@@ -105,6 +105,11 @@ class BilingualLiveIntegrationTest {
         val pcm = if (syntheticPair) chinese + ByteArray(64000) +
             instrumentation.context.assets.open("aoq-english.pcm").use { it.readBytes() } else chinese
         val reads = java.util.concurrent.atomic.AtomicInteger()
+        val readFailures = java.util.concurrent.atomic.AtomicInteger()
+        val lastReadFailureClass = java.util.concurrent.atomic.AtomicReference<String>()
+        val inputInterruptions = java.util.concurrent.atomic.AtomicInteger()
+        val outputInterruptions = java.util.concurrent.atomic.AtomicInteger()
+        val foregroundInterruptions = java.util.concurrent.atomic.AtomicInteger()
         val lastRead = java.util.concurrent.atomic.AtomicInteger()
         val sent = java.util.concurrent.atomic.AtomicInteger()
         val wireFailures = java.util.concurrent.atomic.AtomicInteger()
@@ -142,10 +147,14 @@ class BilingualLiveIntegrationTest {
                 controller = BilingualTranslationController(
                     instrumentation.targetContext, api, { !production || (account != null && app.captureAccount == account) },
                     openMicrophone = { interrupted ->
-                        val input = if (physical) AndroidCapturePcmSource.open(instrumentation.targetContext).also { it.onInterrupted = interrupted } else source
+                        val input = if (physical) AndroidCapturePcmSource.open(instrumentation.targetContext).also {
+                            it.onInterrupted = { inputInterruptions.incrementAndGet(); interrupted() }
+                        } else source
                         object : CapturePcmSource by input {
                             override fun read(buffer: ShortArray): Int {
-                                val count = input.read(buffer)
+                                val count = try { input.read(buffer) } catch (error: Exception) {
+                                    readFailures.incrementAndGet(); lastReadFailureClass.set(error.javaClass.simpleName); throw error
+                                }
                                 lastRead.set(count); reads.incrementAndGet()
                                 return count
                             }
@@ -153,14 +162,18 @@ class BilingualLiveIntegrationTest {
                         }
                     },
                     openOutput = { interrupted ->
-                        val output = AndroidTranslationOutput(instrumentation.targetContext, interrupted, startupBufferMs = 80)
+                        val output = AndroidTranslationOutput(instrumentation.targetContext,
+                            { outputInterruptions.incrementAndGet(); interrupted() }, startupBufferMs = 80)
                         object : BilingualAudioOutput {
                             override fun open() = output.open()
                             override fun play(samples: ShortArray) {
                                 try { output.play(samples); tails.add(output.echoTailMs) }
                                 catch (error: Exception) { playbackFailures.incrementAndGet(); throw error }
                             }
-                            override fun finishTurn() { output.finishTurn(); tails.add(output.echoTailMs) }
+                            override fun finishTurn() {
+                                try { output.finishTurn(); tails.add(output.echoTailMs) }
+                                catch (error: Exception) { playbackFailures.incrementAndGet(); throw error }
+                            }
                             override fun mute(muted: Boolean) = output.mute(muted)
                             override val pendingSamples get() = output.pendingSamples
                             override val echoTailMs get() = output.echoTailMs
@@ -197,7 +210,8 @@ class BilingualLiveIntegrationTest {
                     },
                     openForeground = { stopped ->
                         if (production) com.we.meet.feature.assistant.background.AssistantForegroundSession.start(
-                            instrumentation.targetContext, com.we.meet.feature.assistant.background.AssistantSessionKind.TRANSLATION, false, stopped)
+                            instrumentation.targetContext, com.we.meet.feature.assistant.background.AssistantSessionKind.TRANSLATION, false,
+                            { foregroundInterruptions.incrementAndGet(); stopped() })
                         else object : AssistantSessionLease {
                         override suspend fun camera(enabled: Boolean) = Unit
                         override fun close() = Unit
@@ -276,6 +290,9 @@ class BilingualLiveIntegrationTest {
             instrumentation.sendStatus(0, android.os.Bundle().apply {
                 putString("bilingual_diagnostics", org.json.JSONObject().apply {
                     put("reads", reads.get()); put("last_read_samples", lastRead.get())
+                    put("read_failures", readFailures.get()); put("last_read_failure_class", lastReadFailureClass.get())
+                    put("input_interruptions", inputInterruptions.get()); put("output_interruptions", outputInterruptions.get())
+                    put("foreground_interruptions", foregroundInterruptions.get())
                     put("sent_frames", sent.get()); put("wire_failures", wireFailures.get())
                     put("playback_failures", playbackFailures.get()); put("peak_queued_bytes", peakQueued.get())
                     put("last_ack_age_ms", if (lastAckAt.get() == 0L) -1 else android.os.SystemClock.elapsedRealtime() - lastAckAt.get())

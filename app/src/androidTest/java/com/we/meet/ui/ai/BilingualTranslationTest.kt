@@ -243,6 +243,7 @@ class BilingualTranslationTest {
         fun ready() { listener.opened(); listener.message("{\"type\":\"ready\",\"protocol_version\":2,\"input_sample_rate\":16000,\"output_sample_rate\":24000}") }
     }
     private class Api : AssistantTranslationApi {
+        val allocations = java.util.concurrent.atomic.AtomicInteger()
         var config: com.we.meet.data.api.TranslationVoiceConfig? = null
         override suspend fun voiceConfig() = config ?: error("offline")
         var selected: AssistantTranslationRequest? = null
@@ -251,6 +252,7 @@ class BilingualTranslationTest {
         var ignoreCancellation = false
         val entered = CompletableDeferred<Unit>()
         override suspend fun ticket(pair: AssistantTranslationRequest): AssistantTranslationTicket {
+            allocations.incrementAndGet()
             selected = pair
             entered.complete(Unit)
             if (timeout) withTimeout(1) { awaitCancellation() }
@@ -284,6 +286,7 @@ class BilingualTranslationTest {
     }
     private class Fixture(val api: Api = Api(), realPlayback: Boolean = false, writeDelayMs: Long = 0, realBackground: Boolean = false,
                           authorized: () -> Boolean = { true }) {
+        var interruptInput: () -> Unit = {}
         var microphone = Microphone()
         var output = Output()
         @Volatile var wire: Wire? = null
@@ -296,6 +299,7 @@ class BilingualTranslationTest {
         val controller = BilingualTranslationController(
             InstrumentationRegistry.getInstrumentation().targetContext, api, authorized,
             { interrupted ->
+                interruptInput = interrupted
                 opened = true
                 if (realBackground) com.we.meet.data.capture.AndroidCapturePcmSource.open(InstrumentationRegistry.getInstrumentation().targetContext).also { it.onInterrupted = interrupted }
                 else Microphone().also { microphone = it }
@@ -329,17 +333,98 @@ class BilingualTranslationTest {
         )
     }
 
+    @Test fun inputInterruptionReleasesSessionWithoutAutomaticReallocation() {
+        val f = Fixture()
+        try {
+            main { f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.wire!!.pcm.isNotEmpty() }
+            val wire = f.wire!!
+            main { f.interruptInput() }
+            waitFor { f.controller.state.value.phase == BilingualPhase.ERROR && f.microphone.closed.get() }
+            assertTrue(wire.closed.get())
+            assertTrue(f.output.closed.get())
+            Thread.sleep(300)
+            assertEquals(1, f.api.allocations.get())
+            assertSame(wire, f.wire)
+        } finally { main { f.controller.close() } }
+    }
+
+    @Test fun connectionLossPreservesCompletedRowsAndDiscardsPartialAudioWithoutRetry() {
+        val f = Fixture()
+        try {
+            main { f.controller.sound(false); f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.wire!!.pcm.isNotEmpty() }
+            val wire = f.wire!!
+            for (id in listOf("complete", "partial")) {
+                wire.listener.message(JSONObject().put("type", "translation").put("id", id)
+                    .put("source_language", "zh").put("source", "original").put("text", "translated").toString())
+                wire.listener.message("{\"type\":\"audio\",\"id\":\"$id\",\"audio\":\"AAA=\"}")
+                if (id == "complete") wire.listener.message("{\"type\":\"audio_end\",\"id\":\"complete\"}")
+            }
+            waitFor { f.controller.state.value.rows.size == 2 && f.controller.state.value.replayable.size == 1 }
+            wire.listener.failed()
+            waitFor { f.controller.state.value.phase == BilingualPhase.ERROR && f.microphone.closed.get() }
+            assertTrue(wire.closed.get())
+            assertTrue(f.output.closed.get())
+            assertEquals(2, f.controller.state.value.rows.size)
+            assertTrue(f.controller.state.value.replayable.single().endsWith(":complete"))
+            Thread.sleep(300)
+            assertEquals(1, f.api.allocations.get())
+            assertSame(wire, f.wire)
+        } finally { main { f.controller.close() } }
+    }
+
+    @Test fun realAudioFocusLossStopsSessionAndRequiresExplicitRestart() {
+        val context = instrumentation.targetContext
+        val manager = context.getSystemService(android.media.AudioManager::class.java)
+        val competingFocus = android.media.AudioFocusRequest.Builder(android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+            .setAudioAttributes(android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH).build())
+            .setOnAudioFocusChangeListener({ }, android.os.Handler(android.os.Looper.getMainLooper())).build()
+        androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use {
+            val f = Fixture(realPlayback = true)
+            try {
+                main { f.controller.start() }
+                waitFor { f.wire != null }; f.wire!!.ready()
+                waitFor { f.wire!!.pcm.isNotEmpty() }
+                val wire = f.wire!!
+                main { assertEquals(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED, manager.requestAudioFocus(competingFocus)) }
+                waitFor { f.controller.state.value.phase == BilingualPhase.ERROR && f.microphone.closed.get() }
+                assertTrue(wire.closed.get())
+                main { manager.abandonAudioFocusRequest(competingFocus) }
+                Thread.sleep(300)
+                assertEquals(BilingualPhase.ERROR, f.controller.state.value.phase)
+                assertEquals(1, f.api.allocations.get())
+                main { f.controller.start() }
+                waitFor { f.wire !== wire }; f.wire!!.ready()
+                waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+                assertEquals(2, f.api.allocations.get())
+            } finally {
+                main { manager.abandonAudioFocusRequest(competingFocus); f.controller.close() }
+            }
+        }
+    }
+
     @Test fun realMicrophoneAndTranslationContinueWhileBackgroundedAndScreenOff() {
         val context = instrumentation.targetContext
-        instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.RECORD_AUDIO)
-        if (android.os.Build.VERSION.SDK_INT >= 33) instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
+        if (context.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.RECORD_AUDIO)
+        }
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
+        }
         val f = Fixture(realPlayback = true, realBackground = true)
         androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use { activity ->
             try {
                 main { f.controller.start() }
                 waitFor { f.wire != null }; f.wire!!.ready()
                 waitFor { f.wire!!.pcm.size >= 3 }
-                activity.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
+                // Exercise the actual Home transition; forcing CREATED can hang
+                // in ActivityScenario on vendor builds while the mic stays live.
+                instrumentation.uiAutomation.executeShellCommand("input keyevent KEYCODE_HOME").use { android.os.ParcelFileDescriptor.AutoCloseInputStream(it).readBytes() }
                 val backgroundFrames = f.wire!!.pcm.size
                 waitFor { f.wire!!.pcm.size >= backgroundFrames + 10 }
                 instrumentation.uiAutomation.executeShellCommand("input keyevent KEYCODE_SLEEP").use { android.os.ParcelFileDescriptor.AutoCloseInputStream(it).readBytes() }
@@ -355,7 +440,8 @@ class BilingualTranslationTest {
                 main { f.controller.close() }
                 instrumentation.uiAutomation.executeShellCommand("input keyevent KEYCODE_WAKEUP").use { android.os.ParcelFileDescriptor.AutoCloseInputStream(it).readBytes() }
                 instrumentation.uiAutomation.executeShellCommand("wm dismiss-keyguard").close()
-                activity.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+                context.startActivity(android.content.Intent(context, com.we.meet.MainActivity::class.java)
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
             }
         }
     }
