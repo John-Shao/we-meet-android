@@ -143,6 +143,7 @@ class BilingualLiveIntegrationTest {
         }
         try {
           for ((route, expectedTail) in routes) {
+            val speechComplete = AtomicBoolean(!physical)
             val source = SyntheticSource(pcm,
                 pauseBeforeSample = if (audibleSynthetic) chinese.size / 2 + 32000 else null,
                 mayContinue = {
@@ -243,7 +244,7 @@ class BilingualLiveIntegrationTest {
                             (if (backgroundNoise) "保持风扇等非语音背景声；不要播放含人声的音频。\n\n" else "在安静环境中测试。\n\n") +
                             "先说：你好，请问地铁站怎么走？\n\n" +
                             (if (automatic) "听完译音后说：Please tell me where the nearest station is.\n\n" else "") +
-                            "随后停止说话十秒，保持当前环境声。程序会结束并回放最后一句，再进入下一路由。"
+                            "说完并听完译音后，点击“说话完成，开始静音检查”。随后安静十秒，保持当前环境声。程序会结束并回放最后一句。"
                     })
                     statusView = TextView(screen).apply { textSize = 18f }
                     column.addView(statusView)
@@ -256,6 +257,23 @@ class BilingualLiveIntegrationTest {
                             } else { isEnabled = false; text = "测试进行中，请按提示说话"; active.start() }
                         }
                     })
+                    column.addView(Button(screen).apply {
+                        text = "说话完成，开始静音检查"
+                        setOnClickListener {
+                            val state = active.state.value
+                            val required = if (automatic) setOf("zh", "en") else setOf("zh")
+                            val completeLanguages = state.rows.filter { it.id in state.replayable }
+                                .map { it.sourceLanguage }.toSet()
+                            if (state.active && completeLanguages.containsAll(required)) {
+                                speechComplete.set(true)
+                                isEnabled = false
+                                text = "静音检查进行中，请停止说话"
+                            } else {
+                                text = if (automatic) "尚未收齐中英文译音，请继续说话后再点"
+                                    else "尚未收到完整译音，请说话后再点"
+                            }
+                        }
+                    })
                     screen.setContentView(column)
                 }
             } else main { active.start() }
@@ -264,10 +282,14 @@ class BilingualLiveIntegrationTest {
             assertTrue(active.state.value.active)
             val expectedRows = if (automatic) 2 else 1
             awaitCondition(if (physical) 120000 else 60000) {
-                active.state.value.replayable.size >= expectedRows || !active.state.value.active
+                (if (physical) speechComplete.get() else active.state.value.replayable.size >= expectedRows) ||
+                    !active.state.value.active
             }
             assertTrue(active.state.value.active)
-            assertEquals(expectedRows, active.state.value.rows.size)
+            // Real speech can produce multiple provider items in one language.
+            // Item count must never end the physical test before the user is done.
+            if (physical) assertTrue(active.state.value.rows.size >= expectedRows)
+            else assertEquals(expectedRows, active.state.value.rows.size)
             val row = active.state.value.rows.last()
             assertEquals(if (automatic) setOf("zh", "en") else setOf("zh"), active.state.value.rows.map { it.sourceLanguage }.toSet())
             assertTrue(active.state.value.rows.all { it.source.isNotBlank() && it.text.isNotBlank() && it.id in active.state.value.replayable })
@@ -279,8 +301,11 @@ class BilingualLiveIntegrationTest {
             }
             if (physical) {
                 awaitCondition { active.state.value.phase == BilingualPhase.LISTENING || !active.state.value.active }
+                assertTrue(active.state.value.active)
+                val rowsBeforeQuiet = active.state.value.rows.size
                 runBlocking { delay(10000) }
-                assertEquals("Unexpected extra translations during quiet tail", expectedRows, active.state.value.rows.size)
+                assertEquals("Unexpected extra translations during quiet tail", rowsBeforeQuiet, active.state.value.rows.size)
+                assertTrue(active.state.value.active)
             }
             main { active.finish() }
             awaitCondition { !active.state.value.active }
@@ -294,7 +319,7 @@ class BilingualLiveIntegrationTest {
             assertTrue(row.id in active.state.value.replayable)
             if (physical) assertTrue("Output route does not match $route", expectedTail in tails)
             instrumentation.sendStatus(0, android.os.Bundle().apply {
-                putString("bilingual_result", "production=$production route=$route mode=${if (automatic) "automatic" else "fixed"} environment=${if (backgroundNoise) "background_noise" else "quiet"} rows=$expectedRows explicit_audio_end=true replay=true tails=${tails.sorted()}")
+                putString("bilingual_result", "production=$production route=$route mode=${if (automatic) "automatic" else "fixed"} environment=${if (backgroundNoise) "background_noise" else "quiet"} rows=${active.state.value.rows.size} physical_done=${speechComplete.get()} explicit_audio_end=true replay=true tails=${tails.sorted()}")
             })
             main { active.close(); controller = null }
           }
