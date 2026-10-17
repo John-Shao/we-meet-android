@@ -4,7 +4,6 @@ import android.util.Base64
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.activity.ComponentActivity
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -30,6 +29,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.Assert.*
 import org.junit.Assume.assumeTrue
 import org.junit.Test
@@ -37,40 +38,55 @@ import org.junit.runner.RunWith
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
-/** Opt-in test: isolated real HTTPS backend + WSS gateway + paid provider. */
+/** Opt-in isolated or authenticated production acceptance; never enabled by default. */
 @RunWith(AndroidJUnit4::class)
 class BilingualLiveIntegrationTest {
     @Test fun realBusinessAdmissionTranslationFinishAndReplay() {
         val args = InstrumentationRegistry.getArguments()
         val endpoint = args.getString("bilingual_api")
-        assumeTrue("Requires the isolated live integration harness", endpoint != null)
-        require(endpoint!!.startsWith("https://localhost:"))
+        val production = args.getString("bilingual_production") == "true"
+        assumeTrue("Requires an explicit isolated or production acceptance run", production || endpoint != null)
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val certificate = CertificateFactory.getInstance("X.509").generateCertificate(
-            ByteArrayInputStream(Base64.decode(args.getString("bilingual_ca"), Base64.DEFAULT)))
-        val store = KeyStore.getInstance(KeyStore.getDefaultType()).apply {
-            load(null); setCertificateEntry("isolated-harness", certificate)
-        }
-        val trust = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(store) }
-        val manager = trust.trustManagers.single() as X509TrustManager
-        val tls = SSLContext.getInstance("TLS").apply { init(null, arrayOf(manager), null) }
-        val socketClient = OkHttpClient.Builder().sslSocketFactory(tls.socketFactory, manager)
-            .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false).build()
-        val apiClient = socketClient.newBuilder().addInterceptor { chain ->
-            val request = chain.request().newBuilder()
-            val authorization = args.getString("bilingual_authorization")
-            if (authorization != null) {
-                request.header("Authorization", authorization)
-            } else {
-                request.header("Cookie", args.getString("bilingual_cookie")!!)
-                    .header("X-CSRFToken", args.getString("bilingual_csrf")!!)
-                    .header("Referer", endpoint)
+        val app = instrumentation.targetContext.applicationContext as com.we.meet.WeMeetApp
+        val account = if (production) app.captureAccount else null
+        var socketClient: OkHttpClient? = null
+        var apiClient: OkHttpClient? = null
+        val api: AssistantTranslationApi
+        if (production) {
+            // Production always uses the app's existing authenticated API and normal TLS.
+            require(endpoint == null && args.getString("bilingual_ca") == null)
+            require(args.getString("bilingual_authorization") == null && args.getString("bilingual_cookie") == null)
+            require(com.we.meet.BuildConfig.WE_MEET_BASE_URL.startsWith("https://"))
+            check(account != null) { "Log in to the app before production acceptance" }
+            api = app.apiClient.assistantTranslationApi
+        } else {
+            require(endpoint!!.startsWith("https://localhost:"))
+            val certificate = CertificateFactory.getInstance("X.509").generateCertificate(
+                ByteArrayInputStream(Base64.decode(args.getString("bilingual_ca"), Base64.DEFAULT)))
+            val store = KeyStore.getInstance(KeyStore.getDefaultType()).apply {
+                load(null); setCertificateEntry("isolated-harness", certificate)
             }
-            chain.proceed(request.build())
-        }.build()
-        val api = Retrofit.Builder().baseUrl(endpoint).client(apiClient)
-            .addConverterFactory(MoshiConverterFactory.create(Moshi.Builder().add(KotlinJsonAdapterFactory()).build()))
-            .build().create(AssistantTranslationApi::class.java)
+            val trust = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(store) }
+            val manager = trust.trustManagers.single() as X509TrustManager
+            val tls = SSLContext.getInstance("TLS").apply { init(null, arrayOf(manager), null) }
+            socketClient = OkHttpClient.Builder().sslSocketFactory(tls.socketFactory, manager)
+                .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false).build()
+            apiClient = socketClient!!.newBuilder().addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                val authorization = args.getString("bilingual_authorization")
+                if (authorization != null) {
+                    request.header("Authorization", authorization)
+                } else {
+                    request.header("Cookie", args.getString("bilingual_cookie")!!)
+                        .header("X-CSRFToken", args.getString("bilingual_csrf")!!)
+                        .header("Referer", endpoint)
+                }
+                chain.proceed(request.build())
+            }.build()
+            api = Retrofit.Builder().baseUrl(endpoint).client(apiClient)
+                .addConverterFactory(MoshiConverterFactory.create(Moshi.Builder().add(KotlinJsonAdapterFactory()).build()))
+                .build().create(AssistantTranslationApi::class.java)
+        }
         // Fail directly at the API boundary, rather than timing out on UI state.
         assertEquals(2, runBlocking { api.voiceConfig() }.protocolVersion)
         val physical = args.getString("bilingual_physical") == "true"
@@ -111,7 +127,7 @@ class BilingualLiveIntegrationTest {
             val tails = ConcurrentHashMap.newKeySet<Long>()
             main {
                 controller = BilingualTranslationController(
-                    instrumentation.targetContext, api, { true },
+                    instrumentation.targetContext, api, { !production || (account != null && app.captureAccount == account) },
                     openMicrophone = { interrupted ->
                         val input = if (physical) AndroidCapturePcmSource.open(instrumentation.targetContext).also { it.onInterrupted = interrupted } else source
                         object : CapturePcmSource by input {
@@ -130,8 +146,14 @@ class BilingualLiveIntegrationTest {
                             override fun close() = output.close()
                         }
                     },
-                    openWire = { url, listener -> OkHttpCaptureTranslationWire.open(socketClient, url, listener) },
-                    openForeground = { object : AssistantSessionLease {
+                    openWire = { url, listener ->
+                        if (production) OkHttpCaptureTranslationWire.open(url, listener)
+                        else OkHttpCaptureTranslationWire.open(checkNotNull(socketClient), url, listener)
+                    },
+                    openForeground = { stopped ->
+                        if (production) com.we.meet.feature.assistant.background.AssistantForegroundSession.start(
+                            instrumentation.targetContext, com.we.meet.feature.assistant.background.AssistantSessionKind.TRANSLATION, false, stopped)
+                        else object : AssistantSessionLease {
                         override suspend fun camera(enabled: Boolean) = Unit
                         override fun close() = Unit
                     } },
@@ -195,16 +217,88 @@ class BilingualLiveIntegrationTest {
             assertTrue(row.id in active.state.value.replayable)
             if (physical) assertTrue("Output route does not match $route", expectedTail in tails)
             instrumentation.sendStatus(0, android.os.Bundle().apply {
-                putString("bilingual_result", "route=$route mode=${if (automatic) "automatic" else "fixed"} environment=${if (backgroundNoise) "background_noise" else "quiet"} rows=$expectedRows explicit_audio_end=true replay=true tails=${tails.sorted()}")
+                putString("bilingual_result", "production=$production route=$route mode=${if (automatic) "automatic" else "fixed"} environment=${if (backgroundNoise) "background_noise" else "quiet"} rows=$expectedRows explicit_audio_end=true replay=true tails=${tails.sorted()}")
             })
             main { active.close(); controller = null }
           }
         } finally {
             main { controller?.close() }
             activity.close()
-            apiClient.connectionPool.evictAll()
-            socketClient.connectionPool.evictAll()
-            socketClient.dispatcher.executorService.shutdown()
+            apiClient?.connectionPool?.evictAll()
+            socketClient?.connectionPool?.evictAll()
+            socketClient?.dispatcher?.executorService?.shutdown()
+        }
+    }
+
+    @Test fun productionDisabledAdmissionRejectsNewAndLegacySessions() = runBlocking {
+        assumeTrue(InstrumentationRegistry.getArguments().getString("bilingual_production_disabled") == "true")
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val app = instrumentation.targetContext.applicationContext as com.we.meet.WeMeetApp
+        check(app.captureAccount != null)
+        val api = app.apiClient.assistantTranslationApi
+        val config = api.voiceConfig()
+        assertEquals(2, config.protocolVersion)
+        assertFalse(config.enabled)
+        try {
+            api.ticket(com.we.meet.data.api.AssistantTranslationRequest("zh", "en", voice = "Ethan"))
+            fail("Disabled admission must reject a new session")
+        } catch (error: retrofit2.HttpException) {
+            assertEquals(403, error.code())
+        }
+        val base = com.we.meet.BuildConfig.WE_MEET_BASE_URL.trimEnd('/')
+        require(base.startsWith("https://"))
+        val http = OkHttpClient.Builder().followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false).build()
+        try {
+            val request = okhttp3.Request.Builder().url("$base/api/v1.0/assistant-translation/session/")
+                .header("Authorization", "Bearer ${checkNotNull(app.tokenStore.accessToken)}")
+                .post("{}".toRequestBody("application/json".toMediaType())).build()
+            http.newCall(request).execute().use { assertEquals(426, it.code) }
+        } finally {
+            http.connectionPool.evictAll()
+            http.dispatcher.executorService.shutdown()
+        }
+        instrumentation.sendStatus(0, android.os.Bundle().apply {
+            putString("bilingual_gate_result", "production=true enabled=false ticket_status=403 legacy_status=426")
+        })
+    }
+
+    @Test fun productionFeatureDisableReleasesActiveSession() {
+        assumeTrue(InstrumentationRegistry.getArguments().getString("bilingual_production_rollback") == "true")
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val app = instrumentation.targetContext.applicationContext as com.we.meet.WeMeetApp
+        val account = checkNotNull(app.captureAccount)
+        val api = app.apiClient.assistantTranslationApi
+        assertTrue(runBlocking { api.voiceConfig() }.enabled)
+        val source = SyntheticSource(ByteArray(0))
+        var controller: BilingualTranslationController? = null
+        val activity = ActivityScenario.launch(com.we.meet.MainActivity::class.java)
+        fun main(action: () -> Unit) = instrumentation.runOnMainSync(action)
+        fun awaitCondition(timeout: Long, condition: () -> Boolean) = runBlocking {
+            withTimeout(timeout) { while (!condition()) delay(25) }
+        }
+        try {
+            main { controller = BilingualTranslationController(instrumentation.targetContext, api,
+                { app.captureAccount == account }, openMicrophone = { source }) }
+            val active = checkNotNull(controller)
+            awaitCondition(30000) { active.state.value.voiceConfig != null }
+            main { active.fixedSource("zh"); active.sound(false); active.start() }
+            awaitCondition(60000) { active.state.value.phase == BilingualPhase.LISTENING || !active.state.value.active }
+            assertEquals(BilingualPhase.LISTENING, active.state.value.phase)
+            val readyAt = android.os.SystemClock.elapsedRealtime()
+            instrumentation.sendStatus(0, android.os.Bundle().apply {
+                putString("bilingual_rollback_ready", "production=true active=true synthetic_silence=true")
+            })
+            awaitCondition(240000) { !active.state.value.active }
+            assertTrue(active.state.value.phase in setOf(BilingualPhase.ERROR, BilingualPhase.EXPIRED))
+            assertTrue(source.closed.get())
+            assertTrue(active.state.value.rows.isEmpty())
+            awaitCondition(120000) { runBlocking { runCatching { !api.voiceConfig().enabled }.getOrDefault(false) } }
+            instrumentation.sendStatus(0, android.os.Bundle().apply {
+                putString("bilingual_rollback_result", "production=true active=false input_released=true enabled=false elapsed_ms=${android.os.SystemClock.elapsedRealtime() - readyAt}")
+            })
+        } finally {
+            main { controller?.close() }
+            activity.close()
         }
     }
 
