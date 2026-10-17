@@ -1,0 +1,186 @@
+{
+  "date": "2026-10-17",
+  "scope": "Afternoon production speaker acceptance on the final internal APK",
+  "main_apk_sha256": "9d8dd9e11fdf0552b09197c768ed677435c167f97256495f6e629b89064bf5a6",
+  "main_source_commit": "b428f412c28bd5a0b8b45ba2ab7f1826e2276005",
+  "main_apk_changed": false,
+  "version": "0.3.0-work.4 / 6",
+  "test_source_commit": "1f5cf757d9ab95e49a7b9d72f2687a534856138f",
+  "test_apk_sha256": "63167d8326997eca7c2428a9106ea9bbf96ccb1629fe824aa57d67723cbcd4b1",
+  "test_build": {
+    "result": "passed",
+    "seconds": 53,
+    "command": "./gradlew.bat :app:assembleReleaseAndroidTest --max-workers=1 --no-parallel --console=plain -Pkotlin.compiler.execution.strategy=in-process -PWE_MEET_INTERNAL_RELEASE=true -PWE_MEET_TEST_BUILD_TYPE=release",
+    "earlier_setup_attempt": "Failed before compilation because Release test build properties were omitted; corrected command passed"
+  },
+  "first_attempt": {
+    "run_id": "20261017-163914",
+    "mode": "automatic",
+    "environment": "quiet",
+    "route": "speaker",
+    "main_apk_sha256": "9d8dd9e11fdf0552b09197c768ed677435c167f97256495f6e629b89064bf5a6",
+    "test_apk_sha256": "22baeff397a3cca75332ef624b3bb86174111cf8cd80e2e01e2e16d0c76da1e7",
+    "human_quality_confirmation": "reported_sound_or_page_anomaly",
+    "program_result": "failed",
+    "enable": {
+      "previous_revision": "478",
+      "revision": "479",
+      "helm_status": "deployed",
+      "exit": 0
+    },
+    "duration_seconds": 157.23,
+    "safe_test_output": [
+      "INSTRUMENTATION_STATUS: bilingual_diagnostics={\"reads\":268,\"last_read_samples\":1600,\"read_failures\":0,\"input_interruptions\":0,\"output_interruptions\":0,\"foreground_interruptions\":0,\"sent_frames\":268,\"wire_failures\":0,\"playback_failures\":0,\"peak_queued_bytes\":0,\"played_samples\":305280,\"last_ack_age_ms\":4,\"events\":{\"ready\":1,\"ack\":264,\"translation\":2,\"audio\":26,\"audio_end\":2},\"error_codes\":[],\"phase\":\"SPEAKING\"}",
+      "FAILURES!!!"
+    ],
+    "disable": {
+      "previous_revision": "479",
+      "revision": "480",
+      "helm_status": "deployed",
+      "exit": 0
+    },
+    "program_failure": "expected languages zh+en, observed zh only after two translated items",
+    "test_harness_limitation": "Physical test terminated on item count before both languages or explicit user completion",
+    "field_symptom_root_cause": "unresolved"
+  },
+  "test_harness_fix": "Wait for explicit user completion and both source languages; allow a spoken phrase to yield multiple provider items; compare row count before and after the quiet tail",
+  "test_harness_fix_does_not_prove_original_field_symptom_root_cause": true,
+  "automatic_quiet": {
+    "run_id": "20261017-164804",
+    "mode": "automatic",
+    "environment": "quiet",
+    "route": "speaker",
+    "test_source_commit": "1f5cf757d9ab95e49a7b9d72f2687a534856138f",
+    "main_source_commit": "b428f412c28bd5a0b8b45ba2ab7f1826e2276005",
+    "main_apk_sha256": "9d8dd9e11fdf0552b09197c768ed677435c167f97256495f6e629b89064bf5a6",
+    "test_apk_sha256": "63167d8326997eca7c2428a9106ea9bbf96ccb1629fe824aa57d67723cbcd4b1",
+    "human_quality_confirmation": "passed_clear_complete_translation_and_replay",
+    "program_result": "passed",
+    "enable": {
+      "previous_revision": "480",
+      "revision": "481",
+      "helm_status": "deployed",
+      "exit": 0
+    },
+    "duration_seconds": 252.823,
+    "safe_test_output": [
+      "INSTRUMENTATION_STATUS: bilingual_result=production=true route=扬声器 mode=automatic environment=quiet rows=4 physical_done=true explicit_audio_end=true replay=true tails=[300]",
+      "INSTRUMENTATION_STATUS: bilingual_diagnostics={\"reads\":517,\"last_read_samples\":320,\"read_failures\":0,\"input_interruptions\":0,\"output_interruptions\":0,\"foreground_interruptions\":0,\"sent_frames\":517,\"wire_failures\":2,\"playback_failures\":0,\"peak_queued_bytes\":0,\"played_samples\":437760,\"last_ack_age_ms\":6915,\"events\":{\"ready\":1,\"ack\":517,\"translation\":4,\"finished\":1,\"audio\":33,\"audio_end\":4},\"error_codes\":[],\"phase\":\"CLOSED\"}",
+      "OK (1 test)"
+    ],
+    "disable": {
+      "previous_revision": "481",
+      "revision": "482",
+      "helm_status": "deployed",
+      "exit": 0
+    },
+    "user_feedback": "normal; translation and replay clear and complete",
+    "android_reported_test_seconds": 214.752
+  },
+  "automatic_quiet_checks": {
+    "required_languages": [
+      "zh",
+      "en"
+    ],
+    "translated_items": 4,
+    "audio_end_events": 4,
+    "finished_events": 1,
+    "sent_frames": 517,
+    "ack_frames": 517,
+    "quiet_tail_seconds": 10,
+    "unexpected_extra_translations": 0,
+    "replay": true,
+    "read_failures": 0,
+    "playback_failures": 0,
+    "input_output_foreground_interruptions": 0,
+    "wire_failures_note": "Two callbacks occurred during normal cancellation/closing; not counted as two business failures",
+    "last_ack_age_note": "Measured after finishing and replay; not live ACK RTT"
+  },
+  "remaining_speaker_cases": {
+    "fixed_quiet": "deferred",
+    "automatic_background_noise": "deferred",
+    "fixed_background_noise": "deferred"
+  },
+  "deferral": {
+    "reason": "User reported the phone was taken by other work and requested later testing",
+    "window_enable_revision": "483",
+    "window_disable_revision": "484",
+    "count_as_product_failure": false,
+    "following_cases_started": 0
+  },
+  "interruption_acceptance": {
+    "real_call": "pending",
+    "actual_wifi_mobile_switch": "pending",
+    "final_apk_production_background_and_lock": "pending"
+  },
+  "instrumentation_startup_observation": "During the successful automatic quiet retry, the process was initially D while another app was foreground, then resumed after bringing MainActivity forward; root cause remains unproven. No permanent vendor policy was changed",
+  "final_audit": {
+    "date": "2026-10-17",
+    "revision": 484,
+    "helm_status": "deployed",
+    "registry": "jusi-cn-guangzhou.cr.volces.com",
+    "history": [
+      {
+        "revision": 475,
+        "status": "superseded"
+      },
+      {
+        "revision": 476,
+        "status": "superseded"
+      },
+      {
+        "revision": 477,
+        "status": "superseded"
+      },
+      {
+        "revision": 478,
+        "status": "superseded"
+      },
+      {
+        "revision": 479,
+        "status": "superseded"
+      },
+      {
+        "revision": 480,
+        "status": "superseded"
+      },
+      {
+        "revision": 481,
+        "status": "superseded"
+      },
+      {
+        "revision": 482,
+        "status": "superseded"
+      },
+      {
+        "revision": 483,
+        "status": "superseded"
+      },
+      {
+        "revision": 484,
+        "status": "deployed"
+      }
+    ],
+    "all_workloads_ready": true,
+    "all_image_and_pull_secret_references_unchanged": true,
+    "pull_secret_hosts": [
+      "jusi-cn-guangzhou.cr.volces.com"
+    ],
+    "pending_pods": 0,
+    "backend_pull_policy": "Always",
+    "translation_enabled": false,
+    "migration_0227_applied": true,
+    "session_counts": {
+      "expired": 1,
+      "closed": 6
+    },
+    "live_unexpired_sessions": 0,
+    "release_source": "b524f714fe75be3a03758277b692b96a4d1a2358",
+    "release_checkout_clean": true
+  },
+  "wired_and_bluetooth_headsets": "Waived this round, not tested",
+  "concurrent_capacity": "Excluded by user",
+  "billing": "Usage recorded; invoice amount to reconcile later",
+  "previous_apk_archives_modified": false,
+  "raw_text_audio_credentials_saved": false
+}
