@@ -573,8 +573,17 @@ internal class BilingualTranslationController(
                 try { withTimeout(5000) { window.acquire() } }
                 catch (timeout: TimeoutCancellationException) { failed(BilingualFailure.ACK_TIMEOUT, timeout) }
                 if (serverEnded.get()) awaitCancellation()
+                try {
+                    withTimeout(5000) {
+                        // Reserve space for this frame and let transient TCP
+                        // stalls drain within the existing bounded input budget.
+                        while (checkNotNull(wire).queuedBytes + bytes.size > 64000) delay(10)
+                    }
+                } catch (timeout: TimeoutCancellationException) {
+                    failed(BilingualFailure.OUTBOUND_BACKPRESSURE, timeout)
+                }
+                if (serverEnded.get()) awaitCancellation()
                 synchronized(pending) { pending.addLast(SystemClock.elapsedRealtime()) }
-                if (checkNotNull(wire).queuedBytes > 64000) failed(BilingualFailure.OUTBOUND_BACKPRESSURE)
                 if (wire?.send(bytes) != true) failed(BilingualFailure.SEND_FAILED)
             }
             if (serverEnded.get()) awaitCancellation()

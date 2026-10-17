@@ -295,6 +295,7 @@ class BilingualTranslationTest {
         } finally { main { f.controller.close() } }
     }
     private class Fixture(val api: Api = Api(), realPlayback: Boolean = false, writeDelayMs: Long = 0, realBackground: Boolean = false,
+                          realForeground: Boolean = realBackground,
                           authorized: () -> Boolean = { true }) {
         var interruptInput: () -> Unit = {}
         val playedSamples = java.util.concurrent.atomic.AtomicLong()
@@ -336,7 +337,7 @@ class BilingualTranslationTest {
                 }
             }, { _, listener -> Wire(listener).also { webSocketOpened = true; wire = it } },
             openForeground = { stopped ->
-                if (realBackground) com.we.meet.feature.assistant.background.AssistantForegroundSession.start(
+                if (realForeground) com.we.meet.feature.assistant.background.AssistantForegroundSession.start(
                     InstrumentationRegistry.getInstrumentation().targetContext,
                     com.we.meet.feature.assistant.background.AssistantSessionKind.TRANSLATION, false, stopped)
                 else object : com.we.meet.feature.assistant.background.AssistantSessionLease {
@@ -651,23 +652,26 @@ class BilingualTranslationTest {
     }
 
     @Test fun sustainedOneSecondAcknowledgementsDoNotExhaustCapture() {
-        val f = Fixture()
-        try {
-            main { f.controller.start() }
-            waitFor { f.wire != null }; f.wire!!.ackDelay = 1000; f.wire!!.ready()
-            waitFor { f.wire!!.pcm.isNotEmpty() }
-            runBlocking { withTimeout(35000) {
-                while (f.microphone.framesRead.get() < 300 && f.controller.state.value.active) delay(20)
-            } }
-            assertEquals("One-second ACKs remain within the five-second deadline; reason=${f.controller.state.value.failure}",
-                BilingualPhase.LISTENING, f.controller.state.value.phase)
-            main { f.controller.finish() }
-            waitFor { f.wire!!.sent.any { JSONObject(it).getString("type") == "finish" } }
-            assertEquals("Every captured frame must be delivered once", f.microphone.framesRead.get(), f.wire!!.pcm.size)
-            f.wire!!.listener.message("{\"type\":\"finished\"}")
-            waitFor { f.controller.state.value.phase == BilingualPhase.IDLE }
-            assertNull(f.controller.state.value.failure)
-        } finally { main { f.controller.close() } }
+        androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use { activity ->
+            activity.onActivity { it.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
+            val f = Fixture()
+            try {
+                main { f.controller.start() }
+                waitFor { f.wire != null }; f.wire!!.ackDelay = 1000; f.wire!!.ready()
+                waitFor { f.wire!!.pcm.isNotEmpty() }
+                runBlocking { withTimeout(35000) {
+                    while (f.microphone.framesRead.get() < 300 && f.controller.state.value.active) delay(20)
+                } }
+                assertEquals("One-second ACKs remain within the five-second deadline; reason=${f.controller.state.value.failure}",
+                    BilingualPhase.LISTENING, f.controller.state.value.phase)
+                main { f.controller.finish() }
+                waitFor { f.wire!!.sent.any { JSONObject(it).getString("type") == "finish" } }
+                assertEquals("Every captured frame must be delivered once", f.microphone.framesRead.get(), f.wire!!.pcm.size)
+                f.wire!!.listener.message("{\"type\":\"finished\"}")
+                waitFor { f.controller.state.value.phase == BilingualPhase.IDLE }
+                assertNull(f.controller.state.value.failure)
+            } finally { main { f.controller.close() } }
+        }
     }
 
     @Test fun threeSecondUplinkStallRespectsWireBudgetAndDrainsEveryFrame() {
@@ -840,7 +844,8 @@ class BilingualTranslationTest {
         fun awaitPlayback(test: () -> Boolean) = runBlocking {
             withTimeout(12000) { while (!test()) delay(20) }
         }
-        androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use {
+        androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use { activity ->
+            activity.onActivity { it.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
             try {
                 main { f.controller.start() }
                 waitFor { f.wire != null }; f.wire!!.ready()
@@ -898,6 +903,42 @@ class BilingualTranslationTest {
                 })
             } finally {
                 main { f.controller.close() }
+            }
+        }
+    }
+
+    @Test fun unattendedForegroundSessionSurvivesOneMinuteScreenOff() {
+        org.junit.Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("bilingual_unattended_background") == "true")
+        val context = instrumentation.targetContext
+        val power = context.getSystemService(android.os.PowerManager::class.java)
+        fun shell(command: String) = instrumentation.uiAutomation.executeShellCommand(command).use {
+            android.os.ParcelFileDescriptor.AutoCloseInputStream(it).readBytes()
+        }
+        androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use {
+            // Use the actual service and wake lock, but synthetic samples and a
+            // fake gateway: no ambient speech capture or paid provider calls.
+            val f = Fixture(realForeground = true)
+            try {
+                main { f.controller.start() }
+                waitFor { f.wire != null }; f.wire!!.ready()
+                waitFor { f.wire!!.pcm.size >= 3 }
+                shell("input keyevent KEYCODE_HOME")
+                shell("input keyevent KEYCODE_SLEEP")
+                waitFor { !power.isInteractive }
+                val before = f.microphone.framesRead.get()
+                runBlocking { delay(60000) }
+                assertFalse("The screen must remain off during this probe", power.isInteractive)
+                assertEquals(BilingualPhase.LISTENING, f.controller.state.value.phase)
+                assertTrue("Synthetic capture must continue while the service owns its wake lock", f.microphone.framesRead.get() >= before + 500)
+                assertNull(f.controller.state.value.failure)
+                instrumentation.sendStatus(0, android.os.Bundle().apply {
+                    putString("bilingual_background_result", "screen_off_ms=60000 frames=${f.microphone.framesRead.get() - before} active=true real_foreground=true actual_microphone=false provider_calls=0")
+                })
+            } finally {
+                main { f.controller.close() }
+                shell("input keyevent KEYCODE_WAKEUP"); shell("wm dismiss-keyguard")
+                context.startActivity(android.content.Intent(context, com.we.meet.MainActivity::class.java)
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
             }
         }
     }
