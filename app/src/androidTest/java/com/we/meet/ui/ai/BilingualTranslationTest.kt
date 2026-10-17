@@ -206,12 +206,13 @@ class BilingualTranslationTest {
 
     private class Microphone : CapturePcmSource {
         @Volatile var failRead = false
+        @Volatile var readDelayMs = 100L
         val stopped = AtomicBoolean()
         val closed = AtomicBoolean()
         val framesRead = java.util.concurrent.atomic.AtomicInteger()
         override fun start() = Unit
         override fun read(buffer: ShortArray): Int {
-            Thread.sleep(100)
+            Thread.sleep(readDelayMs)
             if (failRead) error("private diagnostic fixture")
             if (stopped.get()) return 0
             framesRead.incrementAndGet()
@@ -223,10 +224,14 @@ class BilingualTranslationTest {
     }
     private class Output : BilingualAudioOutput {
         @Volatile var failPlay = false
+        @Volatile var playDelayMs = 0L
         val closed = AtomicBoolean()
         val played = CopyOnWriteArrayList<ShortArray>()
         override fun open() = Unit
-        override fun play(samples: ShortArray) { check(!failPlay) { "private diagnostic fixture" }; played += samples }
+        override fun play(samples: ShortArray) {
+            if (playDelayMs > 0) Thread.sleep(playDelayMs)
+            check(!failPlay) { "private diagnostic fixture" }; played += samples
+        }
         @Volatile var stalled = false
         override val pendingSamples get() = if (stalled) 1L else 0L
         override fun close() { closed.set(true) }
@@ -695,6 +700,62 @@ class BilingualTranslationTest {
         } finally { main { f.controller.close() } }
     }
 
+    @Test fun expiryDuringWireBackpressureKeepsTheCompletePlaybackTail() {
+        assertExpiryDrainsBlockedInput(holdWrites = true)
+    }
+
+    @Test fun expiryDuringAckWindowWaitKeepsTheCompletePlaybackTail() {
+        assertExpiryDrainsBlockedInput(holdWrites = false)
+    }
+
+    @Test fun expiryDuringFinishAckDrainKeepsTheCompletePlaybackTail() {
+        assertExpiryDrainsBlockedInput(holdWrites = false, finishBeforeExpiry = true)
+    }
+
+    private fun assertExpiryDrainsBlockedInput(holdWrites: Boolean, finishBeforeExpiry: Boolean = false) {
+        androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use { activity ->
+            activity.onActivity { it.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
+            val f = Fixture()
+            try {
+                main { f.controller.start() }
+                waitFor { f.wire != null }
+                // Fill the ACK window before its five-second watchdog expires.
+                f.wire!!.holdWrites = holdWrites; f.wire!!.dropAcks = true; f.wire!!.ready()
+                waitFor { f.microphone.framesRead.get() >= 1 }
+                f.microphone.readDelayMs = 50
+                waitFor { f.microphone.framesRead.get() >= if (holdWrites) 23 else if (finishBeforeExpiry) 3 else 55 }
+                if (holdWrites) assertEquals(64000L, f.wire!!.queuedBytes)
+                else if (!finishBeforeExpiry) assertEquals(50, f.wire!!.pcm.size)
+                if (finishBeforeExpiry) {
+                    main { f.controller.finish() }
+                    Thread.sleep(200)
+                }
+                f.output.playDelayMs = 100
+                repeat(20) {
+                    f.wire!!.listener.message(JSONObject().put("type", "audio").put("id", "expiry-tail")
+                        .put("audio", android.util.Base64.encodeToString(ByteArray(24000), android.util.Base64.NO_WRAP)).toString())
+                }
+                f.wire!!.listener.message("{\"type\":\"audio_end\",\"id\":\"expiry-tail\"}")
+                f.wire!!.listener.message("{\"type\":\"expired\",\"reason\":\"duration\"}")
+                waitFor { f.controller.state.value.phase == BilingualPhase.FINISHING }
+                Thread.sleep(6000)
+                assertEquals("A terminal event must retire input waits while already received speech drains",
+                    BilingualPhase.FINISHING, f.controller.state.value.phase)
+                assertFalse(f.wire!!.closed.get())
+                runBlocking { withTimeout(10000) {
+                    while (f.controller.state.value.phase == BilingualPhase.FINISHING) delay(20)
+                } }
+                assertEquals(BilingualPhase.EXPIRED, f.controller.state.value.phase)
+                assertEquals(240000, f.output.played.sumOf { it.size })
+                assertFalse(f.controller.state.value.finishIncomplete)
+                assertNull(f.controller.state.value.failure)
+                assertFalse("The peer has already ended; do not send finish after draining", f.wire!!.sent.any {
+                    JSONObject(it).getString("type") == "finish"
+                })
+            } finally { main { f.controller.close() } }
+        }
+    }
+
     @Test fun missingAcknowledgementsTerminateSessionWithinBoundedTime() {
         val f = Fixture()
         try {
@@ -908,16 +969,19 @@ class BilingualTranslationTest {
     }
 
     @Test fun unattendedForegroundSessionSurvivesOneMinuteScreenOff() {
-        org.junit.Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("bilingual_unattended_background") == "true")
+        val args = InstrumentationRegistry.getArguments()
+        org.junit.Assume.assumeTrue(args.getString("bilingual_unattended_background") == "true")
+        val actualMicrophone = args.getString("bilingual_background_microphone") == "true"
         val context = instrumentation.targetContext
         val power = context.getSystemService(android.os.PowerManager::class.java)
         fun shell(command: String) = instrumentation.uiAutomation.executeShellCommand(command).use {
             android.os.ParcelFileDescriptor.AutoCloseInputStream(it).readBytes()
         }
         androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use {
-            // Use the actual service and wake lock, but synthetic samples and a
-            // fake gateway: no ambient speech capture or paid provider calls.
-            val f = Fixture(realForeground = true)
+            // The optional microphone probe distinguishes a vendor's synthetic
+            // idle policy from an actual capture session. PCM stays in memory
+            // in the fake gateway; no recording artifact or provider call.
+            val f = Fixture(realBackground = actualMicrophone, realForeground = true)
             try {
                 main { f.controller.start() }
                 waitFor { f.wire != null }; f.wire!!.ready()
@@ -925,14 +989,14 @@ class BilingualTranslationTest {
                 shell("input keyevent KEYCODE_HOME")
                 shell("input keyevent KEYCODE_SLEEP")
                 waitFor { !power.isInteractive }
-                val before = f.microphone.framesRead.get()
+                val before = f.wire!!.pcm.size
                 runBlocking { delay(60000) }
                 assertFalse("The screen must remain off during this probe", power.isInteractive)
                 assertEquals(BilingualPhase.LISTENING, f.controller.state.value.phase)
-                assertTrue("Synthetic capture must continue while the service owns its wake lock", f.microphone.framesRead.get() >= before + 500)
+                assertTrue("Capture must continue while the service owns its wake lock", f.wire!!.pcm.size >= before + 500)
                 assertNull(f.controller.state.value.failure)
                 instrumentation.sendStatus(0, android.os.Bundle().apply {
-                    putString("bilingual_background_result", "screen_off_ms=60000 frames=${f.microphone.framesRead.get() - before} active=true real_foreground=true actual_microphone=false provider_calls=0")
+                    putString("bilingual_background_result", "screen_off_ms=60000 frames=${f.wire!!.pcm.size - before} active=true real_foreground=true actual_microphone=$actualMicrophone provider_calls=0")
                 })
             } finally {
                 main { f.controller.close() }

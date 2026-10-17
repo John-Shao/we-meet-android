@@ -571,16 +571,18 @@ internal class BilingualTranslationController(
             for (bytes in pcm) {
                 if (serverEnded.get()) awaitCancellation()
                 try { withTimeout(5000) { window.acquire() } }
-                catch (timeout: TimeoutCancellationException) { failed(BilingualFailure.ACK_TIMEOUT, timeout) }
+                catch (timeout: TimeoutCancellationException) {
+                    if (!serverEnded.get()) failed(BilingualFailure.ACK_TIMEOUT, timeout)
+                }
                 if (serverEnded.get()) awaitCancellation()
                 try {
                     withTimeout(5000) {
                         // Reserve space for this frame and let transient TCP
                         // stalls drain within the existing bounded input budget.
-                        while (checkNotNull(wire).queuedBytes + bytes.size > 64000) delay(10)
+                        while (!serverEnded.get() && checkNotNull(wire).queuedBytes + bytes.size > 64000) delay(10)
                     }
                 } catch (timeout: TimeoutCancellationException) {
-                    failed(BilingualFailure.OUTBOUND_BACKPRESSURE, timeout)
+                    if (!serverEnded.get()) failed(BilingualFailure.OUTBOUND_BACKPRESSURE, timeout)
                 }
                 if (serverEnded.get()) awaitCancellation()
                 synchronized(pending) { pending.addLast(SystemClock.elapsedRealtime()) }
@@ -589,7 +591,10 @@ internal class BilingualTranslationController(
             if (serverEnded.get()) awaitCancellation()
             // Drain every in-flight frame before ordering the provider finish.
             try { withTimeout(5000) { repeat(IN_FLIGHT_FRAMES) { window.acquire() } }
-            } catch (timeout: TimeoutCancellationException) { failed(BilingualFailure.ACK_TIMEOUT, timeout) }
+            } catch (timeout: TimeoutCancellationException) {
+                if (!serverEnded.get()) failed(BilingualFailure.ACK_TIMEOUT, timeout)
+            }
+            if (serverEnded.get()) awaitCancellation()
             check(finishing.get())
             if (wire?.send("{\"type\":\"finish\"}") != true) failed(BilingualFailure.SEND_FAILED)
             awaitCancellation()
