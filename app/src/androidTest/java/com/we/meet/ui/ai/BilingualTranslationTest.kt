@@ -643,6 +643,26 @@ class BilingualTranslationTest {
         } finally { main { f.controller.close() } }
     }
 
+    @Test fun sustainedOneSecondAcknowledgementsDoNotExhaustCapture() {
+        val f = Fixture()
+        try {
+            main { f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ackDelay = 1000; f.wire!!.ready()
+            waitFor { f.wire!!.pcm.isNotEmpty() }
+            runBlocking { withTimeout(35000) {
+                while (f.microphone.framesRead.get() < 300 && f.controller.state.value.active) delay(20)
+            } }
+            assertEquals("One-second ACKs remain within the five-second deadline; reason=${f.controller.state.value.failure}",
+                BilingualPhase.LISTENING, f.controller.state.value.phase)
+            main { f.controller.finish() }
+            waitFor { f.wire!!.sent.any { JSONObject(it).getString("type") == "finish" } }
+            assertEquals("Every captured frame must be delivered once", f.microphone.framesRead.get(), f.wire!!.pcm.size)
+            f.wire!!.listener.message("{\"type\":\"finished\"}")
+            waitFor { f.controller.state.value.phase == BilingualPhase.IDLE }
+            assertNull(f.controller.state.value.failure)
+        } finally { main { f.controller.close() } }
+    }
+
     @Test fun missingAcknowledgementsTerminateSessionWithinBoundedTime() {
         val f = Fixture()
         try {
@@ -821,7 +841,9 @@ class BilingualTranslationTest {
                     assertEquals(expectedSamples, f.playedSamples.get())
                     assertTrue(f.controller.state.value.active)
                     assertNull(f.controller.state.value.failure)
-                    if (turn % 10 == 0) {
+                    // Eleven cycles through every reply length; ten would only
+                    // replay the shortest member of the five-length sequence.
+                    if (turn % 11 == 0) {
                         val row = f.controller.state.value.rows.last()
                         main { f.controller.replay(row.id) }
                         expectedSamples += frames; replayCount++
@@ -840,6 +862,8 @@ class BilingualTranslationTest {
                 waitFor { f.controller.state.value.phase == BilingualPhase.IDLE }
                 assertFalse(f.controller.state.value.finishIncomplete)
                 assertTrue(f.microphone.closed.get())
+                assertEquals(minOf(turns, 100), f.controller.state.value.rows.size)
+                assertTrue(f.controller.state.value.replayable.size <= 100)
                 instrumentation.sendStatus(0, android.os.Bundle().apply {
                     putString("bilingual_soak_result", "turns=$turns replays=$replayCount played_samples=$expectedSamples" +
                         " underruns=${f.playbackUnderruns} elapsed_ms=${android.os.SystemClock.elapsedRealtime() - started} provider_calls=0 actual_microphone=false")

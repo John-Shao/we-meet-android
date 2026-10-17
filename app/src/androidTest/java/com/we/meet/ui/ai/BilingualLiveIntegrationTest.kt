@@ -116,6 +116,7 @@ class BilingualLiveIntegrationTest {
         val sent = java.util.concurrent.atomic.AtomicInteger()
         val wireFailures = java.util.concurrent.atomic.AtomicInteger()
         val playbackFailures = java.util.concurrent.atomic.AtomicInteger()
+        val playedSamples = java.util.concurrent.atomic.AtomicLong()
         val peakQueued = java.util.concurrent.atomic.AtomicLong()
         val lastAckAt = java.util.concurrent.atomic.AtomicLong()
         val received = ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicInteger>()
@@ -169,7 +170,7 @@ class BilingualLiveIntegrationTest {
                         object : BilingualAudioOutput {
                             override fun open() = output.open()
                             override fun play(samples: ShortArray) {
-                                try { output.play(samples); tails.add(output.echoTailMs) }
+                                try { output.play(samples); playedSamples.addAndGet(samples.size.toLong()); tails.add(output.echoTailMs) }
                                 catch (error: Exception) { playbackFailures.incrementAndGet(); throw error }
                             }
                             override fun finishTurn() {
@@ -278,6 +279,7 @@ class BilingualLiveIntegrationTest {
             assertEquals(BilingualPhase.IDLE, active.state.value.phase)
             assertFalse(active.state.value.finishIncomplete)
             assertTrue(closed.get())
+            if (audibleSynthetic) assertTrue("Immediate playback must run before replay", playedSamples.get() > 0)
             main { active.replay(row.id) }
             awaitCondition { !active.state.value.replaying }
             assertFalse(active.state.value.replayError)
@@ -297,6 +299,7 @@ class BilingualLiveIntegrationTest {
                     put("foreground_interruptions", foregroundInterruptions.get())
                     put("sent_frames", sent.get()); put("wire_failures", wireFailures.get())
                     put("playback_failures", playbackFailures.get()); put("peak_queued_bytes", peakQueued.get())
+                    put("played_samples", playedSamples.get())
                     put("last_ack_age_ms", if (lastAckAt.get() == 0L) -1 else android.os.SystemClock.elapsedRealtime() - lastAckAt.get())
                     put("events", org.json.JSONObject(received.mapValues { it.value.get() }))
                     put("error_codes", org.json.JSONArray(errorCodes.toList()))
