@@ -1,4 +1,6 @@
 <resources>
+    <string name="bilingual_error_with_code">Vertaling onderbroken. Tik op Start om opnieuw te verbinden. Foutcode: %1$s</string>
+    <string name="bilingual_account_not_enabled">Tweetalige vertaling is niet ingeschakeld voor dit account.</string>
     <string name="bilingual_unavailable">Vertalen is momenteel niet beschikbaar.</string>
     <string name="bilingual_upgrade_required">Werk de app bij om verder te vertalen.</string>
     <string name="bilingual_finish_incomplete">Vertaling gestopt. Het laatste antwoord is mogelijk onvolledig.</string>

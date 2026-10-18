@@ -96,6 +96,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                 state.replaying -> R.string.bilingual_replaying
                 state.replayError && !state.active -> R.string.bilingual_replay_error
                 !state.active && state.unavailableReason == "upgrade_required" -> R.string.bilingual_upgrade_required
+                !state.active && state.unavailableReason == "account_not_enabled" -> R.string.bilingual_account_not_enabled
                 !state.active && (state.unavailableReason != null || state.voiceConfig?.enabled == false) -> R.string.bilingual_unavailable
                 state.finishIncomplete -> R.string.bilingual_finish_incomplete
                 state.inputPaused && state.active -> AssistantR.string.assistant_background_paused
@@ -112,6 +113,9 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                 }
             }
             val statusText = when (status) {
+                R.string.bilingual_error -> state.failure?.let {
+                    stringResource(R.string.bilingual_error_with_code, it.supportCode)
+                } ?: stringResource(status)
                 R.string.bilingual_unknown -> stringResource(status,
                     stringResource(BilingualLanguages.label(state.pair.source)), stringResource(BilingualLanguages.label(state.pair.target)))
                 R.string.bilingual_listening_fixed -> stringResource(status,

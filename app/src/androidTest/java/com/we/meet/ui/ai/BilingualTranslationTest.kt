@@ -559,6 +559,38 @@ class BilingualTranslationTest {
         } finally { main { f.controller.close() } }
     }
 
+    @Test fun longBurstDrainsBeyondTheAudioTrackCapacityWhileInputAcksContinue() {
+        androidx.test.core.app.ActivityScenario.launch(com.we.meet.MainActivity::class.java).use { activity ->
+            activity.onActivity { it.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
+            val f = Fixture(realPlayback = true)
+            try {
+                main { f.controller.start() }
+                waitFor { f.wire != null }; f.wire!!.ready()
+                waitFor { f.wire!!.pcm.isNotEmpty() }
+                val before = f.wire!!.pcm.size
+                // Providers can burst a whole long reply once its final source arrives.
+                // Previous playback tests never exceeded the three-second track capacity.
+                repeat(24) {
+                    f.wire!!.listener.message(JSONObject().put("type", "audio").put("id", "long-burst")
+                        .put("audio", android.util.Base64.encodeToString(ByteArray(24000), android.util.Base64.NO_WRAP)).toString())
+                }
+                f.wire!!.listener.message(JSONObject().put("type", "translation").put("id", "long-burst")
+                    .put("source_language", "zh").put("source", "fixture").put("text", "fixture").toString())
+                f.wire!!.listener.message("{\"type\":\"audio_end\",\"id\":\"long-burst\"}")
+                runBlocking { withTimeout(20000) {
+                    while (f.controller.state.value.active &&
+                        (f.playedSamples.get() < 12 * 24000L || f.controller.state.value.phase != BilingualPhase.LISTENING)) delay(20)
+                } }
+                assertNull("Long reply failure: ${f.controller.state.value.failure}", f.controller.state.value.failure)
+                assertEquals(12 * 24000L, f.playedSamples.get())
+                assertEquals(BilingualPhase.LISTENING, f.controller.state.value.phase)
+                assertTrue(f.wire!!.pcm.size > before + 50)
+                assertEquals(1, f.controller.state.value.replayable.size)
+                assertFalse(f.wire!!.closed.get())
+            } finally { main { f.controller.close() } }
+        }
+    }
+
     @Test fun repeatedShortRepliesWithRealAudioTrackReturnToListeningWithoutDisconnect() {
         val f = Fixture(realPlayback = true)
         try {
