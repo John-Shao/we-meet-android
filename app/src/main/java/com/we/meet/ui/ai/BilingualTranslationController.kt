@@ -590,6 +590,8 @@ internal class BilingualTranslationController(
             // the socket continue on background threads.
             withContext(Dispatchers.IO) {
                 for (bytes in pcm) {
+                    ensureActive()
+                    if (!authorized()) failed(BilingualFailure.AUTHORITY_LOST)
                     if (serverEnded.get()) awaitCancellation()
                     try { withTimeout(5000) { window.acquire() } }
                     catch (timeout: TimeoutCancellationException) {
@@ -605,6 +607,9 @@ internal class BilingualTranslationController(
                     } catch (timeout: TimeoutCancellationException) {
                         if (!serverEnded.get()) failed(BilingualFailure.OUTBOUND_BACKPRESSURE, timeout)
                     }
+                    ensureActive()
+                    if (!authorized()) failed(BilingualFailure.AUTHORITY_LOST)
+                    if (closed.get()) awaitCancellation()
                     if (serverEnded.get()) awaitCancellation()
                     synchronized(pending) { pending.addLast(SystemClock.elapsedRealtime()) }
                     if (wire?.send(bytes) != true) failed(BilingualFailure.SEND_FAILED)
@@ -615,6 +620,9 @@ internal class BilingualTranslationController(
                 } catch (timeout: TimeoutCancellationException) {
                     if (!serverEnded.get()) failed(BilingualFailure.ACK_TIMEOUT, timeout)
                 }
+                ensureActive()
+                if (!authorized()) failed(BilingualFailure.AUTHORITY_LOST)
+                if (closed.get()) awaitCancellation()
                 if (serverEnded.get()) awaitCancellation()
                 check(finishing.get())
                 if (wire?.send("{\"type\":\"finish\"}") != true) failed(BilingualFailure.SEND_FAILED)

@@ -771,6 +771,23 @@ class BilingualTranslationTest {
         } finally { main { f.controller.close() } }
     }
 
+    @Test fun authorityRevokedDuringWireBackpressureDoesNotSendQueuedCapture() {
+        val authorized = AtomicBoolean(true)
+        val f = Fixture(authorized = { authorized.get() })
+        try {
+            main { f.controller.start() }
+            waitFor { f.wire != null }
+            f.wire!!.holdWrites = true; f.wire!!.ready()
+            waitFor { f.wire!!.queuedBytes == 64000L && f.microphone.framesRead.get() >= 23 }
+            val sentBeforeRevocation = f.wire!!.pcm.size
+            main { authorized.set(false); f.wire!!.releaseAcks() }
+            waitFor { f.controller.state.value.failure == BilingualFailure.AUTHORITY_LOST }
+            assertEquals("Revoked authority must stop queued input before the socket resumes",
+                sentBeforeRevocation, f.wire!!.pcm.size)
+            assertTrue(f.wire!!.closed.get())
+        } finally { main { f.controller.close() } }
+    }
+
     @Test fun expiryDuringWireBackpressureKeepsTheCompletePlaybackTail() {
         assertExpiryDrainsBlockedInput(holdWrites = true)
     }
