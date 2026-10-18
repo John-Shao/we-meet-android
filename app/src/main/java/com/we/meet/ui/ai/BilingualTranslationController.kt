@@ -567,13 +567,14 @@ internal class BilingualTranslationController(
                 val buffer = ShortArray(1600)
                 val source = checkNotNull(microphone)
                 try {
-                    while (isActive && !closed.get() && !finishing.get()) {
+                    while (isActive && !closed.get() && !finishing.get() && !serverEnded.get()) {
                         if (!authorized()) failed(BilingualFailure.AUTHORITY_LOST)
                         val count = try { source.read(buffer) } catch (error: Exception) {
                             if (error is CancellationException) throw error
                             failed(BilingualFailure.INPUT_FAILED, error)
                         }
                         ensureActive()
+                        if (serverEnded.get()) break
                         if (count <= 0 && finishing.get()) break
                         if (count !in 1..buffer.size) failed(BilingualFailure.INPUT_FAILED)
                         val bytes = ByteBuffer.allocate(count * 2).order(ByteOrder.LITTLE_ENDIAN)
