@@ -1,5 +1,7 @@
 # 双语互译（App 端）设计方案审查
 
+> 历史设计审查：下文 AOQ/WebRTC 的选型建议和当时问题状态不代表当前交付。双向翻译已统一为业务 WebSocket；最新交付、验收与遗留项见 [2026-10-18 收尾记录](bilingual-closeout-2026-10-18.md)。原始审查内容保留备查。
+
 审查日期：2026-10-16（第 3 节与 P1-12、P2-8 为同日追加）
 
 审查对象：`we-meet-android/docs/bilingual-webrtc-direct.md`
