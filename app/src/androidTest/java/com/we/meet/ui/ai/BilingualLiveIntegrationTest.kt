@@ -59,6 +59,17 @@ class BilingualLiveIntegrationTest {
             require(com.we.meet.BuildConfig.WE_MEET_BASE_URL.startsWith("https://"))
             check(account != null) { "Log in to the app before production acceptance" }
             api = app.apiClient.assistantTranslationApi
+            args.getString("bilingual_fixture_proxy_port")?.toInt()?.let { port ->
+                require(args.getString("bilingual_pcm_fixture") != null && port in 1024..65535)
+                // CONNECT only; production certificate and hostname checks remain intact.
+                socketClient = OkHttpClient.Builder()
+                    .proxy(java.net.Proxy(java.net.Proxy.Type.HTTP, java.net.InetSocketAddress("127.0.0.1", port)))
+                    .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
+                    .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                    .writeTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(0, java.util.concurrent.TimeUnit.SECONDS)
+                    .pingInterval(10, java.util.concurrent.TimeUnit.SECONDS).build()
+            }
         } else {
             require(endpoint!!.startsWith("https://localhost:"))
             val certificate = CertificateFactory.getInstance("X.509").generateCertificate(
@@ -216,7 +227,7 @@ class BilingualLiveIntegrationTest {
                             }
                             override fun failed() { wireFailures.incrementAndGet(); listener.failed() }
                         }
-                        val wire = if (production) OkHttpCaptureTranslationWire.open(url, observed)
+                        val wire = if (production && socketClient == null) OkHttpCaptureTranslationWire.open(url, observed)
                             else OkHttpCaptureTranslationWire.open(checkNotNull(socketClient), url, observed)
                         object : com.we.meet.data.capture.CaptureTranslationWire by wire {
                             override fun send(pcm: ByteArray): Boolean {
