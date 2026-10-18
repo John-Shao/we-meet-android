@@ -650,6 +650,19 @@ class BilingualTranslationTest {
         } finally { main { f.controller.close() } }
     }
 
+    @Test fun serverErrorRemainsTheCauseWhenTheTransportClosesImmediatelyAfterIt() {
+        val f = Fixture()
+        try {
+            main { f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.wire!!.pcm.isNotEmpty() }
+            f.wire!!.listener.message("{\"type\":\"error\",\"code\":\"translation_failed\"}")
+            f.wire!!.listener.failed()
+            waitFor { f.controller.state.value.phase == BilingualPhase.ERROR }
+            assertEquals(BilingualFailure.SERVER_ERROR, f.controller.state.value.failure)
+        } finally { main { f.controller.close() } }
+    }
+
     @Test fun normalFinishKeepsFinalTextAheadOfSocketClosure() {
         val f = Fixture()
         try {

@@ -305,8 +305,8 @@ internal class BilingualTranslationController(
         private val speaking = AtomicBoolean()
         private val finishing = AtomicBoolean()
         private val serverEnded = AtomicBoolean()
-        // Covers a bounded late-ASR audio burst plus its text and ACK events.
-        private val events = Channel<String>(256)
+        // UI/data events remain bounded. Transport ACKs never wait on this queue.
+        private val events = Channel<JSONObject>(256)
         private val window = Semaphore(IN_FLIGHT_FRAMES)
         private val pending = java.util.ArrayDeque<Long>()
         private val ready = CompletableDeferred<Unit>()
@@ -317,7 +317,7 @@ internal class BilingualTranslationController(
         // First time each reply's audio reached this device, for queue latency.
         private val receivedAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
         @Volatile private var lastVoiceAt = 0L
-        private var ackCount = 0
+        private val ackCount = java.util.concurrent.atomic.AtomicInteger()
         private var microphone: CapturePcmSource? = null
         private var output: BilingualAudioOutput? = null
         private var wire: CaptureTranslationWire? = null
@@ -344,6 +344,17 @@ internal class BilingualTranslationController(
         private fun failed(reason: BilingualFailure, cause: Throwable? = null): Nothing {
             firstFailure.compareAndSet(null, reason)
             throw BilingualSessionFailure(reason, cause)
+        }
+
+        private fun acknowledge() {
+            if (closed.get()) return
+            val sentAt = synchronized(pending) { pending.pollFirst() }
+            if (sentAt == null) { failure(BilingualFailure.PROTOCOL_ERROR); return }
+            try { window.release() }
+            catch (_: IllegalStateException) { failure(BilingualFailure.PROTOCOL_ERROR); return }
+            if (ackCount.incrementAndGet() % ACK_SAMPLE_INTERVAL == 0) {
+                Log.i(LOG_TAG, "translation_ack_rtt_ms=${SystemClock.elapsedRealtime() - sentAt}")
+            }
         }
 
         fun replay(chunks: List<ByteArray>) {
@@ -378,12 +389,26 @@ internal class BilingualTranslationController(
             val listener = object : CaptureTranslationWire.Listener {
                 override fun opened() { opened.complete(Unit) }
                 override fun message(text: String) {
-                    if (!closed.get() && (text.length > 300_000 || !events.trySend(text).isSuccess)) failure(BilingualFailure.EVENT_OVERFLOW)
+                    if (closed.get()) return
+                    if (text.length > 300_000) { failure(BilingualFailure.EVENT_OVERFLOW); return }
+                    val event = try { JSONObject(text) }
+                    catch (_: org.json.JSONException) { failure(BilingualFailure.PROTOCOL_ERROR); return }
+                    val kind = event.optString("type")
+                    if (kind == "ack") {
+                        // Credit input on receipt, independently of audio parsing,
+                        // rendering, history or other work scheduled on Main.
+                        acknowledge()
+                        return
+                    }
+                    if (kind == "error") firstFailure.compareAndSet(null, BilingualFailure.SERVER_ERROR)
+                    if (kind == "finished" || kind == "expired") serverEnded.set(true)
+                    if (!closed.get() && !events.trySend(event).isSuccess) failure(BilingualFailure.EVENT_OVERFLOW)
                 }
                 override fun failed() {
                     if (!opened.isCompleted) opened.completeExceptionally(IllegalStateException("Translation connection failed"))
+                    firstFailure.compareAndSet(null, BilingualFailure.CONNECTION_FAILED)
                     // Preserve final translation/finished events ahead of socket closure.
-                    if (!closed.get() && !events.trySend("{\"type\":\"disconnected\"}").isSuccess) failure(BilingualFailure.EVENT_OVERFLOW)
+                    if (!closed.get() && !events.trySend(JSONObject().put("type", "disconnected")).isSuccess) failure(BilingualFailure.EVENT_OVERFLOW)
                 }
             }
             stage = "websocket_admission"
@@ -403,23 +428,13 @@ internal class BilingualTranslationController(
             check(wire!!.send(JSONObject().put("type", "assistant_translation").put("ticket", ticket.ticket).toString()))
             // Serialize result installation with stop, account changes and page disposal.
             launch {
-                for (raw in events) {
+                for (event in events) {
                     if (closed.get()) break
-                    val event = JSONObject(raw)
                     when (event.getString("type")) {
                         "ready" -> {
                             check(event.getInt("protocol_version") == 2)
                             check(event.getInt("input_sample_rate") == 16000 && event.getInt("output_sample_rate") == 24000)
                             ready.complete(Unit)
-                        }
-                        "ack" -> {
-                            val sentAt = synchronized(pending) { pending.pollFirst() }
-                            check(sentAt != null)
-                            ackCount += 1
-                            if (ackCount % ACK_SAMPLE_INTERVAL == 0) {
-                                Log.i(LOG_TAG, "translation_ack_rtt_ms=${SystemClock.elapsedRealtime() - sentAt}")
-                            }
-                            window.release()
                         }
                         "language_unknown" -> mutable.update { it.copy(unknownLanguage = true) }
                         "translation" -> {
@@ -491,7 +506,7 @@ internal class BilingualTranslationController(
             } catch (error: Exception) { failed(BilingualFailure.INPUT_FAILED, error) }
             mutable.update { it.copy(phase = BilingualPhase.LISTENING) }
             updateControls()
-            launch {
+            launch(Dispatchers.Default) {
                 while (isActive) {
                     // A missing ACK must fail even when another coroutine is idle.
                     if (!serverEnded.get() && !synchronized(pending) { pending.peekFirst()?.let { SystemClock.elapsedRealtime() - it <= 5000 } ?: true }) failed(BilingualFailure.ACK_TIMEOUT)
@@ -570,36 +585,40 @@ internal class BilingualTranslationController(
                     }
                 } finally { source.close(); pcm.close() }
             }
-            for (bytes in pcm) {
+            // A busy UI must not pause input transmission while capture and
+            // the socket continue on background threads.
+            withContext(Dispatchers.IO) {
+                for (bytes in pcm) {
+                    if (serverEnded.get()) awaitCancellation()
+                    try { withTimeout(5000) { window.acquire() } }
+                    catch (timeout: TimeoutCancellationException) {
+                        if (!serverEnded.get()) failed(BilingualFailure.ACK_TIMEOUT, timeout)
+                    }
+                    if (serverEnded.get()) awaitCancellation()
+                    try {
+                        withTimeout(5000) {
+                            // Reserve space for this frame and let transient TCP
+                            // stalls drain within the existing bounded input budget.
+                            while (!serverEnded.get() && checkNotNull(wire).queuedBytes + bytes.size > 64000) delay(10)
+                        }
+                    } catch (timeout: TimeoutCancellationException) {
+                        if (!serverEnded.get()) failed(BilingualFailure.OUTBOUND_BACKPRESSURE, timeout)
+                    }
+                    if (serverEnded.get()) awaitCancellation()
+                    synchronized(pending) { pending.addLast(SystemClock.elapsedRealtime()) }
+                    if (wire?.send(bytes) != true) failed(BilingualFailure.SEND_FAILED)
+                }
                 if (serverEnded.get()) awaitCancellation()
-                try { withTimeout(5000) { window.acquire() } }
-                catch (timeout: TimeoutCancellationException) {
+                // Drain every in-flight frame before ordering the provider finish.
+                try { withTimeout(5000) { repeat(IN_FLIGHT_FRAMES) { window.acquire() } }
+                } catch (timeout: TimeoutCancellationException) {
                     if (!serverEnded.get()) failed(BilingualFailure.ACK_TIMEOUT, timeout)
                 }
                 if (serverEnded.get()) awaitCancellation()
-                try {
-                    withTimeout(5000) {
-                        // Reserve space for this frame and let transient TCP
-                        // stalls drain within the existing bounded input budget.
-                        while (!serverEnded.get() && checkNotNull(wire).queuedBytes + bytes.size > 64000) delay(10)
-                    }
-                } catch (timeout: TimeoutCancellationException) {
-                    if (!serverEnded.get()) failed(BilingualFailure.OUTBOUND_BACKPRESSURE, timeout)
-                }
-                if (serverEnded.get()) awaitCancellation()
-                synchronized(pending) { pending.addLast(SystemClock.elapsedRealtime()) }
-                if (wire?.send(bytes) != true) failed(BilingualFailure.SEND_FAILED)
+                check(finishing.get())
+                if (wire?.send("{\"type\":\"finish\"}") != true) failed(BilingualFailure.SEND_FAILED)
+                awaitCancellation()
             }
-            if (serverEnded.get()) awaitCancellation()
-            // Drain every in-flight frame before ordering the provider finish.
-            try { withTimeout(5000) { repeat(IN_FLIGHT_FRAMES) { window.acquire() } }
-            } catch (timeout: TimeoutCancellationException) {
-                if (!serverEnded.get()) failed(BilingualFailure.ACK_TIMEOUT, timeout)
-            }
-            if (serverEnded.get()) awaitCancellation()
-            check(finishing.get())
-            if (wire?.send("{\"type\":\"finish\"}") != true) failed(BilingualFailure.SEND_FAILED)
-            awaitCancellation()
         }
 
         private fun reportPlayback(id: String?) {
