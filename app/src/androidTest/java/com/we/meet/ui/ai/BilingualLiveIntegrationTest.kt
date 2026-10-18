@@ -92,9 +92,13 @@ class BilingualLiveIntegrationTest {
         val physical = args.getString("bilingual_physical") == "true"
         val syntheticPair = args.getString("bilingual_synthetic_pair") == "true"
         val audibleSynthetic = args.getString("bilingual_audible_synthetic") == "true"
+        val fixture = args.getString("bilingual_pcm_fixture")
+        val singleAutomatic = args.getString("bilingual_single_automatic") == "true"
         require(!syntheticPair || !physical)
-        require(!audibleSynthetic || syntheticPair && !physical)
-        val automatic = (physical || syntheticPair) && args.getString("bilingual_physical_mode", "automatic") == "automatic"
+        require(fixture == null || !physical && fixture.matches(Regex("bilingual-[a-z0-9-]+\\.pcm")))
+        require(!singleAutomatic || fixture != null && !syntheticPair && !physical)
+        require(!audibleSynthetic || (syntheticPair || fixture != null) && !physical)
+        val automatic = (physical || syntheticPair || singleAutomatic) && args.getString("bilingual_physical_mode", "automatic") == "automatic"
         val backgroundNoise = args.getString("bilingual_physical_environment", "quiet") == "background_noise"
         val modeLabel = if (automatic) "自动方向" else "固定中文 → 英文"
         val environmentLabel = if (backgroundNoise) "非语音背景噪声" else "安静环境"
@@ -103,7 +107,10 @@ class BilingualLiveIntegrationTest {
             .split(',').map { requireNotNull(routeCatalog[it]) { "Unknown physical route" } }
             else listOf("合成输入" to 300L)
         require(routes.isNotEmpty() && routes.distinct().size == routes.size)
-        val chinese = instrumentation.context.assets.open("aoq-chinese.pcm").use { it.readBytes() }
+        val chinese = if (fixture == null) instrumentation.context.assets.open("aoq-chinese.pcm").use { it.readBytes() }
+            else java.io.File(instrumentation.targetContext.getExternalFilesDir(null), fixture).readBytes().also {
+                require(it.size in 3200..960000 && it.size % 2 == 0)
+            }
         val pcm = if (syntheticPair) chinese + ByteArray(64000) +
             instrumentation.context.assets.open("aoq-english.pcm").use { it.readBytes() } else chinese
         val reads = java.util.concurrent.atomic.AtomicInteger()
@@ -123,7 +130,7 @@ class BilingualLiveIntegrationTest {
         val errorCodes = ConcurrentHashMap.newKeySet<String>()
         var controller: BilingualTranslationController? = null
         val activity = ActivityScenario.launch(com.we.meet.MainActivity::class.java)
-        if (physical) activity.onActivity {
+        if (physical || fixture != null) activity.onActivity {
             it.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             it.setTurnScreenOn(true)
         }
@@ -145,7 +152,7 @@ class BilingualLiveIntegrationTest {
           for ((route, expectedTail) in routes) {
             val speechComplete = AtomicBoolean(!physical)
             val source = SyntheticSource(pcm,
-                pauseBeforeSample = if (audibleSynthetic) chinese.size / 2 + 32000 else null,
+                pauseBeforeSample = if (audibleSynthetic && syntheticPair) chinese.size / 2 + 32000 else null,
                 mayContinue = {
                     // Match the physical prompt: wait for the first response to
                     // drain before speaking English into the half-duplex input.
@@ -233,7 +240,11 @@ class BilingualLiveIntegrationTest {
             val active = controller!!
             awaitCondition { active.state.value.voiceConfig != null || active.state.value.unavailableReason != null }
             assertNull(active.state.value.unavailableReason)
-            main { active.fixedSource(if (automatic) null else "zh"); active.voice("Ethan"); active.sound(physical || audibleSynthetic) }
+            main {
+                active.fixedSource(if (automatic) null else "zh")
+                active.voice(if (fixture == null) "Ethan" else args.getString("bilingual_fixture_voice", "Ethan"))
+                active.sound(physical || audibleSynthetic)
+            }
             if (physical) {
                 activity.onActivity { screen ->
                     val column = LinearLayout(screen).apply { orientation = LinearLayout.VERTICAL; setPadding(28, 48, 28, 28) }
@@ -280,7 +291,7 @@ class BilingualLiveIntegrationTest {
             awaitCondition(if (physical) 300000 else 60000) { active.state.value.active || active.state.value.phase == BilingualPhase.ERROR }
             awaitCondition { active.state.value.phase != BilingualPhase.CONNECTING }
             assertTrue(active.state.value.active)
-            val expectedRows = if (automatic) 2 else 1
+            val expectedRows = if (automatic && !singleAutomatic) 2 else 1
             awaitCondition(if (physical) 120000 else 60000) {
                 (if (physical) speechComplete.get() else active.state.value.replayable.size >= expectedRows) ||
                     !active.state.value.active
@@ -291,7 +302,7 @@ class BilingualLiveIntegrationTest {
             if (physical) assertTrue(active.state.value.rows.size >= expectedRows)
             else assertEquals(expectedRows, active.state.value.rows.size)
             val row = active.state.value.rows.last()
-            assertEquals(if (automatic) setOf("zh", "en") else setOf("zh"), active.state.value.rows.map { it.sourceLanguage }.toSet())
+            assertEquals(if (automatic && !singleAutomatic) setOf("zh", "en") else setOf("zh"), active.state.value.rows.map { it.sourceLanguage }.toSet())
             assertTrue(active.state.value.rows.all { it.source.isNotBlank() && it.text.isNotBlank() && it.id in active.state.value.replayable })
             if (!physical) {
                 val hold = args.getString("bilingual_hold_seconds", "0").toLong()
