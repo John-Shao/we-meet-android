@@ -41,3 +41,14 @@
 内部候选版本为 `0.3.0-work.9`（versionCode 11，既有内部签名）。**需要后端、翻译网关和 App 配套升级；本文件本身不表示已部署或已发布。**
 
 模型协议依据：[ASR 客户端事件](https://help.aliyun.com/en/model-studio/qwen-asr-realtime-client-events)、[ASR 服务端事件](https://help.aliyun.com/en/model-studio/qwen-asr-realtime-server-events)、[实时语音识别说明](https://help.aliyun.com/en/model-studio/real-time-speech-recognition-user-guide)。真实返回与文档示例不完全一致，兼容处理以本轮安全字段形状诊断为依据，不保存真实用户语音或转写内容。
+
+
+## 配套部署状态更新（2026-10-19）
+
+后端与翻译网关已配套升级到源码 `808c98723adea0ea28382f3ffc1a5db704c67a03`，Helm 第 498 版。运行镜像摘要已核对；仅修改 8 个目标镜像引用，20 个 Deployment 全部就绪，Pending Pod 和本次目标 Pod 重启数均为 0。原单账号灰度、环境变量、配额与资源配置不变。
+
+公网验证使用既有账号的临时 Django 登录会话，经实际 HTTPS API、签名票据、公网 WebSocket 和真实模型完成三项合成语音测试：新版中文→英文→中文交替、旧版固定方向、自动方向，全部通过。三次业务会话均关闭且用量完整，临时登录会话已删除。其它账号仍被拒绝，非法固定请求返回 400。
+
+继续使用 `0.3.0-work.9` 内部包即可，无需为此次服务端升级更换 APK。退出后重新进入双语互译，或重启 App，刷新服务端能力配置。真机声学、耳机、历史 BT04 服务依赖以及账单金额的待验边界保持原状态。
+
+完整部署证据：[后端部署记录](https://github.com/John-Shao/we-meet/blob/aliyun-dev/docs/reviews/bilingual-fixed-record-only-deployment-20261019.json)。此前候选包清单中的“尚未部署”是构建时快照，以本节及部署记录为准。
