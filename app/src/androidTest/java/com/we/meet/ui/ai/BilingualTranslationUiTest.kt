@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import com.we.meet.R
 import com.we.meet.WeMeetApp
 import com.we.meet.ui.theme.WeMeetTheme
+import com.we.meet.feature.assistant.history.displayText
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -41,6 +42,32 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationUiTest {
+    @Test fun originalOnlyRowHasNoTranslationOrReplayInEitherLayout() {
+        val state = BilingualState(pair = com.we.meet.data.api.AssistantTranslationPair("en", "zh"), fixedSource = "en",
+            rows = listOf(BilingualRow("original-only", "Original Chinese", "", "zh", "zh", transcriptOnly = true)))
+        val facing = mutableStateOf(false)
+        setContent { WeMeetTheme(darkTheme = true) {
+            if (facing.value) BilingualFaceToFace(state, onReplay = {})
+            else BilingualChatTranscript(state, onReplay = {})
+        } }
+        compose.onNodeWithText("Original Chinese").assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.bilingual_original_only)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.bilingual_replay)).assertDoesNotExist()
+        screenshot("bilingual-fixed-original-only-chat.png")
+        compose.runOnIdle { facing.value = true }
+        compose.onNodeWithText("Original Chinese").assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.bilingual_replay)).assertDoesNotExist()
+        screenshot("bilingual-fixed-original-only-facing.png")
+    }
+
+    @Test fun originalOnlyHistoryExportsTheOriginalWithoutAnAiResponseLabel() {
+        val row = com.we.meet.feature.assistant.history.AssistantHistoryRow("original", 0, "transcription",
+            "Original Chinese", sourceLanguage = "zh")
+        val text = row.displayText(context)
+        org.junit.Assert.assertTrue(text.endsWith("\nOriginal Chinese"))
+        org.junit.Assert.assertFalse(text.contains("→"))
+    }
+
     @Test fun disabledBilingualFeatureHidesOnlyItsHubEntry() {
         setContent { WeMeetTheme(darkTheme = false) {
             AiHubScreen({}, {}, bilingualEnabled = false)

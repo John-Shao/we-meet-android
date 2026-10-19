@@ -70,12 +70,14 @@ internal fun BilingualChatTranscript(state: BilingualState, onReplay: (String) -
                     ) {
                         Column(Modifier.padding(Dimens.SpaceM), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                             if (row.source.isNotBlank()) SelectionContainer {
-                                Text(row.source, style = MaterialTheme.typography.bodySmall,
-                                    color = if (onRight) colors.onPrimaryContainer.copy(alpha = 0.78f) else colors.onSurfaceVariant)
+                                Text(row.source, style = if (row.transcriptOnly) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodySmall,
+                                    color = if (row.transcriptOnly) colors.onSurface else if (onRight) colors.onPrimaryContainer.copy(alpha = 0.78f) else colors.onSurfaceVariant)
                             }
                             if (row.text.isNotBlank()) SelectionContainer {
                                 Text(row.text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                             }
+                            if (row.transcriptOnly) Text(stringResource(com.we.meet.R.string.bilingual_original_only),
+                                style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                             BilingualReplayButton(state, row.id, onReplay)
                         }
                     }

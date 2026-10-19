@@ -24,7 +24,8 @@ class AssistantTranslationContractTest {
         val request = AssistantTranslationRequest("ja", "fr", "ja", "Ethan")
         val encoded = moshi.adapter(AssistantTranslationRequest::class.java).toJson(request)
         val decoded = moshi.adapter(Map::class.java).fromJson(encoded)!!
-        assertEquals(setOf("source_language", "target_language", "fixed_source", "voice", "protocol_version"), decoded.keys)
+        assertEquals(setOf("source_language", "target_language", "fixed_source", "voice", "protocol_version", "record_other_language"), decoded.keys)
+        assertEquals(true, decoded["record_other_language"])
         assertEquals("ja", decoded["fixed_source"])
         assertEquals("Ethan", decoded["voice"])
         assertEquals(2.0, decoded["protocol_version"])

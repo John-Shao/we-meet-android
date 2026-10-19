@@ -57,7 +57,11 @@ internal fun BilingualTranslationSettingsScreen(
                     modifier = dropdownPadding.testTag("bilingual-direction-picker"),
                     optionTag = { if (it == 0) "bilingual-direction-auto" else "bilingual-direction-manual" })
             }
-            SettingsHint(stringResource(R.string.bilingual_direction_hint))
+            SettingsHint(if (state.fixedSource == null) stringResource(R.string.bilingual_direction_hint)
+                else stringResource(R.string.bilingual_fixed_hint,
+                    stringResource(BilingualLanguages.label(requireNotNull(state.fixedSource))),
+                    stringResource(BilingualLanguages.label(BilingualLanguages.opposite(state.pair, requireNotNull(state.fixedSource))))))
+            if (!state.supportsFixedTranscription) SettingsHint(stringResource(R.string.bilingual_fixed_unavailable))
             SettingsGroupHeader(stringResource(R.string.bilingual_languages))
             SettingsGroup {
                 Box(Modifier.padding(horizontal = Dimens.ScreenPadding)) {

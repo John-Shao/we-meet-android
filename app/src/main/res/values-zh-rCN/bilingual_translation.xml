@@ -8,8 +8,8 @@
     <string name="bilingual_languages">翻译语言</string>
     <string name="bilingual_direction_settings">翻译方向</string>
     <string name="bilingual_direction_auto">自动识别</string>
-    <string name="bilingual_direction_manual">手动指定</string>
-    <string name="bilingual_direction_hint">自动识别讲话语言并双向翻译。手动指定时，按左侧语言 → 右侧语言翻译，请在下方选择语言。</string>
+    <string name="bilingual_direction_manual">单向翻译</string>
+    <string name="bilingual_direction_hint">识别所选两种语言，并翻译成另一种语言。未识别的语音会忽略。</string>
     <string name="bilingual_display_mode">显示模式</string>
     <string name="bilingual_language_pair">%1$s ⇄ %2$s</string>
     <string name="bilingual_language_pair_fixed">%1$s → %2$s</string>
@@ -23,7 +23,7 @@
     <string name="bilingual_idle">准备好后，点击开始</string>
     <string name="bilingual_connecting">正在连接…</string>
     <string name="bilingual_listening">正在聆听 · 自动识别语种</string>
-    <string name="bilingual_listening_fixed">正在聆听 · %1$s → %2$s</string>
+    <string name="bilingual_listening_fixed">正在聆听 · %1$s → %2$s · %2$s仅记录</string>
     <string name="bilingual_speaking">正在播报译文 · 请稍后说话</string>
     <string name="bilingual_finishing">正在完成最后一句翻译…</string>
     <string name="bilingual_error">翻译已中断，请点击开始重新连接。</string>
@@ -64,4 +64,7 @@
     <string name="bilingual_language_cs">捷克语</string>
     <string name="bilingual_language_fil">菲律宾语</string>
     <string name="bilingual_language_fa">波斯语</string>
+    <string name="bilingual_original_only">仅原文</string>
+    <string name="bilingual_fixed_hint">%1$s译成%2$s；%2$s仅记录原文。未识别的语音会忽略。</string>
+    <string name="bilingual_fixed_unavailable">当前服务尚不支持这组语言的单向翻译与双语记录。请选择其他语言或自动模式。</string>
 </resources>

@@ -9,8 +9,8 @@
     <string name="bilingual_languages">Übersetzungssprachen</string>
     <string name="bilingual_direction_settings">Übersetzungsrichtung</string>
     <string name="bilingual_direction_auto">Automatische Erkennung</string>
-    <string name="bilingual_direction_manual">Manuell festlegen</string>
-    <string name="bilingual_direction_hint">Der automatische Modus erkennt beide gesprochenen Sprachen und übersetzt in beide Richtungen. Im manuellen Modus wird von der linken in die rechte Sprache übersetzt; wählen Sie die Sprachen unten aus.</string>
+    <string name="bilingual_direction_manual">Einseitige Übersetzung</string>
+    <string name="bilingual_direction_hint">Erkennt, welche der beiden gewählten Sprachen gesprochen wird, und übersetzt in die andere Sprache. Nicht erkannte Sprache wird ignoriert.</string>
     <string name="bilingual_display_mode">Anzeigemodus</string>
     <string name="bilingual_language_pair">%1$s ⇄ %2$s</string>
     <string name="bilingual_language_pair_fixed">%1$s → %2$s</string>
@@ -24,7 +24,7 @@
     <string name="bilingual_idle">Bereit, wenn Sie so weit sind</string>
     <string name="bilingual_connecting">Verbindung wird hergestellt…</string>
     <string name="bilingual_listening">Zuhören · Sprache wird automatisch erkannt</string>
-    <string name="bilingual_listening_fixed">Zuhören · %1$s → %2$s</string>
+    <string name="bilingual_listening_fixed">Zuhören · %1$s → %2$s · %2$s: nur Original</string>
     <string name="bilingual_speaking">Übersetzung wird vorgelesen · Bitte warten Sie mit dem Sprechen</string>
     <string name="bilingual_finishing">Letzte Übersetzung wird abgeschlossen…</string>
     <string name="bilingual_error">Übersetzung unterbrochen. Tippen Sie auf Start, um erneut zu verbinden.</string>
@@ -65,4 +65,7 @@
     <string name="bilingual_language_cs">Tschechisch</string>
     <string name="bilingual_language_fil">Filipino</string>
     <string name="bilingual_language_fa">Persisch</string>
+    <string name="bilingual_original_only">Nur Original</string>
+    <string name="bilingual_fixed_hint">%1$s in %2$s übersetzen; %2$s nur transkribieren. Unerkannte Sprache wird ignoriert.</string>
+    <string name="bilingual_fixed_unavailable">Dieser Dienst kann in diesem Modus nicht beide Sprachen erfassen. Andere Sprachen oder den automatischen Modus wählen.</string>
 </resources>

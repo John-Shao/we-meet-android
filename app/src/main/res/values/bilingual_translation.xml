@@ -8,8 +8,8 @@
     <string name="bilingual_languages">Translation languages</string>
     <string name="bilingual_direction_settings">Translation direction</string>
     <string name="bilingual_direction_auto">Automatic detection</string>
-    <string name="bilingual_direction_manual">Specify manually</string>
-    <string name="bilingual_direction_hint">Automatic mode detects either spoken language. Manual mode translates from the left language to the right; choose the languages below.</string>
+    <string name="bilingual_direction_manual">One-way translation</string>
+    <string name="bilingual_direction_hint">Detects which selected language is spoken and translates into the other language. Unrecognized speech is ignored.</string>
     <string name="bilingual_display_mode">Display mode</string>
     <string name="bilingual_language_pair">%1$s ⇄ %2$s</string>
     <string name="bilingual_language_pair_fixed">%1$s → %2$s</string>
@@ -23,7 +23,7 @@
     <string name="bilingual_idle">Ready when you are</string>
     <string name="bilingual_connecting">Connecting…</string>
     <string name="bilingual_listening">Listening · Language detected automatically</string>
-    <string name="bilingual_listening_fixed">Listening · %1$s → %2$s</string>
+    <string name="bilingual_listening_fixed">Listening · %1$s → %2$s · %2$s: original only</string>
     <string name="bilingual_speaking">Playing translation · Please wait before speaking</string>
     <string name="bilingual_finishing">Finishing the last translation…</string>
     <string name="bilingual_error">Translation interrupted. Tap Start to reconnect.</string>
@@ -64,4 +64,7 @@
     <string name="bilingual_language_cs">Czech</string>
     <string name="bilingual_language_fil">Filipino</string>
     <string name="bilingual_language_fa">Persian</string>
+    <string name="bilingual_original_only">Original only</string>
+    <string name="bilingual_fixed_hint">Translate %1$s into %2$s; transcribe %2$s only. Unrecognized speech is ignored.</string>
+    <string name="bilingual_fixed_unavailable">This service cannot record both languages for this one-way mode. Choose other languages or automatic mode.</string>
 </resources>

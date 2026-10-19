@@ -17,6 +17,7 @@ import com.we.meet.ui.theme.Dimens
 /** Only complete, retained audio is offered for replay. */
 @Composable
 internal fun BilingualReplayButton(state: BilingualState, rowId: String, onReplay: (String) -> Unit) {
+    if (state.rows.any { it.id == rowId && it.transcriptOnly }) return
     if (rowId !in state.replayable) return
     TextButton(
         onClick = { onReplay(rowId) },

@@ -127,6 +127,12 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                 color = if (state.phase == BilingualPhase.ERROR || permissionDenied || state.replayError && !state.active) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
             if (state.audioOmitted) Text(stringResource(R.string.bilingual_audio_omitted),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (!state.supportsFixedTranscription) Text(stringResource(R.string.bilingual_fixed_unavailable),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            if (state.fixedSource != null) Text(stringResource(R.string.bilingual_fixed_hint,
+                stringResource(BilingualLanguages.label(requireNotNull(state.fixedSource))),
+                stringResource(BilingualLanguages.label(BilingualLanguages.opposite(state.pair, requireNotNull(state.fixedSource))))),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (facing) {
                 BilingualFaceToFace(state, onReplay = controller::replay, modifier = Modifier.weight(1f).fillMaxWidth())
             } else if (state.rows.isEmpty()) {
@@ -169,7 +175,7 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                         }
                     },
                     enabled = state.phase != BilingualPhase.FINISHING && (state.active ||
-                        state.unavailableReason == null && state.voiceConfig?.enabled != false && state.voiceConfig?.voices?.isEmpty() != true),
+                        state.unavailableReason == null && state.supportsFixedTranscription && state.voiceConfig?.enabled != false && state.voiceConfig?.voices?.isEmpty() != true),
                     modifier = Modifier.weight(1f).height(Dimens.ButtonHeight),
                 ) { Text(stringResource(if (state.active) R.string.bilingual_stop else R.string.bilingual_start)) }
             }

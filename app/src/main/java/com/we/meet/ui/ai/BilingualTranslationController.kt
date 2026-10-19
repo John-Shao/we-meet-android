@@ -25,7 +25,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Semaphore
 import org.json.JSONObject
 
-internal data class BilingualRow(val id: String, val source: String, val text: String, val sourceLanguage: String, val targetLanguage: String) {
+internal data class BilingualRow(val id: String, val source: String, val text: String, val sourceLanguage: String, val targetLanguage: String,
+    val transcriptOnly: Boolean = false) {
     override fun toString() = "BilingualRow(<private>)"
 }
 
@@ -76,6 +77,8 @@ internal data class BilingualState(
     val voiceConfig: com.we.meet.data.api.TranslationVoiceConfig? = null,
 ) {
     val active get() = phase in setOf(BilingualPhase.CONNECTING, BilingualPhase.LISTENING, BilingualPhase.SPEAKING, BilingualPhase.FINISHING)
+    val supportsFixedTranscription get() = fixedSource == null ||
+        BilingualLanguages.opposite(pair, requireNotNull(fixedSource)) in voiceConfig?.fixedTranscriptionLanguages.orEmpty()
     override fun toString() = "BilingualState(<private>)"
 }
 
@@ -202,6 +205,7 @@ internal class BilingualTranslationController(
 
     fun start() {
         if (active != null || !authorized() || mutable.value.unavailableReason != null || mutable.value.voiceConfig?.enabled == false) return
+        if (!mutable.value.supportsFixedTranscription) return
         mutable.update { it.copy(voice = BilingualVoices.resolve(it.voice, it.voiceConfig)) }
         if (mutable.value.voice.isEmpty()) return
         stopReplay()
@@ -419,6 +423,7 @@ internal class BilingualTranslationController(
             check(!closed.get() && authorized())
             val endpoint = java.net.URI(ticket.url)
             check(ticket.protocolVersion == 2 && ticket.ticket.isNotBlank() && ticket.ticket.length <= 2048)
+            if (ticket.recordOtherLanguage != (choices.fixedSource != null)) failed(BilingualFailure.PROTOCOL_ERROR)
             check(endpoint.scheme == "wss" && !endpoint.host.isNullOrBlank() && endpoint.rawUserInfo == null &&
                 endpoint.rawQuery == null && endpoint.rawFragment == null && endpoint.path == "/capture-translation")
             stage = "websocket_transport"
@@ -434,9 +439,23 @@ internal class BilingualTranslationController(
                         "ready" -> {
                             check(event.getInt("protocol_version") == 2)
                             check(event.getInt("input_sample_rate") == 16000 && event.getInt("output_sample_rate") == 24000)
+                            if (event.optBoolean("record_other_language", false) != ticket.recordOtherLanguage) failed(BilingualFailure.PROTOCOL_ERROR)
                             ready.complete(Unit)
                         }
-                        "language_unknown" -> mutable.update { it.copy(unknownLanguage = true) }
+                        "language_unknown" -> if (choices.fixedSource == null) mutable.update { it.copy(unknownLanguage = true) }
+                        "transcription" -> {
+                            check(choices.fixedSource != null && ticket.recordOtherLanguage)
+                            val language = event.getString("source_language")
+                            if (language != BilingualLanguages.opposite(pair, requireNotNull(choices.fixedSource))) continue
+                            val original = event.getString("source").trim()
+                            check(original.length <= 20000)
+                            if (original.isEmpty()) continue
+                            val row = BilingualRow("$sessionId:${event.getString("id")}", original, "", language, language, transcriptOnly = true)
+                            mutable.update { value -> value.copy(rows = (value.rows.filterNot { it.id == row.id } + row).takeLast(100), unknownLanguage = false) }
+                            if (row.id !in rowOrder && rowOrder.size >= 100) rowOrder.remove(rowOrder.keys.first())
+                            recording?.put(com.we.meet.feature.assistant.history.AssistantHistoryRow(row.id,
+                                rowOrder.getOrPut(row.id) { nextRowOrder++ }, "transcription", original, sourceLanguage = language))
+                        }
                         "translation" -> {
                             val sourceLanguage = event.getString("source_language")
                             val targetLanguage = BilingualLanguages.opposite(pair, sourceLanguage)

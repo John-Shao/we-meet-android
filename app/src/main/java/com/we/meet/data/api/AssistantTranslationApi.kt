@@ -15,7 +15,8 @@ data class AssistantTranslationPair(
 
 @JsonClass(generateAdapter = true)
 data class AssistantTranslationTicket(val url: String, val ticket: String,
-    @Json(name = "protocol_version") val protocolVersion: Int = 1) {
+    @Json(name = "protocol_version") val protocolVersion: Int = 1,
+    @Json(name = "record_other_language") val recordOtherLanguage: Boolean = false) {
     override fun toString() = "AssistantTranslationTicket(<private>)"
 }
 
@@ -31,6 +32,7 @@ data class TranslationVoiceConfig(
     val enabled: Boolean = true,
     val reason: String? = null,
     val languages: List<String> = emptyList(),
+    @Json(name = "fixed_transcription_languages") val fixedTranscriptionLanguages: List<String> = emptyList(),
 )
 
 interface AssistantTranslationApi {
@@ -50,4 +52,5 @@ data class AssistantTranslationRequest(
     @Json(name = "fixed_source") val fixedSource: String? = null,
     val voice: String,
     @Json(name = "protocol_version") val protocolVersion: Int = 2,
+    @Json(name = "record_other_language") val recordOtherLanguage: Boolean = fixedSource != null,
 )

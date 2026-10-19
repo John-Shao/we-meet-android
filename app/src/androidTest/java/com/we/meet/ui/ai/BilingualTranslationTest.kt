@@ -19,6 +19,63 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class BilingualTranslationTest {
+    @Test fun fixedModeRecordsOriginalOnlyAndSilentlyIgnoresUnknownSpeech() {
+        val f = Fixture()
+        try {
+            waitFor { f.controller.state.value.voiceConfig != null }
+            main { f.controller.fixedSource("en"); f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready(recordOtherLanguage = true)
+            waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
+            assertEquals(true, f.api.selected?.recordOtherLanguage)
+            f.wire!!.listener.message(JSONObject().put("type", "transcription").put("id", "asr:one")
+                .put("source_language", "zh").put("source", "Original Chinese").toString())
+            f.wire!!.listener.message("{\"type\":\"language_unknown\"}")
+            f.wire!!.listener.message(JSONObject().put("type", "transcription").put("id", "asr:other")
+                .put("source_language", "ja").put("source", "Unrecognized language").toString())
+            waitFor { f.controller.state.value.rows.size == 1 }
+            main {
+                val row = f.controller.state.value.rows.single()
+                assertTrue(row.transcriptOnly)
+                assertEquals("Original Chinese", row.source)
+                assertEquals("", row.text)
+                f.controller.replay(row.id)
+                assertTrue(f.controller.state.value.replayable.isEmpty())
+                assertFalse(f.controller.state.value.unknownLanguage)
+                assertTrue(f.output.played.isEmpty())
+            }
+            f.wire!!.listener.message(JSONObject().put("type", "translation").put("id", "english")
+                .put("source_language", "en").put("target_language", "zh")
+                .put("source", "Hello").put("text", "Translated Chinese").toString())
+            waitFor { f.controller.state.value.rows.size == 2 }
+            assertFalse(f.controller.state.value.rows.last().transcriptOnly)
+        } finally { main { f.controller.close() } }
+    }
+
+    @Test fun unsupportedRecordOnlyCapabilityCannotStartAPaidSession() {
+        val f = Fixture()
+        try {
+            waitFor { f.controller.state.value.voiceConfig != null }
+            f.api.config = f.controller.state.value.voiceConfig!!.copy(fixedTranscriptionLanguages = emptyList())
+            main { f.controller.refreshVoices() }
+            waitFor { f.controller.state.value.voiceConfig!!.fixedTranscriptionLanguages.isEmpty() }
+            main { f.controller.fixedSource("en"); f.controller.start() }
+            assertEquals(0, f.api.allocations.get())
+            assertEquals(BilingualPhase.IDLE, f.controller.state.value.phase)
+        } finally { main { f.controller.close() } }
+    }
+
+    @Test fun oldGatewayReadyCannotSilentlyDowngradeTheNewFixedMode() {
+        val f = Fixture()
+        try {
+            waitFor { f.controller.state.value.voiceConfig != null }
+            main { f.controller.fixedSource("en"); f.controller.start() }
+            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.controller.state.value.phase == BilingualPhase.ERROR }
+            assertEquals(BilingualFailure.PROTOCOL_ERROR, f.controller.state.value.failure)
+            assertFalse(f.opened)
+        } finally { main { f.controller.close() } }
+    }
+
     @Test fun disabledOrIncompatibleConfigurationPreventsTicketAllocation() {
         for (version in listOf(1, 2)) {
             val f = Fixture()
@@ -41,8 +98,9 @@ class BilingualTranslationTest {
     @Test fun fixedDirectionIsPassedToGatewayAndLockedUntilTheSessionStops() {
         val f = Fixture()
         try {
+            waitFor { f.controller.state.value.voiceConfig != null }
             main { f.controller.fixedSource("en"); f.controller.voice("Ethan"); f.controller.start() }
-            waitFor { f.wire != null }; f.wire!!.ready()
+            waitFor { f.wire != null }; f.wire!!.ready(recordOtherLanguage = true)
             waitFor { f.controller.state.value.phase == BilingualPhase.LISTENING }
             assertEquals("Ethan", f.selectedVoice)
             assertEquals("en", f.fixedSource)
@@ -278,12 +336,15 @@ class BilingualTranslationTest {
         }
         fun releaseAcks() { holdWrites = false; bufferedBytes.set(0); dropAcks = false; repeat(heldAcks.getAndSet(0)) { listener.message("{\"type\":\"ack\"}") } }
         override fun close() { closed.set(true) }
-        fun ready() { listener.opened(); listener.message("{\"type\":\"ready\",\"protocol_version\":2,\"input_sample_rate\":16000,\"output_sample_rate\":24000}") }
+        fun ready(recordOtherLanguage: Boolean = false) { listener.opened(); listener.message("{\"type\":\"ready\",\"protocol_version\":2,\"input_sample_rate\":16000,\"output_sample_rate\":24000,\"record_other_language\":$recordOtherLanguage}") }
     }
     private class Api : AssistantTranslationApi {
         val allocations = java.util.concurrent.atomic.AtomicInteger()
         var config: com.we.meet.data.api.TranslationVoiceConfig? = null
-        override suspend fun voiceConfig() = config ?: error("offline")
+        override suspend fun voiceConfig() = config ?: com.we.meet.data.api.TranslationVoiceConfig(
+            "qwen3.8-livetranslate-flash-realtime", "Tina",
+            BilingualVoices.labels.keys.map { com.we.meet.data.api.TranslationVoice(it, it) }, protocolVersion = 2,
+            fixedTranscriptionLanguages = BilingualLanguages.labels.keys.toList())
         var selected: AssistantTranslationRequest? = null
         var wait: CompletableDeferred<Unit>? = null
         var timeout = false
@@ -295,7 +356,7 @@ class BilingualTranslationTest {
             entered.complete(Unit)
             if (timeout) withTimeout(1) { awaitCancellation() }
             if (ignoreCancellation) withContext(NonCancellable) { wait?.await() } else wait?.await()
-            return AssistantTranslationTicket("wss://test/capture-translation", "opaque", 2)
+            return AssistantTranslationTicket("wss://test/capture-translation", "opaque", 2, recordOtherLanguage = pair.recordOtherLanguage)
         }
     }
 

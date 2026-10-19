@@ -45,7 +45,8 @@ internal class BilingualPreferences(context: Context, account: String) {
             protocolVersion = json.optInt("protocol_version", 1),
             enabled = json.optBoolean("enabled", true),
             reason = if (json.isNull("reason")) null else json.optString("reason"),
-            languages = json.optJSONArray("languages")?.let { values -> List(values.length()) { values.getString(it) } } ?: emptyList())
+            languages = json.optJSONArray("languages")?.let { values -> List(values.length()) { values.getString(it) } } ?: emptyList(),
+            fixedTranscriptionLanguages = json.optJSONArray("fixed_transcription_languages")?.let { values -> List(values.length()) { values.getString(it) } } ?: emptyList())
             .takeIf(BilingualVoices::valid)
     }.getOrNull()
 
@@ -56,7 +57,8 @@ internal class BilingualPreferences(context: Context, account: String) {
         prefs.edit().putString("voice-config", JSONObject().put("model", config.model)
             .put("default_voice", config.defaultVoice ?: JSONObject.NULL).put("voices", voices)
             .put("protocol_version", config.protocolVersion).put("enabled", config.enabled)
-            .put("reason", config.reason ?: JSONObject.NULL).put("languages", JSONArray(config.languages)).toString()).apply()
+            .put("reason", config.reason ?: JSONObject.NULL).put("languages", JSONArray(config.languages))
+            .put("fixed_transcription_languages", JSONArray(config.fixedTranscriptionLanguages)).toString()).apply()
     }
 
     fun save(state: BilingualState) {

@@ -14,7 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.we.meet.ui.theme.Dimens
 
-/** Each participant reads all turns in their own language; direction remains automatic. */
+/** Each participant reads translated turns; original-only turns stay on their language panel. */
 @Composable
 internal fun BilingualFaceToFace(state: BilingualState, onReplay: (String) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier) {
@@ -45,7 +45,8 @@ private fun LanguagePanel(state: BilingualState, language: String, modifier: Mod
                             Text(row.forLanguage(language).orEmpty(), style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Normal)
                         }
-                        if (language == row.targetLanguage) BilingualReplayButton(state, row.id, onReplay)
+                        if (row.transcriptOnly) Text(stringResource(com.we.meet.R.string.bilingual_original_only), style = MaterialTheme.typography.labelSmall)
+                        if (!row.transcriptOnly && language == row.targetLanguage) BilingualReplayButton(state, row.id, onReplay)
                     }
                 }
             }

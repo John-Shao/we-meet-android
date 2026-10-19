@@ -9,8 +9,8 @@
     <string name="bilingual_languages">Langues de traduction</string>
     <string name="bilingual_direction_settings">Sens de la traduction</string>
     <string name="bilingual_direction_auto">Détection automatique</string>
-    <string name="bilingual_direction_manual">Définir manuellement</string>
-    <string name="bilingual_direction_hint">Le mode automatique détecte la langue parlée et traduit dans les deux sens. En mode manuel, la traduction se fait de la langue de gauche vers celle de droite ; choisissez les langues ci-dessous.</string>
+    <string name="bilingual_direction_manual">Traduction unidirectionnelle</string>
+    <string name="bilingual_direction_hint">Détecte laquelle des deux langues sélectionnées est parlée et traduit vers l’autre. Les paroles non reconnues sont ignorées.</string>
     <string name="bilingual_display_mode">Mode d’affichage</string>
     <string name="bilingual_language_pair">%1$s ⇄ %2$s</string>
     <string name="bilingual_language_pair_fixed">%1$s → %2$s</string>
@@ -24,7 +24,7 @@
     <string name="bilingual_idle">Prêt quand vous voulez</string>
     <string name="bilingual_connecting">Connexion…</string>
     <string name="bilingual_listening">Écoute · Langue détectée automatiquement</string>
-    <string name="bilingual_listening_fixed">Écoute · %1$s → %2$s</string>
+    <string name="bilingual_listening_fixed">Écoute · %1$s → %2$s · %2$s : original uniquement</string>
     <string name="bilingual_speaking">Lecture de la traduction · Veuillez patienter avant de parler</string>
     <string name="bilingual_finishing">Finalisation de la dernière traduction…</string>
     <string name="bilingual_error">Traduction interrompue. Appuyez sur Démarrer pour vous reconnecter.</string>
@@ -65,4 +65,7 @@
     <string name="bilingual_language_cs">Tchèque</string>
     <string name="bilingual_language_fil">Filipino</string>
     <string name="bilingual_language_fa">Persan</string>
+    <string name="bilingual_original_only">Original uniquement</string>
+    <string name="bilingual_fixed_hint">Traduire %1$s en %2$s ; transcrire uniquement %2$s. La parole non reconnue est ignorée.</string>
+    <string name="bilingual_fixed_unavailable">Ce service ne peut pas enregistrer les deux langues dans ce mode. Choisissez d’autres langues ou le mode automatique.</string>
 </resources>
