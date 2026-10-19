@@ -1,0 +1,52 @@
+{
+  "recorded_at": "2026-10-19T02:36:12.538093+00:00",
+  "kind": "internal-fix-prerelease",
+  "source_branch": "main",
+  "source_commit": "1c6d3df78384b4c7a2f74d0c9f7ff13e80a649b6",
+  "application_id": "com.we.meet",
+  "version_name": "0.3.0-work.8",
+  "version_code": 10,
+  "debuggable": false,
+  "min_android_api": 29,
+  "signature": {
+    "verified": true,
+    "certificate_sha256": "053d9864295c3d3f87b615bacb4872f136bdb1a34af7fe503ca036530141c528",
+    "kind": "existing internal certificate"
+  },
+  "artifact": {
+    "file": "we-meet-0.3.0-work.8-internal.apk",
+    "bytes": 146187176,
+    "sha256": "b5d0a446d46ecb0f7b98bdcbb8bc6d6a5947f7465e0eaecc8b4ba55425a8f14f"
+  },
+  "fix": "Empty-state direction label now reflects automatic or fixed mode and the effective fixed source language",
+  "request_parameters_changed": false,
+  "settings_persistence_changed": false,
+  "audio_path_changed": false,
+  "backend_deployment_changed": false,
+  "validation": {
+    "full_i18n_errors": 0,
+    "design_lint_hook_passed": true,
+    "release_main_and_test_build_passed": true,
+    "existing_device_tests_passed": 2,
+    "device": "Dedicated API 34 emulator-5610",
+    "ci": [
+      {
+        "name": "check-design-tokens",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/John-Shao/we-meet-android/actions/runs/39190535638/job/117862127898",
+        "head_sha": "1c6d3df78384b4c7a2f74d0c9f7ff13e80a649b6"
+      },
+      {
+        "name": "check-translations",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/John-Shao/we-meet-android/actions/runs/39190535633/job/117862127557",
+        "head_sha": "1c6d3df78384b4c7a2f74d0c9f7ff13e80a649b6"
+      }
+    ]
+  },
+  "honor_manual_display_retest_received": false,
+  "bt04_closed_by_this_change": false,
+  "other_session_workspaces_modified": false
+}
