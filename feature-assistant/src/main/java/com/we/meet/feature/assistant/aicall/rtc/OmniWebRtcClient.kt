@@ -1,6 +1,7 @@
 package com.we.meet.feature.assistant.aicall.rtc
 
 import android.content.Context
+import android.content.Intent
 import android.media.AudioManager
 import android.os.SystemClock
 import android.util.Log
@@ -9,6 +10,7 @@ import com.twilio.audioswitch.AudioSwitch
 import com.we.meet.feature.assistant.aicall.model.AiCallAnswer
 import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
 import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
+import com.we.meet.feature.assistant.aicall.model.ScreenShareSizing
 import com.we.meet.feature.assistant.aicall.model.CameraToolHandler
 import com.we.meet.feature.assistant.aicall.model.CameraActionResult
 import com.we.meet.feature.assistant.aicall.model.CameraFeedbackFailure
@@ -85,6 +87,18 @@ class OmniWebRtcClient(
     override val cameraEnabled: Boolean? get() = if (cameraCertain) cameraStarted else null
     override var cameraFront = false
         private set
+
+    // Screen share reuses the single negotiated video sender. Camera and
+    // screen are mutually exclusive; the call layer turns the camera off first.
+    private var screenCapture: ScreenShareCapture? = null
+    private var screenSource: VideoSource? = null
+    private var screenTrack: VideoTrack? = null
+    private var screenStarted = false
+    private var screenStopCallback: (() -> Unit)? = null
+    private var pendingScreenShareUpdate: Pair<Boolean, Boolean>? = null
+    private val screenUpdateEventIds = linkedSetOf<String>()
+    override val screenShareAvailable: Boolean get() = videoSender != null
+    override val screenSharing: Boolean get() = screenStarted
     private var answer: AiCallAnswer? = null
     private var responding = false
     private var outputMuted = false
@@ -264,7 +278,7 @@ class OmniWebRtcClient(
                 outputSuppressed = false
                 updateOutput()
             }
-            "response.done" -> responding = false
+            "response.done" -> { responding = false; flushScreenShareState() }
             "input_audio_buffer.speech_started" -> {
                 publishCameraState()
                 outputSuppressed = true; remoteAudio?.setEnabled(false)
@@ -272,6 +286,10 @@ class OmniWebRtcClient(
             "error" -> {
                 val error = event.optJSONObject("error")
                 Log.w("OmniWebRtc", "Protocol error type=${error?.optString("type")} code=${error?.optString("code")}")
+                if (error != null && screenUpdateEventIds.remove(error.optString("event_id"))) {
+                    Log.w("OmniWebRtc", "Screen share state update rejected; retaining call")
+                    return
+                }
                 val rejected = if (error != null && handshake.ready) responseCreation.rejectedRequest(error) else null
                 if (rejected != null) {
                     // The active provider response and media connection remain valid.
@@ -322,11 +340,99 @@ class OmniWebRtcClient(
             send(JSONObject().put("type", "response.cancel").put("event_id", eventId))
             responding = false
         }
+        flushScreenShareState()
         onAudioLevel(0f)
+    }
+
+    override suspend fun setScreenShareEnabled(
+        enabled: Boolean,
+        resultData: Intent?,
+        onSystemStop: (() -> Unit)?,
+        onVisibilityChanged: ((Boolean) -> Unit)?,
+    ) {
+        if (!enabled) {
+            if (!screenStarted && screenCapture == null) return
+            screenStopCallback = null
+            runCatching { videoSender?.setTrack(null, false) }
+            val capture = screenCapture
+            screenCapture = null
+            if (capture != null) withContext(Dispatchers.IO) { capture.stop() }
+            runCatching { screenTrack?.dispose() }
+            runCatching { screenSource?.dispose() }
+            screenTrack = null
+            screenSource = null
+            // Keep screenStarted true until the resources above are gone:
+            // camera start must not attach a new track while cleanup still
+            // owns the video sender.
+            screenStarted = false
+            return
+        }
+        check(!closed && handshake.ready)
+        check(screenShareAvailable) { "H264 screen encoding unavailable" }
+        check(!screenStarted && screenCapture == null) { "Screen sharing already active" }
+        check(!cameraStarted) { "Stop the camera before sharing the screen" }
+        val consent = checkNotNull(resultData) { "MediaProjection consent missing" }
+        val visibilityListener = onVisibilityChanged
+        val source = factory!!.createVideoSource(true)
+        val track = factory!!.createVideoTrack("omni-screen", source)
+        val size = ScreenShareSizing.forDisplay(context)
+        var captureRef: ScreenShareCapture? = null
+        val capture = ScreenShareCapture(
+            context,
+            checkNotNull(egl).eglBaseContext,
+            onSystemStop = {
+                // The projection was revoked outside the call. Reconcile the
+                // UI first; the owner then calls setScreenShareEnabled(false).
+                dispatch {
+                    if (!closed && screenStarted) {
+                        screenStopCallback?.invoke()
+                    }
+                }
+            },
+            onContentResize = { width, height ->
+                val resized = ScreenShareSizing.fit(width, height)
+                dispatch { captureRef?.changeFormat(resized.width, resized.height) }
+            },
+            onVisibilityChanged = { visible ->
+                dispatch {
+                    if (!closed && screenStarted) {
+                        screenTrack?.setEnabled(visible)
+                        publishScreenShareState(true, visible)
+                        visibilityListener?.invoke(visible)
+                    }
+                }
+            },
+        )
+        captureRef = capture
+        try {
+            capture.start(
+                consent, source.capturerObserver,
+                size.width, size.height, ScreenShareSizing.CAPTURE_FPS,
+            )
+            check(videoSender!!.setTrack(track, false))
+            val parameters = videoSender!!.parameters
+            parameters.encodings.forEach {
+                it.maxFramerate = videoSettings.modelUploadFps
+                it.maxBitrateBps = 1_000_000
+            }
+            videoSender!!.parameters = parameters
+        } catch (error: Exception) {
+            runCatching { videoSender?.setTrack(null, false) }
+            capture.stop()
+            runCatching { track.dispose() }
+            runCatching { source.dispose() }
+            throw error
+        }
+        screenCapture = capture
+        screenSource = source
+        screenTrack = track
+        screenStopCallback = onSystemStop
+        screenStarted = true
     }
 
     override suspend fun setCameraEnabled(enabled: Boolean) {
         check(!closed && handshake.ready)
+        if (enabled) check(!screenStarted && screenCapture == null) { "Stop screen sharing before opening the camera" }
         if (cameraCertain && enabled == cameraStarted && (enabled || !captureActive)) return
         if (!enabled) {
             cameraCertain = false
@@ -386,7 +492,36 @@ class OmniWebRtcClient(
             cameraStarted = true; cameraCertain = true
         } finally { firstVideoFrame = null }
     }
-    override fun publishCameraState() { answer?.let { tools?.publishState(it.instructions, cameraEnabled) } }
+    override fun publishCameraState() {
+        if (!screenStarted) answer?.let { tools?.publishState(it.instructions, cameraEnabled) }
+    }
+
+    override fun publishScreenShareState(sharing: Boolean, visible: Boolean) {
+        if (closed) return
+        pendingScreenShareUpdate = sharing to visible
+        // Changing tools while a response is streaming is rejected by the
+        // provider; apply the latest state when that response finishes.
+        if (!responding) flushScreenShareState()
+    }
+
+    private fun flushScreenShareState() {
+        val update = pendingScreenShareUpdate ?: return
+        pendingScreenShareUpdate = null
+        val config = answer ?: return
+        val (sharing, visible) = update
+        val instructions = tools?.instructions(config.instructions, sharing, visible)
+            ?: OmniCallTools.screenShareInstructions(config.instructions, sharing, visible)
+        val session = JSONObject().put("instructions", instructions)
+        if (tools != null) session.put("tools", tools.definitions(sharing))
+        val eventId = UUID.randomUUID().toString()
+        val event = JSONObject().put("type", "session.update").put("session", session).put("event_id", eventId)
+        if (screenUpdateEventIds.size > 32) screenUpdateEventIds.remove(screenUpdateEventIds.first())
+        screenUpdateEventIds.add(eventId)
+        runCatching { send(event) }.onFailure {
+            screenUpdateEventIds.remove(eventId)
+            Log.w("OmniWebRtc", "Screen share state sync failed")
+        }
+    }
 
     private fun cameraFailed() {
         firstVideoFrame?.completeExceptionally(IllegalStateException("Camera capture failed"))
@@ -513,6 +648,10 @@ class OmniWebRtcClient(
             runCatching { it.dispose() }
         }
         channels.clear()
+        screenStarted = false
+        screenStopCallback = null
+        runCatching { screenCapture?.stop() }
+        screenCapture = null
         runCatching { peer?.close() }
         cameraFrames.close()
         runCatching { capturer?.stopCapture() }
@@ -524,6 +663,8 @@ class OmniWebRtcClient(
         runCatching { audioSource?.dispose() }
         runCatching { videoTrack?.dispose() }
         runCatching { videoSource?.dispose() }
+        runCatching { screenTrack?.dispose() }
+        runCatching { screenSource?.dispose() }
         runCatching { textureHelper?.dispose() }
         runCatching { factory?.dispose() }
         runCatching { audioModule?.release() }

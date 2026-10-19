@@ -1,6 +1,7 @@
 package com.we.meet.feature.assistant.aicall.vm
 
 import android.content.Context
+import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,6 +30,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 
 /** One-to-one calls default to direct AOQ; no meeting room or agent is created. */
@@ -46,6 +49,10 @@ class AiCallViewModel(
         private set
     private var connectJob: Job? = null
     private var cameraJob: Job? = null
+    private var screenShareJob: Job? = null
+    private val screenShareMutex = Mutex()
+    private var screenShareToken = 0
+    private var screenShareRestoreCamera = false
     private var foreground: AssistantSessionLease? = null
     private var cameraController: CameraActionController? = null
     private var pageVisible = false
@@ -71,7 +78,7 @@ class AiCallViewModel(
         val transcriptSessionId = java.util.UUID.randomUUID().toString()
         recording = history?.begin("call")
         val currentRecording = recording
-        _state.update { it.copy(transcriptSessionId = transcriptSessionId, transcriptRows = emptyList(), transcriptTimestamps = emptyMap(), status = AiCallStatus.Connecting(ConnectingStep.Connecting), isMicMuted = false, isOutputMuted = false, cameraResult = null) }
+        _state.update { it.copy(transcriptSessionId = transcriptSessionId, transcriptRows = emptyList(), transcriptTimestamps = emptyMap(), status = AiCallStatus.Connecting(ConnectingStep.Connecting), isMicMuted = false, isOutputMuted = false, cameraResult = null, isScreenSharing = false, isScreenShareVisible = true, screenSharePending = false) }
         val makeClient = if (selection.transport == AiCallTransport.AOQ) ::OmniAoqClient else ::OmniWebRtcClient
         lateinit var client: OmniCallClient
         var owner: CameraActionController? = null
@@ -100,6 +107,8 @@ class AiCallViewModel(
                 android.util.Log.i("OmniCamera", "source=Voice action=$action actual=${client.cameraEnabled}")
                 val result = if (rtcClient !== client || _state.value.status !is AiCallStatus.Active)
                     cameraResult("cancelled", client.cameraEnabled, false)
+                else if (_state.value.isScreenSharing && request is CameraToolRequest.SetEnabled && request.enabled)
+                    cameraResult("cancelled", client.cameraEnabled, false)
                 else when (request) {
                     CameraToolRequest.GetState -> checkNotNull(owner).query()
                     is CameraToolRequest.SetEnabled -> checkNotNull(owner).requestCameraEnabled(request.enabled, CameraActionSource.Voice)
@@ -119,7 +128,7 @@ class AiCallViewModel(
             } },
             { if (rtcClient === client) endCall() },
             PhotoToolHandler { question ->
-                if (rtcClient !== client || _state.value.status !is AiCallStatus.Active || sessionId == null)
+                if (rtcClient !== client || _state.value.status !is AiCallStatus.Active || sessionId == null || _state.value.isScreenSharing)
                     cameraResult("cancelled", client.cameraEnabled, false)
                 else {
                     _state.update { it.copy(photoPending = true, cameraResult = null) }
@@ -157,6 +166,7 @@ class AiCallViewModel(
                 foreground = AssistantForegroundSession.start(appContext, AssistantSessionKind.CALL,
                     camera = _state.value.mode == AiCallMode.Video,
                     stopped = { endCall(R.string.assistant_disconnected_ended) })
+                    .also { it.onScreenShareStop { stopScreenShare() } }
                 client.connect { sdp ->
                     _state.update { it.copy(status = AiCallStatus.Connecting(ConnectingStep.Configuring)) }
                     val answer = agentRepo.exchangeOffer(AiCallOffer(sdp = sdp, profile_code = config.callProfile()!!.code, voice_id = selection.voiceId, prompt_id = selection.promptId, transport = selection.transport.name.lowercase(), photo_qa = true))
@@ -172,7 +182,7 @@ class AiCallViewModel(
                 }
                 if (_state.value.mode == AiCallMode.Video) withTimeout(10_000) { client.setCameraEnabled(true) }
                 if (_state.value.mode == AiCallMode.Video) client.publishCameraState()
-                _state.update { it.copy(status = AiCallStatus.Active(it.mode), isCameraEnabled = it.mode == AiCallMode.Video, cameraFront = client.cameraFront) }
+                _state.update { it.copy(status = AiCallStatus.Active(it.mode), isCameraEnabled = it.mode == AiCallMode.Video, cameraFront = client.cameraFront, isScreenSharing = false, isScreenShareVisible = true, screenSharePending = false) }
                 updateControls()
             } catch (error: Exception) {
                 if (error is CancellationException && error !is TimeoutCancellationException) return@launch
@@ -195,16 +205,21 @@ class AiCallViewModel(
         connectJob = null
         cameraJob?.cancel()
         cameraJob = null
+        screenShareJob?.cancel()
+        screenShareJob = null
+        screenShareToken++
+        screenShareRestoreCamera = false
         closeClient()
         _state.update {
             it.copy(status = AiCallStatus.Ended, isCameraEnabled = false, cameraPending = false, photoPending = false, cameraPermissionRequest = null,
+                isScreenSharing = false, isScreenShareVisible = true, screenSharePending = false,
                 cameraFront = false, isMicMuted = false, micPending = false,
                 agentSpeaking = false, agentAudioLevel = 0f, errorToastRes = reasonRes)
         }
     }
 
     fun toggleMode() {
-        if (_state.value.cameraPending) return
+        if (_state.value.cameraPending || _state.value.isScreenSharing || _state.value.screenSharePending) return
         val next = if (_state.value.mode == AiCallMode.Voice) AiCallMode.Video else AiCallMode.Voice
         when (_state.value.status) {
             is AiCallStatus.Connecting -> Unit
@@ -217,7 +232,163 @@ class AiCallViewModel(
         }
     }
 
-    fun setPageVisible(visible: Boolean) { pageVisible = visible }
+    /**
+     * Publishes the display chosen in the system MediaProjection dialog.
+     * Camera and screen share share one video track, so the camera is turned
+     * off first; the foreground service gains the mediaProjection type before
+     * the transport calls getMediaProjection() (required on Android 14+).
+     */
+    fun startScreenShare(resultData: Intent) {
+        if (!com.we.meet.feature.assistant.BuildConfig.AI_CALL_SCREEN_SHARE) return
+        val client = rtcClient ?: return
+        val state = _state.value
+        if (state.status !is AiCallStatus.Active) return
+        if (state.isScreenSharing || state.screenSharePending) return
+        if (!client.screenShareAvailable) {
+            _state.update { it.copy(errorToastRes = R.string.assistant_screen_share_unavailable) }
+            return
+        }
+        // Mark the transition synchronously: two consent results (or a
+        // double tap) must not start two sessions or race the service upgrade.
+        val token = ++screenShareToken
+        _state.update { it.copy(screenSharePending = true, isScreenShareVisible = true) }
+        screenShareJob = viewModelScope.launch {
+            screenShareMutex.withLock {
+                var wasCameraEnabled = false
+                var serviceUpgraded = false
+                try {
+                    if (token != screenShareToken || rtcClient !== client) return@withLock
+                    wasCameraEnabled = _state.value.isCameraEnabled
+                    if (wasCameraEnabled &&
+                        !requestCameraEnabled(false, CameraActionSource.Button).success
+                    ) {
+                        throw IllegalStateException("Camera could not be stopped")
+                    }
+                    // Remember the pre-share state before any later failure so
+                    // a cancelled/failed start can still put the camera back.
+                    screenShareRestoreCamera = wasCameraEnabled
+                    val lease = checkNotNull(foreground) { "Call foreground service is not running" }
+                    lease.screenShare(true)
+                    serviceUpgraded = true
+                    if (token != screenShareToken || rtcClient !== client) {
+                        runCatching { lease.screenShare(false) }
+                        restoreCameraAfterScreenShare(client)
+                        return@withLock
+                    }
+                    try {
+                        client.setScreenShareEnabled(
+                        true,
+                        resultData,
+                        onSystemStop = { screenShareRevoked(client) },
+                        onVisibilityChanged = { visible ->
+                            if (rtcClient === client) {
+                                _state.update { it.copy(isScreenShareVisible = visible) }
+                            }
+                        },
+                    )
+                    } catch (error: Exception) {
+                        runCatching { lease.screenShare(false) }
+                        serviceUpgraded = false
+                        throw error
+                    }
+                    if (token != screenShareToken || rtcClient !== client) {
+                        runCatching { client.setScreenShareEnabled(false) }
+                        runCatching { lease.screenShare(false) }
+                        restoreCameraAfterScreenShare(client)
+                        return@withLock
+                    }
+                    _state.update {
+                        it.copy(
+                            isScreenSharing = true,
+                            mode = AiCallMode.Voice,
+                            status = AiCallStatus.Active(AiCallMode.Voice),
+                        )
+                    }
+                    client.publishScreenShareState(true)
+                    updateControls()
+                    android.util.Log.i("OmniScreen", "source=MediaProjection action=start")
+                } catch (error: Exception) {
+                    if (error is CancellationException && error !is TimeoutCancellationException) throw error
+                    android.util.Log.w("OmniScreen", "start failed: ${error.javaClass.simpleName}")
+                    if (serviceUpgraded) runCatching { foreground?.screenShare(false) }
+                    if (token == screenShareToken && rtcClient === client) {
+                        _state.update { it.copy(errorToastRes = R.string.assistant_screen_share_failed) }
+                        if (wasCameraEnabled && pageVisible) {
+                            screenShareRestoreCamera = false
+                            runCatching { requestCameraEnabled(true, CameraActionSource.Button) }
+                        }
+                    }
+                } finally {
+                    if (token == screenShareToken && rtcClient === client) {
+                        _state.update { it.copy(screenSharePending = false) }
+                    }
+                }
+            }
+        }
+    }
+
+    fun stopScreenShare() {
+        val client = rtcClient ?: return
+        if (!_state.value.isScreenSharing && !client.screenSharing && !_state.value.screenSharePending) return
+        val token = ++screenShareToken
+        screenShareJob = viewModelScope.launch {
+            screenShareMutex.withLock {
+                runCatching { client.setScreenShareEnabled(false) }
+                runCatching { foreground?.screenShare(false) }
+                if (rtcClient === client) {
+                    _state.update { it.copy(isScreenSharing = false, isScreenShareVisible = true, screenSharePending = false) }
+                    client.publishScreenShareState(false)
+                    updateControls()
+                    if (token == screenShareToken) restoreCameraAfterScreenShare(client)
+                    android.util.Log.i("OmniScreen", "source=Button action=stop")
+                }
+            }
+        }
+    }
+
+    /** MediaProjection was revoked outside the app; the call itself continues. */
+    private fun screenShareRevoked(client: OmniCallClient) {
+        if (rtcClient !== client) return
+        ++screenShareToken
+        android.util.Log.i("OmniScreen", "source=System action=stop")
+        _state.update { it.copy(isScreenSharing = false, isScreenShareVisible = true, screenSharePending = false) }
+        screenShareJob = viewModelScope.launch {
+            screenShareMutex.withLock {
+                runCatching { client.setScreenShareEnabled(false) }
+                runCatching { foreground?.screenShare(false) }
+                if (rtcClient === client) {
+                    client.publishScreenShareState(false)
+                    updateControls()
+                    restoreCameraAfterScreenShare(client)
+                }
+            }
+        }
+    }
+
+    /** Reopens the camera only after the user is back on the call screen. */
+    private fun restoreCameraAfterScreenShare(client: OmniCallClient) {
+        if (!screenShareRestoreCamera) return
+        if (client.screenSharing) return
+        if (!pageVisible || _state.value.status !is AiCallStatus.Active) return
+        screenShareRestoreCamera = false
+        viewModelScope.launch {
+            if (rtcClient === client && !_state.value.isScreenSharing) {
+                requestCameraEnabled(true, CameraActionSource.Button)
+            }
+        }
+    }
+
+    fun setPageVisible(visible: Boolean) {
+        pageVisible = visible
+        if (visible && screenShareRestoreCamera &&
+            !_state.value.isScreenSharing && !_state.value.screenSharePending &&
+            rtcClient?.screenSharing != true &&
+            _state.value.status is AiCallStatus.Active
+        ) {
+            screenShareRestoreCamera = false
+            viewModelScope.launch { requestCameraEnabled(true, CameraActionSource.Button) }
+        }
+    }
     fun selectMode(mode: AiCallMode) {
         if (_state.value.status !is AiCallStatus.Active && _state.value.status !is AiCallStatus.Connecting)
             _state.update { it.copy(mode = mode) }
@@ -226,6 +397,9 @@ class AiCallViewModel(
     suspend fun requestCameraEnabled(enabled: Boolean, source: CameraActionSource): CameraActionResult {
         val started = android.os.SystemClock.elapsedRealtime()
         val client = rtcClient
+        if (enabled && _state.value.isScreenSharing) {
+            return cameraResult("cancelled", client?.cameraEnabled, false)
+        }
         val result = if (client == null || _state.value.status !is AiCallStatus.Active)
             cameraResult("cancelled", client?.cameraEnabled, false)
         else checkNotNull(cameraController).requestCameraEnabled(enabled, source)
@@ -267,7 +441,7 @@ class AiCallViewModel(
     }
 
     fun flipCamera() {
-        if (!_state.value.isCameraEnabled || _state.value.cameraPending) return
+        if (!_state.value.isCameraEnabled || _state.value.cameraPending || _state.value.isScreenSharing) return
         val client = rtcClient ?: return
         _state.update { it.copy(cameraPending = true) }
         cameraJob = viewModelScope.launch {

@@ -151,4 +151,26 @@
     <string name="assistant_call_upload_fps">Bildrate der Modellübertragung</string>
     <string name="assistant_call_fps_hint">Vorschau: 10–30 fps. Übertragung: 1–10 fps. Unabhängig für AOQ und WebRTC gespeichert; gilt ab dem nächsten Gespräch. Die tatsächliche Bildrate hängt von Gerät und Netzwerk ab.</string>
     <string name="assistant_call_settings_title">Anrufeinstellungen</string>
+    <string name="assistant_screen_share_start">Bildschirm teilen</string>
+    <string name="assistant_screen_share_stop">Teilen beenden</string>
+    <string name="assistant_screen_share_starting">Bildschirmfreigabe wird gestartet…</string>
+    <string name="assistant_screen_share_active">Bildschirm wird geteilt</string>
+    <string name="assistant_screen_share_active_hint">Der KI-Assistent sieht diesen Bildschirm. Öffnen Sie die App, die Sie zeigen möchten.</string>
+    <string name="assistant_screen_share_go_home">App öffnen</string>
+    <string name="assistant_screen_share_failed">Bildschirmfreigabe konnte nicht gestartet werden. Bitte erneut versuchen.</string>
+    <string name="assistant_screen_share_unavailable">Bildschirmfreigabe ist mit dieser Verbindung nicht verfügbar.</string>
+    <string name="assistant_background_screen_share">Bildschirmfreigabe</string>
+    <string name="assistant_background_stop_share">Teilen beenden</string>
+    <string name="assistant_screen_share_privacy">Der Bildschirminhalt wird an den KI-Dienst gesendet.</string>
+    <string name="assistant_screen_share_intro_title">Bildschirm teilen?</string>
+    <string name="assistant_screen_share_intro_message">Der KI-Assistent kann Ihren Bildschirm sehen; der Bildschirminhalt wird an den KI-Dienst gesendet. Sie können die Freigabe jederzeit beenden.</string>
+    <string name="assistant_screen_share_intro_camera_message">Die Kamera ist während der Freigabe ausgeschaltet und wird danach wieder eingeschaltet.</string>
+    <string name="assistant_screen_share_notifications_off">Benachrichtigungen sind deaktiviert. Sie können die Freigabe auch über die Systemanzeige für Bildschirmfreigabe beenden.</string>
+    <string name="assistant_screen_share_ended">Bildschirmfreigabe beendet.</string>
+    <string name="assistant_screen_share_ai_viewing">Die KI sieht Ihren Bildschirm</string>
+    <string name="assistant_screen_share_hidden">Geteilte App ist ausgeblendet</string>
+    <string name="assistant_screen_share_hidden_hint">Die geteilte App ist im Hintergrund, daher sind die Bilder pausiert. Kehren Sie zu ihr zurück, um fortzufahren.</string>
+    <string name="assistant_screen_share_video_disabled">Beenden Sie die Bildschirmfreigabe, um die Kamera zu verwenden</string>
+    <string name="assistant_screen_share_continue">Bildschirm teilen</string>
+    <string name="assistant_screen_share_cancel">Abbrechen</string>
 </resources>

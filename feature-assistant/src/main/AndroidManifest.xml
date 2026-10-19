@@ -15,6 +15,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Screen sharing: API 34+ requires this type permission, and the
+         mediaProjection foreground service must be live before
+         MediaProjectionManager.getMediaProjection(). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <application>
         <provider android:name="com.we.meet.feature.assistant.history.AssistantHistoryFileProvider"
             android:authorities="${applicationId}.assistant.history.files"
@@ -23,7 +27,7 @@
         </provider>
         <service android:name="com.we.meet.feature.assistant.background.AssistantForegroundService"
             android:exported="false"
-            android:foregroundServiceType="microphone|camera|mediaPlayback" />
+            android:foregroundServiceType="microphone|camera|mediaPlayback|mediaProjection" />
     </application>
 
 </manifest>

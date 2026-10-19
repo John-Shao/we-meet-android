@@ -50,6 +50,7 @@ fun BottomControls(
      */
     onDark: Boolean = false,
     cameraPending: Boolean = false,
+    screenSharing: Boolean = false,
 ) {
     val isActive = status is AiCallStatus.Active
     val isConnecting = status is AiCallStatus.Connecting
@@ -81,11 +82,13 @@ fun BottomControls(
             onClick = onPrimaryAction,
         )
 
-        // Right — video toggle: always visible, disabled while connecting.
+        // Right — video toggle: always visible, disabled while connecting or
+        // while the single video track is publishing the screen.
         VideoToggleButton(
             controls = controls,
             selected = videoSelected,
-            enabled = !isConnecting && !cameraPending,
+            enabled = !isConnecting && !cameraPending && !screenSharing,
+            screenSharing = screenSharing,
             onClick = onToggleVideoMode,
         )
     }
@@ -181,6 +184,7 @@ private fun VideoToggleButton(
     controls: AiCallControlColors,
     selected: Boolean,
     enabled: Boolean,
+    screenSharing: Boolean,
     onClick: () -> Unit,
 ) {
     val bg = when {
@@ -194,10 +198,18 @@ private fun VideoToggleButton(
         else -> controls.onSurface
     }
     val actionLabel = stringResource(
-        if (selected) R.string.assistant_cd_switch_to_voice else R.string.assistant_cd_switch_to_video,
+        when {
+            screenSharing -> R.string.assistant_screen_share_video_disabled
+            selected -> R.string.assistant_cd_switch_to_voice
+            else -> R.string.assistant_cd_switch_to_video
+        },
     )
     val stateLabel = stringResource(
-        if (selected) R.string.assistant_state_video else R.string.assistant_state_voice,
+        when {
+            screenSharing -> R.string.assistant_screen_share_active
+            selected -> R.string.assistant_state_video
+            else -> R.string.assistant_state_voice
+        },
     )
     Box(
         modifier = Modifier

@@ -3,6 +3,7 @@ package com.we.meet.feature.assistant.aicall.rtc
 import com.we.meet.feature.assistant.aicall.model.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.*
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
@@ -400,5 +401,34 @@ class OmniCallToolsTest {
         assertTrue(held.last())
         tools.accept(JSONObject("""{"type":"input_audio_buffer.speech_started"}"""))
         assertFalse(held.last()); tools.close()
+    }
+
+    @Test fun screenShareRemovesCameraAndPhotoToolsAndTellsTheModelWhatItSees() {
+        fun names(tools: JSONArray): List<String> =
+            (0 until tools.length()).map { tools.getJSONObject(it).getJSONObject("function").getString("name") }
+
+        assertEquals(
+            listOf("set_camera_enabled", "get_camera_state", "end_call", "take_photo"),
+            names(OmniCallTools.definitions(cameraEnabled = true, endCallEnabled = true, photoEnabled = true)),
+        )
+        assertEquals(
+            listOf("end_call"),
+            names(OmniCallTools.definitions(cameraEnabled = false, endCallEnabled = true, photoEnabled = false)),
+        )
+
+        val visible = OmniCallTools.instructions(
+            "scene", cameraEnabled = false, endCallEnabled = true,
+            rules = mapOf("end_call" to "hangup rule"), photoEnabled = false,
+            screenSharing = true, screenVisible = true,
+        )
+        assertTrue(visible.contains("sharing their screen"))
+        assertFalse(visible.contains("camera rule"))
+        val hidden = OmniCallTools.instructions(
+            "scene", cameraEnabled = false, endCallEnabled = true,
+            rules = mapOf("end_call" to "hangup rule"), photoEnabled = false,
+            screenSharing = true, screenVisible = false,
+        )
+        assertTrue(hidden.contains("currently hidden"))
+        assertEquals("scene\nhangup rule", OmniCallTools.instructions("scene", false, true, mapOf("end_call" to "hangup rule")))
     }
 }

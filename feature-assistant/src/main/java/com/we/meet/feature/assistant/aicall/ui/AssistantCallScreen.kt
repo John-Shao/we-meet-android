@@ -9,8 +9,11 @@ import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.media.projection.MediaProjectionConfig
+import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
@@ -40,6 +43,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -59,6 +64,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
@@ -68,6 +75,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.feature.assistant.AssistantDeps
+import com.we.meet.feature.assistant.BuildConfig
 import com.we.meet.feature.assistant.aicall.rtc.AoqPlaybackMode
 import com.we.meet.feature.assistant.aicall.model.AiCallTransport
 import com.we.meet.feature.assistant.aicall.model.AiCallMode
@@ -78,9 +86,11 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Surface
 import com.we.meet.feature.assistant.aicall.ui.components.BottomControls
+import com.we.meet.feature.assistant.aicall.ui.components.ScreenSharePanel
 import com.we.meet.feature.assistant.aicall.ui.components.VideoPreview
 import com.we.meet.feature.assistant.aicall.vm.AiCallViewModel
 import com.we.meet.ui.components.WeMeetTopBar
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private enum class PendingPermAction { Start, ToggleVideo }
@@ -125,8 +135,9 @@ fun AssistantCallScreen(
     val scope = rememberCoroutineScope()
 
     val activity = remember(context) { context.callActivity() }
-    // Only an actual foreground video call holds the screen awake.
-    val keepVideoScreenOn = state.status is AiCallStatus.Active && (state.isCameraEnabled || state.photoPending)
+    // A foreground video call or an active screen share holds the screen awake.
+    val keepVideoScreenOn = state.status is AiCallStatus.Active &&
+        (state.isCameraEnabled || state.photoPending || state.isScreenSharing)
     DisposableEffect(activity, lifecycleOwner, keepVideoScreenOn) {
         val window = activity?.window
         val screenOnFlag = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
@@ -202,6 +213,72 @@ fun AssistantCallScreen(
         }
     }
 
+    // Android 14's system dialog offers "a single app" or "entire screen";
+    // older releases only capture the whole display. Each consent token can
+    // be consumed once, so every start goes through this launcher.
+    val screenShareLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val data = result.data
+        if (result.resultCode == Activity.RESULT_OK && data != null) vm.startScreenShare(data)
+    }
+
+    fun openOtherApp() {
+        val home = Intent(Intent.ACTION_MAIN)
+            .addCategory(Intent.CATEGORY_HOME)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { context.startActivity(home) }
+    }
+
+    fun requestScreenShare() {
+        runCatching {
+            val manager = context.getSystemService(MediaProjectionManager::class.java)
+                ?: error("MediaProjectionManager unavailable")
+            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                manager.createScreenCaptureIntent(MediaProjectionConfig.createConfigForUserChoice())
+            } else {
+                manager.createScreenCaptureIntent()
+            }
+            screenShareLauncher.launch(intent)
+        }.onFailure {
+            scope.launch {
+                snackbarHostState.showSnackbar(context.getString(R.string.assistant_screen_share_failed))
+            }
+        }
+    }
+
+    // Screen sharing needs a pre-consent explanation: the system dialog covers
+    // capture but not that frames are sent to the AI service. The same dialog
+    // adds the camera consequence when video is on.
+    var showShareIntro by remember { mutableStateOf(false) }
+    val notificationsGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+        PackageManager.PERMISSION_GRANTED
+    fun onScreenShareStart() { showShareIntro = true }
+    LaunchedEffect(state.status) {
+        if (state.status !is AiCallStatus.Active) showShareIntro = false
+    }
+    BackHandler(enabled = showShareIntro) { showShareIntro = false }
+
+    // Start feedback is the status pill + the card's primary "Open app"
+    // button. End feedback needs a short inline notice because the card
+    // disappears and the user would otherwise not know why.
+    var wasSharing by remember { mutableStateOf(state.isScreenSharing) }
+    var shareEndedNotice by remember { mutableStateOf(false) }
+    LaunchedEffect(state.isScreenSharing) {
+        val sharing = state.isScreenSharing
+        if (sharing) shareEndedNotice = false
+        if (!sharing && wasSharing && state.status is AiCallStatus.Active) {
+            shareEndedNotice = true
+        }
+        wasSharing = sharing
+    }
+    LaunchedEffect(shareEndedNotice) {
+        if (!shareEndedNotice) return@LaunchedEffect
+        delay(4000)
+        shareEndedNotice = false
+    }
+
     var launchedCameraPermissionId by rememberSaveable { mutableStateOf<String?>(null) }
     val cameraPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         val id = launchedCameraPermissionId
@@ -236,6 +313,7 @@ fun AssistantCallScreen(
     }
 
     fun handleToggleVideo() {
+        if (state.isScreenSharing) return
         if (state.status is AiCallStatus.Active) { vm.toggleMode(); return }
         val goingToVideo = state.mode == AiCallMode.Voice
         val cameraGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
@@ -354,7 +432,45 @@ fun AssistantCallScreen(
                     status = state.status,
                     mode = state.mode,
                     onDark = isVideoActive,
+                    isScreenSharing = state.isScreenSharing,
+                    isScreenShareVisible = state.isScreenShareVisible,
                 )
+
+                if (shareEndedNotice) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceXs)
+                            .semantics { liveRegion = LiveRegionMode.Polite }
+                            .testTag("screen-share-ended-notice"),
+                        shape = MaterialTheme.shapes.large,
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.assistant_screen_share_ended),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceXs),
+                        )
+                    }
+                }
+
+                if (BuildConfig.AI_CALL_SCREEN_SHARE && state.status is AiCallStatus.Active) {
+                    ScreenSharePanel(
+                        active = state.isScreenSharing,
+                        pending = state.screenSharePending,
+                        available = vm.rtcClient?.screenShareAvailable != false,
+                        visible = state.isScreenShareVisible,
+                        onStart = ::onScreenShareStart,
+                        onStop = vm::stopScreenShare,
+                        onOpenOtherApp = ::openOtherApp,
+                        onDark = isVideoActive,
+                        enabled = !state.cameraPending && !state.photoPending,
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+                    )
+                }
 
                 if (state.status is AiCallStatus.Active && (state.photoPending || state.cameraPending || state.cameraResult?.success == false)) {
                     Text(if (state.photoPending) stringResource(R.string.assistant_photo_working)
@@ -382,6 +498,7 @@ fun AssistantCallScreen(
                     },
                     onToggleVideoMode = { handleToggleVideo() },
                     onDark = isVideoActive,
+                    screenSharing = state.isScreenSharing,
                 )
 
                 Text(
@@ -411,6 +528,36 @@ fun AssistantCallScreen(
                         AssistantHistoryContent(store, onBack = { showHistory = false }, deps = deps, kind = "call")
                     }
                 }
+            }
+            if (showShareIntro) {
+                AlertDialog(
+                    onDismissRequest = { showShareIntro = false },
+                    title = { Text(stringResource(R.string.assistant_screen_share_intro_title)) },
+                    text = {
+                        Column {
+                            Text(stringResource(R.string.assistant_screen_share_intro_message))
+                            if (state.isCameraEnabled) {
+                                Spacer(Modifier.size(Dimens.SpaceS))
+                                Text(stringResource(R.string.assistant_screen_share_intro_camera_message))
+                            }
+                            if (!notificationsGranted) {
+                                Spacer(Modifier.size(Dimens.SpaceS))
+                                Text(stringResource(R.string.assistant_screen_share_notifications_off))
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showShareIntro = false
+                            requestScreenShare()
+                        }) { Text(stringResource(R.string.assistant_screen_share_continue)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showShareIntro = false }) {
+                            Text(stringResource(R.string.assistant_screen_share_cancel))
+                        }
+                    },
+                )
             }
         }
     }
@@ -487,13 +634,21 @@ private fun StatusHint(
     status: AiCallStatus,
     mode: AiCallMode,
     onDark: Boolean,
+    isScreenSharing: Boolean,
+    isScreenShareVisible: Boolean,
 ) {
-    if (status is AiCallStatus.Active && status.mode == AiCallMode.Voice) return
+    if (status is AiCallStatus.Active && status.mode == AiCallMode.Voice && !isScreenSharing) return
     val (label, isConnecting) = when (status) {
         is AiCallStatus.Idle -> (if (mode == AiCallMode.Voice) stringResource(R.string.assistant_tap_to_start_voice)
             else stringResource(R.string.assistant_tap_to_start_video)) to false
         is AiCallStatus.Connecting -> stringResource(connectingLabelRes(status.step)) to true
-        is AiCallStatus.Active -> stringResource(R.string.assistant_listening) to false
+        is AiCallStatus.Active -> stringResource(
+            when {
+                isScreenSharing && !isScreenShareVisible -> R.string.assistant_screen_share_hidden
+                isScreenSharing -> R.string.assistant_screen_share_ai_viewing
+                else -> R.string.assistant_listening
+            },
+        ) to false
         is AiCallStatus.Ended -> stringResource(R.string.assistant_call_ended) to false
         is AiCallStatus.Failed -> status.message to false
     }
@@ -505,7 +660,8 @@ private fun StatusHint(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = Dimens.SpaceM),
+            .padding(vertical = Dimens.SpaceM)
+            .semantics { liveRegion = LiveRegionMode.Polite },
         contentAlignment = Alignment.Center,
     ) {
         Row(

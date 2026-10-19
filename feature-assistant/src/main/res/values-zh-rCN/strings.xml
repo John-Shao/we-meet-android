@@ -145,4 +145,26 @@
     <string name="assistant_call_upload_fps">模型上传帧率</string>
     <string name="assistant_call_fps_hint">预览 10–30 fps，上传 1–10 fps，可独立选择。设置会保存，适用于 AOQ 和 WebRTC，下次通话生效。实际帧率受设备和网络影响。</string>
     <string name="assistant_call_settings_title">通话设置</string>
+    <string name="assistant_screen_share_start">共享屏幕</string>
+    <string name="assistant_screen_share_stop">停止共享</string>
+    <string name="assistant_screen_share_starting">正在开始共享…</string>
+    <string name="assistant_screen_share_active">正在共享屏幕</string>
+    <string name="assistant_screen_share_active_hint">AI 助手可以看到这块屏幕。打开你想展示的应用即可。</string>
+    <string name="assistant_screen_share_go_home">打开应用</string>
+    <string name="assistant_screen_share_failed">无法开始共享屏幕，请重试</string>
+    <string name="assistant_screen_share_unavailable">当前连接方式不支持共享屏幕</string>
+    <string name="assistant_background_screen_share">屏幕共享中</string>
+    <string name="assistant_background_stop_share">停止共享</string>
+    <string name="assistant_screen_share_privacy">屏幕内容会发送给 AI 服务。</string>
+    <string name="assistant_screen_share_intro_title">共享屏幕？</string>
+    <string name="assistant_screen_share_intro_message">AI 助手可以看到你的屏幕，屏幕内容会发送给 AI 服务。共享期间可随时停止。</string>
+    <string name="assistant_screen_share_intro_camera_message">共享期间摄像头会关闭，停止共享后恢复。</string>
+    <string name="assistant_screen_share_notifications_off">通知权限未开启，也可以从系统投屏胶囊停止共享。</string>
+    <string name="assistant_screen_share_ended">屏幕共享已结束</string>
+    <string name="assistant_screen_share_ai_viewing">AI 正在查看你的屏幕</string>
+    <string name="assistant_screen_share_hidden">共享应用已隐藏</string>
+    <string name="assistant_screen_share_hidden_hint">共享应用已切到后台，画面已暂停。切回该应用即可继续。</string>
+    <string name="assistant_screen_share_video_disabled">停止共享后才能使用摄像头</string>
+    <string name="assistant_screen_share_continue">共享屏幕</string>
+    <string name="assistant_screen_share_cancel">取消</string>
 </resources>

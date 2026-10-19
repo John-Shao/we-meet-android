@@ -23,7 +23,8 @@ internal class OmniCallTools(
         data object EndCall : Request
         data class Photo(val question: String) : Request
     }
-    fun definitions(): JSONArray = Companion.definitions(handler != null, endCall != null, serverInstructions, photoHandler != null)
+    fun definitions(screenSharing: Boolean = false): JSONArray =
+        Companion.definitions(handler != null && !screenSharing, endCall != null, serverInstructions, photoHandler != null && !screenSharing)
     private var serverInstructions: Map<String, String> = emptyMap()
     fun configureInstructions(value: Map<String, String>) {
         if (handler != null) {
@@ -36,7 +37,11 @@ internal class OmniCallTools(
         if (photoHandler != null) for (key in listOf("photo", "take_photo_description")) require(!value[key].isNullOrBlank())
         serverInstructions = value
     }
-    fun instructions(base: String): String = Companion.instructions(base, handler != null, endCall != null, serverInstructions, photoHandler != null)
+    fun instructions(base: String, screenSharing: Boolean = false, screenVisible: Boolean = true): String =
+        Companion.instructions(
+            base, handler != null && !screenSharing, endCall != null, serverInstructions,
+            photoHandler != null && !screenSharing, screenSharing, screenVisible,
+        )
     private class Round {
         val calls = linkedMapOf<String, Job?>()
         var done = false
@@ -346,9 +351,20 @@ internal class OmniCallTools(
         }
 
         fun instructions(base: String, cameraEnabled: Boolean = true, endCallEnabled: Boolean = false,
-            rules: Map<String, String> = emptyMap(), photoEnabled: Boolean = false): String =
+            rules: Map<String, String> = emptyMap(), photoEnabled: Boolean = false,
+            screenSharing: Boolean = false, screenVisible: Boolean = true): String =
             base + (if (cameraEnabled) rules["camera"]?.let { "\n$it" }.orEmpty() else "") +
                 (if (photoEnabled) rules["photo"]?.let { "\n$it" }.orEmpty() else "") +
-                (if (endCallEnabled) rules["end_call"]?.let { "\n$it" }.orEmpty() else "")
+                (if (endCallEnabled) rules["end_call"]?.let { "\n$it" }.orEmpty() else "") +
+                screenShareInstructions("", screenSharing, screenVisible)
+
+        /** Appended while the video track carries a screen rather than the camera. */
+        fun screenShareInstructions(base: String, screenSharing: Boolean, screenVisible: Boolean = true): String =
+            base + if (!screenSharing) "" else "\n" + if (screenVisible) SCREEN_VISIBLE_RULE else SCREEN_HIDDEN_RULE
+
+        private const val SCREEN_VISIBLE_RULE =
+            "The user is sharing their screen. Read the shared screen content; do not ask the user to open the camera or take a photo."
+        private const val SCREEN_HIDDEN_RULE =
+            "The user is sharing a single app, but it is currently hidden. Ask the user to bring the shared app back to the foreground before answering questions about its content."
     }
 }

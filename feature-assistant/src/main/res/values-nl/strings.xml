@@ -151,4 +151,26 @@
     <string name="assistant_call_upload_fps">Framesnelheid voor modelupload</string>
     <string name="assistant_call_fps_hint">Voorbeeld: 10–30 fps. Upload: 1–10 fps. Onafhankelijk opgeslagen voor AOQ en WebRTC; geldt vanaf het volgende gesprek. De werkelijke snelheid hangt af van apparaat en netwerk.</string>
     <string name="assistant_call_settings_title">Gespreksinstellingen</string>
+    <string name="assistant_screen_share_start">Scherm delen</string>
+    <string name="assistant_screen_share_stop">Delen stoppen</string>
+    <string name="assistant_screen_share_starting">Scherm delen wordt gestart…</string>
+    <string name="assistant_screen_share_active">Scherm wordt gedeeld</string>
+    <string name="assistant_screen_share_active_hint">De AI-assistent ziet dit scherm. Open de app die je wilt tonen.</string>
+    <string name="assistant_screen_share_go_home">App openen</string>
+    <string name="assistant_screen_share_failed">Scherm delen kon niet worden gestart. Probeer het opnieuw.</string>
+    <string name="assistant_screen_share_unavailable">Scherm delen is niet beschikbaar met deze verbinding.</string>
+    <string name="assistant_background_screen_share">Scherm delen</string>
+    <string name="assistant_background_stop_share">Delen stoppen</string>
+    <string name="assistant_screen_share_privacy">Scherminhoud wordt naar de AI-service verzonden.</string>
+    <string name="assistant_screen_share_intro_title">Scherm delen?</string>
+    <string name="assistant_screen_share_intro_message">De AI-assistent kan je scherm zien en de scherminhoud wordt naar de AI-service verzonden. Je kunt op elk moment stoppen.</string>
+    <string name="assistant_screen_share_intro_camera_message">De camera staat uit tijdens het delen en gaat daarna weer aan.</string>
+    <string name="assistant_screen_share_notifications_off">Meldingen staan uit. Je kunt het delen ook stoppen via de systeemindicator voor scherm delen.</string>
+    <string name="assistant_screen_share_ended">Scherm delen gestopt.</string>
+    <string name="assistant_screen_share_ai_viewing">De AI bekijkt je scherm</string>
+    <string name="assistant_screen_share_hidden">Gedeelde app is verborgen</string>
+    <string name="assistant_screen_share_hidden_hint">De gedeelde app staat op de achtergrond, dus beelden zijn gepauzeerd. Ga terug naar de app om door te gaan.</string>
+    <string name="assistant_screen_share_video_disabled">Stop met scherm delen om de camera te gebruiken</string>
+    <string name="assistant_screen_share_continue">Scherm delen</string>
+    <string name="assistant_screen_share_cancel">Annuleren</string>
 </resources>

@@ -1,13 +1,17 @@
 package com.we.meet.feature.assistant.aicall.rtc
 
 import android.content.Context
+import android.content.Intent
 import android.os.SystemClock
 import android.os.Build
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.sqrt
 import android.util.Log
+import livekit.org.webrtc.CapturerObserver
 import livekit.org.webrtc.EglBase
+import livekit.org.webrtc.PeerConnectionFactory
+import livekit.org.webrtc.VideoFrame
 import livekit.org.webrtc.VideoSink
 import com.alibaba.aoq.clientsdk.AoqClientEngine
 import com.alibaba.aoq.clientsdk.AoqClientEngine.*
@@ -16,6 +20,7 @@ import com.we.meet.feature.assistant.aicall.model.AiCallAnswer
 import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
 import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
 import com.we.meet.feature.assistant.aicall.model.AiCallSetupException
+import com.we.meet.feature.assistant.aicall.model.ScreenShareSizing
 import com.we.meet.feature.assistant.aicall.model.CameraToolHandler
 import com.we.meet.feature.assistant.aicall.model.CameraActionResult
 import com.we.meet.feature.assistant.aicall.model.CameraFeedbackFailure
@@ -62,6 +67,18 @@ class OmniAoqClient(
     }, { dispatch { if (cameraStarted) fail() } }, videoSettings)
     val eglContext: EglBase.Context? get() = camera.eglContext
     override val cameraEnabled: Boolean? get() = if (cameraCertain) cameraStarted else null
+
+    // Screen frames share the single AOQ video track with the camera. They are
+    // pushed as raw I420 through the same external-frame API.
+    private var screenCapture: ScreenShareCapture? = null
+    private var screenEgl: EglBase? = null
+    private var screenRouter: CameraFrameRouter? = null
+    private var screenStarted = false
+    private var screenStopCallback: (() -> Unit)? = null
+    private var pendingScreenShareUpdate: Pair<Boolean, Boolean>? = null
+    private val screenUpdateEventIds = linkedSetOf<String>()
+    override val screenShareAvailable: Boolean get() = true
+    override val screenSharing: Boolean get() = screenStarted
     private var responding = false
     @Volatile private var outputMuted = false
     @Volatile private var toolOutputHeld = false
@@ -139,7 +156,7 @@ class OmniAoqClient(
                 "session.updated" -> if (configured && !ready.isCompleted) ready.complete(Unit)
                 "input_audio_buffer.speech_stopped" -> { speechEndedAt = SystemClock.elapsedRealtime() }
                 "response.created" -> { responding = true; outputSuppressed = false }
-                "response.done" -> { responding = false; onAudioLevel(0f) }
+                "response.done" -> { responding = false; onAudioLevel(0f); flushScreenShareState() }
                 "input_audio_buffer.speech_started" -> {
                     // A server VAD event, not proof of user speech or acoustic echo.
                     // Keep only timing/state metadata, never PCM or transcripts.
@@ -156,6 +173,10 @@ class OmniAoqClient(
                 "error" -> {
                     val error = event.optJSONObject("error")
                     Log.w("OmniAoq", "Session error type=${error?.optString("type")} code=${error?.optString("code")} param=${error?.optString("param")}")
+                    if (error != null && screenUpdateEventIds.remove(error.optString("event_id"))) {
+                        Log.w("OmniAoq", "Screen share state update rejected; retaining call")
+                        return@dispatch
+                    }
                     val rejectedVideoFrame = error != null && ready.isCompleted && OmniMediaErrors.isImageBeforeAudio(
                         error.optString("type"), error.optString("code"), error.optString("message"),
                         error.optString("event_id"), error.optString("param"))
@@ -297,7 +318,34 @@ class OmniAoqClient(
             } }))
     }
     override fun setMicrophoneEnabled(enabled: Boolean) { ok(engine!!.muteAudioCapture(!enabled)) }
-    override fun publishCameraState() { answer?.let { tools?.publishState(it.instructions, cameraEnabled) } }
+    override fun publishCameraState() {
+        if (!screenStarted) answer?.let { tools?.publishState(it.instructions, cameraEnabled) }
+    }
+
+    override fun publishScreenShareState(sharing: Boolean, visible: Boolean) {
+        if (closed) return
+        pendingScreenShareUpdate = sharing to visible
+        if (!responding) flushScreenShareState()
+    }
+
+    private fun flushScreenShareState() {
+        val update = pendingScreenShareUpdate ?: return
+        pendingScreenShareUpdate = null
+        val config = answer ?: return
+        val (sharing, visible) = update
+        val instructions = tools?.instructions(config.instructions, sharing, visible)
+            ?: OmniCallTools.screenShareInstructions(config.instructions, sharing, visible)
+        val session = JSONObject().put("instructions", instructions)
+        if (tools != null) session.put("tools", tools.definitions(sharing))
+        val eventId = UUID.randomUUID().toString()
+        val event = JSONObject().put("type", "session.update").put("session", session).put("event_id", eventId)
+        if (screenUpdateEventIds.size > 32) screenUpdateEventIds.remove(screenUpdateEventIds.first())
+        screenUpdateEventIds.add(eventId)
+        runCatching { send(event) }.onFailure {
+            screenUpdateEventIds.remove(eventId)
+            Log.w("OmniAoq", "Screen share state sync failed")
+        }
+    }
     override fun setOutputMuted(muted: Boolean) {
         outputMuted = muted
         if (tools == null) ok(if (muted) engine!!.pauseAudioPlayer(0) else engine!!.resumeAudioPlayer(0))
@@ -313,10 +361,133 @@ class OmniAoqClient(
             send(JSONObject().put("type", "response.cancel").put("event_id", id))
             responding = false
         }
+        flushScreenShareState()
         onAudioLevel(0f)
     }
+    override suspend fun setScreenShareEnabled(
+        enabled: Boolean,
+        resultData: Intent?,
+        onSystemStop: (() -> Unit)?,
+        onVisibilityChanged: ((Boolean) -> Unit)?,
+    ) {
+        check(!closed)
+        if (!enabled) {
+            if (!screenStarted && screenCapture == null) return
+            screenStopCallback = null
+            screenRouter?.stop()
+            screenRouter = null
+            runCatching { engine?.enableSendMediaStream(video, false) }
+            val capture = screenCapture
+            screenCapture = null
+            if (capture != null) withContext(Dispatchers.IO) { capture.stop() }
+            runCatching { engine?.stopVideoCapture() }
+            runCatching { screenEgl?.release() }
+            screenEgl = null
+            // Keep screenStarted true until capture/encoder resources are gone.
+            screenStarted = false
+            return
+        }
+        check(!screenStarted && screenCapture == null) { "Screen sharing already active" }
+        check(!cameraStarted) { "Stop the camera before sharing the screen" }
+        val consent = checkNotNull(resultData) { "MediaProjection consent missing" }
+        val visibilityListener = onVisibilityChanged
+        val sdk = checkNotNull(engine)
+        val size = ScreenShareSizing.forDisplay(context)
+        val uploadFps = ScreenShareSizing.modelUploadFps(videoSettings.modelUploadFps)
+        Log.i("OmniScreen", "AOQ screen uploadFps=$uploadFps")
+        // Screen frames are converted with WebRTC's YuvHelper, which needs the
+        // native library even when this call never opens the camera.
+        PeerConnectionFactory.initialize(
+            PeerConnectionFactory.InitializationOptions.builder(context).createInitializationOptions(),
+        )
+        val egl = EglBase.create()
+        val firstFrame = CompletableDeferred<Unit>()
+        var router: CameraFrameRouter? = null
+        var capture: ScreenShareCapture? = null
+        try {
+            ok(sdk.setVideoEncoderConfig(AoqVideoCodecConfig().apply {
+                trackType = video
+                codecType = AoqEncoderType.AoqEncoderTypeVideoH264
+                width = size.width
+                height = size.height
+                fps = uploadFps
+                bitrate = 800_000
+                minBitrate = 200_000
+                keyframeInterval = 2
+                isExternal = false // SDK encodes raw external frames.
+            }))
+            ok(sdk.startVideoCapture(AoqVideoCaptureConfig().apply { isExternal = true }))
+            val frames = CameraFrameRouter(
+                previewFps = videoSettings.localPreviewFps,
+                uploadFps = uploadFps,
+            ) { frame ->
+                runCatching {
+                    ok(sdk.pushExternalVideoCapturedFrame(video, AoqVideoFramePacker.pack(frame)))
+                }.onSuccess {
+                    firstFrame.complete(Unit)
+                }.onFailure {
+                    firstFrame.completeExceptionally(it)
+                }
+            }
+            router = frames
+            frames.start()
+            val screen = ScreenShareCapture(
+                context = context,
+                eglContext = egl.eglBaseContext,
+                onSystemStop = {
+                    // Runs on the capture thread; never stop the capturer here.
+                    dispatch {
+                        if (!closed && screenStarted) {
+                            screenStopCallback?.invoke()
+                        }
+                    }
+                },
+                onContentResize = { width, height ->
+                    // AOQ's encoder was configured for the initial canvas;
+                    // resizing it mid-stream requires restarting the encoder.
+                    // Keep that canvas and let the SDK scale the content.
+                    Log.i("OmniScreen", "AOQ resize ${width}x$height ignored; fixed canvas ${size.width}x${size.height}")
+                },
+                onVisibilityChanged = { visible ->
+                    dispatch {
+                        if (!closed && screenStarted) {
+                            if (visible) screenRouter?.start() else screenRouter?.stop()
+                            publishScreenShareState(true, visible)
+                            visibilityListener?.invoke(visible)
+                        }
+                    }
+                },
+            )
+            capture = screen
+            screen.start(consent, object : CapturerObserver {
+                override fun onCapturerStarted(success: Boolean) {
+                    if (!success) firstFrame.completeExceptionally(IllegalStateException("Screen capture failed"))
+                }
+
+                override fun onCapturerStopped() = Unit
+                override fun onFrameCaptured(frame: VideoFrame) = frames.onFrame(frame)
+            }, size.width, size.height, ScreenShareSizing.CAPTURE_FPS)
+            withTimeout(8_000) { firstFrame.await() }
+            check(!closed)
+            ok(sdk.enableSendMediaStream(video, true))
+        } catch (error: Exception) {
+            router?.stop()
+            capture?.stop()
+            runCatching { sdk.enableSendMediaStream(video, false) }
+            runCatching { sdk.stopVideoCapture() }
+            egl.release()
+            throw error
+        }
+        screenCapture = capture
+        screenEgl = egl
+        screenRouter = router
+        screenStopCallback = onSystemStop
+        screenStarted = true
+    }
+
     override suspend fun setCameraEnabled(enabled: Boolean) {
         check(!closed)
+        if (enabled) check(!screenStarted && screenCapture == null) { "Stop screen sharing before opening the camera" }
         if (cameraCertain && enabled == cameraStarted && (enabled || !captureActive)) return
         val sdk = checkNotNull(engine)
         if (enabled) {
@@ -380,6 +551,14 @@ class OmniAoqClient(
         if (closed) return
         closed = true
         runCatching { photos.close() }
+        screenStarted = false
+        screenStopCallback = null
+        runCatching { screenRouter?.stop() }
+        screenRouter = null
+        runCatching { screenCapture?.stop() }
+        screenCapture = null
+        runCatching { screenEgl?.release() }
+        screenEgl = null
         runCatching { camera.close() }
         ready.cancel(); recovery.close(); tools?.close(); scope.cancel()
         synchronized(ownership) {

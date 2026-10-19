@@ -22,6 +22,9 @@ android {
             providers.gradleProperty("AOQ_MEDIA_PLAYBACK").orElse("true").get().toBooleanStrict().toString())
         // Enable release only after both transports and physical-device acceptance.
         buildConfigField("boolean", "AI_CALL_CAMERA_VOICE_CONTROL", "false")
+        // Rollout switch for the screen-share entry point; OEM behaviour differs.
+        buildConfigField("boolean", "AI_CALL_SCREEN_SHARE",
+            providers.gradleProperty("AI_CALL_SCREEN_SHARE").orElse("true").get().toBooleanStrict().toString())
     }
 
     buildTypes {
