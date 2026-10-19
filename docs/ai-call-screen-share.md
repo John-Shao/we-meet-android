@@ -197,6 +197,7 @@ ViewModel 用 `Mutex` + 递增 token 串行化 start/stop/系统撤销；系统�
 - 后台相机恢复：停留在荣耀笔记时从通知栏「停止共享」，相机不会立即恢复；回到 We Meet 后 `camera enabled durationMs=939`，预览和控件恢复。
 - 可读性结果：
   - 用户手动验证：debug 包、整屏共享相册里的 `Readability Check 2026` 截图，AI 能正确识别并读出文字；说明模型 OCR/视觉本身可用，静态图片路径正常。
+  - 用户进一步对照：实时 Chrome 页面时，AI 先回答「屏幕上显示的是‘你太多了是吧’」，明显不是当前页面；打开同一页面的截图后，AI 正确读出 `Readability Check 2026 / Invoice 8472 / Total 1,284.50 USD / Room code 7391 - Falcon-91`。这进一步确认模型 OCR 正常，异常集中在实时 Chrome 页面的采集/传递。
   - 自动化测试通过 Chrome 实时页面时失败：2fps/4fps 均出现幻觉；4fps 下 `Big Number Test` 的 **8472** 能正确读出，但小字号英文页面仍回答成中文发票。
   - WebRTC 真实语音验证：用户口述问题被正确转写，说明 WebRTC 音频链路正常；整屏共享同一个实时 Chrome 页面时，AI 仍回答成中文发票（123456 / ¥1,000.00）。
   - 临时 frame dump：共享早期 dump 到的是 We Meet 通话页/系统授权框；计划在 Chrome 前台后 dump 第 24 帧未产生日志，提示实时 Chrome 画面可能没有被持续采集或没有进入模型。当前问题更像是 **Chrome/WebView 实时画面采集/传递**，而不是模型 OCR 能力。
