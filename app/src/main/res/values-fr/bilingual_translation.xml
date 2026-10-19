@@ -13,6 +13,7 @@
     <string name="bilingual_direction_hint">Le mode automatique détecte la langue parlée et traduit dans les deux sens. En mode manuel, la traduction se fait de la langue de gauche vers celle de droite ; choisissez les langues ci-dessous.</string>
     <string name="bilingual_display_mode">Mode d’affichage</string>
     <string name="bilingual_language_pair">%1$s ⇄ %2$s</string>
+    <string name="bilingual_language_pair_fixed">%1$s → %2$s</string>
     <string name="bilingual_settings_locked">Terminez la traduction pour modifier les langues ou l’enregistrement du texte.</string>
     <string name="bilingual_subtitle">Choisissez deux langues pour une traduction orale automatique</string>
     <string name="bilingual_pair">Chinois ⇄ anglais</string>

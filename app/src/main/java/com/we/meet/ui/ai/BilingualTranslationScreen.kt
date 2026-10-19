@@ -133,9 +133,12 @@ fun BilingualTranslationScreen(app: WeMeetApp, onBack: () -> Unit) {
                 Column(Modifier.weight(1f).fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS, Alignment.CenterVertically)) {
-                    Text(stringResource(R.string.bilingual_language_pair,
-                        stringResource(BilingualLanguages.label(state.pair.source)),
-                        stringResource(BilingualLanguages.label(state.pair.target))),
+                    val source = state.fixedSource ?: state.pair.source
+                    val target = if (source == state.pair.source) state.pair.target else state.pair.source
+                    Text(stringResource(if (state.fixedSource == null) R.string.bilingual_language_pair
+                        else R.string.bilingual_language_pair_fixed,
+                        stringResource(BilingualLanguages.label(source)),
+                        stringResource(BilingualLanguages.label(target))),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
                     Text(stringResource(R.string.bilingual_empty), color = MaterialTheme.colorScheme.onSurfaceVariant,

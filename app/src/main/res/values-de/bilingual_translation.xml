@@ -13,6 +13,7 @@
     <string name="bilingual_direction_hint">Der automatische Modus erkennt beide gesprochenen Sprachen und übersetzt in beide Richtungen. Im manuellen Modus wird von der linken in die rechte Sprache übersetzt; wählen Sie die Sprachen unten aus.</string>
     <string name="bilingual_display_mode">Anzeigemodus</string>
     <string name="bilingual_language_pair">%1$s ⇄ %2$s</string>
+    <string name="bilingual_language_pair_fixed">%1$s → %2$s</string>
     <string name="bilingual_settings_locked">Beenden Sie die Übersetzung, um Sprachen oder die Textspeicherung zu ändern.</string>
     <string name="bilingual_subtitle">Wählen Sie zwei Sprachen für die automatische Sprachübersetzung</string>
     <string name="bilingual_pair">Chinesisch ⇄ Englisch</string>

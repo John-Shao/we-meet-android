@@ -13,6 +13,7 @@
     <string name="bilingual_direction_hint">De automatische modus herkent de gesproken taal en vertaalt in beide richtingen. In de handmatige modus wordt van de linker- naar de rechtertaal vertaald; kies hieronder de talen.</string>
     <string name="bilingual_display_mode">Weergavemodus</string>
     <string name="bilingual_language_pair">%1$s ⇄ %2$s</string>
+    <string name="bilingual_language_pair_fixed">%1$s → %2$s</string>
     <string name="bilingual_settings_locked">Beëindig de vertaling om de talen of het opslaan van tekst te wijzigen.</string>
     <string name="bilingual_subtitle">Kies twee talen voor automatische spraakvertaling</string>
     <string name="bilingual_pair">Chinees ⇄ Engels</string>

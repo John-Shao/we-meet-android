@@ -12,6 +12,7 @@
     <string name="bilingual_direction_hint">Automatic mode detects either spoken language. Manual mode translates from the left language to the right; choose the languages below.</string>
     <string name="bilingual_display_mode">Display mode</string>
     <string name="bilingual_language_pair">%1$s ⇄ %2$s</string>
+    <string name="bilingual_language_pair_fixed">%1$s → %2$s</string>
     <string name="bilingual_settings_locked">End translation to change languages or text saving.</string>
     <string name="bilingual_subtitle">Choose two languages for automatic spoken translation</string>
     <string name="bilingual_pair">Chinese ⇄ English</string>
