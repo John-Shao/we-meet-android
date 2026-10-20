@@ -407,7 +407,7 @@ class OmniWebRtcClient(
         )
         captureRef = capture
         try {
-            val snapshotAt = SystemClock.elapsedRealtime() + 3_000
+            val snapshotAt = SystemClock.elapsedRealtime() + 6_000
             var snapshotSent = false
             val observed = object : CapturerObserver {
                 override fun onCapturerStarted(success: Boolean) = source.capturerObserver.onCapturerStarted(success)

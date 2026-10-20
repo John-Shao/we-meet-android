@@ -459,7 +459,7 @@ class OmniAoqClient(
                 },
             )
             capture = screen
-            val snapshotAt = SystemClock.elapsedRealtime() + 3_000
+            val snapshotAt = SystemClock.elapsedRealtime() + 6_000
             var snapshotSent = false
             screen.start(consent, object : CapturerObserver {
                 override fun onCapturerStarted(success: Boolean) {
