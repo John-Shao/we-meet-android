@@ -149,7 +149,7 @@
     <string name="assistant_screen_read_caption">Schermlees-opname</string>
     <string name="assistant_screen_read_working">Scherm wordt gelezen…</string>
     <string name="assistant_screen_read_accessibility_title">AI mag Chrome-pagina’s lezen</string>
-    <string name="assistant_screen_read_accessibility_message">Scherm delen van Android kan Chrome op sommige apparaten niet vastleggen. Als dit is ingeschakeld, legt We Meet het scherm alleen vast wanneer je er expliciet om vraagt. De opname omvat het hele scherm en kan meldingen bevatten. We Meet volgt het scherm niet continu.</string>
+    <string name="assistant_screen_read_accessibility_message">Scherm delen van Android kan Chrome op sommige apparaten niet vastleggen. Als dit is ingeschakeld, legt We Meet het scherm alleen vast wanneer je er expliciet om vraagt. De opname is beperkt tot het actieve venster, maar systeemoverlays kunnen nog steeds zichtbaar zijn. We Meet volgt het scherm niet continu.</string>
     <string name="assistant_screen_read_accessibility_confirm">Instellingen openen</string>
     <string name="assistant_screen_read_accessibility_cancel">Niet nu</string>
     <string name="assistant_call_vad_mode">Detectie van spreekbeurten (VAD)</string>

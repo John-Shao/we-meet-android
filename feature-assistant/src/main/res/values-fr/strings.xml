@@ -149,7 +149,7 @@
     <string name="assistant_screen_read_caption">Capture de lecture d’écran</string>
     <string name="assistant_screen_read_working">Lecture de l’écran…</string>
     <string name="assistant_screen_read_accessibility_title">Laisser l’IA lire les pages Chrome</string>
-    <string name="assistant_screen_read_accessibility_message">Le partage d’écran Android ne peut pas capturer Chrome sur certains appareils. Une fois activé, We Meet ne capture l’écran que lorsque vous le demandez explicitement. La capture couvre tout l’écran et peut inclure des notifications. We Meet ne surveille pas l’écran en continu.</string>
+    <string name="assistant_screen_read_accessibility_message">Le partage d’écran Android ne peut pas capturer Chrome sur certains appareils. Une fois activé, We Meet ne capture l’écran que lorsque vous le demandez explicitement. La capture est limitée à la fenêtre active, mais des superpositions système peuvent encore apparaître. We Meet ne surveille pas l’écran en continu.</string>
     <string name="assistant_screen_read_accessibility_confirm">Ouvrir les réglages</string>
     <string name="assistant_screen_read_accessibility_cancel">Pas maintenant</string>
     <string name="assistant_call_vad_mode">Détection des tours de parole (VAD)</string>

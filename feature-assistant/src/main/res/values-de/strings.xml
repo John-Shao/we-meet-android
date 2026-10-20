@@ -149,7 +149,7 @@
     <string name="assistant_screen_read_caption">Bildschirmlese-Aufnahme</string>
     <string name="assistant_screen_read_working">Bildschirm wird gelesen…</string>
     <string name="assistant_screen_read_accessibility_title">KI darf Chrome-Seiten lesen</string>
-    <string name="assistant_screen_read_accessibility_message">Die Android-Bildschirmfreigabe kann Chrome auf manchen Geräten nicht erfassen. Wenn aktiviert, erfasst We Meet den Bildschirm nur, wenn Sie ausdrücklich darum bitten. Die Aufnahme umfasst den gesamten Bildschirm und kann Benachrichtigungen enthalten. We Meet überwacht den Bildschirm nicht dauerhaft.</string>
+    <string name="assistant_screen_read_accessibility_message">Die Android-Bildschirmfreigabe kann Chrome auf manchen Geräten nicht erfassen. Wenn aktiviert, erfasst We Meet den Bildschirm nur, wenn Sie ausdrücklich darum bitten. Die Aufnahme ist auf das aktive Fenster begrenzt, Systemeinblendungen können jedoch weiterhin enthalten sein. We Meet überwacht den Bildschirm nicht dauerhaft.</string>
     <string name="assistant_screen_read_accessibility_confirm">Einstellungen öffnen</string>
     <string name="assistant_screen_read_accessibility_cancel">Nicht jetzt</string>
     <string name="assistant_call_vad_mode">Erkennung von Gesprächsbeiträgen (VAD)</string>

@@ -149,7 +149,7 @@
     <string name="assistant_screen_read_caption">Screen reading snapshot</string>
     <string name="assistant_screen_read_working">Reading the screen…</string>
     <string name="assistant_screen_read_accessibility_title">Let the AI read Chrome pages</string>
-    <string name="assistant_screen_read_accessibility_message">Android screen sharing cannot capture Chrome on some devices. When enabled, We Meet captures the screen only when you explicitly ask it to read it. The capture covers the whole display and may include notifications. We Meet does not monitor the screen continuously.</string>
+    <string name="assistant_screen_read_accessibility_message">Android screen sharing cannot capture Chrome on some devices. When enabled, We Meet captures the screen only when you explicitly ask it to read it. The capture is limited to the active window, but system overlays may still appear. We Meet does not monitor the screen continuously.</string>
     <string name="assistant_screen_read_accessibility_confirm">Open settings</string>
     <string name="assistant_screen_read_accessibility_cancel">Not now</string>
     <string name="assistant_call_vad_mode">Voice turn detection (VAD)</string>

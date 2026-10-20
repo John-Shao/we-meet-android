@@ -143,7 +143,7 @@
     <string name="assistant_screen_read_caption">屏幕读取截图</string>
     <string name="assistant_screen_read_working">正在读取屏幕…</string>
     <string name="assistant_screen_read_accessibility_title">让 AI 读取 Chrome 等页面</string>
-    <string name="assistant_screen_read_accessibility_message">部分设备的系统屏幕共享无法捕获 Chrome。开启后，We Meet 只会在你主动要求读取屏幕时截图；截图会覆盖整个屏幕，可能包含通知。We Meet 不会持续监控屏幕。</string>
+    <string name="assistant_screen_read_accessibility_message">部分设备的系统屏幕共享无法捕获 Chrome。开启后，We Meet 只会在你主动要求读取屏幕时截图；截图会裁剪到当前活动窗口，但系统浮层仍可能包含在内。We Meet 不会持续监控屏幕。</string>
     <string name="assistant_screen_read_accessibility_confirm">去系统设置</string>
     <string name="assistant_screen_read_accessibility_cancel">暂不开启</string>
     <string name="assistant_call_vad_mode">语音轮次检测（VAD）</string>
