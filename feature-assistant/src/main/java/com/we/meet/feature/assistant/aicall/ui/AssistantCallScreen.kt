@@ -78,6 +78,7 @@ import com.we.meet.feature.assistant.AssistantDeps
 import com.we.meet.feature.assistant.BuildConfig
 import com.we.meet.feature.assistant.aicall.rtc.AoqPlaybackMode
 import com.we.meet.feature.assistant.aicall.model.AiCallTransport
+import com.we.meet.feature.assistant.screenread.ScreenReadAccessibility
 import com.we.meet.feature.assistant.aicall.model.AiCallMode
 import com.we.meet.feature.assistant.aicall.model.AiCallStatus
 import com.we.meet.feature.assistant.aicall.model.ConnectingStep
@@ -464,6 +465,9 @@ fun AssistantCallScreen(
                         onStart = ::onScreenShareStart,
                         onStop = vm::stopScreenShare,
                         onOpenOtherApp = ::openOtherApp,
+                        onEnableScreenReadAccessibility = {
+                            context.startActivity(ScreenReadAccessibility.settingsIntent(context))
+                        },
                         onDark = isVideoActive,
                         enabled = !state.cameraPending && !state.photoPending,
                         modifier = Modifier

@@ -144,6 +144,8 @@
     <string name="assistant_photo_attachment">[Image]</string>
     <string name="assistant_photo_failed">Impossible de répondre à partir de cette photo. Réessayez.</string>
     <string name="assistant_screen_read_failed">Impossible de lire cet écran. Réessayez.</string>
+    <string name="assistant_screen_read_accessibility">Activer la lecture d’écran accessible</string>
+    <string name="assistant_screen_read_accessibility_description">Permet à We Meet de capturer l’écran lorsque le partage Android ne voit pas Chrome ou une autre application.</string>
     <string name="assistant_call_vad_mode">Détection des tours de parole (VAD)</string>
     <string name="assistant_call_vad_server">Détection acoustique (server_vad)</string>
     <string name="assistant_call_vad_semantic">Détection sémantique (semantic_vad)</string>

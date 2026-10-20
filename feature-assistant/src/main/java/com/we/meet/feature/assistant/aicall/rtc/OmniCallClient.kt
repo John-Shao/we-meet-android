@@ -44,5 +44,8 @@ interface OmniCallClient {
 
     /** A still of the current shared screen, used for explicit screen reading. */
     suspend fun captureScreenPhoto(): ByteArray = error("Screen photo unavailable")
+
+    /** Insert the exact JPEG already sent for screen reading into the transcript. */
+    fun displayScreenPhoto(jpeg: ByteArray) = Unit
     fun close()
 }

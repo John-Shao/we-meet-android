@@ -21,8 +21,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.we.meet.feature.assistant.R
+import com.we.meet.feature.assistant.screenread.ScreenReadAccessibility
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.theme.WeMeetTheme
 
@@ -40,6 +42,7 @@ fun ScreenSharePanel(
     onStart: () -> Unit,
     onStop: () -> Unit,
     onOpenOtherApp: () -> Unit,
+    onEnableScreenReadAccessibility: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     onDark: Boolean = false,
     enabled: Boolean = true,
@@ -136,6 +139,18 @@ fun ScreenSharePanel(
                     style = MaterialTheme.typography.bodySmall,
                     color = content,
                 )
+                if (onEnableScreenReadAccessibility != null &&
+                    !ScreenReadAccessibility.isEnabled(LocalContext.current)) {
+                    TextButton(
+                        onClick = onEnableScreenReadAccessibility,
+                        modifier = Modifier.testTag("call-screen-read-accessibility"),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.assistant_screen_read_accessibility),
+                            color = if (onDark) palette.onVideo else MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
                 Button(
                     onClick = onOpenOtherApp,
                     modifier = Modifier.fillMaxWidth(),

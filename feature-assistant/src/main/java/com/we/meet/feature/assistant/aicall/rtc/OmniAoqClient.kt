@@ -559,8 +559,11 @@ class OmniAoqClient(
             screenFrames.encodeLatest() ?: error("No screen frame available")
         }
         val jpeg = withContext(Dispatchers.Default) { CallPhotoImage.encode(raw) }
-        transcript.screen(jpeg)
         return jpeg
+    }
+
+    override fun displayScreenPhoto(jpeg: ByteArray) {
+        transcript.screen(jpeg)
     }
     private fun send(event: JSONObject) {
         if (!event.has("event_id")) event.put("event_id", UUID.randomUUID().toString())

@@ -614,8 +614,11 @@ class OmniWebRtcClient(
             screenFrames.encodeLatest() ?: error("No screen frame available")
         }
         val jpeg = withContext(Dispatchers.Default) { CallPhotoImage.encode(raw) }
-        transcript.screen(jpeg)
         return jpeg
+    }
+
+    override fun displayScreenPhoto(jpeg: ByteArray) {
+        transcript.screen(jpeg)
     }
 
     private fun send(event: JSONObject) {

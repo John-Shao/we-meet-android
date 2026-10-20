@@ -148,7 +148,9 @@ class AiCallViewModel(
                 else {
                     _state.update { it.copy(photoPending = true, cameraResult = null) }
                     try {
-                        val jpeg = current.captureScreenPhoto()
+                        val jpeg = com.we.meet.feature.assistant.screenread.ScreenReadAccessibility.capture(appContext)
+                            ?: current.captureScreenPhoto()
+                        current.displayScreenPhoto(jpeg)
                         val answer = agentRepo.photoQa(checkNotNull(sessionId), question, jpeg)
                         val result = CameraActionResult(true, null, false, "screen_answer", answer)
                         if (rtcClient === current) _state.update { it.copy(cameraResult = result) }
