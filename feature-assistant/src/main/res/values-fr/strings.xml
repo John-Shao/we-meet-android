@@ -75,6 +75,15 @@
     <string name="assistant_history_you">Vous</string>
     <string name="assistant_history_ai">Assistant IA</string>
     <string name="assistant_history_call">Appel IA</string>
+    <string name="assistant_history_call_completed">Terminé</string>
+    <string name="assistant_history_call_interrupted">Interrompu</string>
+    <string name="assistant_history_call_ongoing">En cours</string>
+    <string name="assistant_history_call_summary">Résumé</string>
+    <string name="assistant_history_call_todos">Tâches %1$d</string>
+    <string name="assistant_history_call_captures">Captures %1$d</string>
+    <string name="assistant_history_today">Aujourd’hui</string>
+    <string name="assistant_history_yesterday">Hier</string>
+    <string name="assistant_history_no_summary">Pas encore de résumé</string>
     <string name="assistant_history_translation">Traduction bilingue</string>
     <string name="assistant_history_replay">Réécouter la phrase</string>
     <string name="assistant_history_copy">Copier</string>
@@ -88,7 +97,7 @@
     <string name="assistant_history_clear">Effacer l’historique</string>
     <string name="assistant_history_delete">Supprimer la conversation</string>
     <string name="assistant_history_delete_hint">L’historique local sélectionné sera définitivement supprimé.</string>
-    <string name="assistant_history_local_hint">Enregistre les textes et les photos d’appel de ce compte sur cet appareil. Conserve les 200 dernières conversations. L’enregistrement se règle séparément dans les paramètres d’appel et de traduction. Les modifications s’appliquent aux nouvelles sessions.</string>
+    <string name="assistant_history_local_hint">Les conversations sont enregistrées sur cet appareil pour ce compte ; les 200 dernières sont conservées.</string>
     <string name="assistant_history_search">Rechercher dans le texte des conversations</string>
     <string name="assistant_history_close_search">Fermer la recherche</string>
     <string name="assistant_history_empty">Aucune conversation correspondante</string>

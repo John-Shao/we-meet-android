@@ -75,6 +75,15 @@
     <string name="assistant_history_you">Ik</string>
     <string name="assistant_history_ai">AI-assistent</string>
     <string name="assistant_history_call">AI-oproep</string>
+    <string name="assistant_history_call_completed">Voltooid</string>
+    <string name="assistant_history_call_interrupted">Onderbroken</string>
+    <string name="assistant_history_call_ongoing">Bezig</string>
+    <string name="assistant_history_call_summary">Samenvatting</string>
+    <string name="assistant_history_call_todos">Taken %1$d</string>
+    <string name="assistant_history_call_captures">Opnames %1$d</string>
+    <string name="assistant_history_today">Vandaag</string>
+    <string name="assistant_history_yesterday">Gisteren</string>
+    <string name="assistant_history_no_summary">Nog geen samenvatting</string>
     <string name="assistant_history_translation">Tweetalige vertaling</string>
     <string name="assistant_history_replay">Zin opnieuw afspelen</string>
     <string name="assistant_history_copy">Kopiëren</string>
@@ -88,7 +97,7 @@
     <string name="assistant_history_clear">Geschiedenis wissen</string>
     <string name="assistant_history_delete">Gesprek verwijderen</string>
     <string name="assistant_history_delete_hint">Hiermee wordt de geselecteerde lokale geschiedenis definitief verwijderd.</string>
-    <string name="assistant_history_local_hint">Slaat tekst en oproepfoto’s voor dit account op dit apparaat op. De laatste 200 gesprekken blijven bewaard. Het opslaan regel je apart in de instellingen voor oproepen en vertaling. Wijzigingen gelden alleen voor nieuwe sessies.</string>
+    <string name="assistant_history_local_hint">Gesprekken worden voor dit account op dit apparaat opgeslagen; de laatste 200 blijven bewaard.</string>
     <string name="assistant_history_search">Gesprekstekst zoeken</string>
     <string name="assistant_history_close_search">Zoeken sluiten</string>
     <string name="assistant_history_empty">Geen overeenkomende gesprekken</string>

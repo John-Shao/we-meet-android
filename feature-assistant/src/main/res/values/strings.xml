@@ -75,6 +75,15 @@
     <string name="assistant_history_you">You</string>
     <string name="assistant_history_ai">AI assistant</string>
     <string name="assistant_history_call">AI call</string>
+    <string name="assistant_history_call_completed">Completed</string>
+    <string name="assistant_history_call_interrupted">Interrupted</string>
+    <string name="assistant_history_call_ongoing">In progress</string>
+    <string name="assistant_history_call_summary">Summary</string>
+    <string name="assistant_history_call_todos">Todos %1$d</string>
+    <string name="assistant_history_call_captures">Captures %1$d</string>
+    <string name="assistant_history_today">Today</string>
+    <string name="assistant_history_yesterday">Yesterday</string>
+    <string name="assistant_history_no_summary">No summary yet</string>
     <string name="assistant_history_translation">Bilingual translation</string>
     <string name="assistant_history_replay">Replay sentence</string>
     <string name="assistant_history_copy">Copy</string>
@@ -88,7 +97,7 @@
     <string name="assistant_history_clear">Clear history</string>
     <string name="assistant_history_delete">Delete conversation</string>
     <string name="assistant_history_delete_hint">This permanently removes the selected local history.</string>
-    <string name="assistant_history_local_hint">Saves text and call photos for this account on this device. Keeps the latest 200 conversations. Control saving separately in call and translation settings. Changes apply to new sessions.</string>
+    <string name="assistant_history_local_hint">Conversation records are stored on this device for this account; the latest 200 are kept.</string>
     <string name="assistant_history_search">Search conversation text</string>
     <string name="assistant_history_close_search">Close search</string>
     <string name="assistant_history_empty">No matching conversations</string>

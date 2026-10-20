@@ -372,6 +372,19 @@ fun AssistantCallScreen(
 
     val isVideoActive = state.status is AiCallStatus.Active && state.mode == AiCallMode.Video
 
+    // Replace the call screen while history is open. Rendering history inside
+    // the call Scaffold hid its own top bar (and its search/delete actions)
+    // behind the call top bar.
+    if (showHistory) {
+        val store = vm.history
+        if (store != null) {
+            Surface(Modifier.fillMaxSize()) {
+                AssistantHistoryContent(store, onBack = { showHistory = false }, deps = deps, kind = "call")
+            }
+            return
+        }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         // Theme-aware background; the previous hardcoded white looked broken
@@ -545,13 +558,6 @@ fun AssistantCallScreen(
                     Scaffold(topBar = { WeMeetTopBar(title = stringResource(R.string.assistant_call_transcript),
                         onBack = { showTranscript = false }) }) { padding ->
                         CallTranscriptList(state.transcriptRows, Modifier.fillMaxSize().padding(padding), timestamps = state.transcriptTimestamps)
-                    }
-                }
-            }
-            if (showHistory) {
-                vm.history?.let { store ->
-                    Surface(Modifier.fillMaxSize()) {
-                        AssistantHistoryContent(store, onBack = { showHistory = false }, deps = deps, kind = "call")
                     }
                 }
             }
