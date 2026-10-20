@@ -10,6 +10,22 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OmniCallToolsTest {
+    @Test fun readScreenIsOfferedOnlyWhileSharingAndDispatchesItsQuestion() = runTest {
+        val sent = mutableListOf<JSONObject>()
+        val questions = mutableListOf<String>()
+        val tools = OmniCallTools(backgroundScope, null, sent::add, {}, {}, { result },
+            screenReadHandler = PhotoToolHandler { questions += it; result.copy(code = "screen_answer", message = "invoice 8472") })
+        fun names(sharing: Boolean) = (0 until tools.definitions(sharing).length())
+            .map { tools.definitions(sharing).getJSONObject(it).getJSONObject("function").getString("name") }
+        assertTrue("read_screen" in names(true))
+        assertFalse("read_screen" in names(false))
+        tools.accept(call("read", "{\"question\":\"read the total\"}", "read_screen"))
+        tools.accept(done()); runCurrent()
+        assertEquals(listOf("read the total"), questions)
+        assertTrue(sent.first().getJSONObject("item").getString("output").contains("invoice 8472"))
+        tools.close()
+    }
+
     @Test fun photoDispatchIsSeparateFromModeChangesAndDuplicateEventsDoNotRetake() = runTest {
         val sent = mutableListOf<JSONObject>(); val questions = mutableListOf<String>(); var camera = 0
         val tools = OmniCallTools(backgroundScope, CameraToolHandler { camera++; result }, sent::add, {}, {}, { result },

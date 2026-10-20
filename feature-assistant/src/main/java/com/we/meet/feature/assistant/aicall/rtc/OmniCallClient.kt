@@ -41,5 +41,8 @@ interface OmniCallClient {
 
     suspend fun flipCamera(): Boolean
     suspend fun capturePhoto(): ByteArray = error("Photo capture unavailable")
+
+    /** A still of the current shared screen, used for explicit screen reading. */
+    suspend fun captureScreenPhoto(): ByteArray = error("Screen photo unavailable")
     fun close()
 }

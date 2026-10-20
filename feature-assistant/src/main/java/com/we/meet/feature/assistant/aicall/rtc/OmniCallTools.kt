@@ -17,14 +17,22 @@ internal class OmniCallTools(
     private val endCall: (() -> Unit)? = null,
     private val allowMissingResponseDone: Boolean = false,
     private val photoHandler: PhotoToolHandler? = null,
+    private val screenReadHandler: PhotoToolHandler? = null,
 ) {
     private sealed interface Request {
         data class Camera(val request: CameraToolRequest) : Request
         data object EndCall : Request
         data class Photo(val question: String) : Request
+        data class ScreenRead(val question: String) : Request
     }
     fun definitions(screenSharing: Boolean = false): JSONArray =
-        Companion.definitions(handler != null && !screenSharing, endCall != null, serverInstructions, photoHandler != null && !screenSharing)
+        Companion.definitions(
+            handler != null && !screenSharing,
+            endCall != null,
+            serverInstructions,
+            photoHandler != null && !screenSharing,
+            screenReadHandler != null && screenSharing,
+        )
     private var serverInstructions: Map<String, String> = emptyMap()
     fun configureInstructions(value: Map<String, String>) {
         if (handler != null) {
@@ -41,7 +49,7 @@ internal class OmniCallTools(
         Companion.instructions(
             base, handler != null && !screenSharing, endCall != null, serverInstructions,
             photoHandler != null && !screenSharing, screenSharing, screenVisible,
-        )
+        ) + if (screenSharing && screenReadHandler != null) "\n$READ_SCREEN_RULE" else ""
     private class Round {
         val calls = linkedMapOf<String, Job?>()
         var done = false
@@ -168,6 +176,14 @@ internal class OmniCallTools(
                     round.photoRequested = true
                     Request.Photo(question)
                 }
+                "read_screen" -> {
+                    require(screenReadHandler != null && args.length() == 1 && args.get("question") is String)
+                    val question = args.getString("question").trim()
+                    require(question.isNotEmpty() && question.length <= 1000)
+                    require(!round.photoRequested)
+                    round.photoRequested = true
+                    Request.ScreenRead(question)
+                }
                 else -> error("Unknown tool")
             }
         }.getOrNull()
@@ -190,6 +206,7 @@ internal class OmniCallTools(
                 val result = when (request) {
                     null -> invalid("invalid_arguments")
                     is Request.Photo -> checkNotNull(photoHandler).execute(request.question)
+                    is Request.ScreenRead -> checkNotNull(screenReadHandler).execute(request.question)
                     is Request.Camera -> checkNotNull(handler).execute(request.request)
                     Request.EndCall -> error("Terminal action already handled")
                 }
@@ -323,7 +340,8 @@ internal class OmniCallTools(
     }
 
     companion object {
-        fun definitions(cameraEnabled: Boolean = true, endCallEnabled: Boolean = false, rules: Map<String, String> = emptyMap(), photoEnabled: Boolean = false): JSONArray {
+        fun definitions(cameraEnabled: Boolean = true, endCallEnabled: Boolean = false, rules: Map<String, String> = emptyMap(), photoEnabled: Boolean = false,
+            screenReadEnabled: Boolean = false): JSONArray {
             val result = JSONArray()
             if (cameraEnabled) listOf(
             JSONObject().put("type", "function").put("function", JSONObject()
@@ -347,6 +365,11 @@ internal class OmniCallTools(
                 .put("parameters", JSONObject().put("type", "object").put("properties", JSONObject()
                     .put("question", JSONObject().put("type", "string").put("minLength", 1).put("maxLength", 1000)))
                     .put("required", JSONArray(listOf("question"))).put("additionalProperties", false))))
+            if (screenReadEnabled) result.put(JSONObject().put("type", "function").put("function", JSONObject()
+                .put("name", "read_screen").put("description", READ_SCREEN_DESCRIPTION)
+                .put("parameters", JSONObject().put("type", "object").put("properties", JSONObject()
+                    .put("question", JSONObject().put("type", "string").put("minLength", 1).put("maxLength", 1000)))
+                    .put("required", JSONArray(listOf("question"))).put("additionalProperties", false))))
             return result
         }
 
@@ -366,5 +389,9 @@ internal class OmniCallTools(
             "The user is sharing their screen. Read the shared screen content; do not ask the user to open the camera or take a photo."
         private const val SCREEN_HIDDEN_RULE =
             "The user is sharing a single app, but it is currently hidden. Ask the user to bring the shared app back to the foreground before answering questions about its content."
+        private const val READ_SCREEN_DESCRIPTION =
+            "Capture the current shared screen as a high-quality still and answer the question about its text or details."
+        private const val READ_SCREEN_RULE =
+            "If the user asks about screen text or fine detail, call read_screen with their question instead of guessing from the video stream."
     }
 }

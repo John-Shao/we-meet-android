@@ -137,6 +137,7 @@
     <string name="assistant_photo_close">关闭图片</string>
     <string name="assistant_photo_attachment">[图片]</string>
     <string name="assistant_photo_failed">拍图问答失败，请重试</string>
+    <string name="assistant_screen_read_failed">读取屏幕失败，请重试</string>
     <string name="assistant_call_vad_mode">语音轮次检测（VAD）</string>
     <string name="assistant_call_vad_server">声学检测（server_vad）</string>
     <string name="assistant_call_vad_semantic">语义检测（semantic_vad）</string>

@@ -143,6 +143,7 @@
     <string name="assistant_photo_close">Foto schließen</string>
     <string name="assistant_photo_attachment">[Foto]</string>
     <string name="assistant_photo_failed">Das Foto konnte nicht analysiert werden. Bitte erneut versuchen.</string>
+    <string name="assistant_screen_read_failed">Der Bildschirm konnte nicht gelesen werden. Bitte erneut versuchen.</string>
     <string name="assistant_call_vad_mode">Erkennung von Gesprächsbeiträgen (VAD)</string>
     <string name="assistant_call_vad_server">Akustische Erkennung (server_vad)</string>
     <string name="assistant_call_vad_semantic">Semantische Erkennung (semantic_vad)</string>

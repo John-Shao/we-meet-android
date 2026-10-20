@@ -47,6 +47,7 @@ class OmniWebRtcClient(
     onToolFeedbackFailure: (CameraFeedbackFailure) -> Unit = {},
     onEndCall: (() -> Unit)? = null,
     photoHandler: PhotoToolHandler? = null,
+    private val screenReadHandler: PhotoToolHandler? = null,
     private val vadMode: AiCallVadMode = AiCallVadMode.Server,
     private val videoSettings: AiCallVideoSettings = AiCallVideoSettings(),
 ) : OmniCallClient {
@@ -93,6 +94,7 @@ class OmniWebRtcClient(
     private var screenCapture: ScreenShareCapture? = null
     private var screenSource: VideoSource? = null
     private var screenTrack: VideoTrack? = null
+    private val screenFrames = ScreenFrameStore()
     private var screenStarted = false
     private var screenStopCallback: (() -> Unit)? = null
     private var pendingScreenShareUpdate: Pair<Boolean, Boolean>? = null
@@ -106,9 +108,10 @@ class OmniWebRtcClient(
     private var toolOutputHeld = false
     private val cameraToolHandler = toolHandler?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_CAMERA_VOICE_CONTROL }
     private val endCallHandler = onEndCall?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_VOICE_HANGUP }
-    private val tools = if (cameraToolHandler != null || endCallHandler != null || photoHandler != null) {
+    private val tools = if (cameraToolHandler != null || endCallHandler != null || photoHandler != null || screenReadHandler != null) {
         OmniCallTools(scope, cameraToolHandler, ::send, { held -> toolOutputHeld = held; updateOutput() }, onToolFeedbackFailure,
-            { code -> CameraActionResult(false, cameraEnabled, false, code, context.getString(R.string.assistant_call_invalid_tool)) }, endCallHandler, photoHandler = photoHandler)
+            { code -> CameraActionResult(false, cameraEnabled, false, code, context.getString(R.string.assistant_call_invalid_tool)) }, endCallHandler, photoHandler = photoHandler,
+            screenReadHandler = screenReadHandler)
     } else null
     private fun updateOutput() { remoteAudio?.setEnabled(!outputMuted && !outputSuppressed && !toolOutputHeld) }
 
@@ -361,6 +364,7 @@ class OmniWebRtcClient(
             runCatching { screenSource?.dispose() }
             screenTrack = null
             screenSource = null
+            screenFrames.clear()
             // Keep screenStarted true until the resources above are gone:
             // camera start must not attach a new track while cleanup still
             // owns the video sender.
@@ -407,18 +411,13 @@ class OmniWebRtcClient(
         )
         captureRef = capture
         try {
-            val snapshotAt = SystemClock.elapsedRealtime() + 6_000
-            var snapshotSent = false
             val observed = object : CapturerObserver {
                 override fun onCapturerStarted(success: Boolean) = source.capturerObserver.onCapturerStarted(success)
 
                 override fun onCapturerStopped() = source.capturerObserver.onCapturerStopped()
 
                 override fun onFrameCaptured(frame: VideoFrame) {
-                    if (!snapshotSent && SystemClock.elapsedRealtime() >= snapshotAt) {
-                        snapshotSent = true
-                        ScreenFrameJpeg.encode(frame)?.let(transcript::screen)
-                    }
+                    screenFrames.update(frame)
                     source.capturerObserver.onFrameCaptured(frame)
                 }
             }
@@ -599,6 +598,16 @@ class OmniWebRtcClient(
         return jpeg
     }
 
+    override suspend fun captureScreenPhoto(): ByteArray {
+        check(!closed && screenStarted)
+        val raw = withContext(Dispatchers.Default) {
+            screenFrames.encodeLatest() ?: error("No screen frame available")
+        }
+        val jpeg = withContext(Dispatchers.Default) { CallPhotoImage.encode(raw) }
+        transcript.screen(jpeg)
+        return jpeg
+    }
+
     private fun send(event: JSONObject) {
         if (!event.has("event_id")) event.put("event_id", UUID.randomUUID().toString())
         val channel = checkNotNull(eventChannel)
@@ -669,6 +678,7 @@ class OmniWebRtcClient(
         screenStopCallback = null
         runCatching { screenCapture?.stop() }
         screenCapture = null
+        screenFrames.clear()
         runCatching { peer?.close() }
         cameraFrames.close()
         runCatching { capturer?.stopCapture() }

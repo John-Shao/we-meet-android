@@ -42,6 +42,7 @@ class OmniAoqClient(
     onToolFeedbackFailure: (CameraFeedbackFailure) -> Unit = {},
     onEndCall: (() -> Unit)? = null,
     photoHandler: PhotoToolHandler? = null,
+    private val screenReadHandler: PhotoToolHandler? = null,
     private val vadMode: AiCallVadMode = AiCallVadMode.Server,
     private val videoSettings: AiCallVideoSettings = AiCallVideoSettings(),
 ) : OmniCallClient {
@@ -73,6 +74,7 @@ class OmniAoqClient(
     private var screenCapture: ScreenShareCapture? = null
     private var screenEgl: EglBase? = null
     private var screenRouter: CameraFrameRouter? = null
+    private val screenFrames = ScreenFrameStore()
     private var screenStarted = false
     private var screenStopCallback: (() -> Unit)? = null
     private var pendingScreenShareUpdate: Pair<Boolean, Boolean>? = null
@@ -85,13 +87,14 @@ class OmniAoqClient(
     @Volatile private var outputSuppressed = false
     private val cameraToolHandler = toolHandler?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_CAMERA_VOICE_CONTROL }
     private val endCallHandler = onEndCall?.takeIf { com.we.meet.feature.assistant.BuildConfig.AI_CALL_VOICE_HANGUP }
-    private val tools = if (cameraToolHandler != null || endCallHandler != null || photoHandler != null) {
+    private val tools = if (cameraToolHandler != null || endCallHandler != null || photoHandler != null || screenReadHandler != null) {
         OmniCallTools(scope, cameraToolHandler, ::send, { held ->
             // Keep decoding/draining the SDK stream; pausing the player can
             // defer response.done until playback resumes, deadlocking a tool.
             toolOutputHeld = held
         }, onToolFeedbackFailure, { code -> CameraActionResult(false, cameraEnabled, false, code,
-            context.getString(R.string.assistant_call_invalid_tool)) }, endCallHandler, allowMissingResponseDone = true, photoHandler = photoHandler)
+            context.getString(R.string.assistant_call_invalid_tool)) }, endCallHandler, allowMissingResponseDone = true, photoHandler = photoHandler,
+            screenReadHandler = screenReadHandler)
     } else null
     override var cameraFront = false
         private set
@@ -383,6 +386,7 @@ class OmniAoqClient(
             runCatching { engine?.stopVideoCapture() }
             runCatching { screenEgl?.release() }
             screenEgl = null
+            screenFrames.clear()
             // Keep screenStarted true until capture/encoder resources are gone.
             screenStarted = false
             return
@@ -459,8 +463,6 @@ class OmniAoqClient(
                 },
             )
             capture = screen
-            val snapshotAt = SystemClock.elapsedRealtime() + 6_000
-            var snapshotSent = false
             screen.start(consent, object : CapturerObserver {
                 override fun onCapturerStarted(success: Boolean) {
                     if (!success) firstFrame.completeExceptionally(IllegalStateException("Screen capture failed"))
@@ -468,10 +470,7 @@ class OmniAoqClient(
 
                 override fun onCapturerStopped() = Unit
                 override fun onFrameCaptured(frame: VideoFrame) {
-                    if (!snapshotSent && SystemClock.elapsedRealtime() >= snapshotAt) {
-                        snapshotSent = true
-                        ScreenFrameJpeg.encode(frame)?.let(transcript::screen)
-                    }
+                    screenFrames.update(frame)
                     frames.onFrame(frame)
                 }
             }, size.width, size.height, ScreenShareSizing.CAPTURE_FPS)
@@ -544,6 +543,16 @@ class OmniAoqClient(
         transcript.photo(jpeg)
         return jpeg
     }
+
+    override suspend fun captureScreenPhoto(): ByteArray {
+        check(!closed && screenStarted)
+        val raw = withContext(Dispatchers.Default) {
+            screenFrames.encodeLatest() ?: error("No screen frame available")
+        }
+        val jpeg = withContext(Dispatchers.Default) { CallPhotoImage.encode(raw) }
+        transcript.screen(jpeg)
+        return jpeg
+    }
     private fun send(event: JSONObject) {
         if (!event.has("event_id")) event.put("event_id", UUID.randomUUID().toString())
         ok(engine!!.sendDataMsg(AoqDataMsg().apply { data = event.toString().toByteArray(Charsets.UTF_8) }))
@@ -567,6 +576,7 @@ class OmniAoqClient(
         screenCapture = null
         runCatching { screenEgl?.release() }
         screenEgl = null
+        screenFrames.clear()
         runCatching { camera.close() }
         ready.cancel(); recovery.close(); tools?.close(); scope.cancel()
         synchronized(ownership) {

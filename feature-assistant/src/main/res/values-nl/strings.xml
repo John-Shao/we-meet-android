@@ -143,6 +143,7 @@
     <string name="assistant_photo_close">Foto sluiten</string>
     <string name="assistant_photo_attachment">[Foto]</string>
     <string name="assistant_photo_failed">Kan deze foto niet analyseren. Probeer het opnieuw.</string>
+    <string name="assistant_screen_read_failed">Kan dit scherm niet lezen. Probeer het opnieuw.</string>
     <string name="assistant_call_vad_mode">Detectie van spreekbeurten (VAD)</string>
     <string name="assistant_call_vad_server">Akoestische detectie (server_vad)</string>
     <string name="assistant_call_vad_semantic">Semantische detectie (semantic_vad)</string>

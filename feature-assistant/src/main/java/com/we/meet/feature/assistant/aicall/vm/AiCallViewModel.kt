@@ -141,6 +141,28 @@ class AiCallViewModel(
                     } finally { if (rtcClient === client) _state.update { it.copy(photoPending = false) } }
                 }
             },
+            PhotoToolHandler { question ->
+                val current = rtcClient
+                if (current == null || _state.value.status !is AiCallStatus.Active || sessionId == null || !_state.value.isScreenSharing)
+                    cameraResult("cancelled", current?.cameraEnabled, false)
+                else {
+                    _state.update { it.copy(photoPending = true, cameraResult = null) }
+                    try {
+                        val jpeg = current.captureScreenPhoto()
+                        val answer = agentRepo.photoQa(checkNotNull(sessionId), question, jpeg)
+                        val result = CameraActionResult(true, null, false, "screen_answer", answer)
+                        if (rtcClient === current) _state.update { it.copy(cameraResult = result) }
+                        result
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Exception) {
+                        CameraActionResult(false, null, false, "screen_read_failed",
+                            appContext.getString(R.string.assistant_screen_read_failed))
+                    } finally {
+                        if (rtcClient === current) _state.update { it.copy(photoPending = false) }
+                    }
+                }
+            },
             selection.vadMode,
             selection.videoSettings,
         )
