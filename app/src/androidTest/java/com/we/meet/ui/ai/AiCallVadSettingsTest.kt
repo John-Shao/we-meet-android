@@ -1,12 +1,14 @@
 package com.we.meet.ui.ai
 
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.we.meet.feature.assistant.aicall.model.AiCallSelection
+import com.we.meet.feature.assistant.aicall.model.AiCallTransport
 import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
 import com.we.meet.feature.assistant.aicall.ui.AiCallSettingsScreen
 import com.we.meet.ui.theme.WeMeetTheme
@@ -41,5 +43,27 @@ class AiCallVadSettingsTest {
             enabled.value = false
         }
         compose.onNodeWithTag("call-vad-picker").assertIsNotEnabled()
+    }
+
+    /** The WebRTC gateway rejects the initial semantic_vad switch, so that row is disabled. */
+    @Test fun semanticVadIsOnlySelectableOverAoq() {
+        val selection = mutableStateOf(AiCallSelection(transport = AiCallTransport.WebRTC))
+        compose.setContent {
+            WeMeetTheme {
+                AiCallSettingsScreen(config = null, selection = selection.value, historyStore = null,
+                    enabled = true,
+                    onSelectTransport = { selection.value = selection.value.copy(transport = it) },
+                    onSelectVadMode = { selection.value = selection.value.copy(vadMode = it) },
+                    onSelectLocalPreviewFps = {}, onSelectModelUploadFps = {},
+                    onSelectVoice = {}, onSelectPrompt = {}, onSelectScene = {}, onBack = {})
+            }
+        }
+        compose.onNodeWithTag("call-vad-picker").performScrollTo().performClick()
+        compose.onNodeWithTag("call-vad-semantic_vad").assertIsNotEnabled()
+        compose.onNodeWithTag("call-vad-server_vad").performClick()
+        compose.runOnIdle { selection.value = selection.value.copy(transport = AiCallTransport.AOQ) }
+        compose.onNodeWithTag("call-vad-picker").performClick()
+        compose.onNodeWithTag("call-vad-semantic_vad").assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals(AiCallVadMode.Semantic, selection.value.vadMode) }
     }
 }

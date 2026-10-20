@@ -12,6 +12,7 @@ import com.we.meet.feature.assistant.aicall.model.AiCallSelection
 import com.we.meet.feature.assistant.aicall.model.AiCallTransport
 import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
 import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
+import com.we.meet.feature.assistant.aicall.model.effectiveFor
 import java.security.MessageDigest
 import java.util.UUID
 import org.junit.After
@@ -107,7 +108,9 @@ class AoqDefaultPreferencesTest {
         for (transport in AiCallTransport.entries) for (mode in AiCallVadMode.entries) {
             val selected = prefs.load().copy(transport = transport, vadMode = mode)
             prefs.save(selected)
-            assertEquals(selected, AiCallPreferences(context).load())
+            // WebRTC cannot apply semantic_vad at session start, so the stored pair is
+            // normalised to acoustic detection; AOQ keeps either requested detector.
+            assertEquals(selected.copy(vadMode = mode.effectiveFor(transport)), AiCallPreferences(context).load())
         }
     }
 
@@ -186,7 +189,9 @@ class AoqDefaultPreferencesTest {
 
     @Test fun invalidOrMissingFrameRatesRecoverAndPreserveOtherSelections() {
         val prefs = AiCallPreferences(context)
-        val selected = prefs.load().copy(voiceId = "voice", transport = AiCallTransport.WebRTC,
+        // AOQ keeps semantic_vad, so this case isolates frame-rate recovery from the
+        // WebRTC VAD normalisation covered by vadPreferencePersistsAcrossTransports…
+        val selected = prefs.load().copy(voiceId = "voice", transport = AiCallTransport.AOQ,
             vadMode = AiCallVadMode.Semantic)
         prefs.save(selected)
         callStore().edit().remove("call_local_preview_fps").remove("call_model_upload_fps").commit()

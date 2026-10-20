@@ -4,6 +4,7 @@ import android.content.Context
 import com.we.meet.feature.assistant.aicall.model.AiCallSelection
 import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
 import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
+import com.we.meet.feature.assistant.aicall.model.effectiveFor
 
 /** One set of preferences shared by microphone-only and camera-enabled calls. */
 class AiCallPreferences(context: Context) {
@@ -38,7 +39,13 @@ class AiCallPreferences(context: Context) {
             vadMode = AiCallVadMode.fromStored(prefs.getString("call_vad_mode", null)),
             videoSettings = AiCallVideoSettings.fromStored(
                 prefs.getInt("call_local_preview_fps", 15), prefs.getInt("call_model_upload_fps", 2)),
-        )
+        ).let { stored ->
+            // A stored WebRTC + semantic_vad pair cannot connect: the gateway rejects
+            // that turn_detection change. Normalise it once instead of failing every call.
+            val selection = stored.copy(vadMode = stored.vadMode.effectiveFor(stored.transport))
+            if (selection != stored) save(selection)
+            selection
+        }
     }
 
     fun save(selection: AiCallSelection) {

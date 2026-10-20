@@ -16,6 +16,8 @@ Android 的 AI 工具“打电话”通过当前 `qwen3.8-omni-flash-realtime` �
 
 `AiCallViewModel` 在创建客户端时固定本通电话的模式，两条链路通过共享配置向各自的 Data 通道发送 `session.update.session.turn_detection`；仅切换 `type`，维持 `threshold=0.5` 和 `silence_duration_ms=800`，不改变麦克风、播放音量、回声消除、摄像头工具或业务后端接口。`OmniCall` 日志记录传输方式和请求的 VAD 模式，不记录音频、转写或凭据。
 
+**WebRTC 的 `semantic_vad` 限制（2026-10-20 实测）。** 真机 AMM-AN00／Android 16 上，WebRTC 建连后首个 `session.update` 若把 `turn_detection.type` 从默认 `server_vad` 改为 `semantic_vad`，WebRTC 网关会返回 `invalid_request_error`，`param=session.turn_detection`，原文 `Cannot change turn_detection while input audio is pending`；此时尚未收到 `session.updated`，原实现把错误当致命失败，通话在约 150 ms 内结束并只提示“出错了，请稍后重试”。同一 payload 走 AOQ 可正常收到 `session.updated`；WebRTC 下改用 `server_vad` 也能正常建连。因此客户端对 WebRTC 不再下发 `semantic_vad`：设置页在 WebRTC 下禁用该项并显示原因，已保存的 WebRTC + `semantic_vad` 组合在读取偏好时归一为 `server_vad`，AOQ 仍保留语义检测。`AiCallVadMode.effectiveFor(transport)` 是唯一映射点；网关修复后的回退清单见业务仓库 [AI 音视频互动方案 §11.3 开关与回退](https://github.com/John-Shao/we-meet/blob/main/docs/features/ai-audio-video-interaction.md)。协议错误日志同时记录 `param` 与该条校验消息（不含用户内容），便于后续定位同类拒绝。
+
 对比时固定音色、音量、场景、设备和网络，分别测试 AOQ／WebRTC × 两种 VAD 的语音／视频通话：正常问答、句中停顿、附和声／背景音、无人讲话时持续播报、用户主动打断及摄像头／结束工具。观察误打断、漏识别和回复延迟；语义检测不替代回声消除，也不能据此认定网络延迟问题已解决。每次挂断后切换模式，再开始下一通；安装升级或重新进入页面后确认选择仍保留。官方 [AOQ 实时通话示例](https://help.aliyun.com/zh/model-studio/best-practice-aoq-omni-realtime)明确支持并推荐 `semantic_vad`。
 
 ### 摄像头状态

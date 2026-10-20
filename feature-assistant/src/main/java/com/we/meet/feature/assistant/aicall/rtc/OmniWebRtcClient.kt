@@ -291,7 +291,10 @@ class OmniWebRtcClient(
             }
             "error" -> {
                 val error = event.optJSONObject("error")
-                Log.w("OmniWebRtc", "Protocol error type=${error?.optString("type")} code=${error?.optString("code")}")
+                // Validation metadata only: the provider message names the rejected
+                // field and never carries audio, transcripts, tool args or credentials.
+                Log.w("OmniWebRtc", "Protocol error type=${error?.optString("type")} code=${error?.optString("code")} " +
+                    "param=${error?.optString("param")} message=${error?.optString("message")?.take(160)}")
                 if (error != null && screenUpdateEventIds.remove(error.optString("event_id"))) {
                     Log.w("OmniWebRtc", "Screen share state update rejected; retaining call")
                     return

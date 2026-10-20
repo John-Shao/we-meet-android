@@ -75,6 +75,9 @@ class AiCallViewModel(
             return
         }
         val selection = config.resolveSelection(_state.value.selection)
+        // WebRTC rejects a turn_detection change in the first session.update, so the
+        // call must start with the detector that transport can actually apply.
+        val vadMode = selection.vadMode.effectiveFor(selection.transport)
         val transcriptSessionId = java.util.UUID.randomUUID().toString()
         recording = history?.begin("call")
         val currentRecording = recording
@@ -173,7 +176,7 @@ class AiCallViewModel(
                     }
                 }
             },
-            selection.vadMode,
+            vadMode,
             selection.videoSettings,
         )
         rtcClient = client
@@ -513,8 +516,13 @@ class AiCallViewModel(
         _state.update { it.copy(showSettings = show) }
     }
 
-    fun selectTransport(value: AiCallTransport) = updateSelection(_state.value.selection.copy(transport = value))
-    fun selectVadMode(value: AiCallVadMode) = updateSelection(_state.value.selection.copy(vadMode = value))
+    fun selectTransport(value: AiCallTransport) = updateSelection(_state.value.selection.copy(
+        transport = value,
+        // Switching to WebRTC drops semantic_vad, which that transport cannot apply.
+        vadMode = _state.value.selection.vadMode.effectiveFor(value),
+    ))
+    fun selectVadMode(value: AiCallVadMode) = updateSelection(_state.value.selection.copy(
+        vadMode = value.effectiveFor(_state.value.selection.transport)))
     fun selectLocalPreviewFps(value: Int) {
         if (value !in 10..30) return
         val selection = _state.value.selection

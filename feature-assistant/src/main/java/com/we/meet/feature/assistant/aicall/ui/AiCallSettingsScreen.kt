@@ -15,6 +15,7 @@ import com.we.meet.feature.assistant.aicall.model.AiAgentConfigResponse
 import com.we.meet.feature.assistant.aicall.model.AiCallSelection
 import com.we.meet.feature.assistant.aicall.model.AiCallTransport
 import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
+import com.we.meet.feature.assistant.aicall.model.effectiveFor
 import com.we.meet.feature.assistant.history.AssistantHistoryPreference
 import com.we.meet.feature.assistant.history.AssistantHistoryStore
 import com.we.meet.ui.components.SettingsGroup
@@ -80,15 +81,20 @@ fun AiCallSettingsScreen(
                 )
             }
             SettingsGroupHeader(stringResource(R.string.assistant_call_vad_mode))
-            val vadLabels = listOf(stringResource(R.string.assistant_call_vad_server),
-                stringResource(R.string.assistant_call_vad_semantic))
-            SettingsGroup {
-                CallSettingsDropdown(vadLabels[selection.vadMode.ordinal], vadLabels,
-                    { onSelectVadMode(AiCallVadMode.entries[it]) }, enabled,
-                    modifier = dropdownPadding.testTag("call-vad-picker"),
-                    optionTag = { "call-vad-${AiCallVadMode.entries[it].wireValue}" })
+            val vadModes = AiCallVadMode.entries
+            val vadLabels = vadModes.map {
+                stringResource(if (it == AiCallVadMode.Server) R.string.assistant_call_vad_server else R.string.assistant_call_vad_semantic)
             }
-            SettingsHint(stringResource(R.string.assistant_call_vad_hint))
+            val effectiveVad = selection.vadMode.effectiveFor(selection.transport)
+            SettingsGroup {
+                CallSettingsDropdown(vadLabels[effectiveVad.ordinal], vadLabels,
+                    { onSelectVadMode(vadModes[it]) }, enabled,
+                    modifier = dropdownPadding.testTag("call-vad-picker"),
+                    optionTag = { "call-vad-${vadModes[it].wireValue}" },
+                    optionEnabled = { vadModes[it].effectiveFor(selection.transport) == vadModes[it] })
+            }
+            SettingsHint(stringResource(if (selection.transport == AiCallTransport.WebRTC)
+                R.string.assistant_call_vad_hint_webrtc else R.string.assistant_call_vad_hint))
             SettingsGroupHeader(stringResource(R.string.assistant_call_preview_fps))
             val previewRates = (10..30).toList()
             val previewLabels = previewRates.map { stringResource(R.string.assistant_call_fps_value, it) }
@@ -130,6 +136,7 @@ fun CallSettingsDropdown(
     enabled: Boolean,
     modifier: Modifier = Modifier.padding(horizontal = Dimens.SpaceXl),
     optionTag: ((Int) -> String)? = null,
+    optionEnabled: ((Int) -> Boolean)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -159,6 +166,7 @@ fun CallSettingsDropdown(
                 DropdownMenuItem(
                     text = { Text(label) },
                     modifier = optionTag?.let { Modifier.testTag(it(idx)) } ?: Modifier,
+                    enabled = optionEnabled?.invoke(idx) ?: true,
                     onClick = {
                         onSelect(idx)
                         expanded = false
