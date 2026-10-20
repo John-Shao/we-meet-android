@@ -88,7 +88,14 @@ object ScreenReadAccessibility {
     suspend fun capture(context: Context): ByteArray? {
         if (!isEnabled(context)) return null
         val service = ScreenReadAccessibilityService.accessForCapture() ?: return null
+        val started = android.os.SystemClock.elapsedRealtime()
         val raw = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) service.captureJpeg() else null
-        return raw?.let { withContext(Dispatchers.Default) { CallPhotoImage.encode(it) } }
+        val rawMs = android.os.SystemClock.elapsedRealtime() - started
+        val normalized = raw?.let { withContext(Dispatchers.Default) { CallPhotoImage.encode(it) } }
+        android.util.Log.i(
+            "OmniScreenRead",
+            "accessibility screenshotMs=$rawMs rawBytes=${raw?.size ?: -1} normalizedBytes=${normalized?.size ?: -1}",
+        )
+        return normalized
     }
 }

@@ -147,11 +147,18 @@ class AiCallViewModel(
                     cameraResult("cancelled", current?.cameraEnabled, false)
                 else {
                     _state.update { it.copy(photoPending = true, cameraResult = null) }
+                    val readStartedAt = android.os.SystemClock.elapsedRealtime()
                     try {
                         val jpeg = com.we.meet.feature.assistant.screenread.ScreenReadAccessibility.capture(appContext)
                             ?: current.captureScreenPhoto()
+                        val capturedAt = android.os.SystemClock.elapsedRealtime()
                         current.displayScreenPhoto(jpeg)
                         val answer = agentRepo.photoQa(checkNotNull(sessionId), question, jpeg)
+                        val answeredAt = android.os.SystemClock.elapsedRealtime()
+                        android.util.Log.i(
+                            "OmniScreenRead",
+                            "captureMs=${capturedAt - readStartedAt} photoQaMs=${answeredAt - capturedAt} totalMs=${answeredAt - readStartedAt}",
+                        )
                         val result = CameraActionResult(true, null, false, "screen_answer", answer)
                         if (rtcClient === current) _state.update { it.copy(cameraResult = result) }
                         result
