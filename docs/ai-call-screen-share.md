@@ -209,6 +209,8 @@ ViewModel 用 `Mutex` + 递增 token 串行化 start/stop/系统撤销；系统�
   - WebRTC 真实语音验证：用户口述问题被正确转写，说明 WebRTC 音频链路正常；整屏共享同一个实时 Chrome 页面时，AI 仍回答成中文发票（123456 / ¥1,000.00）。
   - 临时 frame dump：共享早期 dump 到的是 We Meet 通话页/系统授权框；计划在 Chrome 前台后 dump 第 24 帧未产生日志，提示实时 Chrome 画面可能没有被持续采集或没有进入模型。当前问题更像是 **Chrome/WebView 实时画面采集/传递**，而不是模型 OCR 能力。
   - 结论：客户端送出的帧正确，模型也能读实时计算器的大数字；Chrome 小字号文字仍失败。问题不是「视频完全没进模型」，而是当前 576×1280 屏幕采集在大字号下可读、小字号下视觉 grounding 不足。不能宣称小字号文字/发票号可读；下一步应提高文字区域清晰度（更高采集分辨率或局部放大）或使用 photo QA 兜底。
+  - 最终结论（2026-10-20）：普通 Chrome 页面没有 `FLAG_SECURE`；同机微信、计算器等应用可被 MediaProjection 正常捕获，只有 Chrome 的虚拟显示画面停留在通话页/旧帧。新增 `AccessibilityService.takeScreenshot` 兜底后，单应用 Chrome 测试成功：聊天缩略图为完整 `Readability Check 2026` 页面，AI 正确回答「标题 Readability Check 2026，发票号 Invoice 8472，总金额 1,284.50 USD」。`read_screen` 的显示图与 photo QA 上传图是同一份归一化 JPEG。无障碍服务需用户手动开启，只在显式读屏时截图。
+  - 此前「模型/agent 未使用视频」「只是小字号分辨率不足」的判断被最终结果修正：至少在本机 Chrome 路径上，根因是 MediaProjection 无法捕获 Chrome 实时画面；改用无障碍截图后功能正常。
 
 真机尚未覆盖：
 
