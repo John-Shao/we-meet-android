@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.we.meet.data.api.AssistantTranslationPair
 import com.we.meet.feature.assistant.aicall.data.AiCallPreferences
+import com.we.meet.feature.assistant.aicall.model.AiCallAudioMode
 import com.we.meet.feature.assistant.aicall.model.AiCallOffer
 import com.we.meet.feature.assistant.aicall.model.AiCallSelection
 import com.we.meet.feature.assistant.aicall.model.AiCallTransport
@@ -101,6 +102,14 @@ class AoqDefaultPreferencesTest {
             }
         }
         assertTrue(BilingualPreferences(context, "display-controller").load().facing)
+    }
+    @Test fun audioModeDefaultsToHardwareAecAndPersists() {
+        val prefs = AiCallPreferences(context)
+        assertEquals(AiCallAudioMode.EchoCancel, prefs.load().audioMode)
+        prefs.save(prefs.load().copy(audioMode = AiCallAudioMode.Volume))
+        assertEquals(AiCallAudioMode.Volume, AiCallPreferences(context).load().audioMode)
+        callStore().edit().putString("call_audio_mode", "unsupported").commit()
+        assertEquals(AiCallAudioMode.EchoCancel, AiCallPreferences(context).load().audioMode)
     }
     @Test fun vadPreferencePersistsAcrossTransportsAndNewPreferenceInstances() {
         val prefs = AiCallPreferences(context)

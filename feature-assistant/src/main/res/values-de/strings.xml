@@ -166,6 +166,10 @@
     <string name="assistant_call_vad_semantic">Semantische Erkennung (semantic_vad)</string>
     <string name="assistant_call_vad_hint">Vor dem Anruf auswählen. Wird für Sprach- und Videoanrufe über AOQ und WebRTC gespeichert. Beide Modi verwenden dieselbe Empfindlichkeit und Stille-Dauer.</string>
     <string name="assistant_call_vad_hint_webrtc">Semantische Erkennung ist über WebRTC noch nicht verfügbar; Anrufe verwenden die akustische Erkennung. Wechseln Sie zu AOQ, um sie zu nutzen.</string>
+    <string name="assistant_call_audio_mode">Audiomodus</string>
+    <string name="assistant_call_audio_echo_cancel">Echo-Unterdrückung (VoIP, leiser)</string>
+    <string name="assistant_call_audio_volume">Lautstärke priorisiert (Medien, Echo möglich)</string>
+    <string name="assistant_call_audio_hint">Die Echo-Unterdrückung aktiviert die Hardware-AEC, damit der Assistent seine eigene Wiedergabe nicht hört. Der Lautstärke-Modus behält die Medienlautstärke, kann aber dazu führen, dass das Modell sich selbst antwortet.</string>
     <string name="assistant_call_preview_fps">Bildrate der lokalen Vorschau</string>
     <string name="assistant_call_upload_fps">Bildrate der Modellübertragung</string>
     <string name="assistant_call_fps_hint">Vorschau: 10–30 fps. Übertragung: 1–10 fps. Unabhängig für AOQ und WebRTC gespeichert; gilt ab dem nächsten Gespräch. Die tatsächliche Bildrate hängt von Gerät und Netzwerk ab.</string>

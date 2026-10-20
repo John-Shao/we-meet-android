@@ -29,6 +29,8 @@ data class AiCallSelection(
     val transport: AiCallTransport = AiCallTransport.AOQ,
     val vadMode: AiCallVadMode = AiCallVadMode.Server,
     val videoSettings: AiCallVideoSettings = AiCallVideoSettings(),
+    /** AOQ only; WebRTC always uses its own AEC. */
+    val audioMode: AiCallAudioMode = AiCallAudioMode.EchoCancel,
 )
 
 data class AiCallUiState(

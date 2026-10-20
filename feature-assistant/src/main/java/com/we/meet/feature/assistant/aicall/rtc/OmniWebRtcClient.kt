@@ -8,6 +8,7 @@ import android.util.Log
 import com.twilio.audioswitch.AudioDevice
 import com.twilio.audioswitch.AudioSwitch
 import com.we.meet.feature.assistant.aicall.model.AiCallAnswer
+import com.we.meet.feature.assistant.aicall.model.AiCallAudioMode
 import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
 import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
 import com.we.meet.feature.assistant.aicall.model.ScreenShareSizing
@@ -50,6 +51,8 @@ class OmniWebRtcClient(
     photoHandler: PhotoToolHandler? = null,
     private val screenReadHandler: PhotoToolHandler? = null,
     private val vadMode: AiCallVadMode = AiCallVadMode.Server,
+    // Shared call factory passes it for both transports; WebRTC always runs its own AEC.
+    @Suppress("unused") private val audioMode: AiCallAudioMode = AiCallAudioMode.EchoCancel,
     private val videoSettings: AiCallVideoSettings = AiCallVideoSettings(),
 ) : OmniCallClient {
     private val playbackDiagnostics = OmniPlaybackDiagnostics(context, "WebRTC", "inbound_rtp_audio_level")
@@ -277,7 +280,10 @@ class OmniWebRtcClient(
                 configureIfReady()
             }
             "session.updated" -> if (handshake.acknowledge()) ready.complete(Unit)
-            "input_audio_buffer.speech_stopped" -> { speechEndedAt = SystemClock.elapsedRealtime() }
+            "input_audio_buffer.speech_stopped" -> {
+                speechEndedAt = SystemClock.elapsedRealtime()
+                uploadLatestFrame("speech_stopped")
+            }
             "response.created" -> {
                 responseCreation.created()
                 responding = true
@@ -287,6 +293,7 @@ class OmniWebRtcClient(
             "response.done" -> { responding = false; flushScreenShareState() }
             "input_audio_buffer.speech_started" -> {
                 publishCameraState()
+                uploadLatestFrame("speech_started")
                 outputSuppressed = true; remoteAudio?.setEnabled(false)
             }
             "error" -> {
@@ -517,6 +524,17 @@ class OmniWebRtcClient(
     }
     override fun publishCameraState() {
         if (!screenStarted) answer?.let { tools?.publishState(it.instructions, cameraEnabled) }
+    }
+
+    /**
+     * Speech turns must answer on the current scene. Screen frames already reach the
+     * track at capture rate, so only the throttled camera branch needs one immediate
+     * frame; no backlog is kept, so the model cannot receive an older one.
+     */
+    private fun uploadLatestFrame(source: String) {
+        if (!cameraStarted) return
+        cameraFrames.uploadLatestNow()
+        Log.i("OmniCall", "speech action=uploadLatestFrame source=$source camera=true screen=$screenStarted")
     }
 
     override fun publishScreenShareState(sharing: Boolean, visible: Boolean) {

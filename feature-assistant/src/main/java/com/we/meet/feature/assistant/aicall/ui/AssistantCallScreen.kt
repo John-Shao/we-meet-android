@@ -168,7 +168,7 @@ fun AssistantCallScreen(
     // Keep volume keys on the actual playback stream, including during silence.
     val callInProgress = state.status is AiCallStatus.Connecting || state.status is AiCallStatus.Active
     val playbackStream = if (state.selection.transport == AiCallTransport.AOQ)
-        AoqPlaybackMode.volumeStream else AudioManager.STREAM_VOICE_CALL
+        AoqPlaybackMode.volumeStream(state.selection.audioMode) else AudioManager.STREAM_VOICE_CALL
     DisposableEffect(activity, callInProgress, playbackStream) {
         val previousStream = activity?.volumeControlStream
         if (callInProgress) activity?.volumeControlStream = playbackStream
@@ -359,6 +359,7 @@ fun AssistantCallScreen(
             enabled = !callInProgress,
             onSelectTransport = vm::selectTransport,
             onSelectVadMode = vm::selectVadMode,
+            onSelectAudioMode = vm::selectAudioMode,
             onSelectLocalPreviewFps = vm::selectLocalPreviewFps,
             onSelectModelUploadFps = vm::selectModelUploadFps,
             onSelectVoice = vm::selectVoice,

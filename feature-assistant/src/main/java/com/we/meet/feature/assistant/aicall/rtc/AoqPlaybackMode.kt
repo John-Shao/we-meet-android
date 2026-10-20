@@ -1,21 +1,25 @@
 package com.we.meet.feature.assistant.aicall.rtc
 
 import android.media.AudioManager
-import com.we.meet.feature.assistant.BuildConfig
 import com.alibaba.aoq.clientsdk.AoqClientEngine.AoqAudioCaptureConfig
 import com.alibaba.aoq.clientsdk.AoqClientEngine.AoqAudioPlaybackConfig
+import com.we.meet.feature.assistant.aicall.model.AiCallAudioMode
 
-/** Capture/playback must agree: the SDK uses the first configured VoIP mode for both. */
+/**
+ * Capture/playback must agree: the SDK uses the first configured VoIP mode for both.
+ *
+ * VoIP mode is what turns on the hardware AEC that keeps the assistant from hearing
+ * its own speaker output; media mode is louder but has no such reference.
+ */
 object AoqPlaybackMode {
-    val media: Boolean get() = BuildConfig.AOQ_MEDIA_PLAYBACK
-    val voip: Boolean get() = !media
-    val volumeStream: Int get() = if (media) AudioManager.STREAM_MUSIC else AudioManager.STREAM_VOICE_CALL
+    fun volumeStream(mode: AiCallAudioMode): Int =
+        if (mode.voip) AudioManager.STREAM_VOICE_CALL else AudioManager.STREAM_MUSIC
 
-    fun playbackConfig() = AoqAudioPlaybackConfig().apply {
-        channel = 1; isExternal = false; isDefaultSpeaker = true; isVoipMode = voip
+    fun playbackConfig(mode: AiCallAudioMode) = AoqAudioPlaybackConfig().apply {
+        channel = 1; isExternal = false; isDefaultSpeaker = true; isVoipMode = mode.voip
     }
 
-    fun captureConfig() = AoqAudioCaptureConfig().apply {
-        channel = 1; isExternal = false; isVoipMode = voip
+    fun captureConfig(mode: AiCallAudioMode) = AoqAudioCaptureConfig().apply {
+        channel = 1; isExternal = false; isVoipMode = mode.voip
     }
 }

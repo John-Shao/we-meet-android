@@ -8,6 +8,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.alibaba.aoq.clientsdk.AoqClientEngine
 import com.alibaba.aoq.clientsdk.AoqClientEngine.*
 import com.alibaba.aoq.clientsdk.AoqClientListener
+import com.we.meet.feature.assistant.aicall.model.AiCallAudioMode
 import com.we.meet.feature.assistant.aicall.rtc.AoqPlaybackMode
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
@@ -49,6 +50,7 @@ class AoqSdkStartupTest {
         val context = instrumentation.targetContext
         val manager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val originalMode = manager.mode
+        val mode = AiCallAudioMode.EchoCancel
         val originalSpeaker = manager.isSpeakerphoneOn
         var engine: AoqClientEngine? = null
         try {
@@ -56,8 +58,8 @@ class AoqSdkStartupTest {
                 engine = AoqClientEngine.createEngine(context, AoqCreateConfig().apply {
                     workDir = context.filesDir.absolutePath
                 }, object : AoqClientListener() {})
-                assertEquals(0, engine!!.startAudioPlayer(AoqPlaybackMode.playbackConfig()))
-                assertEquals(0, engine!!.startAudioCapture(AoqPlaybackMode.captureConfig()))
+                assertEquals(0, engine!!.startAudioPlayer(AoqPlaybackMode.playbackConfig(mode)))
+                assertEquals(0, engine!!.startAudioCapture(AoqPlaybackMode.captureConfig(mode)))
                 // Simulate a device that falls back to its earpiece during SDK startup.
                 assertEquals(0, engine!!.enableSpeakerphone(false))
             }
@@ -72,7 +74,7 @@ class AoqSdkStartupTest {
                 SystemClock.sleep(50)
             }
             assertTrue("Call output must use speaker without a headset", manager.isSpeakerphoneOn)
-            assertEquals(if (AoqPlaybackMode.voip) AudioManager.MODE_IN_COMMUNICATION else AudioManager.MODE_NORMAL, manager.mode)
+            assertEquals(if (mode.voip) AudioManager.MODE_IN_COMMUNICATION else AudioManager.MODE_NORMAL, manager.mode)
         } finally {
             instrumentation.runOnMainSync {
                 engine?.stopAudioCapture()

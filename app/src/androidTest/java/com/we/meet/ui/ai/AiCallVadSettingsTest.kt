@@ -28,6 +28,7 @@ class AiCallVadSettingsTest {
                     enabled = enabled.value,
                     onSelectTransport = { selection.value = selection.value.copy(transport = it) },
                     onSelectVadMode = { selection.value = selection.value.copy(vadMode = it) },
+                    onSelectAudioMode = { selection.value = selection.value.copy(audioMode = it) },
                     onSelectLocalPreviewFps = { selection.value = selection.value.copy(videoSettings = selection.value.videoSettings.withLocalPreviewFps(it)) },
                     onSelectModelUploadFps = { selection.value = selection.value.copy(videoSettings = selection.value.videoSettings.copy(modelUploadFps = it)) },
                     onSelectVoice = {}, onSelectPrompt = {}, onSelectScene = {}, onBack = {})
@@ -54,6 +55,7 @@ class AiCallVadSettingsTest {
                     enabled = true,
                     onSelectTransport = { selection.value = selection.value.copy(transport = it) },
                     onSelectVadMode = { selection.value = selection.value.copy(vadMode = it) },
+                    onSelectAudioMode = { selection.value = selection.value.copy(audioMode = it) },
                     onSelectLocalPreviewFps = {}, onSelectModelUploadFps = {},
                     onSelectVoice = {}, onSelectPrompt = {}, onSelectScene = {}, onBack = {})
             }

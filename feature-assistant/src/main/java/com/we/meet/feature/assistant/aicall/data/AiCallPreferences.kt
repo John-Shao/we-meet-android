@@ -2,6 +2,7 @@ package com.we.meet.feature.assistant.aicall.data
 
 import android.content.Context
 import com.we.meet.feature.assistant.aicall.model.AiCallSelection
+import com.we.meet.feature.assistant.aicall.model.AiCallAudioMode
 import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
 import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
 import com.we.meet.feature.assistant.aicall.model.effectiveFor
@@ -39,6 +40,7 @@ class AiCallPreferences(context: Context) {
             vadMode = AiCallVadMode.fromStored(prefs.getString("call_vad_mode", null)),
             videoSettings = AiCallVideoSettings.fromStored(
                 prefs.getInt("call_local_preview_fps", 15), prefs.getInt("call_model_upload_fps", 2)),
+            audioMode = AiCallAudioMode.fromStored(prefs.getString("call_audio_mode", null)),
         ).let { stored ->
             // A stored WebRTC + semantic_vad pair cannot connect: the gateway rejects
             // that turn_detection change. Normalise it once instead of failing every call.
@@ -57,6 +59,7 @@ class AiCallPreferences(context: Context) {
             putString("call_scene_id", selection.sceneId)
             putString("call_transport", selection.transport.name)
             putString("call_vad_mode", selection.vadMode.wireValue)
+            putString("call_audio_mode", selection.audioMode.name)
             putInt("call_local_preview_fps", selection.videoSettings.localPreviewFps)
             putInt("call_model_upload_fps", selection.videoSettings.modelUploadFps)
             for (prefix in listOf("voice", "video")) {

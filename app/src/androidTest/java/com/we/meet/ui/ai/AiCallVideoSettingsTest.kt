@@ -24,7 +24,7 @@ class AiCallVideoSettingsTest {
             WeMeetTheme {
                 AiCallSettingsScreen(config = null, selection = selection.value, historyStore = null,
                     enabled = enabled.value,
-                    onSelectTransport = {}, onSelectVadMode = {},
+                    onSelectTransport = {}, onSelectVadMode = {}, onSelectAudioMode = {},
                     onSelectLocalPreviewFps = {
                         selection.value = selection.value.copy(videoSettings = selection.value.videoSettings.withLocalPreviewFps(it))
                     },

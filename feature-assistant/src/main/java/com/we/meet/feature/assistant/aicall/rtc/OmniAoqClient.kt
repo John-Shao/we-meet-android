@@ -17,6 +17,7 @@ import com.alibaba.aoq.clientsdk.AoqClientEngine
 import com.alibaba.aoq.clientsdk.AoqClientEngine.*
 import com.alibaba.aoq.clientsdk.AoqClientListener
 import com.we.meet.feature.assistant.aicall.model.AiCallAnswer
+import com.we.meet.feature.assistant.aicall.model.AiCallAudioMode
 import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
 import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
 import com.we.meet.feature.assistant.aicall.model.AiCallSetupException
@@ -44,6 +45,7 @@ class OmniAoqClient(
     photoHandler: PhotoToolHandler? = null,
     private val screenReadHandler: PhotoToolHandler? = null,
     private val vadMode: AiCallVadMode = AiCallVadMode.Server,
+    private val audioMode: AiCallAudioMode = AiCallAudioMode.EchoCancel,
     private val videoSettings: AiCallVideoSettings = AiCallVideoSettings(),
 ) : OmniCallClient {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -120,7 +122,7 @@ class OmniAoqClient(
             if (closed) return
             audioDiagnostics.update(stats)?.let { quality -> dispatch {
                 Log.i("OmniAoqAudio", "Quality camera=$cameraStarted responding=$responding " +
-                    "muted=$outputMuted held=$toolOutputHeld suppressed=$outputSuppressed voip=${AoqPlaybackMode.voip} $quality")
+                    "muted=$outputMuted held=$toolOutputHeld suppressed=$outputSuppressed voip=${audioMode.voip} $quality")
             } }
             if (com.we.meet.feature.assistant.BuildConfig.DEBUG && cameraStarted) {
                 stats.videoPublishStats?.forEach {
@@ -159,7 +161,10 @@ class OmniAoqClient(
             Log.d("OmniAoq", "Event: ${event.optString("type")}")
             when (event.optString("type")) {
                 "session.updated" -> if (configured && !ready.isCompleted) ready.complete(Unit)
-                "input_audio_buffer.speech_stopped" -> { speechEndedAt = SystemClock.elapsedRealtime() }
+                "input_audio_buffer.speech_stopped" -> {
+                    speechEndedAt = SystemClock.elapsedRealtime()
+                    uploadLatestFrame("speech_stopped")
+                }
                 "response.created" -> { responding = true; outputSuppressed = false }
                 "response.done" -> { responding = false; onAudioLevel(0f); flushScreenShareState() }
                 "input_audio_buffer.speech_started" -> {
@@ -167,10 +172,11 @@ class OmniAoqClient(
                     // Keep only timing/state metadata, never PCM or transcripts.
                     Log.i("OmniAoqAudio", "VAD speech_started camera=$cameraStarted responding=$responding " +
                         "muted=$outputMuted held=$toolOutputHeld suppressed=$outputSuppressed " +
-                        "voip=${AoqPlaybackMode.voip} ${audioDiagnostics.snapshot()}")
+                        "voip=${audioMode.voip} ${audioDiagnostics.snapshot()}")
                     // Refresh before generation, not during a tool continuation.
                     // Button changes and older tool results must not leave a stale snapshot.
                     publishCameraState()
+                    uploadLatestFrame("speech_started")
                     if (tools == null) ok(engine!!.interruptAudioPlayer(audio, 100))
                     else outputSuppressed = true
                     onAudioLevel(0f)
@@ -295,9 +301,9 @@ class OmniAoqClient(
             ok(sdk.connect(config))
             withTimeout(25_000) { ready.await() }
             check(!closed)
-            Log.i("OmniAoq", "Playback mode: ${if (AoqPlaybackMode.media) "media" else "voip"}")
-            ok(sdk.startAudioPlayer(AoqPlaybackMode.playbackConfig()))
-            ok(sdk.startAudioCapture(AoqPlaybackMode.captureConfig()))
+            Log.i("OmniAoq", "Playback mode: ${if (audioMode.voip) "voip" else "media"}")
+            ok(sdk.startAudioPlayer(AoqPlaybackMode.playbackConfig(audioMode)))
+            ok(sdk.startAudioCapture(AoqPlaybackMode.captureConfig(audioMode)))
             // Capture can reinitialize the SDK audio manager after the player config.
             // Reassert its speaker preference after both devices are initialized;
             // the SDK continues to manage focus and connected headset routing.
@@ -326,6 +332,19 @@ class OmniAoqClient(
     override fun setMicrophoneEnabled(enabled: Boolean) { ok(engine!!.muteAudioCapture(!enabled)) }
     override fun publishCameraState() {
         if (!screenStarted) answer?.let { tools?.publishState(it.instructions, cameraEnabled) }
+    }
+
+    /**
+     * Speech turns must answer on the current scene. Ask the router for exactly one
+     * immediate frame: no backlog is kept, so the model cannot receive an older one.
+     */
+    private fun uploadLatestFrame(source: String) {
+        val cameraOn = cameraStarted
+        val sharing = screenStarted
+        if (!cameraOn && !sharing) return
+        if (cameraOn) camera.uploadLatestNow()
+        if (sharing) screenRouter?.uploadLatestNow()
+        Log.i("OmniCall", "speech action=uploadLatestFrame source=$source camera=$cameraOn screen=$sharing")
     }
 
     override fun publishScreenShareState(sharing: Boolean, visible: Boolean) {

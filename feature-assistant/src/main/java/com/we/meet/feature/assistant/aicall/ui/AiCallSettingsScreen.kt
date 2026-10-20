@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.semantics
 import com.we.meet.feature.assistant.R
 import com.we.meet.feature.assistant.aicall.model.AiAgentConfigResponse
 import com.we.meet.feature.assistant.aicall.model.AiCallSelection
+import com.we.meet.feature.assistant.aicall.model.AiCallAudioMode
 import com.we.meet.feature.assistant.aicall.model.AiCallTransport
 import com.we.meet.feature.assistant.aicall.model.AiCallVadMode
 import com.we.meet.feature.assistant.aicall.model.effectiveFor
@@ -38,6 +39,7 @@ fun AiCallSettingsScreen(
     onSelectScene: (String?) -> Unit,
     onBack: () -> Unit,
     onSelectVadMode: (AiCallVadMode) -> Unit,
+    onSelectAudioMode: (AiCallAudioMode) -> Unit,
     onSelectLocalPreviewFps: (Int) -> Unit,
     onSelectModelUploadFps: (Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -95,6 +97,21 @@ fun AiCallSettingsScreen(
             }
             SettingsHint(stringResource(if (selection.transport == AiCallTransport.WebRTC)
                 R.string.assistant_call_vad_hint_webrtc else R.string.assistant_call_vad_hint))
+            if (selection.transport == AiCallTransport.AOQ) {
+                SettingsGroupHeader(stringResource(R.string.assistant_call_audio_mode))
+                val audioModes = AiCallAudioMode.entries
+                val audioLabels = audioModes.map {
+                    stringResource(if (it == AiCallAudioMode.EchoCancel)
+                        R.string.assistant_call_audio_echo_cancel else R.string.assistant_call_audio_volume)
+                }
+                SettingsGroup {
+                    CallSettingsDropdown(audioLabels[selection.audioMode.ordinal], audioLabels,
+                        { onSelectAudioMode(audioModes[it]) }, enabled,
+                        modifier = dropdownPadding.testTag("call-audio-picker"),
+                        optionTag = { "call-audio-${audioModes[it].name}" })
+                }
+                SettingsHint(stringResource(R.string.assistant_call_audio_hint))
+            }
             SettingsGroupHeader(stringResource(R.string.assistant_call_preview_fps))
             val previewRates = (10..30).toList()
             val previewLabels = previewRates.map { stringResource(R.string.assistant_call_fps_value, it) }

@@ -16,10 +16,8 @@ android {
         // Independent of camera-control acceptance; applies to both build variants.
         buildConfigField("boolean", "AI_CALL_VOICE_HANGUP",
             providers.gradleProperty("AI_CALL_VOICE_HANGUP").orElse("true").get().toBooleanStrict().toString())
-        // Keep the validated media default; allow internal AEC comparisons in both variants.
-        // VoIP selects the SDK hardware-AEC path and Android call volume.
-        buildConfigField("boolean", "AOQ_MEDIA_PLAYBACK",
-            providers.gradleProperty("AOQ_MEDIA_PLAYBACK").orElse("true").get().toBooleanStrict().toString())
+        // The AOQ media/VoIP choice is a runtime call setting now (echo cancellation by
+        // default); it is not a build flag any more.
         // Enable release only after both transports and physical-device acceptance.
         buildConfigField("boolean", "AI_CALL_CAMERA_VOICE_CONTROL", "false")
         // Rollout switch for the screen-share entry point; OEM behaviour differs.

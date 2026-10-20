@@ -34,6 +34,43 @@ class CameraFrameRouterTest {
         assertTrue(uploads.zipWithNext().all { (a, b) -> b - a >= 500_000_000 })
     }
 
+    @Test fun speechRequestUploadsOnlyTheNextFrameAndThenResumesTheRate() {
+        var now = 0L
+        val uploads = mutableListOf<Long>()
+        val router = CameraFrameRouter({ now }, previewFps = 15, uploadFps = 2) { uploads += now }
+        router.start()
+        router.onFrame(frame())
+        assertEquals(listOf(0L), uploads)
+        now = 100_000_000L
+        router.onFrame(frame()) // Throttled.
+        assertEquals(listOf(0L), uploads)
+        router.uploadLatestNow()
+        now = 200_000_000L
+        router.onFrame(frame()) // Immediate.
+        now = 300_000_000L
+        router.onFrame(frame()) // Throttled again; no queued frame is replayed.
+        assertEquals(listOf(0L, 200_000_000L), uploads)
+        now = 700_000_000L
+        router.onFrame(frame()) // Normal interval (500 ms after the immediate frame).
+        assertEquals(listOf(0L, 200_000_000L, 700_000_000L), uploads)
+    }
+
+    @Test fun stoppingClearsAPendingImmediateUpload() {
+        var now = 0L
+        val uploads = mutableListOf<Long>()
+        val router = CameraFrameRouter({ now }, previewFps = 15, uploadFps = 2) { uploads += now }
+        router.start()
+        router.onFrame(frame())
+        router.uploadLatestNow()
+        router.stop()
+        router.start()
+        now = 50_000_000L
+        router.onFrame(frame()) // Reopen uploads its first frame anyway.
+        now = 100_000_000L
+        router.onFrame(frame()) // Throttled: the old request must not survive.
+        assertEquals(listOf(0L, 50_000_000L), uploads)
+    }
+
     @Test fun customRatesLimitEachBranchIndependently() {
         var now = 0L
         val previews = mutableListOf<Long>()

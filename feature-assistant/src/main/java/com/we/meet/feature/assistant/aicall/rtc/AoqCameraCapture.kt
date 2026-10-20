@@ -89,6 +89,9 @@ internal class AoqCameraCapture(
     fun detachPreview(sink: VideoSink) = frames.detach(sink)
     fun stopFrames() = frames.stop()
 
+    /** Uploads the next captured frame immediately; nothing is queued or replayed. */
+    fun uploadLatestNow() = frames.uploadLatestNow()
+
     fun close() {
         frames.close()
         first?.cancel(); stopped?.cancel()

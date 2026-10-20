@@ -84,6 +84,8 @@ AOQ 和 WebRTC 均使用共享 EGL 上下文的 `TextureViewRenderer` 直接预�
 
 分流器使用纳秒时钟独立计算两个分支的最小帧间隔，不再写死 500ms；摄像头实际输出高于请求值时，本地预览也按设置限帧。模型上传不依赖预览是否已绑定，帧率设置不改变分辨率、码率、媒体连接或语音控制发布开关。实际采集、发送和模型处理帧率受设备、曝光、编码和网络影响，设置值是目标上限。
 
+**说话时补发最新帧（2026-10-20）。** 视频或共享屏幕期间，服务端 VAD 上报 `input_audio_buffer.speech_started`／`speech_stopped` 时，客户端让对应分流器立即上传**下一帧**，跳过模型上传帧率间隔，随后按原帧率继续。只发送这一帧：分流器不排队、不缓存、不回放，说话前的旧帧不会被补发，从而避免模型基于过期画面作答。WebRTC 的屏幕帧本就逐帧进入视频源（无上传节流），因此该补发只作用于摄像头分支；AOQ 的摄像头和屏幕共用外部帧通道，两个分流器都会立即上传最新一帧。日志 `OmniCall speech action=uploadLatestFrame` 记录触发来源（`speech_started`／`speech_stopped`）和当前视频源。
+
 对比时先保持模型上传为 2 fps，在通话结束后分别设置预览 15／30 fps；再保持预览为 15 fps，对比上传 2／3 fps。分别检查 AOQ 和 WebRTC 的本地流畅度、画面理解速度、温度和流量；切换传输和重新打开设置后应保留相同值。
 
 这是相对原方案“AOQ 内部采集首帧观察接口”的设备兼容性调整。[AOQ 官方外部视频输入](https://www.alibabacloud.com/help/zh/model-studio/aoq-custom-video-input)支持此类自定义采集，编码和媒体传输仍由 AOQ SDK 完成。WebRTC 使用 CameraEventsHandler 首帧及关闭回调。已有支持 H264 的 WebRTC 连接预先协商视频发送器，开启只附加轨道，关闭移除轨道；不重新协商业务会话。
@@ -124,7 +126,18 @@ AOQ 已建连后若收到实测的精确帧顺序错误 `Error append image befo
 
 AOQ SDK 1.3.0 的采集／播放 `isVoipMode` 默认均为 `false`。官方[音频功能说明](https://www.alibabacloud.com/help/en/model-studio/aoq-audio-features)将 `true` 定义为启用 VoIP 硬件 AEC，并说明采集／播放以先配置的模式为准；文档同时提及 SDK 的 3A 处理流水线，不能据此断言媒体模式完全没有软件回声消除。App 现将采集、播放配置统一从 `AoqPlaybackMode` 创建，避免 VoIP 播放与默认媒体采集混用。
 
-`AOQ_MEDIA_PLAYBACK` 对 Debug、Release 都生效，默认仍为 `true`。此前内部回声对照包使用 `-PAOQ_MEDIA_PLAYBACK=false -PAI_CALL_CAMERA_VOICE_CONTROL_RELEASE=true`，整通 AOQ 电话使用 VoIP 模式，通过系统“通话”调节音量。用户实测该包未复现偶现中断，但明显复现 AOQ 音量偏小：系统媒体、通话均调到最大（设备显示 200%）时，AOQ 200% 体感仅相当于 WebRTC 100%。这是该设备的听感对照，不是音频增益测量，也不能证明 VoIP 消除了偶现中断。VoIP 路径不采用为默认方案，新内部诊断包使用 `-PAOQ_MEDIA_PLAYBACK=true`，恢复媒体音量路径。摄像头开关不重启音频设备，WebRTC 与双语翻译不受此参数影响。
+`AOQ_MEDIA_PLAYBACK`（构建开关，默认媒体模式）已于 2026-10-20 由运行时“音频模式”设置取代，见下节；此处保留当年的对照结论：内部回声对照包使用 VoIP 模式后未复现偶现中断，但在荣耀设备上音量明显偏小（系统媒体、通话均 200% 时，VoIP 体感约为 WebRTC 100%）。该结论是听感对照，不是增益测量。
+
+### AOQ 音频模式运行设置（2026-10-20）
+
+真机复现了“AI 和自己对话”：媒体模式下，AI 播报结束后 21 ms 即收到 `input_audio_buffer.speech_started`（`audiblePlaybackAgeMs=21`，`voip=false`），模型把自己的播报转写成用户发言并再次作答；同一句注入语音在 VoIP 模式下（`voip=true`）播报结束后 40 秒内没有任何 `speech_started`。这与官方说明一致：`isVoipMode=true` 才启用 VoIP 硬件 AEC，媒体播放没有可供平台 AEC 参考的通路。
+
+通话设置新增“音频模式”，保存于 `call_audio_mode`，仅对 AOQ 生效，WebRTC 固定使用自身 AEC 且不显示该设置：
+
+- `EchoCancel`（默认）：采集／播放均 `isVoipMode=true`，启用硬件 AEC，避免自问自答；音量较小，音量键调“通话”音量。
+- `Volume`：`isVoipMode=false`，沿用媒体音量和 STREAM_MUSIC，更响，但外放时可能再次出现自问自答。
+
+两项配置统一由 `AoqPlaybackMode.playbackConfig(captureConfig)` 按所选模式创建，采集与播放模式始终一致；`AiCallAudioMode.voip` 决定音量键使用的流。切换设置仅影响下一通电话，连接中／通话中不可修改。
 
 Release 可读取 `OmniAoqAudio` 日志中的 VAD 事件、距最近可听播放的时间、摄像头／播放抑制状态、VoIP 开关、路由、音频焦点及 SDK 警告编号。SDK [onStats 统计](https://help.aliyun.com/zh/model-studio/aoq-android-sdk-reference)每 5 秒最多记录一次 RTT、丢包率、总收发码率、音频收发码率／累计字节及编码／播放音量；每次 VAD 附带最新统计及其年龄，字段缺失为 `na`，不以旧值或零流量替代。播放帧时间与可听播放时间分别记录，最大解码帧间隔在周期日志后重新累计；帧回调间隔本身不能证明播放器欠载，静音和正常句间停顿也会影响观察。RTT 不是单向上行时延，当前 SDK 公开统计不包含播放抖动缓冲长度，不能单凭某一指标确诊网络或回声。
 

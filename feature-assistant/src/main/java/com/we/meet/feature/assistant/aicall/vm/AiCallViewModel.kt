@@ -177,6 +177,7 @@ class AiCallViewModel(
                 }
             },
             vadMode,
+            selection.audioMode,
             selection.videoSettings,
         )
         rtcClient = client
@@ -523,6 +524,7 @@ class AiCallViewModel(
     ))
     fun selectVadMode(value: AiCallVadMode) = updateSelection(_state.value.selection.copy(
         vadMode = value.effectiveFor(_state.value.selection.transport)))
+    fun selectAudioMode(value: AiCallAudioMode) = updateSelection(_state.value.selection.copy(audioMode = value))
     fun selectLocalPreviewFps(value: Int) {
         if (value !in 10..30) return
         val selection = _state.value.selection

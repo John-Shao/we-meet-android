@@ -166,6 +166,10 @@
     <string name="assistant_call_vad_semantic">Détection sémantique (semantic_vad)</string>
     <string name="assistant_call_vad_hint">Choisissez avant de lancer un appel. Le choix est enregistré pour les appels audio et vidéo via AOQ et WebRTC. Les deux modes utilisent la même sensibilité et la même durée de silence.</string>
     <string name="assistant_call_vad_hint_webrtc">La détection sémantique n\'est pas encore disponible via WebRTC ; les appels utilisent la détection acoustique. Passez à AOQ pour l\'utiliser.</string>
+    <string name="assistant_call_audio_mode">Mode audio</string>
+    <string name="assistant_call_audio_echo_cancel">Annulation d\'écho (VoIP, plus discret)</string>
+    <string name="assistant_call_audio_volume">Volume prioritaire (média, écho possible)</string>
+    <string name="assistant_call_audio_hint">L\'annulation d\'écho active l\'AEC matériel pour que l\'assistant n\'entende pas sa propre lecture. Le mode volume garde le volume média, mais le haut-parleur peut faire répondre le modèle à lui-même.</string>
     <string name="assistant_call_preview_fps">Fréquence de l’aperçu local</string>
     <string name="assistant_call_upload_fps">Fréquence d’envoi au modèle</string>
     <string name="assistant_call_fps_hint">Aperçu : 10–30 fps. Envoi : 1–10 fps. Enregistrés indépendamment pour AOQ et WebRTC ; appliqués au prochain appel. La fréquence réelle dépend de l’appareil et du réseau.</string>

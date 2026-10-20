@@ -20,12 +20,21 @@ internal class CameraFrameRouter(
     private var running = false
     private var lastPreviewAt: Long? = null
     private var lastUploadAt: Long? = null
+    private var sendLatest = false
 
-    fun start() = synchronized(lock) { lastPreviewAt = null; lastUploadAt = null; running = true }
-    fun stop() = synchronized(lock) { running = false }
-    fun close() = synchronized(lock) { running = false; previews.clear() }
+    fun start() = synchronized(lock) { lastPreviewAt = null; lastUploadAt = null; sendLatest = false; running = true }
+    fun stop() = synchronized(lock) { running = false; sendLatest = false }
+    fun close() = synchronized(lock) { running = false; sendLatest = false; previews.clear() }
     fun attach(sink: VideoSink) = synchronized(lock) { previews.add(sink); Unit }
     fun detach(sink: VideoSink) = synchronized(lock) { previews.remove(sink); Unit }
+
+    /**
+     * Uploads the next captured frame immediately, ignoring [uploadFps]. The call layer
+     * uses this when the user starts/finishes speaking so the model sees the current
+     * scene instead of a frame from the previous upload interval. Only that one frame is
+     * sent; frames captured meanwhile are never queued or replayed later.
+     */
+    fun uploadLatestNow() = synchronized(lock) { sendLatest = true }
 
     // Sinks retain/release a frame themselves if they use it after onFrame returns.
     // The lock makes detach/stop a barrier: no old frame callback remains after return.
@@ -36,7 +45,9 @@ internal class CameraFrameRouter(
             lastPreviewAt = now
             previews.forEach { it.onFrame(frame) }
         }
-        if (lastUploadAt?.let { now - it < uploadInterval } == true) return@synchronized
+        val immediate = sendLatest
+        sendLatest = false
+        if (!immediate && lastUploadAt?.let { now - it < uploadInterval } == true) return@synchronized
         lastUploadAt = now
         upload(frame)
     }
