@@ -38,7 +38,9 @@ import com.we.meet.feature.assistant.aicall.ui.CallTranscriptBubble
 import com.we.meet.feature.assistant.aicall.ui.CallTranscriptTimestamp
 import com.we.meet.ui.theme.Dimens
 import com.we.meet.ui.components.WeMeetTopBar
+import android.text.format.DateFormat as AndroidDateFormat
 import java.text.DateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
@@ -50,6 +52,24 @@ fun AssistantHistoryRow.displayText(context: Context): String = if (role == "tra
 } else if (role == "transcription") "${Locale(sourceLanguage).getDisplayLanguage(Locale.getDefault())}\n$text"
 else if (role == "screen") "${context.getString(R.string.assistant_screen_read_caption)}: ${if (photo != null) context.getString(R.string.assistant_photo_attachment) else text}"
 else "${context.getString(if (role == "user") R.string.assistant_history_you else R.string.assistant_history_ai)}: ${if (photo != null) context.getString(R.string.assistant_photo_attachment) else text}"
+
+private fun dayStart(timestamp: Long): Long = Calendar.getInstance().apply {
+    timeInMillis = timestamp
+    set(Calendar.HOUR_OF_DAY, 0)
+    set(Calendar.MINUTE, 0)
+    set(Calendar.SECOND, 0)
+    set(Calendar.MILLISECOND, 0)
+}.timeInMillis
+
+private fun dayLabel(context: Context, day: Long, now: Long): String {
+    if (day == dayStart(now)) return context.getString(R.string.assistant_history_today)
+    val yesterday = Calendar.getInstance().apply {
+        timeInMillis = dayStart(now)
+        add(Calendar.DAY_OF_YEAR, -1)
+    }.timeInMillis
+    if (day == yesterday) return context.getString(R.string.assistant_history_yesterday)
+    return AndroidDateFormat.getDateFormat(context).format(Date(day))
+}
 
 @Composable
 fun HistoryTextActions(text: String, replay: (() -> Unit)? = null, replayEnabled: Boolean = true, showShare: Boolean = true) {
@@ -178,13 +198,40 @@ fun AssistantHistoryContent(store: AssistantHistoryStore, onBack: () -> Unit, de
                     it.text.contains(query, ignoreCase = true) || it.source.contains(query, ignoreCase = true)
                 } }
                 if (filtered.isEmpty()) Text(stringResource(R.string.assistant_history_empty), Modifier.padding(vertical = Dimens.SpaceL))
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM), contentPadding = PaddingValues(vertical = Dimens.SpaceL)) {
-                    items(filtered, key = { it.id }) { item ->
-                        Card(onClick = { focusManager.clearFocus(); keyboard?.hide(); selected = item.id }, modifier = Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(Dimens.SpaceL)) {
-                                Text(stringResource(if (item.kind == "call") R.string.assistant_history_call else R.string.assistant_history_translation), style = MaterialTheme.typography.titleMedium)
-                                Text(formatter.format(Date(item.startedAt)), style = MaterialTheme.typography.labelMedium)
-                                Text(item.rows.firstOrNull { it.text.isNotBlank() }?.text ?: stringResource(R.string.assistant_photo_attachment), maxLines = 2, style = MaterialTheme.typography.bodyMedium)
+                if (kind == "call") {
+                    val now = remember { System.currentTimeMillis() }
+                    val groups = filtered.groupBy { dayStart(it.startedAt) }
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
+                        contentPadding = PaddingValues(vertical = Dimens.SpaceL),
+                    ) {
+                        groups.forEach { (day, dayEntries) ->
+                            item(key = "day-$day") {
+                                Text(
+                                    text = dayLabel(context, day, now),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = Dimens.SpaceS),
+                                )
+                            }
+                            items(dayEntries, key = { it.id }) { item ->
+                                CallHistoryCard(item, now) {
+                                    focusManager.clearFocus()
+                                    keyboard?.hide()
+                                    selected = item.id
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM), contentPadding = PaddingValues(vertical = Dimens.SpaceL)) {
+                        items(filtered, key = { it.id }) { item ->
+                            Card(onClick = { focusManager.clearFocus(); keyboard?.hide(); selected = item.id }, modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(Dimens.SpaceL)) {
+                                    Text(stringResource(R.string.assistant_history_translation), style = MaterialTheme.typography.titleMedium)
+                                    Text(formatter.format(Date(item.startedAt)), style = MaterialTheme.typography.labelMedium)
+                                    Text(item.rows.firstOrNull { it.text.isNotBlank() }?.text ?: stringResource(R.string.assistant_photo_attachment), maxLines = 2, style = MaterialTheme.typography.bodyMedium)
+                                }
                             }
                         }
                     }

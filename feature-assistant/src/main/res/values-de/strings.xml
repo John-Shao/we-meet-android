@@ -75,6 +75,15 @@
     <string name="assistant_history_you">Ich</string>
     <string name="assistant_history_ai">KI-Assistent</string>
     <string name="assistant_history_call">KI-Anruf</string>
+    <string name="assistant_history_call_completed">Abgeschlossen</string>
+    <string name="assistant_history_call_interrupted">Unterbrochen</string>
+    <string name="assistant_history_call_ongoing">Läuft</string>
+    <string name="assistant_history_call_summary">Zusammenfassung</string>
+    <string name="assistant_history_call_todos">Aufgaben %1$d</string>
+    <string name="assistant_history_call_captures">Aufnahmen %1$d</string>
+    <string name="assistant_history_today">Heute</string>
+    <string name="assistant_history_yesterday">Gestern</string>
+    <string name="assistant_history_no_summary">Noch keine Zusammenfassung</string>
     <string name="assistant_history_translation">Bilinguale Übersetzung</string>
     <string name="assistant_history_replay">Satz erneut abspielen</string>
     <string name="assistant_history_copy">Kopieren</string>
@@ -88,7 +97,7 @@
     <string name="assistant_history_clear">Verlauf leeren</string>
     <string name="assistant_history_delete">Unterhaltung löschen</string>
     <string name="assistant_history_delete_hint">Der ausgewählte lokale Verlauf wird endgültig entfernt.</string>
-    <string name="assistant_history_local_hint">Text und Anruffotos für dieses Konto auf diesem Gerät speichern. Die letzten 200 Unterhaltungen bleiben erhalten. Das Speichern lässt sich in den Anruf- und Übersetzungseinstellungen getrennt steuern. Änderungen gelten für neue Sitzungen.</string>
+    <string name="assistant_history_local_hint">Unterhaltungen werden für dieses Konto auf diesem Gerät gespeichert; die letzten 200 bleiben erhalten.</string>
     <string name="assistant_history_search">Unterhaltungstext durchsuchen</string>
     <string name="assistant_history_close_search">Suche schließen</string>
     <string name="assistant_history_empty">Keine passenden Unterhaltungen</string>
