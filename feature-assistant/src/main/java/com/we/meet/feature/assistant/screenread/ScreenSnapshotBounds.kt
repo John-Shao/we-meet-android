@@ -36,26 +36,33 @@ internal object ScreenSnapshotBounds {
             statusBarHeight.coerceIn(0, (height - 2).coerceAtLeast(0))
         } else 0
         if (height - top < 32) return full
+        // Display corners and edge-to-edge chrome leave a dark border around
+        // the capture; ignore it when looking for page content.
+        val edge = maxOf(4, width / 50, height / 50)
+        val left = edge.coerceAtMost(width / 2)
+        val right = (width - edge).coerceAtLeast(left + 1)
         var lastContent = top
-        for (y in height - 1 downTo top) {
+        for (y in (height - 1 - edge) downTo top) {
             val row = rowAt(y) ?: continue
-            if (hasContent(row, width)) {
+            if (hasContent(row, left, right)) {
                 lastContent = y
                 break
             }
         }
         val bottom = (lastContent + 24).coerceAtMost(height)
         if (bottom - top < 40) return full
-        return Bounds(0, top, width, bottom)
+        return Bounds(left, top, right, bottom)
     }
 
-    private fun hasContent(row: IntArray, width: Int): Boolean {
-        var x = 0
-        while (x < width && x < row.size) {
+    private fun hasContent(row: IntArray, left: Int, right: Int): Boolean {
+        var x = left
+        while (x < right && x < row.size) {
             val color = row[x]
-            if (color shr 16 and 0xFF < 245 ||
-                color shr 8 and 0xFF < 245 ||
-                color and 0xFF < 245
+            // Chrome's empty page background is light gray (not pure white), so
+            // a near-white threshold would keep every blank row.
+            if (color shr 16 and 0xFF < 200 ||
+                color shr 8 and 0xFF < 200 ||
+                color and 0xFF < 200
             ) return true
             x += 4
         }

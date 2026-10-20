@@ -49,4 +49,23 @@ class ScreenSnapshotBoundsTest {
         }
         assertEquals(ScreenSnapshotBounds.Bounds(0, 0, 40, 100), bounds)
     }
+
+    @Test fun treatsLightGrayPageBackgroundAsBlank() {
+        val bounds = ScreenSnapshotBounds.content(40, 100, 0, cropStatusBar = false) { y ->
+            if (y == 40) IntArray(40) { 0xFF202020.toInt() }
+            else IntArray(40) { 0xFFF2F2F2.toInt() }
+        }
+        assertEquals(64, bounds.bottom)
+    }
+
+    @Test fun ignoresDarkDisplayBorderAtTheBottom() {
+        val bounds = ScreenSnapshotBounds.content(400, 1280, 0, cropStatusBar = false) { y ->
+            when {
+                y >= 1270 -> IntArray(400) { 0xFF101010.toInt() }
+                y == 800 -> IntArray(400) { 0xFF202020.toInt() }
+                else -> IntArray(400) { 0xFFF2F2F2.toInt() }
+            }
+        }
+        assertEquals(824, bounds.bottom)
+    }
 }
