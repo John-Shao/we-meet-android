@@ -376,6 +376,8 @@ class OmniWebRtcClient(
         val source = factory!!.createVideoSource(true)
         val track = factory!!.createVideoTrack("omni-screen", source)
         val size = ScreenShareSizing.forDisplay(context)
+        val uploadFps = ScreenShareSizing.modelUploadFps(videoSettings.modelUploadFps)
+        Log.i("OmniScreen", "WebRTC screen uploadFps=$uploadFps")
         var captureRef: ScreenShareCapture? = null
         val capture = ScreenShareCapture(
             context,
@@ -412,7 +414,7 @@ class OmniWebRtcClient(
             check(videoSender!!.setTrack(track, false))
             val parameters = videoSender!!.parameters
             parameters.encodings.forEach {
-                it.maxFramerate = videoSettings.modelUploadFps
+                it.maxFramerate = uploadFps
                 it.maxBitrateBps = 1_000_000
             }
             videoSender!!.parameters = parameters
