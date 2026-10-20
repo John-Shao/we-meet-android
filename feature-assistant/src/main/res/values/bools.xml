@@ -1,0 +1,3 @@
+<resources>
+    <bool name="screen_read_accessibility_enabled">false</bool>
+</resources>

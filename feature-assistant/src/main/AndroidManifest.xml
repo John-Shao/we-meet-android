@@ -30,6 +30,7 @@
             android:foregroundServiceType="microphone|camera|mediaPlayback|mediaProjection" />
         <service
             android:name="com.we.meet.feature.assistant.screenread.ScreenReadAccessibilityService"
+            android:enabled="@bool/screen_read_accessibility_enabled"
             android:exported="true"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>

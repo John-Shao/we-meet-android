@@ -18,6 +18,8 @@ import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import com.we.meet.feature.assistant.aicall.rtc.CallPhotoImage
 
 /** Captures the real display when MediaProjection cannot see the foreground app (e.g. Chrome). */
@@ -37,45 +39,48 @@ class ScreenReadAccessibilityService : AccessibilityService() {
 
     @RequiresApi(Build.VERSION_CODES.R)
     suspend fun captureJpeg(): ByteArray? = suspendCancellableCoroutine { continuation ->
+        val active = windows.firstOrNull { it.isActive }?.let { info ->
+            Rect().also(info::getBoundsInScreen)
+        }
         takeScreenshot(Display.DEFAULT_DISPLAY, mainExecutor, object : TakeScreenshotCallback {
             override fun onSuccess(result: ScreenshotResult) {
                 val buffer = result.hardwareBuffer
-                try {
-                    val bitmap = Bitmap.wrapHardwareBuffer(buffer, result.colorSpace)
-                    if (bitmap == null) {
-                        continuation.resume(null)
-                        return
+                val colorSpace = result.colorSpace
+                // Pixel scanning and JPEG compression must not block the main thread.
+                CoroutineScope(Dispatchers.Default).launch {
+                    try {
+                        if (!continuation.isActive) return@launch
+                        val bitmap = Bitmap.wrapHardwareBuffer(buffer, colorSpace)
+                        if (bitmap == null) {
+                            if (continuation.isActive) continuation.resume(null)
+                            return@launch
+                        }
+                        val cropped: Bitmap = active?.let { bounds ->
+                            runCatching {
+                                val left = bounds.left.coerceIn(0, bitmap.width - 1)
+                                val top = bounds.top.coerceIn(0, bitmap.height - 1)
+                                val right = bounds.right.coerceIn(left + 1, bitmap.width)
+                                val bottom = bounds.bottom.coerceIn(top + 1, bitmap.height)
+                                if (right - left >= 2 && bottom - top >= 2) {
+                                    android.util.Log.i("OmniScreenRead", "accessibility crop=${right - left}x${bottom - top}")
+                                    Bitmap.createBitmap(bitmap, left, top, right - left, bottom - top)
+                                } else bitmap
+                            }.getOrDefault(bitmap)
+                        } ?: bitmap
+                        val trimmed = trimContent(cropped, cropStatusBar = active == null || active.top <= 0)
+                        val output = ByteArrayOutputStream()
+                        trimmed.compress(Bitmap.CompressFormat.JPEG, 100, output)
+                        if (continuation.isActive) continuation.resume(output.toByteArray())
+                    } catch (_: Exception) {
+                        if (continuation.isActive) continuation.resume(null)
+                    } finally {
+                        buffer.close()
                     }
-                    // Crop system bars/other windows out of the accessibility capture.
-                    val source = bitmap
-                    val active = windows.firstOrNull { it.isActive }?.let { info ->
-                        Rect().also(info::getBoundsInScreen)
-                    }
-                    val cropped: Bitmap = active?.let { bounds ->
-                        runCatching {
-                            val left = bounds.left.coerceIn(0, source.width - 1)
-                            val top = bounds.top.coerceIn(0, source.height - 1)
-                            val right = bounds.right.coerceIn(left + 1, source.width)
-                            val bottom = bounds.bottom.coerceIn(top + 1, source.height)
-                            if (right - left >= 2 && bottom - top >= 2) {
-                                android.util.Log.i("OmniScreenRead", "accessibility crop=${right - left}x${bottom - top}")
-                                Bitmap.createBitmap(source, left, top, right - left, bottom - top)
-                            } else source
-                        }.getOrDefault(source)
-                    } ?: source
-                    val trimmed = trimContent(cropped)
-                    val output = ByteArrayOutputStream()
-                    trimmed.compress(Bitmap.CompressFormat.JPEG, 100, output)
-                    continuation.resume(output.toByteArray())
-                } catch (_: Exception) {
-                    continuation.resume(null)
-                } finally {
-                    buffer.close()
                 }
             }
 
             override fun onFailure(errorCode: Int) {
-                continuation.resume(null)
+                if (continuation.isActive) continuation.resume(null)
             }
         })
     }
@@ -88,23 +93,23 @@ class ScreenReadAccessibilityService : AccessibilityService() {
     }
 
     /** Remove the system status bar and the unused white area below a short page. */
-    private fun trimContent(source: Bitmap): Bitmap {
+    private fun trimContent(source: Bitmap, cropStatusBar: Boolean): Bitmap {
         val software = runCatching { source.copy(Bitmap.Config.ARGB_8888, false) }.getOrNull()
             ?: return source
         val statusBar = resources.getIdentifier("status_bar_height", "dimen", "android")
             .takeIf { it > 0 }?.let { resources.getDimensionPixelSize(it) } ?: 0
-        val top = statusBar.coerceIn(0, (software.height - 2).coerceAtLeast(0))
+        val top = if (cropStatusBar) statusBar.coerceIn(0, (software.height - 2).coerceAtLeast(0)) else 0
         if (software.height - top < 32) return source
         val width = software.width
         val height = software.height
-        val pixels = IntArray(width * (height - top))
-        software.getPixels(pixels, 0, width, 0, top, width, height - top)
+        val row = IntArray(width)
         var lastContent = top
         for (y in height - 1 downTo top) {
+            software.getPixels(row, 0, width, 0, y, width, 1)
             var content = false
             var x = 0
             while (x < width) {
-                val color = pixels[(y - top) * width + x]
+                val color = row[x]
                 val r = color shr 16 and 0xFF
                 val g = color shr 8 and 0xFF
                 val b = color and 0xFF
@@ -123,7 +128,7 @@ class ScreenReadAccessibilityService : AccessibilityService() {
         if (bottom - top < 40) return source
         android.util.Log.i(
             "OmniScreenRead",
-            "accessibility trim=${width}x${bottom - top} from=${software.width}x$height",
+            "accessibility trim=${width}x${bottom - top} from=${software.width}x$height statusCrop=$cropStatusBar",
         )
         return runCatching {
             Bitmap.createBitmap(software, 0, top, width, bottom - top)
@@ -133,8 +138,10 @@ class ScreenReadAccessibilityService : AccessibilityService() {
 
 /** User-enableable fallback; the accessibility service must be enabled once in system settings. */
 object ScreenReadAccessibility {
+    fun isSupported(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+
     fun isEnabled(context: Context): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false
+        if (!isSupported()) return false
         val enabled = Settings.Secure.getString(
             context.contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
@@ -151,7 +158,7 @@ object ScreenReadAccessibility {
         if (!isEnabled(context)) return null
         val service = ScreenReadAccessibilityService.accessForCapture() ?: return null
         val started = android.os.SystemClock.elapsedRealtime()
-        val raw = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) service.captureJpeg() else null
+        val raw = if (isSupported()) service.captureJpeg() else null
         val rawMs = android.os.SystemClock.elapsedRealtime() - started
         val normalized = raw?.let { withContext(Dispatchers.Default) { CallPhotoImage.encode(it) } }
         android.util.Log.i(

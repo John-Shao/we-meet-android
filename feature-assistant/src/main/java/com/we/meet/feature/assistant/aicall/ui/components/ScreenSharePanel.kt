@@ -150,7 +150,7 @@ fun ScreenSharePanel(
                     style = MaterialTheme.typography.bodySmall,
                     color = content,
                 )
-                if (onEnableScreenReadAccessibility != null && !accessibilityEnabled) {
+                if (onEnableScreenReadAccessibility != null && ScreenReadAccessibility.isSupported() && !accessibilityEnabled) {
                     TextButton(
                         onClick = onEnableScreenReadAccessibility,
                         modifier = Modifier.testTag("call-screen-read-accessibility"),

@@ -487,11 +487,11 @@ fun AssistantCallScreen(
                             color = if (isVideoActive) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.onSurface)
                         if (state.cameraResult?.code == "screen_read_failed" &&
                             !state.screenReadPending && !state.photoPending && !state.cameraPending) {
-                            if (ScreenReadAccessibility.isEnabled(context)) {
+                            if (ScreenReadAccessibility.isSupported() && ScreenReadAccessibility.isEnabled(context)) {
                                 TextButton(onClick = ::openOtherApp) {
                                     Text(stringResource(R.string.assistant_screen_share_go_home))
                                 }
-                            } else {
+                            } else if (ScreenReadAccessibility.isSupported()) {
                                 TextButton(onClick = { showScreenReadInfo = true }) {
                                     Text(stringResource(R.string.assistant_screen_read_accessibility))
                                 }
