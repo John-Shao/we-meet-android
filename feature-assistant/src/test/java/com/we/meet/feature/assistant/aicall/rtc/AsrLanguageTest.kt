@@ -6,14 +6,14 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class AsrLanguageTest {
-    @Test fun usesSupportedUiLocale() {
+    @Test fun pinsMandarinForChineseUi() {
         assertEquals("zh", AsrLanguage.current(Locale.SIMPLIFIED_CHINESE))
-        assertEquals("en", AsrLanguage.current(Locale.ENGLISH))
-        assertEquals("de", AsrLanguage.current(Locale.GERMAN))
-        assertEquals("fr", AsrLanguage.current(Locale.FRENCH))
     }
 
-    @Test fun leavesUnsupportedLocaleOnAutoDetect() {
+    @Test fun keepsAutoDetectionForOtherUiLanguages() {
+        assertNull(AsrLanguage.current(Locale.ENGLISH))
+        assertNull(AsrLanguage.current(Locale.GERMAN))
+        assertNull(AsrLanguage.current(Locale.FRENCH))
         assertNull(AsrLanguage.current(Locale.forLanguageTag("nl-NL")))
     }
 }

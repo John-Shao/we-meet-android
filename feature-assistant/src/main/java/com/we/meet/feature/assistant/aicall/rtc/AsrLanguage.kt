@@ -2,14 +2,16 @@ package com.we.meet.feature.assistant.aicall.rtc
 
 import java.util.Locale
 
-/** Qwen-ASR language hint; null means auto-detect. */
+/**
+ * Qwen-ASR language hint. Only Mandarin is pinned: short Chinese utterances are
+ * easily mistaken for Hindi/other languages by auto-detection. Other locales
+ * keep auto-detection so an English UI user can still speak Chinese.
+ */
 internal object AsrLanguage {
-    private val supported = setOf(
-        "zh", "yue", "en", "ja", "de", "ko", "ru", "fr", "pt", "ar", "it", "es",
-        "hi", "id", "th", "tr", "uk", "vi", "cs", "da", "fil", "fi", "is", "ms",
-        "no", "pl", "sv",
-    )
-
     fun current(locale: Locale = Locale.getDefault()): String? =
-        locale.language.lowercase(Locale.ROOT).takeIf { it in supported }
+        when (locale.language.lowercase(Locale.ROOT)) {
+            "zh" -> "zh"
+            "yue" -> "yue"
+            else -> null
+        }
 }

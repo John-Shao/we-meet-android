@@ -73,6 +73,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.we.meet.feature.assistant.AssistantDeps
 import com.we.meet.feature.assistant.BuildConfig
@@ -126,6 +127,11 @@ fun AssistantCallScreen(
     var showHistory by rememberSaveable { mutableStateOf(false) }
     var showTranscript by rememberSaveable { mutableStateOf(false) }
     var showScreenReadInfo by rememberSaveable { mutableStateOf(false) }
+    var screenReadAccessibilityEnabled by remember { mutableStateOf(ScreenReadAccessibility.isEnabled(context)) }
+    LifecycleResumeEffect(Unit) {
+        screenReadAccessibilityEnabled = ScreenReadAccessibility.isEnabled(context)
+        onPauseOrDispose {}
+    }
     DisposableEffect(vm, lifecycleOwner) {
         fun updateVisibility() { vm.setPageVisible(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) }
         val observer = LifecycleEventObserver { _, _ -> updateVisibility() }
@@ -487,7 +493,7 @@ fun AssistantCallScreen(
                             color = if (isVideoActive) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.onSurface)
                         if (state.cameraResult?.code == "screen_read_failed" &&
                             !state.screenReadPending && !state.photoPending && !state.cameraPending) {
-                            if (ScreenReadAccessibility.isSupported() && ScreenReadAccessibility.isEnabled(context)) {
+                            if (ScreenReadAccessibility.isSupported() && screenReadAccessibilityEnabled) {
                                 TextButton(onClick = ::openOtherApp) {
                                     Text(stringResource(R.string.assistant_screen_share_go_home))
                                 }
