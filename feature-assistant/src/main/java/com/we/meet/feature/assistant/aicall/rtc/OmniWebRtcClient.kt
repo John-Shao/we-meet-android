@@ -407,8 +407,24 @@ class OmniWebRtcClient(
         )
         captureRef = capture
         try {
+            var lastScreenSnapshotAt = 0L
+            val screenRowId = UUID.randomUUID().toString()
+            val observed = object : CapturerObserver {
+                override fun onCapturerStarted(success: Boolean) = source.capturerObserver.onCapturerStarted(success)
+
+                override fun onCapturerStopped() = source.capturerObserver.onCapturerStopped()
+
+                override fun onFrameCaptured(frame: VideoFrame) {
+                    val now = SystemClock.elapsedRealtime()
+                    if (now - lastScreenSnapshotAt >= 1_000) {
+                        lastScreenSnapshotAt = now
+                        ScreenFrameJpeg.encode(frame)?.let { transcript.screen(it, screenRowId) }
+                    }
+                    source.capturerObserver.onFrameCaptured(frame)
+                }
+            }
             capture.start(
-                consent, source.capturerObserver,
+                consent, observed,
                 size.width, size.height, ScreenShareSizing.CAPTURE_FPS,
             )
             check(videoSender!!.setTrack(track, false))

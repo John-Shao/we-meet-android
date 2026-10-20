@@ -86,7 +86,8 @@ fun CallTranscriptList(rows: List<AssistantHistoryRow>, modifier: Modifier = Mod
 /** Short sentences hug their content; long sentences stop before the opposite edge. */
 @Composable
 fun CallTranscriptBubble(row: AssistantHistoryRow, animateText: Boolean = false, onTyping: () -> Unit = {}) {
-    val user = row.role == "user"
+    val screen = row.role == "screen"
+    val user = row.role == "user" || screen
     val colors = WeMeetTheme.extras.aiCall
     val text = if (animateText && !user && row.photo == null) typewriterText(row, onTyping) else row.text
     BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -95,6 +96,13 @@ fun CallTranscriptBubble(row: AssistantHistoryRow, animateText: Boolean = false,
         Column(Modifier.align(if (user) Alignment.CenterEnd else Alignment.CenterStart),
             horizontalAlignment = if (user) Alignment.End else Alignment.Start,
             verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)) {
+            if (screen) {
+                Text(
+                    stringResource(R.string.assistant_screen_share_ai_viewing),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             row.photo?.let { CallTranscriptPhoto(it, row.id, Modifier.widthIn(max = photoMaxWidth)) }
             if (text.isNotBlank() || row.photo == null) {
                 Surface(modifier = Modifier.widthIn(max = textMaxWidth), shape = RoundedCornerShape(Dimens.CornerXl),
