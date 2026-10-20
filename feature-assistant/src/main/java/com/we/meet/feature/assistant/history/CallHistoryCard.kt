@@ -43,10 +43,14 @@ internal fun CallHistoryCard(entry: AssistantHistoryEntry, now: Long, onClick: (
         else -> stringResource(R.string.assistant_history_call_completed)
     }
     val time = DateFormat.getTimeFormat(context).format(Date(entry.startedAt))
+    val capturesLabel = if (captures > 0) {
+        stringResource(R.string.assistant_history_call_captures, captures)
+    } else null
     val meta = listOfNotNull(
         time,
         duration.takeIf { it.isNotBlank() },
         status,
+        capturesLabel,
     ).joinToString(" · ")
 
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth().testTagForCall(entry.id)) {
@@ -67,12 +71,11 @@ internal fun CallHistoryCard(entry: AssistantHistoryEntry, now: Long, onClick: (
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (entry.summary != null || captures > 0 || todos > 0) {
+                if (entry.summary != null || todos > 0) {
                     Spacer(Modifier.size(Dimens.SpaceS))
                     Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                         if (entry.summary != null) Badge(stringResource(R.string.assistant_history_call_summary))
                         if (todos > 0) Badge(stringResource(R.string.assistant_history_call_todos, todos))
-                        if (captures > 0) Badge(stringResource(R.string.assistant_history_call_captures, captures))
                     }
                 }
             }
