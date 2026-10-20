@@ -26,6 +26,13 @@ internal class OmniTranscript(private val emit: (AssistantHistoryRow) -> Unit) {
         emit(AssistantHistoryRow(id, position(id), "user", "", photo = AssistantHistoryPhoto.Memory(jpeg)))
     }
 
+    /** Show the actual screen frame handed to the model, without pretending it is user ASR. */
+    fun screen(jpeg: ByteArray, screenId: String = java.util.UUID.randomUUID().toString()) {
+        if (positions.size >= 2000) return
+        val id = "screen:$screenId"
+        emit(AssistantHistoryRow(id, position(id), "screen", "", photo = AssistantHistoryPhoto.Memory(jpeg)))
+    }
+
     fun accept(event: JSONObject, suppressAssistant: Boolean = false) {
         when (event.optString("type")) {
             "input_audio_buffer.committed" -> event.optString("item_id").takeIf { it.isNotBlank() }?.let(::position)

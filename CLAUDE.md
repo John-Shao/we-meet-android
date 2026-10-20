@@ -140,7 +140,7 @@ we-meet-specific notes:
 Intentionally excluded (do not implement unless explicitly asked):
 - AI agent start/stop UI
 - Chat (LiveKit data channel)
-- Screen sharing
+- Screen sharing in meeting rooms (the AI call screen share is a separate, implemented feature)
 - Token auto-refresh (re-login on expiry)
 - Keycloak PKCE login
 - Device selector (uses defaults)

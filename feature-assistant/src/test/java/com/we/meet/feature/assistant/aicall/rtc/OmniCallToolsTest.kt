@@ -3,12 +3,30 @@ package com.we.meet.feature.assistant.aicall.rtc
 import com.we.meet.feature.assistant.aicall.model.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.*
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OmniCallToolsTest {
+    @Test fun readScreenIsOfferedOnlyWhileSharingAndDispatchesItsQuestion() = runTest {
+        val sent = mutableListOf<JSONObject>()
+        val questions = mutableListOf<String>()
+        val tools = OmniCallTools(backgroundScope, null, sent::add, {}, {}, { result },
+            screenReadHandler = PhotoToolHandler { questions += it; result.copy(code = "screen_answer", message = "invoice 8472") })
+        fun names(sharing: Boolean, visible: Boolean = true) = (0 until tools.definitions(sharing, visible).length())
+            .map { tools.definitions(sharing, visible).getJSONObject(it).getJSONObject("function").getString("name") }
+        assertTrue("read_screen" in names(true))
+        assertFalse("read_screen" in names(true, visible = false))
+        assertFalse("read_screen" in names(false))
+        tools.accept(call("read", "{\"question\":\"read the total\"}", "read_screen"))
+        tools.accept(done()); runCurrent()
+        assertEquals(listOf("read the total"), questions)
+        assertTrue(sent.first().getJSONObject("item").getString("output").contains("invoice 8472"))
+        tools.close()
+    }
+
     @Test fun photoDispatchIsSeparateFromModeChangesAndDuplicateEventsDoNotRetake() = runTest {
         val sent = mutableListOf<JSONObject>(); val questions = mutableListOf<String>(); var camera = 0
         val tools = OmniCallTools(backgroundScope, CameraToolHandler { camera++; result }, sent::add, {}, {}, { result },
@@ -400,5 +418,34 @@ class OmniCallToolsTest {
         assertTrue(held.last())
         tools.accept(JSONObject("""{"type":"input_audio_buffer.speech_started"}"""))
         assertFalse(held.last()); tools.close()
+    }
+
+    @Test fun screenShareRemovesCameraAndPhotoToolsAndTellsTheModelWhatItSees() {
+        fun names(tools: JSONArray): List<String> =
+            (0 until tools.length()).map { tools.getJSONObject(it).getJSONObject("function").getString("name") }
+
+        assertEquals(
+            listOf("set_camera_enabled", "get_camera_state", "end_call", "take_photo"),
+            names(OmniCallTools.definitions(cameraEnabled = true, endCallEnabled = true, photoEnabled = true)),
+        )
+        assertEquals(
+            listOf("end_call"),
+            names(OmniCallTools.definitions(cameraEnabled = false, endCallEnabled = true, photoEnabled = false)),
+        )
+
+        val visible = OmniCallTools.instructions(
+            "scene", cameraEnabled = false, endCallEnabled = true,
+            rules = mapOf("end_call" to "hangup rule"), photoEnabled = false,
+            screenSharing = true, screenVisible = true,
+        )
+        assertTrue(visible.contains("sharing their screen"))
+        assertFalse(visible.contains("camera rule"))
+        val hidden = OmniCallTools.instructions(
+            "scene", cameraEnabled = false, endCallEnabled = true,
+            rules = mapOf("end_call" to "hangup rule"), photoEnabled = false,
+            screenSharing = true, screenVisible = false,
+        )
+        assertTrue(hidden.contains("currently hidden"))
+        assertEquals("scene\nhangup rule", OmniCallTools.instructions("scene", false, true, mapOf("end_call" to "hangup rule")))
     }
 }

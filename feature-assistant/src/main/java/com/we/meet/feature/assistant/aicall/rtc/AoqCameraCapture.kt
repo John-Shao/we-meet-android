@@ -5,7 +5,6 @@ import com.we.meet.feature.assistant.aicall.model.AiCallVideoSettings
 import com.alibaba.aoq.clientsdk.AoqClientEngine.*
 import kotlinx.coroutines.*
 import livekit.org.webrtc.*
-import java.nio.ByteBuffer
 
 /** Camera2 source only: AOQ still encodes and transports the video, without a PeerConnection. */
 internal class AoqCameraCapture(
@@ -104,7 +103,7 @@ internal class AoqCameraCapture(
 
     private fun pushFrame(frame: VideoFrame) {
         try {
-            push(pack(frame))
+            push(AoqVideoFramePacker.pack(frame))
             first?.complete(Unit) // First actual Camera2 frame accepted by AOQ.
         } catch (error: Exception) {
             android.util.Log.w("OmniAoqCamera", "External frame submission failed", error)
@@ -112,30 +111,5 @@ internal class AoqCameraCapture(
             first?.completeExceptionally(error)
             failed()
         }
-    }
-
-    private fun pack(frame: VideoFrame): AoqVideoFrame {
-        val pixels = checkNotNull(frame.buffer.toI420())
-        try {
-            // AOQ raw frames have no rotation field: rotate pixels before input.
-            val rotated = frame.rotation % 180 != 0
-            val width = if (rotated) pixels.height else pixels.width
-            val height = if (rotated) pixels.width else pixels.height
-            val chromaWidth = (width + 1) / 2
-            val chromaHeight = (height + 1) / 2
-            val packed = ByteBuffer.allocateDirect(width * height + 2 * chromaWidth * chromaHeight)
-            YuvHelper.I420Rotate(pixels.dataY, pixels.strideY, pixels.dataU, pixels.strideU,
-                pixels.dataV, pixels.strideV, packed, pixels.width, pixels.height, frame.rotation)
-            packed.position(0)
-            return AoqVideoFrame().apply {
-                format = AoqVideoPixelFormat.AoqVideoPixelFormatI420
-                this.width = width; this.height = height
-                strideY = width; strideU = chromaWidth; strideV = chromaWidth
-                dataY = ByteArray(width * height).also { packed.get(it) }
-                dataU = ByteArray(chromaWidth * chromaHeight).also { packed.get(it) }
-                dataV = ByteArray(chromaWidth * chromaHeight).also { packed.get(it) }
-                timeStamp = System.currentTimeMillis()
-            }
-        } finally { pixels.release() }
     }
 }

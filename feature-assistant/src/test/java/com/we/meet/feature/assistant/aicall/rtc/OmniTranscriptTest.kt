@@ -23,6 +23,19 @@ class OmniTranscriptTest {
         assertEquals(4, rows.map { it.id }.toSet().size)
     }
 
+    @Test fun screenFramesAppearAsTheirOwnPhotoRows() {
+        val rows = mutableListOf<AssistantHistoryRow>()
+        val transcript = OmniTranscript(rows::add)
+        val jpeg = byteArrayOf(7, 8, 9)
+        transcript.screen(jpeg)
+        val row = rows.single()
+        assertEquals("screen", row.role)
+        assertEquals("", row.text)
+        val photo = row.photo as com.we.meet.feature.assistant.history.AssistantHistoryPhoto.Memory
+        jpeg[0] = 0
+        assertArrayEquals(byteArrayOf(7, 8, 9), photo.jpeg)
+    }
+
     @Test fun lateSourceTranscriptionStaysBeforeItsReplyAndRepeatedFinalReplacesTheSameRow() {
         val rows = linkedMapOf<String, AssistantHistoryRow>()
         val transcript = OmniTranscript { rows[it.id] = it }

@@ -146,6 +146,32 @@ class AssistantForegroundSessionTest {
         }
     }
 
+    @Test fun screenShareTypeUpgradeFailureDoesNotEndTheCall() = runBlocking {
+        ActivityScenario.launch(ComponentActivity::class.java).use {
+            val ended = AtomicBoolean()
+            val session = AssistantForegroundSession.start(context, AssistantSessionKind.CALL, false) { ended.set(true) }
+            try {
+                // Without a MediaProjection consent the type upgrade may be
+                // rejected by the OS; either way the call must stay alive.
+                try {
+                    withContext(Dispatchers.Main) { session.screenShare(true) }
+                } catch (_: Exception) {
+                    // Expected on devices that require a live projection grant.
+                }
+                delay(200)
+                assertFalse(ended.get())
+                try {
+                    withContext(Dispatchers.Main) { session.screenShare(false) }
+                } catch (_: Exception) {
+                    // Downgrade failure is also non-fatal.
+                }
+                assertFalse(ended.get())
+            } finally {
+                withContext(Dispatchers.Main) { session.close() }
+            }
+        }
+    }
+
     @Test fun cancellationDuringStartupDoesNotLeaveAnOrphanService() = runBlocking {
         ActivityScenario.launch(ComponentActivity::class.java).use {
             val started = CompletableDeferred<Unit>()

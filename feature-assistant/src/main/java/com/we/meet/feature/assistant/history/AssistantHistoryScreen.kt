@@ -48,6 +48,7 @@ import kotlinx.coroutines.withContext
 fun AssistantHistoryRow.displayText(context: Context): String = if (role == "translation") {
     "${Locale(sourceLanguage).getDisplayLanguage(Locale.getDefault())} → ${Locale(targetLanguage).getDisplayLanguage(Locale.getDefault())}\n$source\n$text"
 } else if (role == "transcription") "${Locale(sourceLanguage).getDisplayLanguage(Locale.getDefault())}\n$text"
+else if (role == "screen") "${context.getString(R.string.assistant_screen_read_caption)}: ${if (photo != null) context.getString(R.string.assistant_photo_attachment) else text}"
 else "${context.getString(if (role == "user") R.string.assistant_history_you else R.string.assistant_history_ai)}: ${if (photo != null) context.getString(R.string.assistant_photo_attachment) else text}"
 
 @Composable

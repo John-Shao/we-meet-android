@@ -60,14 +60,14 @@ class AssistantForegroundService : Service() {
             active.control(intent.action == ACTION_INPUT)
             return START_NOT_STICKY
         }
+        if (intent.action == ACTION_SCREEN_SHARE_STOP) {
+            active.screenShareStopRequested()
+            return START_NOT_STICKY
+        }
         try {
             val notification = notification(active)
-            var types = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-                if (active.cameraEnabled) types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
-            }
-            startForeground(NOTIFICATION_ID, notification, types)
+            startForeground(NOTIFICATION_ID, notification, foregroundTypes(active))
+            active.foregroundStarted = true
             if (wakeLock == null) {
                 wakeLock = getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "WeMeet:AiAssistant").apply {
                     setReferenceCounted(false)
@@ -76,9 +76,25 @@ class AssistantForegroundService : Service() {
             }
             active.confirmation.complete(Unit)
         } catch (error: Exception) {
+            // Once the service is already foreground, a failed type update
+            // (especially mediaProjection on some OEMs) must not end a
+            // healthy call. Only a failed initial foreground start is fatal.
+            val keepCall = active.foregroundStarted
             active.confirmation.completeExceptionally(error)
-            active.interrupted()
-            stopSelf(startId)
+            if (keepCall) {
+                if (active.pendingScreenShareUpgrade) {
+                    active.screenShareUpgradeFailed()
+                } else {
+                    // A failed downgrade must not leave the mediaProjection
+                    // type behind for the rest of the call.
+                    runCatching {
+                        startForeground(NOTIFICATION_ID, notification(active), foregroundTypes(active))
+                    }
+                }
+            } else {
+                active.interrupted()
+                stopSelf(startId)
+            }
         }
         return START_NOT_STICKY
     }
@@ -106,8 +122,19 @@ class AssistantForegroundService : Service() {
         internal const val ACTION_STOP = "com.we.meet.assistant.STOP"
         internal const val ACTION_INPUT = "com.we.meet.assistant.INPUT"
         internal const val ACTION_OUTPUT = "com.we.meet.assistant.OUTPUT"
+        internal const val ACTION_SCREEN_SHARE_STOP = "com.we.meet.assistant.SCREEN_SHARE_STOP"
         private const val CHANNEL = "ai_assistant_session"
         private const val NOTIFICATION_ID = 1003
+    }
+
+    private fun foregroundTypes(active: AssistantForegroundSession): Int {
+        var types = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+            if (active.cameraEnabled) types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+            if (active.screenShareEnabled) types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+        }
+        return types
     }
 
     private fun notification(active: AssistantForegroundSession): Notification {
@@ -123,6 +150,7 @@ class AssistantForegroundService : Service() {
         val status = when {
             !state.ready -> R.string.assistant_background_connecting
             state.inputPaused -> R.string.assistant_background_paused
+            active.screenShareEnabled -> R.string.assistant_background_screen_share
             else -> R.string.assistant_background_listening
         }
         return NotificationCompat.Builder(this, CHANNEL)
@@ -135,6 +163,9 @@ class AssistantForegroundService : Service() {
                 if (state.ready) {
                     addAction(android.R.drawable.ic_btn_speak_now, getString(if (state.inputPaused) R.string.assistant_background_resume else R.string.assistant_background_pause), action(ACTION_INPUT))
                     addAction(android.R.drawable.ic_lock_silent_mode, getString(if (state.outputMuted) R.string.assistant_background_unmute else R.string.assistant_background_mute), action(ACTION_OUTPUT))
+                }
+                if (active.screenShareEnabled) {
+                    addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.assistant_background_stop_share), action(ACTION_SCREEN_SHARE_STOP))
                 }
                 addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.assistant_background_stop), action(ACTION_STOP))
                 if (launch != null) setContentIntent(PendingIntent.getActivity(this@AssistantForegroundService, NOTIFICATION_ID, launch, flags))
