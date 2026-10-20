@@ -443,6 +443,8 @@ class OmniAoqClient(
                 }.onSuccess {
                     firstFrame.complete(Unit)
                 }.onFailure {
+                    // Only the startup probe needs this failure; later frames are dropped.
+                    if (!firstFrame.isCompleted) Log.w("OmniScreen", "First screen frame rejected: ${it.javaClass.simpleName}")
                     firstFrame.completeExceptionally(it)
                 }
             }
@@ -578,6 +580,7 @@ class OmniAoqClient(
     override fun displayScreenPhoto(jpeg: ByteArray) {
         transcript.screen(jpeg)
     }
+
     private fun send(event: JSONObject) {
         if (!event.has("event_id")) event.put("event_id", UUID.randomUUID().toString())
         ok(engine!!.sendDataMsg(AoqDataMsg().apply { data = event.toString().toByteArray(Charsets.UTF_8) }))

@@ -54,6 +54,7 @@ ScreenShareCapture ── ScreenCapturerAndroid ── SurfaceTextureHelper (EGL
 ```
 
 - **共享的是原来那一条视频轨**，不是新增一条。摄像头和屏幕互斥：开始共享前会先关闭摄像头，共享期间视频按钮禁用；停止共享后可以再开摄像头。这样两端（WebRTC SDP / AOQ track）都不需要重新协商。
+- **不能 retain 采集回调里的 `VideoFrame`**。该帧包装 `SurfaceTextureHelper` 的 OES 纹理；保留它会占住纹理，helper 不再投递下一帧，直播轨停在第一帧（此时模型继续看到上一路画面，例如摄像头）。需要留帧时用 `ScreenFrameStore` 复制成 I420（默认 400 ms 一次），复制后立即交给 `VideoFrame` 持有，不再 retain 原始帧。2026-10-20 真机回归：修复前共享开始后只有 1 帧，修复后持续产生帧并由 AOQ 编码。
 - WebRTC 只有协商到 H.264 时才创建视频 sender；没有 H.264 的设备上屏幕共享按钮会提示「当前连接方式不支持共享屏幕」。
 - AOQ 在 ARM 进程内把屏幕帧转成 I420 后走既有的 external video 通道，编码参数为 800 kbps / `modelUploadFps`（默认 2 fps）。
 - 画面尺寸取默认显示的真实尺寸，长边压到 1280 并向下取偶数（H.264 不接受奇数边），见 `ScreenShareSizing`。
