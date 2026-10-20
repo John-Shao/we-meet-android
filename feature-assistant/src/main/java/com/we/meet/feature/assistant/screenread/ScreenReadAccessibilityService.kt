@@ -55,18 +55,17 @@ class ScreenReadAccessibilityService : AccessibilityService() {
                             if (continuation.isActive) continuation.resume(null)
                             return@launch
                         }
-                        val cropped: Bitmap = active?.let { bounds ->
-                            runCatching {
-                                val left = bounds.left.coerceIn(0, bitmap.width - 1)
-                                val top = bounds.top.coerceIn(0, bitmap.height - 1)
-                                val right = bounds.right.coerceIn(left + 1, bitmap.width)
-                                val bottom = bounds.bottom.coerceIn(top + 1, bitmap.height)
-                                if (right - left >= 2 && bottom - top >= 2) {
-                                    android.util.Log.i("OmniScreenRead", "accessibility crop=${right - left}x${bottom - top}")
-                                    Bitmap.createBitmap(bitmap, left, top, right - left, bottom - top)
-                                } else bitmap
-                            }.getOrDefault(bitmap)
-                        } ?: bitmap
+                        val cropped: Bitmap = runCatching {
+                            val bounds = ScreenSnapshotBounds.activeWindow(
+                                bitmap.width,
+                                bitmap.height,
+                                active?.let {
+                                    ScreenSnapshotBounds.Bounds(it.left, it.top, it.right, it.bottom)
+                                },
+                            )
+                            if (bounds.isFullOf(bitmap.width, bitmap.height)) bitmap
+                            else Bitmap.createBitmap(bitmap, bounds.left, bounds.top, bounds.width, bounds.height)
+                        }.getOrDefault(bitmap)
                         val trimmed = trimContent(cropped, cropStatusBar = active == null || active.top <= 0)
                         val output = ByteArrayOutputStream()
                         trimmed.compress(Bitmap.CompressFormat.JPEG, 100, output)
@@ -98,40 +97,24 @@ class ScreenReadAccessibilityService : AccessibilityService() {
             ?: return source
         val statusBar = resources.getIdentifier("status_bar_height", "dimen", "android")
             .takeIf { it > 0 }?.let { resources.getDimensionPixelSize(it) } ?: 0
-        val top = if (cropStatusBar) statusBar.coerceIn(0, (software.height - 2).coerceAtLeast(0)) else 0
-        if (software.height - top < 32) return source
         val width = software.width
-        val height = software.height
         val row = IntArray(width)
-        var lastContent = top
-        for (y in height - 1 downTo top) {
+        val bounds = ScreenSnapshotBounds.content(
+            width = width,
+            height = software.height,
+            statusBarHeight = statusBar,
+            cropStatusBar = cropStatusBar,
+        ) { y ->
             software.getPixels(row, 0, width, 0, y, width, 1)
-            var content = false
-            var x = 0
-            while (x < width) {
-                val color = row[x]
-                val r = color shr 16 and 0xFF
-                val g = color shr 8 and 0xFF
-                val b = color and 0xFF
-                if (r < 245 || g < 245 || b < 245) {
-                    content = true
-                    break
-                }
-                x += 4
-            }
-            if (content) {
-                lastContent = y
-                break
-            }
+            row
         }
-        val bottom = (lastContent + 24).coerceAtMost(height)
-        if (bottom - top < 40) return source
+        if (bounds.isFullOf(software.width, software.height)) return source
         android.util.Log.i(
             "OmniScreenRead",
-            "accessibility trim=${width}x${bottom - top} from=${software.width}x$height statusCrop=$cropStatusBar",
+            "accessibility trim=${bounds.width}x${bounds.height} from=${software.width}x${software.height} statusCrop=$cropStatusBar",
         )
         return runCatching {
-            Bitmap.createBitmap(software, 0, top, width, bottom - top)
+            Bitmap.createBitmap(software, bounds.left, bounds.top, bounds.width, bounds.height)
         }.getOrDefault(source)
     }
 }
