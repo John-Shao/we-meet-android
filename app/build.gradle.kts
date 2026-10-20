@@ -58,8 +58,8 @@ android {
         // which uses audio-routing / WebRTC APIs that require API 29+.
         minSdk = 29
         targetSdk = 34
-        versionCode = 11
-        versionName = "0.3.0-work.9"
+        versionCode = 12
+        versionName = "0.3.0-work.10"
         testInstrumentationRunner = providers.gradleProperty("WE_MEET_TEST_RUNNER")
             .getOrElse("androidx.test.runner.AndroidJUnitRunner")
 
