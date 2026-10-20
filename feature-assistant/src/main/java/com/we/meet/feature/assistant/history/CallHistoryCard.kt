@@ -24,7 +24,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.we.meet.feature.assistant.R
 import com.we.meet.ui.theme.Dimens
 import java.util.Date
@@ -65,7 +64,7 @@ internal fun CallHistoryCard(entry: AssistantHistoryEntry, now: Long, onClick: (
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(Modifier.size(2.dp))
+                Spacer(Modifier.size(Dimens.SpaceXxs))
                 Text(
                     text = meta,
                     style = MaterialTheme.typography.bodySmall,
@@ -97,7 +96,7 @@ private fun Badge(text: String) {
         modifier = Modifier
             .clip(RoundedCornerShape(Dimens.CornerXs))
             .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f))
-            .padding(horizontal = Dimens.SpaceS, vertical = 2.dp),
+            .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXxs),
     )
 }
 
@@ -135,7 +134,7 @@ private fun String.isMeaningful(): Boolean {
     val value = trim()
     if (value.length < 4) return false
     return value.lowercase(Locale.ROOT) !in setOf(
-        "嗯", "嗯。", "好的", "好的。", "谢谢", "谢谢。", "ok", "okay", "hello", "hi",
+        "嗯", "嗯。", "好的", "好的。", "谢谢", "谢谢。", "ok", "okay", "hello", "hi", // i18n-exempt: transcript acknowledgement matching, not UI copy
     )
 }
 
