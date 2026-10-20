@@ -52,7 +52,7 @@ class OmniWebRtcClient(
     private val screenReadHandler: PhotoToolHandler? = null,
     private val vadMode: AiCallVadMode = AiCallVadMode.Server,
     // Shared call factory passes it for both transports; WebRTC always runs its own AEC.
-    @Suppress("unused") private val audioMode: AiCallAudioMode = AiCallAudioMode.EchoCancel,
+    @Suppress("UNUSED_PARAMETER") audioMode: AiCallAudioMode = AiCallAudioMode.EchoCancel,
     private val videoSettings: AiCallVideoSettings = AiCallVideoSettings(),
 ) : OmniCallClient {
     private val playbackDiagnostics = OmniPlaybackDiagnostics(context, "WebRTC", "inbound_rtp_audio_level")

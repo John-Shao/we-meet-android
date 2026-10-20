@@ -13,17 +13,24 @@ import livekit.org.webrtc.VideoFrame
  * pixels to I420 detaches them from that texture; the copy is rate-limited because
  * still reads only need a recent frame.
  */
-internal class ScreenFrameStore(private val minIntervalMs: Long = 400) {
+internal class ScreenFrameStore(
+    private val minIntervalMs: Long = 400,
+    private val clock: () -> Long = SystemClock::elapsedRealtime,
+) {
     private val lock = Any()
     private var latest: VideoFrame? = null
     private var generation = 0L
     private var lastCopyAt = 0L
 
     fun update(frame: VideoFrame) {
-        val now = SystemClock.elapsedRealtime()
+        val now = clock()
         synchronized(lock) { if (now - lastCopyAt < minIntervalMs) return }
-        val copy = frame.buffer.toI420() ?: return
-        // VideoFrame takes ownership of the buffer reference.
+        // A failed readback must never kill the capture thread; the next frame retries.
+        val buffer = frame.buffer
+        val copy = runCatching { buffer.toI420() }.getOrNull() ?: return
+        // I420 input converts to itself; keep our own reference before owning it.
+        // VideoFrame takes ownership of the buffer reference it is given.
+        if (copy === buffer) copy.retain()
         val stored = VideoFrame(copy, frame.rotation, frame.timestampNs)
         synchronized(lock) {
             lastCopyAt = now
