@@ -146,6 +146,12 @@
     <string name="assistant_screen_read_failed">Impossible de lire cet écran. Réessayez.</string>
     <string name="assistant_screen_read_accessibility">Activer la lecture d’écran accessible</string>
     <string name="assistant_screen_read_accessibility_description">Permet à We Meet de capturer l’écran lorsque le partage Android ne voit pas Chrome ou une autre application.</string>
+    <string name="assistant_screen_read_caption">Capture de lecture d’écran</string>
+    <string name="assistant_screen_read_working">Lecture de l’écran…</string>
+    <string name="assistant_screen_read_accessibility_title">Laisser l’IA lire les pages Chrome</string>
+    <string name="assistant_screen_read_accessibility_message">Le partage d’écran Android ne peut pas capturer Chrome sur certains appareils. Une fois activé, We Meet ne capture l’écran que lorsque vous le demandez explicitement. La capture couvre tout l’écran et peut inclure des notifications. We Meet ne surveille pas l’écran en continu.</string>
+    <string name="assistant_screen_read_accessibility_confirm">Ouvrir les réglages</string>
+    <string name="assistant_screen_read_accessibility_cancel">Pas maintenant</string>
     <string name="assistant_call_vad_mode">Détection des tours de parole (VAD)</string>
     <string name="assistant_call_vad_server">Détection acoustique (server_vad)</string>
     <string name="assistant_call_vad_semantic">Détection sémantique (semantic_vad)</string>
@@ -159,7 +165,7 @@
     <string name="assistant_screen_share_starting">Démarrage du partage…</string>
     <string name="assistant_screen_share_active">Partage d’écran en cours</string>
     <string name="assistant_screen_share_active_hint">L’assistant IA voit cet écran. Ouvrez l’application que vous voulez montrer.</string>
-    <string name="assistant_screen_share_go_home">Ouvrir une app</string>
+    <string name="assistant_screen_share_go_home">Aller à l’accueil</string>
     <string name="assistant_screen_share_failed">Impossible de démarrer le partage d’écran. Réessayez.</string>
     <string name="assistant_screen_share_unavailable">Le partage d’écran n’est pas disponible avec cette connexion.</string>
     <string name="assistant_background_screen_share">Partage d’écran</string>

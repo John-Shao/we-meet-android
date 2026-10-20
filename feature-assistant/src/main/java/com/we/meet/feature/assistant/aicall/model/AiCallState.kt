@@ -44,6 +44,7 @@ data class AiCallUiState(
     val isCameraEnabled: Boolean = false,
     val cameraPending: Boolean = false,
     val photoPending: Boolean = false,
+    val screenReadPending: Boolean = false,
     val isScreenSharing: Boolean = false,
     val isScreenShareVisible: Boolean = true,
     val screenSharePending: Boolean = false,

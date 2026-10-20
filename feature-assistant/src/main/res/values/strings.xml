@@ -146,6 +146,12 @@
     <string name="assistant_screen_read_failed">Unable to read this screen. Please retry.</string>
     <string name="assistant_screen_read_accessibility">Enable accessible screen reading</string>
     <string name="assistant_screen_read_accessibility_description">Allows We Meet to capture the screen when Android screen sharing cannot see Chrome or another app.</string>
+    <string name="assistant_screen_read_caption">Screen reading snapshot</string>
+    <string name="assistant_screen_read_working">Reading the screen…</string>
+    <string name="assistant_screen_read_accessibility_title">Let the AI read Chrome pages</string>
+    <string name="assistant_screen_read_accessibility_message">Android screen sharing cannot capture Chrome on some devices. When enabled, We Meet captures the screen only when you explicitly ask it to read it. The capture covers the whole display and may include notifications. We Meet does not monitor the screen continuously.</string>
+    <string name="assistant_screen_read_accessibility_confirm">Open settings</string>
+    <string name="assistant_screen_read_accessibility_cancel">Not now</string>
     <string name="assistant_call_vad_mode">Voice turn detection (VAD)</string>
     <string name="assistant_call_vad_server">Acoustic detection (server_vad)</string>
     <string name="assistant_call_vad_semantic">Semantic detection (semantic_vad)</string>
@@ -160,7 +166,7 @@
     <string name="assistant_screen_share_starting">Starting screen share…</string>
     <string name="assistant_screen_share_active">Sharing your screen</string>
     <string name="assistant_screen_share_active_hint">The AI assistant can see this screen. Open the app you want to show.</string>
-    <string name="assistant_screen_share_go_home">Open app</string>
+    <string name="assistant_screen_share_go_home">Go to home</string>
     <string name="assistant_screen_share_failed">Couldn’t start screen sharing. Try again.</string>
     <string name="assistant_screen_share_unavailable">Screen sharing isn’t available with this connection.</string>
     <string name="assistant_background_screen_share">Sharing screen</string>

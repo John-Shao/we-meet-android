@@ -18,11 +18,16 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.we.meet.feature.assistant.R
 import com.we.meet.feature.assistant.screenread.ScreenReadAccessibility
 import com.we.meet.ui.theme.Dimens
@@ -51,6 +56,12 @@ fun ScreenSharePanel(
 ) {
     val palette = WeMeetTheme.extras.aiCall
     val content = if (onDark) palette.onVideo else MaterialTheme.colorScheme.onSurfaceVariant
+    val context = LocalContext.current
+    var accessibilityEnabled by remember { mutableStateOf(ScreenReadAccessibility.isEnabled(context)) }
+    LifecycleResumeEffect(Unit) {
+        accessibilityEnabled = ScreenReadAccessibility.isEnabled(context)
+        onPauseOrDispose {}
+    }
 
     if (!active && !pending && !available) {
         Text(
@@ -139,8 +150,7 @@ fun ScreenSharePanel(
                     style = MaterialTheme.typography.bodySmall,
                     color = content,
                 )
-                if (onEnableScreenReadAccessibility != null &&
-                    !ScreenReadAccessibility.isEnabled(LocalContext.current)) {
+                if (onEnableScreenReadAccessibility != null && !accessibilityEnabled) {
                     TextButton(
                         onClick = onEnableScreenReadAccessibility,
                         modifier = Modifier.testTag("call-screen-read-accessibility"),

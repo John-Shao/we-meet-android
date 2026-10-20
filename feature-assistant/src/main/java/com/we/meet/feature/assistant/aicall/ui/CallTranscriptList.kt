@@ -98,7 +98,7 @@ fun CallTranscriptBubble(row: AssistantHistoryRow, animateText: Boolean = false,
             verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL)) {
             if (screen) {
                 Text(
-                    stringResource(R.string.assistant_screen_share_ai_viewing),
+                    stringResource(R.string.assistant_screen_read_caption),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

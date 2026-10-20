@@ -125,6 +125,7 @@ fun AssistantCallScreen(
     val state by vm.state.collectAsState()
     var showHistory by rememberSaveable { mutableStateOf(false) }
     var showTranscript by rememberSaveable { mutableStateOf(false) }
+    var showScreenReadInfo by rememberSaveable { mutableStateOf(false) }
     DisposableEffect(vm, lifecycleOwner) {
         fun updateVisibility() { vm.setPageVisible(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) }
         val observer = LifecycleEventObserver { _, _ -> updateVisibility() }
@@ -465,19 +466,18 @@ fun AssistantCallScreen(
                         onStart = ::onScreenShareStart,
                         onStop = vm::stopScreenShare,
                         onOpenOtherApp = ::openOtherApp,
-                        onEnableScreenReadAccessibility = {
-                            context.startActivity(ScreenReadAccessibility.settingsIntent(context))
-                        },
+                        onEnableScreenReadAccessibility = { showScreenReadInfo = true },
                         onDark = isVideoActive,
-                        enabled = !state.cameraPending && !state.photoPending,
+                        enabled = !state.cameraPending && !state.photoPending && !state.screenReadPending,
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
                             .padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
                     )
                 }
 
-                if (state.status is AiCallStatus.Active && (state.photoPending || state.cameraPending || state.cameraResult?.success == false)) {
-                    Text(if (state.photoPending) stringResource(R.string.assistant_photo_working)
+                if (state.status is AiCallStatus.Active && (state.photoPending || state.screenReadPending || state.cameraPending || state.cameraResult?.success == false)) {
+                    Text(if (state.screenReadPending) stringResource(R.string.assistant_screen_read_working)
+                        else if (state.photoPending) stringResource(R.string.assistant_photo_working)
                         else if (state.cameraPending) stringResource(R.string.assistant_camera_working) else state.cameraResult!!.message,
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (isVideoActive) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.onSurface,
@@ -559,6 +559,24 @@ fun AssistantCallScreen(
                     dismissButton = {
                         TextButton(onClick = { showShareIntro = false }) {
                             Text(stringResource(R.string.assistant_screen_share_cancel))
+                        }
+                    },
+                )
+            }
+            if (showScreenReadInfo) {
+                AlertDialog(
+                    onDismissRequest = { showScreenReadInfo = false },
+                    title = { Text(stringResource(R.string.assistant_screen_read_accessibility_title)) },
+                    text = { Text(stringResource(R.string.assistant_screen_read_accessibility_message)) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showScreenReadInfo = false
+                            context.startActivity(ScreenReadAccessibility.settingsIntent(context))
+                        }) { Text(stringResource(R.string.assistant_screen_read_accessibility_confirm)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showScreenReadInfo = false }) {
+                            Text(stringResource(R.string.assistant_screen_read_accessibility_cancel))
                         }
                     },
                 )

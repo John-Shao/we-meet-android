@@ -78,7 +78,7 @@ class AiCallViewModel(
         val transcriptSessionId = java.util.UUID.randomUUID().toString()
         recording = history?.begin("call")
         val currentRecording = recording
-        _state.update { it.copy(transcriptSessionId = transcriptSessionId, transcriptRows = emptyList(), transcriptTimestamps = emptyMap(), status = AiCallStatus.Connecting(ConnectingStep.Connecting), isMicMuted = false, isOutputMuted = false, cameraResult = null, isScreenSharing = false, isScreenShareVisible = true, screenSharePending = false) }
+        _state.update { it.copy(transcriptSessionId = transcriptSessionId, transcriptRows = emptyList(), transcriptTimestamps = emptyMap(), status = AiCallStatus.Connecting(ConnectingStep.Connecting), isMicMuted = false, isOutputMuted = false, cameraResult = null, isScreenSharing = false, isScreenShareVisible = true, screenSharePending = false, screenReadPending = false) }
         val makeClient = if (selection.transport == AiCallTransport.AOQ) ::OmniAoqClient else ::OmniWebRtcClient
         lateinit var client: OmniCallClient
         var owner: CameraActionController? = null
@@ -91,7 +91,7 @@ class AiCallViewModel(
             { if (rtcClient === client) endCall(R.string.assistant_disconnected_ended) },
             { row ->
                 _state.update { it.withTranscript(transcriptSessionId, row) }
-                if (!row.isStreaming && _state.value.transcriptSessionId == transcriptSessionId) currentRecording?.put(row)
+                if (!row.isStreaming && row.role != "screen" && _state.value.transcriptSessionId == transcriptSessionId) currentRecording?.put(row)
                 if (com.we.meet.feature.assistant.BuildConfig.AI_CALL_VOICE_HANGUP &&
                     CallGoodbye.shouldEndCall(_state.value, transcriptSessionId, row, rtcClient === client)) {
                     // A realtime model can answer a goodbye without requesting its tool.
@@ -146,7 +146,7 @@ class AiCallViewModel(
                 if (current == null || _state.value.status !is AiCallStatus.Active || sessionId == null || !_state.value.isScreenSharing || !_state.value.isScreenShareVisible)
                     cameraResult("cancelled", current?.cameraEnabled, false)
                 else {
-                    _state.update { it.copy(photoPending = true, cameraResult = null) }
+                    _state.update { it.copy(screenReadPending = true, cameraResult = null) }
                     val readStartedAt = android.os.SystemClock.elapsedRealtime()
                     try {
                         val jpeg = com.we.meet.feature.assistant.screenread.ScreenReadAccessibility.capture(appContext)
@@ -169,7 +169,7 @@ class AiCallViewModel(
                         CameraActionResult(false, null, false, "screen_read_failed",
                             appContext.getString(R.string.assistant_screen_read_failed))
                     } finally {
-                        if (rtcClient === current) _state.update { it.copy(photoPending = false) }
+                        if (rtcClient === current) _state.update { it.copy(screenReadPending = false) }
                     }
                 }
             },
@@ -243,7 +243,7 @@ class AiCallViewModel(
         screenShareRestoreCamera = false
         closeClient()
         _state.update {
-            it.copy(status = AiCallStatus.Ended, isCameraEnabled = false, cameraPending = false, photoPending = false, cameraPermissionRequest = null,
+            it.copy(status = AiCallStatus.Ended, isCameraEnabled = false, cameraPending = false, photoPending = false, screenReadPending = false, cameraPermissionRequest = null,
                 isScreenSharing = false, isScreenShareVisible = true, screenSharePending = false,
                 cameraFront = false, isMicMuted = false, micPending = false,
                 agentSpeaking = false, agentAudioLevel = 0f, errorToastRes = reasonRes)

@@ -140,6 +140,12 @@
     <string name="assistant_screen_read_failed">读取屏幕失败，请重试</string>
     <string name="assistant_screen_read_accessibility">开启无障碍读屏</string>
     <string name="assistant_screen_read_accessibility_description">当系统屏幕共享无法捕获 Chrome 等应用时，允许 We Meet 通过无障碍服务截图读取屏幕。</string>
+    <string name="assistant_screen_read_caption">屏幕读取截图</string>
+    <string name="assistant_screen_read_working">正在读取屏幕…</string>
+    <string name="assistant_screen_read_accessibility_title">让 AI 读取 Chrome 等页面</string>
+    <string name="assistant_screen_read_accessibility_message">部分设备的系统屏幕共享无法捕获 Chrome。开启后，We Meet 只会在你主动要求读取屏幕时截图；截图会覆盖整个屏幕，可能包含通知。We Meet 不会持续监控屏幕。</string>
+    <string name="assistant_screen_read_accessibility_confirm">去系统设置</string>
+    <string name="assistant_screen_read_accessibility_cancel">暂不开启</string>
     <string name="assistant_call_vad_mode">语音轮次检测（VAD）</string>
     <string name="assistant_call_vad_server">声学检测（server_vad）</string>
     <string name="assistant_call_vad_semantic">语义检测（semantic_vad）</string>
@@ -153,7 +159,7 @@
     <string name="assistant_screen_share_starting">正在开始共享…</string>
     <string name="assistant_screen_share_active">正在共享屏幕</string>
     <string name="assistant_screen_share_active_hint">AI 助手可以看到这块屏幕。打开你想展示的应用即可。</string>
-    <string name="assistant_screen_share_go_home">打开应用</string>
+    <string name="assistant_screen_share_go_home">返回桌面</string>
     <string name="assistant_screen_share_failed">无法开始共享屏幕，请重试</string>
     <string name="assistant_screen_share_unavailable">当前连接方式不支持共享屏幕</string>
     <string name="assistant_background_screen_share">屏幕共享中</string>

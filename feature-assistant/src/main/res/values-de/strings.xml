@@ -146,6 +146,12 @@
     <string name="assistant_screen_read_failed">Der Bildschirm konnte nicht gelesen werden. Bitte erneut versuchen.</string>
     <string name="assistant_screen_read_accessibility">Barrierefreies Bildschirmlesen aktivieren</string>
     <string name="assistant_screen_read_accessibility_description">Ermöglicht We Meet, den Bildschirm zu erfassen, wenn die Android-Bildschirmfreigabe Chrome oder eine andere App nicht sieht.</string>
+    <string name="assistant_screen_read_caption">Bildschirmlese-Aufnahme</string>
+    <string name="assistant_screen_read_working">Bildschirm wird gelesen…</string>
+    <string name="assistant_screen_read_accessibility_title">KI darf Chrome-Seiten lesen</string>
+    <string name="assistant_screen_read_accessibility_message">Die Android-Bildschirmfreigabe kann Chrome auf manchen Geräten nicht erfassen. Wenn aktiviert, erfasst We Meet den Bildschirm nur, wenn Sie ausdrücklich darum bitten. Die Aufnahme umfasst den gesamten Bildschirm und kann Benachrichtigungen enthalten. We Meet überwacht den Bildschirm nicht dauerhaft.</string>
+    <string name="assistant_screen_read_accessibility_confirm">Einstellungen öffnen</string>
+    <string name="assistant_screen_read_accessibility_cancel">Nicht jetzt</string>
     <string name="assistant_call_vad_mode">Erkennung von Gesprächsbeiträgen (VAD)</string>
     <string name="assistant_call_vad_server">Akustische Erkennung (server_vad)</string>
     <string name="assistant_call_vad_semantic">Semantische Erkennung (semantic_vad)</string>
@@ -159,7 +165,7 @@
     <string name="assistant_screen_share_starting">Bildschirmfreigabe wird gestartet…</string>
     <string name="assistant_screen_share_active">Bildschirm wird geteilt</string>
     <string name="assistant_screen_share_active_hint">Der KI-Assistent sieht diesen Bildschirm. Öffnen Sie die App, die Sie zeigen möchten.</string>
-    <string name="assistant_screen_share_go_home">App öffnen</string>
+    <string name="assistant_screen_share_go_home">Zum Startbildschirm</string>
     <string name="assistant_screen_share_failed">Bildschirmfreigabe konnte nicht gestartet werden. Bitte erneut versuchen.</string>
     <string name="assistant_screen_share_unavailable">Bildschirmfreigabe ist mit dieser Verbindung nicht verfügbar.</string>
     <string name="assistant_background_screen_share">Bildschirmfreigabe</string>
