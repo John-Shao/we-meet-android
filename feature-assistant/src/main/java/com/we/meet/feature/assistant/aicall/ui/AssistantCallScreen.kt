@@ -476,12 +476,28 @@ fun AssistantCallScreen(
                 }
 
                 if (state.status is AiCallStatus.Active && (state.photoPending || state.screenReadPending || state.cameraPending || state.cameraResult?.success == false)) {
-                    Text(if (state.screenReadPending) stringResource(R.string.assistant_screen_read_working)
-                        else if (state.photoPending) stringResource(R.string.assistant_photo_working)
-                        else if (state.cameraPending) stringResource(R.string.assistant_camera_working) else state.cameraResult!!.message,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (isVideoActive) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(horizontal = Dimens.SpaceL))
+                    Column(
+                        modifier = Modifier.align(Alignment.CenterHorizontally).padding(horizontal = Dimens.SpaceL),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(if (state.screenReadPending) stringResource(R.string.assistant_screen_read_working)
+                            else if (state.photoPending) stringResource(R.string.assistant_photo_working)
+                            else if (state.cameraPending) stringResource(R.string.assistant_camera_working) else state.cameraResult!!.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (isVideoActive) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.onSurface)
+                        if (state.cameraResult?.code == "screen_read_failed" &&
+                            !state.screenReadPending && !state.photoPending && !state.cameraPending) {
+                            if (ScreenReadAccessibility.isEnabled(context)) {
+                                TextButton(onClick = ::openOtherApp) {
+                                    Text(stringResource(R.string.assistant_screen_share_go_home))
+                                }
+                            } else {
+                                TextButton(onClick = { showScreenReadInfo = true }) {
+                                    Text(stringResource(R.string.assistant_screen_read_accessibility))
+                                }
+                            }
+                        }
+                    }
                 }
 
                 BottomControls(
