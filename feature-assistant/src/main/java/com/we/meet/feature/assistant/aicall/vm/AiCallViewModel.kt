@@ -143,7 +143,7 @@ class AiCallViewModel(
             },
             PhotoToolHandler { question ->
                 val current = rtcClient
-                if (current == null || _state.value.status !is AiCallStatus.Active || sessionId == null || !_state.value.isScreenSharing)
+                if (current == null || _state.value.status !is AiCallStatus.Active || sessionId == null || !_state.value.isScreenSharing || !_state.value.isScreenShareVisible)
                     cameraResult("cancelled", current?.cameraEnabled, false)
                 else {
                     _state.update { it.copy(photoPending = true, cameraResult = null) }

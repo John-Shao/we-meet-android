@@ -15,9 +15,10 @@ class OmniCallToolsTest {
         val questions = mutableListOf<String>()
         val tools = OmniCallTools(backgroundScope, null, sent::add, {}, {}, { result },
             screenReadHandler = PhotoToolHandler { questions += it; result.copy(code = "screen_answer", message = "invoice 8472") })
-        fun names(sharing: Boolean) = (0 until tools.definitions(sharing).length())
-            .map { tools.definitions(sharing).getJSONObject(it).getJSONObject("function").getString("name") }
+        fun names(sharing: Boolean, visible: Boolean = true) = (0 until tools.definitions(sharing, visible).length())
+            .map { tools.definitions(sharing, visible).getJSONObject(it).getJSONObject("function").getString("name") }
         assertTrue("read_screen" in names(true))
+        assertFalse("read_screen" in names(true, visible = false))
         assertFalse("read_screen" in names(false))
         tools.accept(call("read", "{\"question\":\"read the total\"}", "read_screen"))
         tools.accept(done()); runCurrent()

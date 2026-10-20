@@ -25,13 +25,13 @@ internal class OmniCallTools(
         data class Photo(val question: String) : Request
         data class ScreenRead(val question: String) : Request
     }
-    fun definitions(screenSharing: Boolean = false): JSONArray =
+    fun definitions(screenSharing: Boolean = false, screenVisible: Boolean = true): JSONArray =
         Companion.definitions(
             handler != null && !screenSharing,
             endCall != null,
             serverInstructions,
             photoHandler != null && !screenSharing,
-            screenReadHandler != null && screenSharing,
+            screenReadHandler != null && screenSharing && screenVisible,
         )
     private var serverInstructions: Map<String, String> = emptyMap()
     fun configureInstructions(value: Map<String, String>) {

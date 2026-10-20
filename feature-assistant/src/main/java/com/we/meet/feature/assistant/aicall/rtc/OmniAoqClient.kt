@@ -339,7 +339,7 @@ class OmniAoqClient(
         val instructions = tools?.instructions(config.instructions, sharing, visible)
             ?: OmniCallTools.screenShareInstructions(config.instructions, sharing, visible)
         val session = JSONObject().put("instructions", instructions)
-        if (tools != null) session.put("tools", tools.definitions(sharing))
+        if (tools != null) session.put("tools", tools.definitions(sharing, visible))
         val eventId = UUID.randomUUID().toString()
         val event = JSONObject().put("type", "session.update").put("session", session).put("event_id", eventId)
         if (screenUpdateEventIds.size > 32) screenUpdateEventIds.remove(screenUpdateEventIds.first())
