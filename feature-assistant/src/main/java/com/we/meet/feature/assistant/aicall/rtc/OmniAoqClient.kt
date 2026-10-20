@@ -76,6 +76,8 @@ class OmniAoqClient(
     private var screenRouter: CameraFrameRouter? = null
     private val screenFrames = ScreenFrameStore()
     private var screenStarted = false
+    private var screenVisible = true
+    private var screenStateGeneration = 0L
     private var screenStopCallback: (() -> Unit)? = null
     private var pendingScreenShareUpdate: Pair<Boolean, Boolean>? = null
     private val screenUpdateEventIds = linkedSetOf<String>()
@@ -328,8 +330,18 @@ class OmniAoqClient(
 
     override fun publishScreenShareState(sharing: Boolean, visible: Boolean) {
         if (closed) return
+        screenVisible = visible
+        val generation = ++screenStateGeneration
         pendingScreenShareUpdate = sharing to visible
         if (!responding) flushScreenShareState()
+        // Retry once: the first session.update can be lost around response.done.
+        scope.launch {
+            delay(600)
+            if (!closed && generation == screenStateGeneration && screenStarted == sharing && screenVisible == visible) {
+                pendingScreenShareUpdate = sharing to visible
+                if (!responding) flushScreenShareState()
+            }
+        }
     }
 
     private fun flushScreenShareState() {

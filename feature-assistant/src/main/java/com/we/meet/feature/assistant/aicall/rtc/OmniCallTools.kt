@@ -34,7 +34,7 @@ internal class OmniCallTools(
             endCall != null,
             serverInstructions,
             photoHandler != null && !screenSharing,
-            screenReadHandler != null,
+            screenReadHandler != null && screenSharing && screenVisible,
         )
         val names = (0 until result.length())
             .map { result.getJSONObject(it).getJSONObject("function").getString("name") }

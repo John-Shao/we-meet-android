@@ -97,6 +97,8 @@ class OmniWebRtcClient(
     private var screenTrack: VideoTrack? = null
     private val screenFrames = ScreenFrameStore()
     private var screenStarted = false
+    private var screenVisible = true
+    private var screenStateGeneration = 0L
     private var screenStopCallback: (() -> Unit)? = null
     private var pendingScreenShareUpdate: Pair<Boolean, Boolean>? = null
     private val screenUpdateEventIds = linkedSetOf<String>()
@@ -516,10 +518,22 @@ class OmniWebRtcClient(
 
     override fun publishScreenShareState(sharing: Boolean, visible: Boolean) {
         if (closed) return
+        screenVisible = visible
+        val generation = ++screenStateGeneration
         pendingScreenShareUpdate = sharing to visible
         // Changing tools while a response is streaming is rejected by the
         // provider; apply the latest state when that response finishes.
         if (!responding) flushScreenShareState()
+        // The first update can race a response.done/session.update; one delayed
+        // retry keeps the tool list reliable without advertising read_screen
+        // while the screen is not being shared.
+        scope.launch {
+            delay(600)
+            if (!closed && generation == screenStateGeneration && screenStarted == sharing && screenVisible == visible) {
+                pendingScreenShareUpdate = sharing to visible
+                if (!responding) flushScreenShareState()
+            }
+        }
     }
 
     private fun flushScreenShareState() {
