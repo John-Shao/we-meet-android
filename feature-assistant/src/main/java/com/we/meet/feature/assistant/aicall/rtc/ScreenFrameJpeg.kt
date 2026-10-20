@@ -6,7 +6,7 @@ import android.graphics.YuvImage
 import livekit.org.webrtc.VideoFrame
 import java.io.ByteArrayOutputStream
 
-/** One JPEG snapshot of a captured screen frame, for the current-call transcript. */
+/** One JPEG snapshot of the exact captured frame, at full capture resolution and quality 100. */
 internal object ScreenFrameJpeg {
     fun encode(frame: VideoFrame): ByteArray? = runCatching {
         val packed = AoqVideoFramePacker.pack(frame)
@@ -25,7 +25,7 @@ internal object ScreenFrameJpeg {
         }
         val output = ByteArrayOutputStream()
         YuvImage(nv21, ImageFormat.NV21, width, height, null)
-            .compressToJpeg(Rect(0, 0, width, height), 85, output)
+            .compressToJpeg(Rect(0, 0, width, height), 100, output)
         output.toByteArray()
     }.getOrNull()
 }

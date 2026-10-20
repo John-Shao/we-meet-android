@@ -459,8 +459,8 @@ class OmniAoqClient(
                 },
             )
             capture = screen
-            var lastScreenSnapshotAt = 0L
-            val screenRowId = UUID.randomUUID().toString()
+            val snapshotAt = SystemClock.elapsedRealtime() + 3_000
+            var snapshotSent = false
             screen.start(consent, object : CapturerObserver {
                 override fun onCapturerStarted(success: Boolean) {
                     if (!success) firstFrame.completeExceptionally(IllegalStateException("Screen capture failed"))
@@ -468,10 +468,9 @@ class OmniAoqClient(
 
                 override fun onCapturerStopped() = Unit
                 override fun onFrameCaptured(frame: VideoFrame) {
-                    val now = SystemClock.elapsedRealtime()
-                    if (now - lastScreenSnapshotAt >= 1_000) {
-                        lastScreenSnapshotAt = now
-                        ScreenFrameJpeg.encode(frame)?.let { transcript.screen(it, screenRowId) }
+                    if (!snapshotSent && SystemClock.elapsedRealtime() >= snapshotAt) {
+                        snapshotSent = true
+                        ScreenFrameJpeg.encode(frame)?.let(transcript::screen)
                     }
                     frames.onFrame(frame)
                 }
