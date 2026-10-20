@@ -313,7 +313,8 @@ class OmniAoqClient(
             .put("modalities", JSONArray(listOf("text", "audio")))
             .put("input_audio_format", "pcm").put("output_audio_format", "pcm")
             .put("voice", config.voice).put("instructions", tools?.instructions(config.instructions) ?: config.instructions)
-            .put("input_audio_transcription", JSONObject().put("model", "qwen3-asr-flash-realtime"))
+            .put("input_audio_transcription", JSONObject().put("model", "qwen3-asr-flash-realtime")
+                .apply { AsrLanguage.current()?.let { put("language", it) } })
             .put("turn_detection", vadMode.turnDetection())
             .apply { if (tools != null) {
                 put("tools", tools.definitions()); put("enable_search", false)

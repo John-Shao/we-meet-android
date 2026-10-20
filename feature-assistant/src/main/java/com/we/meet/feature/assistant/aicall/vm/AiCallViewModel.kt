@@ -91,7 +91,7 @@ class AiCallViewModel(
             { if (rtcClient === client) endCall(R.string.assistant_disconnected_ended) },
             { row ->
                 _state.update { it.withTranscript(transcriptSessionId, row) }
-                if (!row.isStreaming && row.role != "screen" && _state.value.transcriptSessionId == transcriptSessionId) currentRecording?.put(row)
+                if (!row.isStreaming && _state.value.transcriptSessionId == transcriptSessionId) currentRecording?.put(row)
                 if (com.we.meet.feature.assistant.BuildConfig.AI_CALL_VOICE_HANGUP &&
                     CallGoodbye.shouldEndCall(_state.value, transcriptSessionId, row, rtcClient === client)) {
                     // A realtime model can answer a goodbye without requesting its tool.
