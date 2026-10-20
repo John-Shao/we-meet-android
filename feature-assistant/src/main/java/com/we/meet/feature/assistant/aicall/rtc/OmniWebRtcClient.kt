@@ -112,7 +112,7 @@ class OmniWebRtcClient(
     private val tools = if (cameraToolHandler != null || endCallHandler != null || photoHandler != null || screenReadHandler != null) {
         OmniCallTools(scope, cameraToolHandler, ::send, { held -> toolOutputHeld = held; updateOutput() }, onToolFeedbackFailure,
             { code -> CameraActionResult(false, cameraEnabled, false, code, context.getString(R.string.assistant_call_invalid_tool)) }, endCallHandler, photoHandler = photoHandler,
-            screenReadHandler = screenReadHandler)
+            screenReadHandler = screenReadHandler, logger = { Log.i("OmniTools", it) })
     } else null
     private fun updateOutput() { remoteAudio?.setEnabled(!outputMuted && !outputSuppressed && !toolOutputHeld) }
 

@@ -18,6 +18,7 @@ internal class OmniCallTools(
     private val allowMissingResponseDone: Boolean = false,
     private val photoHandler: PhotoToolHandler? = null,
     private val screenReadHandler: PhotoToolHandler? = null,
+    private val logger: (String) -> Unit = {},
 ) {
     private sealed interface Request {
         data class Camera(val request: CameraToolRequest) : Request
@@ -25,14 +26,21 @@ internal class OmniCallTools(
         data class Photo(val question: String) : Request
         data class ScreenRead(val question: String) : Request
     }
-    fun definitions(screenSharing: Boolean = false, screenVisible: Boolean = true): JSONArray =
-        Companion.definitions(
+    fun definitions(screenSharing: Boolean = false, screenVisible: Boolean = true): JSONArray {
+        // Keep this tool present even if a screen-state session.update is lost:
+        // the handler still rejects reads when the screen is not shareable.
+        val result = Companion.definitions(
             handler != null && !screenSharing,
             endCall != null,
             serverInstructions,
             photoHandler != null && !screenSharing,
-            screenReadHandler != null && screenSharing && screenVisible,
+            screenReadHandler != null,
         )
+        val names = (0 until result.length())
+            .map { result.getJSONObject(it).getJSONObject("function").getString("name") }
+        logger("sharing=$screenSharing visible=$screenVisible tools=$names")
+        return result
+    }
     private var serverInstructions: Map<String, String> = emptyMap()
     fun configureInstructions(value: Map<String, String>) {
         if (handler != null) {
@@ -158,6 +166,7 @@ internal class OmniCallTools(
         if (round.cancelled) return
         round.hasTools = true
         round.items += item.optInt("output_index", 0)
+        logger("call=${item.optString("name")}")
         val request = runCatching {
             val args = JSONObject(item.getString("arguments"))
             when (item.getString("name")) {
@@ -390,7 +399,7 @@ internal class OmniCallTools(
         private const val SCREEN_HIDDEN_RULE =
             "The user is sharing a single app, but it is currently hidden. Ask the user to bring the shared app back to the foreground before answering questions about its content."
         private const val READ_SCREEN_DESCRIPTION =
-            "Capture the current shared screen as a high-quality still and answer the question about its text or details."
+            "Capture the current shared screen as a high-quality still and answer the question about its text or details. Use only while the user is sharing their screen."
         private const val READ_SCREEN_RULE =
             "If the user asks about screen text or fine detail, call read_screen with their question instead of guessing from the video stream."
     }

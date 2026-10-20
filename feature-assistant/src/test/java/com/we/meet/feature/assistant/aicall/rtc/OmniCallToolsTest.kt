@@ -10,7 +10,7 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OmniCallToolsTest {
-    @Test fun readScreenIsOfferedOnlyWhileSharingAndDispatchesItsQuestion() = runTest {
+    @Test fun readScreenStaysAvailableWhenScreenStateUpdateIsLostAndDispatchesItsQuestion() = runTest {
         val sent = mutableListOf<JSONObject>()
         val questions = mutableListOf<String>()
         val tools = OmniCallTools(backgroundScope, null, sent::add, {}, {}, { result },
@@ -18,8 +18,8 @@ class OmniCallToolsTest {
         fun names(sharing: Boolean, visible: Boolean = true) = (0 until tools.definitions(sharing, visible).length())
             .map { tools.definitions(sharing, visible).getJSONObject(it).getJSONObject("function").getString("name") }
         assertTrue("read_screen" in names(true))
-        assertFalse("read_screen" in names(true, visible = false))
-        assertFalse("read_screen" in names(false))
+        assertTrue("read_screen" in names(true, visible = false))
+        assertTrue("read_screen" in names(false))
         tools.accept(call("read", "{\"question\":\"read the total\"}", "read_screen"))
         tools.accept(done()); runCurrent()
         assertEquals(listOf("read the total"), questions)

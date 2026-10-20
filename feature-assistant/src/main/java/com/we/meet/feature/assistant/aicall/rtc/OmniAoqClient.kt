@@ -94,7 +94,7 @@ class OmniAoqClient(
             toolOutputHeld = held
         }, onToolFeedbackFailure, { code -> CameraActionResult(false, cameraEnabled, false, code,
             context.getString(R.string.assistant_call_invalid_tool)) }, endCallHandler, allowMissingResponseDone = true, photoHandler = photoHandler,
-            screenReadHandler = screenReadHandler)
+            screenReadHandler = screenReadHandler, logger = { Log.i("OmniTools", it) })
     } else null
     override var cameraFront = false
         private set
