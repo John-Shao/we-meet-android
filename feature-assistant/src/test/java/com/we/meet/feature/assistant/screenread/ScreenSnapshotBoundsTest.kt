@@ -67,5 +67,7 @@ class ScreenSnapshotBoundsTest {
             }
         }
         assertEquals(824, bounds.bottom)
+        assertEquals(0, bounds.left)
+        assertEquals(400, bounds.right)
     }
 }

@@ -51,7 +51,9 @@ internal object ScreenSnapshotBounds {
         }
         val bottom = (lastContent + 24).coerceAtMost(height)
         if (bottom - top < 40) return full
-        return Bounds(left, top, right, bottom)
+        // Keep full width: page text starts close to the display edge, and
+        // cropping the edge inset would remove leading characters.
+        return Bounds(0, top, width, bottom)
     }
 
     private fun hasContent(row: IntArray, left: Int, right: Int): Boolean {
