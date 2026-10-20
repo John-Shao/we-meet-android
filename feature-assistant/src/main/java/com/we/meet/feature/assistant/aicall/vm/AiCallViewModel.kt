@@ -156,6 +156,7 @@ class AiCallViewModel(
                     } catch (error: CancellationException) {
                         throw error
                     } catch (error: Exception) {
+                        android.util.Log.w("OmniScreenRead", "screen read failed: ${error.message}", error)
                         CameraActionResult(false, null, false, "screen_read_failed",
                             appContext.getString(R.string.assistant_screen_read_failed))
                     } finally {
