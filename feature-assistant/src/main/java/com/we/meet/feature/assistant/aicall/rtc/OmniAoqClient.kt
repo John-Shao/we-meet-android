@@ -546,6 +546,12 @@ class OmniAoqClient(
 
     override suspend fun captureScreenPhoto(): ByteArray {
         check(!closed && screenStarted)
+        val generation = screenFrames.currentGeneration()
+        val fresh = withTimeoutOrNull(2_000) {
+            while (screenFrames.currentGeneration() == generation) delay(50)
+            true
+        } == true
+        check(fresh) { "Screen content did not update" }
         // The tool can arrive immediately after sharing starts, before the
         // foreground app's first stable frame; sample after a short settle.
         delay(1_000)

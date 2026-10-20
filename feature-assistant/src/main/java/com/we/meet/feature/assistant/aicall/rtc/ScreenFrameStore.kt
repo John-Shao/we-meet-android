@@ -6,14 +6,18 @@ import livekit.org.webrtc.VideoFrame
 internal class ScreenFrameStore {
     private val lock = Any()
     private var latest: VideoFrame? = null
+    private var generation = 0L
 
     fun update(frame: VideoFrame) {
         synchronized(lock) {
             latest?.release()
             frame.retain()
             latest = frame
+            generation++
         }
     }
+
+    fun currentGeneration(): Long = synchronized(lock) { generation }
 
     fun clear() {
         synchronized(lock) {
