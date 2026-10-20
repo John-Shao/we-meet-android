@@ -2,6 +2,7 @@ package com.we.meet.feature.assistant.aicall.ui
 
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
@@ -69,6 +70,7 @@ fun CallTranscriptPhoto(photo: AssistantHistoryPhoto, id: String, modifier: Modi
         val width = minOf(maxWidth, Dimens.Chat.ImageMaxWidth, Dimens.Chat.ImageMaxHeight * ratio)
         // The thumbnail itself defines the bounds; no colored surface or letterboxing.
         Box(Modifier.width(width).aspectRatio(ratio).clip(RoundedCornerShape(Dimens.CornerL))
+            .border(Dimens.BorderThin, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Dimens.CornerL))
             .clickable(onClickLabel = label) { expanded = true }.testTag("call-photo-$id"),
             contentAlignment = Alignment.Center) {
             if (image != null) Image(image, contentDescription = label,

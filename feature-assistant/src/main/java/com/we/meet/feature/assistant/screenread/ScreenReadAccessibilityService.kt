@@ -63,8 +63,9 @@ class ScreenReadAccessibilityService : AccessibilityService() {
                             } else source
                         }.getOrDefault(source)
                     } ?: source
+                    val trimmed = trimContent(cropped)
                     val output = ByteArrayOutputStream()
-                    cropped.compress(Bitmap.CompressFormat.JPEG, 100, output)
+                    trimmed.compress(Bitmap.CompressFormat.JPEG, 100, output)
                     continuation.resume(output.toByteArray())
                 } catch (_: Exception) {
                     continuation.resume(null)
@@ -84,6 +85,49 @@ class ScreenReadAccessibilityService : AccessibilityService() {
         private var instance: ScreenReadAccessibilityService? = null
 
         internal fun accessForCapture(): ScreenReadAccessibilityService? = instance
+    }
+
+    /** Remove the system status bar and the unused white area below a short page. */
+    private fun trimContent(source: Bitmap): Bitmap {
+        val software = runCatching { source.copy(Bitmap.Config.ARGB_8888, false) }.getOrNull()
+            ?: return source
+        val statusBar = resources.getIdentifier("status_bar_height", "dimen", "android")
+            .takeIf { it > 0 }?.let { resources.getDimensionPixelSize(it) } ?: 0
+        val top = statusBar.coerceIn(0, (software.height - 2).coerceAtLeast(0))
+        if (software.height - top < 32) return source
+        val width = software.width
+        val height = software.height
+        val pixels = IntArray(width * (height - top))
+        software.getPixels(pixels, 0, width, 0, top, width, height - top)
+        var lastContent = top
+        for (y in height - 1 downTo top) {
+            var content = false
+            var x = 0
+            while (x < width) {
+                val color = pixels[(y - top) * width + x]
+                val r = color shr 16 and 0xFF
+                val g = color shr 8 and 0xFF
+                val b = color and 0xFF
+                if (r < 245 || g < 245 || b < 245) {
+                    content = true
+                    break
+                }
+                x += 4
+            }
+            if (content) {
+                lastContent = y
+                break
+            }
+        }
+        val bottom = (lastContent + 24).coerceAtMost(height)
+        if (bottom - top < 40) return source
+        android.util.Log.i(
+            "OmniScreenRead",
+            "accessibility trim=${width}x${bottom - top} from=${software.width}x$height",
+        )
+        return runCatching {
+            Bitmap.createBitmap(software, 0, top, width, bottom - top)
+        }.getOrDefault(source)
     }
 }
 
