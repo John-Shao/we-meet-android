@@ -158,6 +158,24 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
     }
 
     fun delete(id: String) = enqueue { it.execSQL("DELETE FROM sessions WHERE id=?", arrayOf(id)) }
+
+    /** Import text-only snapshots pulled from another signed-in client. */
+    fun mergeRemote(entries: List<AssistantHistoryEntry>) = enqueue { db ->
+        for (entry in entries) {
+            db.execSQL(
+                "INSERT OR IGNORE INTO sessions(id,kind,started,ended) VALUES (?,?,?,?)",
+                arrayOf(entry.id, entry.kind, entry.startedAt, entry.endedAt),
+            )
+            for (row in entry.rows) {
+                db.execSQL(
+                    "INSERT OR IGNORE INTO rows(session,id,position,role,text,source,source_lang,target_lang,image_path) VALUES (?,?,?,?,?,?,?,?,?)",
+                    arrayOf(entry.id, row.id, row.order, row.role, row.text.take(20_000), row.source.take(20_000), row.sourceLanguage, row.targetLanguage, ""),
+                )
+            }
+        }
+        db.execSQL("DELETE FROM sessions WHERE EXISTS (SELECT 1 FROM rows WHERE session=sessions.id) AND id NOT IN (SELECT id FROM sessions WHERE EXISTS (SELECT 1 FROM rows WHERE session=sessions.id) ORDER BY started DESC, rowid DESC LIMIT 200)")
+    }
+
     suspend fun saveSummary(id: String, summary: AssistantSummary) = withTimeout(5000) {
         check(allowed())
         val saved = CompletableDeferred<Unit>()

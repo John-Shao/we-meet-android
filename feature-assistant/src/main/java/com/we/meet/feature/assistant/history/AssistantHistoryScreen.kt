@@ -34,6 +34,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.we.meet.feature.assistant.R
+import com.we.meet.feature.assistant.aicall.data.AiHistoryApi
+import com.we.meet.feature.assistant.net.AssistantNetwork
 import com.we.meet.feature.assistant.aicall.ui.CallTranscriptBubble
 import com.we.meet.feature.assistant.aicall.ui.CallTranscriptTimestamp
 import com.we.meet.ui.theme.Dimens
@@ -137,6 +139,19 @@ fun AssistantHistoryContent(store: AssistantHistoryStore, onBack: () -> Unit, de
     val allEntries by store.entries.collectAsStateWithLifecycle()
     val entries = allEntries.filter { kind == null || it.kind == kind }
     val failed by store.error.collectAsStateWithLifecycle()
+    val syncApi = remember(deps) {
+        deps?.let { AssistantNetwork.retrofit(it).create(AiHistoryApi::class.java) }
+    }
+    val syncScope = rememberCoroutineScope()
+    LaunchedEffect(store, syncApi, deps?.assistantAccount) {
+        if (syncApi != null && deps?.assistantAccount != null) {
+            val deviceId = android.provider.Settings.Secure.getString(
+                context.contentResolver,
+                android.provider.Settings.Secure.ANDROID_ID,
+            ) ?: "android"
+            runCatching { AssistantHistorySync(store, syncApi).sync(deviceId) }
+        }
+    }
     val summaryVm: AssistantSummaryViewModel? = if (deps != null) androidx.lifecycle.viewmodel.compose.viewModel(
         key = "assistant-summary:${deps.assistantAccount}", factory = AssistantSummaryViewModel.Factory(store, deps)) else null
     val requests = summaryVm?.requests?.collectAsStateWithLifecycle()?.value.orEmpty()
@@ -260,7 +275,17 @@ fun AssistantHistoryContent(store: AssistantHistoryStore, onBack: () -> Unit, de
             title = { Text(stringResource(if (id == "all") R.string.assistant_history_clear else R.string.assistant_history_delete)) },
             text = { Text(stringResource(R.string.assistant_history_delete_hint)) },
             confirmButton = { TextButton(onClick = {
-                if (id == "all") store.clear(kind) else store.delete(id)
+                if (id == "all") {
+                    syncApi?.let { api ->
+                        syncScope.launch {
+                            entries.forEach { entry -> runCatching { api.deleteByClient(entry.id) } }
+                        }
+                    }
+                    store.clear(kind)
+                } else {
+                    syncApi?.let { api -> syncScope.launch { runCatching { api.deleteByClient(id) } } }
+                    store.delete(id)
+                }
                 selected = null; deleting = null
             }) { Text(stringResource(android.R.string.ok)) } },
             dismissButton = { TextButton(onClick = { deleting = null }) { Text(stringResource(android.R.string.cancel)) } })
