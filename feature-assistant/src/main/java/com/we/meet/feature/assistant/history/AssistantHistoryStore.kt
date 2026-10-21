@@ -76,7 +76,15 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
             val db = runCatching {
                 SQLiteDatabase.openOrCreateDatabase(path, null).apply {
                     setForeignKeyConstraintsEnabled(true)
-                    execSQL("CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, kind TEXT NOT NULL, started INTEGER NOT NULL, ended INTEGER)")
+                    execSQL("CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, kind TEXT NOT NULL, started INTEGER NOT NULL, ended INTEGER, remote INTEGER NOT NULL DEFAULT 0, dirty INTEGER NOT NULL DEFAULT 1)")
+                    val sessionColumns = rawQuery("PRAGMA table_info(sessions)", null).use { columns ->
+                        val names = mutableSetOf<String>()
+                        while (columns.moveToNext()) names += columns.getString(1)
+                        names
+                    }
+                    // Existing rows are treated as local changes and uploaded once.
+                    if ("remote" !in sessionColumns) execSQL("ALTER TABLE sessions ADD COLUMN remote INTEGER NOT NULL DEFAULT 0")
+                    if ("dirty" !in sessionColumns) execSQL("ALTER TABLE sessions ADD COLUMN dirty INTEGER NOT NULL DEFAULT 1")
                     execSQL("CREATE TABLE IF NOT EXISTS rows (session TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, id TEXT NOT NULL, position INTEGER NOT NULL, role TEXT NOT NULL, text TEXT NOT NULL, source TEXT NOT NULL, source_lang TEXT NOT NULL, target_lang TEXT NOT NULL, PRIMARY KEY(session,id))")
                     // Upgrade existing text history without replacing its rows.
                     val hasPhoto = rawQuery("PRAGMA table_info(rows)", null).use { columns ->
@@ -113,7 +121,7 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
         val id = UUID.randomUUID().toString()
         val started = System.currentTimeMillis()
         enqueue { db ->
-            db.execSQL("INSERT INTO sessions(id,kind,started) VALUES (?,?,?)", arrayOf(id, kind, started))
+            db.execSQL("INSERT INTO sessions(id,kind,started,dirty) VALUES (?,?,?,1)", arrayOf(id, kind, started))
         }
         return Recording(id)
     }
@@ -163,9 +171,11 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
     fun mergeRemote(entries: List<AssistantHistoryEntry>) = enqueue { db ->
         for (entry in entries) {
             db.execSQL(
-                "INSERT OR IGNORE INTO sessions(id,kind,started,ended) VALUES (?,?,?,?)",
+                "INSERT OR IGNORE INTO sessions(id,kind,started,ended,remote,dirty) VALUES (?,?,?,?,1,0)",
                 arrayOf(entry.id, entry.kind, entry.startedAt, entry.endedAt),
             )
+            // An existing row keeps its dirty flag; a later local edit wins.
+            db.execSQL("UPDATE sessions SET remote=1 WHERE id=?", arrayOf(entry.id))
             for (row in entry.rows) {
                 db.execSQL(
                     "INSERT OR IGNORE INTO rows(session,id,position,role,text,source,source_lang,target_lang,image_path) VALUES (?,?,?,?,?,?,?,?,?)",
@@ -176,6 +186,37 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
         db.execSQL("DELETE FROM sessions WHERE EXISTS (SELECT 1 FROM rows WHERE session=sessions.id) AND id NOT IN (SELECT id FROM sessions WHERE EXISTS (SELECT 1 FROM rows WHERE session=sessions.id) ORDER BY started DESC, rowid DESC LIMIT 200)")
     }
 
+    /** The upload finished, so this local snapshot is now known to the server. */
+    fun markUploaded(id: String) = enqueue { db ->
+        db.execSQL("UPDATE sessions SET remote=1, dirty=0 WHERE id=?", arrayOf(id))
+    }
+
+    /** Call rows that were created or edited locally and still need an upload. */
+    suspend fun dirtyCallIds(): Set<String> = withTimeout(5000) {
+        val result = CompletableDeferred<Set<String>>()
+        check(operations.trySend { db ->
+            val ids = mutableSetOf<String>()
+            db.rawQuery("SELECT id FROM sessions WHERE kind='call' AND dirty=1", null).use { cursor ->
+                while (cursor.moveToNext()) ids += cursor.getString(0)
+            }
+            result.complete(ids)
+        }.isSuccess)
+        result.await()
+    }
+
+    /** Drop clean remote rows that disappeared from the server, without touching local changes. */
+    fun pruneRemoteExcept(keep: Set<String>) = enqueue { db ->
+        if (keep.isEmpty()) {
+            db.execSQL("DELETE FROM sessions WHERE remote=1 AND dirty=0")
+        } else {
+            val placeholders = keep.joinToString(",") { "?" }
+            db.execSQL(
+                "DELETE FROM sessions WHERE remote=1 AND dirty=0 AND id NOT IN ($placeholders)",
+                keep.toTypedArray(),
+            )
+        }
+    }
+
     suspend fun saveSummary(id: String, summary: AssistantSummary) = withTimeout(5000) {
         check(allowed())
         val saved = CompletableDeferred<Unit>()
@@ -183,6 +224,7 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
             try {
                 db.execSQL("INSERT OR IGNORE INTO summaries(session,content) SELECT ?,? WHERE EXISTS (SELECT 1 FROM sessions WHERE id=? AND ended IS NOT NULL)",
                     arrayOf(id, AssistantSummary.adapter.toJson(summary), id))
+                db.execSQL("UPDATE sessions SET dirty=1 WHERE id=?", arrayOf(id))
                 saved.complete(Unit)
             } catch (error: Exception) { saved.completeExceptionally(error); throw error }
         }.isSuccess)
@@ -195,6 +237,7 @@ class AssistantHistoryStore private constructor(context: Context, account: Strin
                 if (index in summary.tasks.indices) {
                     val next = summary.copy(tasks = summary.tasks.mapIndexed { i, task -> if (i == index) task.copy(done = done) else task })
                     db.execSQL("UPDATE summaries SET content=? WHERE session=?", arrayOf(AssistantSummary.adapter.toJson(next), id))
+                    db.execSQL("UPDATE sessions SET dirty=1 WHERE id=?", arrayOf(id))
                 }
             }
         }

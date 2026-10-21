@@ -11,9 +11,17 @@ class AssistantHistorySync(private val store: AssistantHistoryStore, private val
     suspend fun sync(deviceId: String) {
         val remote = api.list().conversations
         store.mergeRemote(remote.mapNotNull(::toEntry))
-        for (entry in store.entries.value.filter { it.kind == "call" }) {
-            runCatching { api.upsert(toDto(entry, deviceId)) }
+        val dirty = store.dirtyCallIds()
+        val uploaded = mutableSetOf<String>()
+        for (entry in store.entries.value.filter { it.kind == "call" && it.id in dirty }) {
+            runCatching {
+                api.upsert(toDto(entry, deviceId))
+                store.markUploaded(entry.id)
+                uploaded += entry.id
+            }
         }
+        // Only rows previously known to the server are pruned; unsent local calls stay.
+        store.pruneRemoteExcept(remote.map { it.client_id }.toSet() + uploaded)
     }
 
     private fun toEntry(conversation: AiHistoryConversationDto): AssistantHistoryEntry? {
