@@ -56,13 +56,33 @@ class AiCallViewModel(
     private var foreground: AssistantSessionLease? = null
     private var cameraController: CameraActionController? = null
     private var pageVisible = false
+    private var configJob: Job? = null
 
     init { loadConfig() }
 
     fun loadConfig() {
-        viewModelScope.launch {
+        if (configJob?.isActive == true) return
+        _state.update { it.copy(configLoading = true, configErrorRes = null) }
+        configJob = viewModelScope.launch {
             runCatching { agentRepo.fetchConfig() }
-                .onSuccess { config -> _state.update { it.copy(agentConfig = config) } }
+                .onSuccess { config ->
+                    val missingProfile = config.callProfile() == null
+                    _state.update {
+                        it.copy(
+                            agentConfig = config,
+                            configLoading = false,
+                            configErrorRes = if (missingProfile) R.string.assistant_config_no_profile else null,
+                        )
+                    }
+                }
+                .onFailure {
+                    _state.update {
+                        it.copy(
+                            configLoading = false,
+                            configErrorRes = R.string.assistant_config_failed,
+                        )
+                    }
+                }
         }
     }
 
@@ -70,8 +90,18 @@ class AiCallViewModel(
         if (_state.value.status is AiCallStatus.Active || _state.value.status is AiCallStatus.Connecting) return
         val config = _state.value.agentConfig
         if (config == null || config.callProfile() == null) {
-            _state.update { it.copy(errorToastRes = R.string.assistant_config_loading) }
-            loadConfig()
+            val message = when {
+                _state.value.configLoading -> R.string.assistant_config_loading
+                _state.value.configErrorRes == R.string.assistant_config_no_profile ->
+                    R.string.assistant_config_no_profile
+                else -> R.string.assistant_config_failed
+            }
+            _state.update { it.copy(errorToastRes = message) }
+            // A failed initial request should be retryable from the primary action.
+            if (!_state.value.configLoading &&
+                _state.value.configErrorRes != R.string.assistant_config_no_profile) {
+                loadConfig()
+            }
             return
         }
         val selection = config.resolveSelection(_state.value.selection)

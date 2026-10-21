@@ -34,6 +34,8 @@
     <string name="assistant_call_ended">Oproep beëindigd</string>
     <string name="assistant_disconnected_ended">Verbinding verbroken — de oproep is beëindigd</string>
     <string name="assistant_config_loading">AI-instellingen worden nog geladen. Probeer het zo opnieuw.</string>
+    <string name="assistant_config_failed">AI-instellingen konden niet worden geladen. Controleer uw verbinding en probeer het opnieuw.</string>
+    <string name="assistant_config_no_profile">Er is geen AI-gespreksprofiel beschikbaar voor dit account.</string>
 
     <!-- 连接进度 -->
     <string name="assistant_step_creating_room">Vergadering aanmaken</string>

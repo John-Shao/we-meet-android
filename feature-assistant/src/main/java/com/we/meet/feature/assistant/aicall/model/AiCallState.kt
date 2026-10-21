@@ -58,6 +58,8 @@ data class AiCallUiState(
     val agentSpeaking: Boolean = false,
     val agentAudioLevel: Float = 0f,
     val agentConfig: AiAgentConfigResponse? = null,
+    val configLoading: Boolean = true,
+    @StringRes val configErrorRes: Int? = null,
     val selection: AiCallSelection = AiCallSelection(),
     /**
      * 待弹的提示,存的是 string 资源 id 而不是已解析的文案。

@@ -34,6 +34,8 @@
     <string name="assistant_call_ended">Appel terminé</string>
     <string name="assistant_disconnected_ended">Déconnecté — l’appel est terminé</string>
     <string name="assistant_config_loading">Les paramètres AI sont encore en cours de chargement. Veuillez réessayer dans un instant.</string>
+    <string name="assistant_config_failed">Impossible de charger les paramètres AI. Vérifiez votre connexion et réessayez.</string>
+    <string name="assistant_config_no_profile">Aucun profil d’appel AI n’est disponible pour ce compte.</string>
 
     <!-- 连接进度 -->
     <string name="assistant_step_creating_room">Création de la salle</string>
